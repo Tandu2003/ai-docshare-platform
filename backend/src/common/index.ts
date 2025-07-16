@@ -17,6 +17,9 @@ export { GlobalExceptionFilter } from './filters/global-exception.filter';
 export { ResponseHelper } from './helpers/response.helper';
 export { HttpErrorHelper } from './helpers/http-error.helper';
 
+// Services
+export { DatabaseInitService } from './services/database-init.service';
+
 // Import for convenient exports
 import { ResponseHelper } from './helpers/response.helper';
 import { HttpErrorHelper } from './helpers/http-error.helper';
