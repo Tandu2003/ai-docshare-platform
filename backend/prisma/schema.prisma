@@ -1,0 +1,534 @@
+// This is your Prisma schema file for AI-Powered Smart Document Sharing System
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// AUTHENTICATION & AUTHORIZATION
+// ================================
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  permissions Json     @default("[]") // Array of permission strings
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  password     String // Hashed password
+  firstName    String
+  lastName     String
+  avatar       String?
+  bio          String?
+  roleId       String
+  isVerified   Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  resetToken   String?
+  resetExpires DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  role                   Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  documents              Document[]             @relation("DocumentUploader")
+  ratings                Rating[]
+  comments               Comment[]
+  searches               SearchHistory[]
+  notifications          Notification[]
+  bookmarks              Bookmark[]
+  bookmarkFolders        BookmarkFolder[]
+  downloads              Download[]
+  recommendations        RecommendationEngine[]
+  sentCollaborations     Collaboration[]        @relation("CollaborationSender")
+  receivedCollaborations Collaboration[]        @relation("CollaborationReceiver")
+  reportsMade            Report[]               @relation("ReportReporter")
+  reportsReceived        Report[]               @relation("ReportReported")
+  CommentLike            CommentLike[]
+  ActivityLog            ActivityLog[]
+
+  // Indexes
+  @@index([email])
+  @@index([username])
+  @@index([roleId])
+  @@index([isActive])
+  @@map("users")
+}
+
+// ================================
+// DOCUMENT MANAGEMENT
+// ================================
+
+model Category {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  icon          String?
+  color         String?
+  parentId      String?
+  isActive      Boolean  @default(true)
+  documentCount Int      @default(0)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  documents Document[]
+
+  // Indexes
+  @@index([parentId])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  fileName      String
+  fileSize      BigInt
+  mimeType      String
+  filePath      String
+  thumbnailPath String?
+  uploaderId    String
+  categoryId    String
+  downloadCount Int      @default(0)
+  viewCount     Int      @default(0)
+  averageRating Float    @default(0)
+  totalRatings  Int      @default(0)
+  isPublic      Boolean  @default(true)
+  isPremium     Boolean  @default(false)
+  isApproved    Boolean  @default(false)
+  isDraft       Boolean  @default(false)
+  tags          String[] @default([])
+  language      String   @default("en")
+  fileHash      String   @unique // For duplicate detection
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  category        Category               @relation(fields: [categoryId], references: [id])
+  ratings         Rating[]
+  comments        Comment[]
+  aiAnalysis      AIAnalysis?
+  searches        SearchHistory[]
+  bookmarks       Bookmark[]
+  downloads       Download[]
+  recommendations RecommendationEngine[]
+  collaborations  Collaboration[]
+  reports         Report[]               @relation("ReportedDocument")
+
+  // Indexes
+  @@index([uploaderId])
+  @@index([categoryId])
+  @@index([isPublic])
+  @@index([isApproved])
+  @@index([isDraft])
+  @@index([averageRating])
+  @@index([downloadCount])
+  @@index([viewCount])
+  @@index([createdAt])
+  @@index([tags])
+  @@index([mimeType])
+  @@index([fileHash])
+  @@map("documents")
+}
+
+// ================================
+// INTERACTION & ENGAGEMENT
+// ================================
+
+model Rating {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  rating     Int // 1-5 stars
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([userId, documentId]) // One rating per user per document
+  @@index([documentId])
+  @@index([rating])
+  @@map("ratings")
+}
+
+model Comment {
+  id         String    @id @default(cuid())
+  userId     String
+  documentId String
+  parentId   String?
+  content    String
+  isEdited   Boolean   @default(false)
+  isDeleted  Boolean   @default(false)
+  likesCount Int       @default(0)
+  editedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  parent   Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[]     @relation("CommentReplies")
+  likes    CommentLike[]
+
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([parentId])
+  @@index([createdAt])
+  @@index([isDeleted])
+  @@map("comments")
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([userId, commentId])
+  @@index([commentId])
+  @@map("comment_likes")
+}
+
+// ================================
+// AI & ANALYTICS
+// ================================
+
+model AIAnalysis {
+  id             String   @id @default(cuid())
+  documentId     String   @unique
+  summary        String?
+  keyPoints      String[] @default([])
+  suggestedTags  String[] @default([])
+  difficulty     String   @default("beginner") // beginner, intermediate, advanced
+  readingTime    Int      @default(0) // in minutes
+  language       String   @default("en")
+  confidence     Float    @default(0)
+  sentimentScore Float? // Sentiment analysis of content
+  topicModeling  Json? // Topic modeling results
+  namedEntities  Json? // Named entity recognition
+  processedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([difficulty])
+  @@index([language])
+  @@index([confidence])
+  @@index([processedAt])
+  @@map("ai_analyses")
+}
+
+model SearchHistory {
+  id                String   @id @default(cuid())
+  userId            String
+  query             String
+  filters           Json     @default("{}")
+  resultsCount      Int      @default(0)
+  clickedDocumentId String?
+  searchVector      String? // For search analytics
+  sessionId         String?
+  ipAddress         String?
+  userAgent         String?
+  searchedAt        DateTime @default(now())
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clickedDocument Document? @relation(fields: [clickedDocumentId], references: [id])
+
+  // Indexes
+  @@index([userId])
+  @@index([query])
+  @@index([searchedAt])
+  @@index([clickedDocumentId])
+  @@index([sessionId])
+  @@map("search_history")
+}
+
+model RecommendationEngine {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  score      Float
+  reason     String // "similar_content", "popular_in_category", "user_behavior"
+  algorithm  String // "collaborative_filtering", "content_based", "hybrid"
+  metadata   Json? // Additional recommendation metadata
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId, algorithm])
+  // Indexes
+  @@index([userId])
+  @@index([score])
+  @@index([algorithm])
+  @@index([createdAt])
+  @@map("recommendations")
+}
+
+// ================================
+// USER EXPERIENCE
+// ================================
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // "comment", "rating", "system", "document_approved", "collaboration"
+  title     String
+  message   String
+  data      Json? // Additional notification data
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model BookmarkFolder {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
+
+  // Indexes
+  @@index([userId])
+  @@index([sortOrder])
+  @@map("bookmark_folders")
+}
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  folderId   String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  folder   BookmarkFolder? @relation(fields: [folderId], references: [id])
+
+  // Constraints
+  @@unique([userId, documentId])
+  @@index([userId])
+  @@index([documentId])
+  @@index([folderId])
+  @@map("bookmarks")
+}
+
+model Download {
+  id           String   @id @default(cuid())
+  userId       String
+  documentId   String
+  ipAddress    String?
+  userAgent    String?
+  referrer     String?
+  downloadedAt DateTime @default(now())
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([downloadedAt])
+  @@index([ipAddress])
+  @@map("downloads")
+}
+
+// ================================
+// COLLABORATION & MODERATION
+// ================================
+
+model Collaboration {
+  id          String              @id @default(cuid())
+  documentId  String
+  senderId    String
+  receiverId  String
+  type        CollaborationType
+  status      CollaborationStatus @default(PENDING)
+  message     String?
+  permissions String[]            @default([]) // "view", "comment", "edit"
+  expiresAt   DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sender   User     @relation("CollaborationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User     @relation("CollaborationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([documentId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("collaborations")
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterId     String
+  reportedUserId String?
+  documentId     String?
+  type           ReportType
+  reason         String
+  description    String?
+  status         ReportStatus @default(PENDING)
+  adminNotes     String?
+  resolvedAt     DateTime?
+  resolvedById   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  reporter     User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?     @relation("ReportReported", fields: [reportedUserId], references: [id])
+  document     Document? @relation("ReportedDocument", fields: [documentId], references: [id])
+
+  // Indexes
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([documentId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+// ================================
+// SYSTEM ADMINISTRATION
+// ================================
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  type        String   @default("string") // "string", "number", "boolean", "json"
+  description String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Indexes
+  @@index([key])
+  @@index([isPublic])
+  @@map("system_settings")
+}
+
+model ActivityLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  action       String // "login", "upload", "download", "search", etc.
+  resourceType String? // "document", "user", "category"
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  // Indexes
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([resourceId])
+  @@index([createdAt])
+  @@index([ipAddress])
+  @@map("activity_logs")
+}
+
+// ================================
+// ENUMS
+// ================================
+
+enum CollaborationType {
+  SHARE
+  REVIEW
+  COLLABORATE
+}
+
+enum CollaborationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ReportType {
+  SPAM
+  INAPPROPRIATE_CONTENT
+  COPYRIGHT_VIOLATION
+  HARASSMENT
+  FAKE_DOCUMENT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
