@@ -1,8 +1,8 @@
 import { Download, FileText, Upload, Users } from 'lucide-react';
 
-import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { useAuth } from '../hooks';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks';
 
 export const DashboardPage: React.FC = () => {
   const { user, hasPermission, isAdmin, isModerator } = useAuth();

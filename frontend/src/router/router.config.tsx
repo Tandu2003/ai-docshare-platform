@@ -1,6 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 
-import { MainLayout, ProtectedRoute } from '../components/layout';
+import { MainLayout, ProtectedRoute } from '@/components/layout';
 import {
   DashboardPage,
   ForgotPasswordPage,
@@ -11,7 +11,7 @@ import {
   ResetPasswordPage,
   UnauthorizedPage,
   VerifyEmailPage,
-} from '../pages';
+} from '@/pages';
 
 export const router = createBrowserRouter([
   // Redirect root to dashboard

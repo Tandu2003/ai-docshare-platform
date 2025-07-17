@@ -2,8 +2,8 @@ import { CheckCircle, Mail, X } from 'lucide-react';
 
 import { useState } from 'react';
 
-import { Button } from './button';
-import { Card, CardContent } from './card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface VerificationBannerProps {
   email?: string;

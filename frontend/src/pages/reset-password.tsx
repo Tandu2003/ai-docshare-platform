@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -15,10 +15,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../components/ui/form';
-import { Input } from '../components/ui/input';
-import { type ResetPasswordFormData, resetPasswordSchema } from '../schemas';
-import { authService } from '../utils';
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { type ResetPasswordFormData, resetPasswordSchema } from '@/schemas';
+import { authService } from '@/utils';
 
 export function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);

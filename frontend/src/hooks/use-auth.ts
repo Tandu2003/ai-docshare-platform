@@ -9,8 +9,9 @@ import {
   selectIsAuthenticated,
   selectIsLoading,
   selectUser,
-} from '../store/slices';
-import type { LoginDto, RegisterDto } from '../types';
+} from '@/store/slices';
+import type { LoginDto, RegisterDto } from '@/types';
+
 import { useAppDispatch, useAppSelector } from './use-redux';
 
 export const useAuth = () => {

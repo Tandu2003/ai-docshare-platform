@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { useAppDispatch, useAppSelector } from '../../hooks';
-import { initializeAuth, selectIsLoading } from '../../store/slices';
+import { useAppDispatch, useAppSelector } from '@/hooks';
+import { initializeAuth, selectIsLoading } from '@/store/slices';
 
 interface AuthInitializerProps {
   children: React.ReactNode;
