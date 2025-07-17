@@ -8,11 +8,19 @@ import {
   Req,
   UseGuards,
   Get,
+  Query,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dto';
+import {
+  RegisterDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+  ResendVerificationDto,
+} from './dto';
 import { JwtAuthGuard } from './guards';
 import { AuthUser } from './interfaces';
 import { ResponseHelper } from '../common';
@@ -27,17 +35,11 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto, @Res() response: Response): Promise<void> {
     const result = await this.authService.register(registerDto);
 
-    // Set refresh token as httpOnly cookie
-    this.setRefreshTokenCookie(response, result.tokens.refreshToken);
-
-    // Return user data and access token
+    // Return success message
     ResponseHelper.created(
       response,
-      {
-        user: result.user,
-        accessToken: result.tokens.accessToken,
-      },
-      'Registration successful'
+      result,
+      'Registration successful! Please check your email to verify your account.'
     );
   }
 
@@ -108,6 +110,54 @@ export class AuthController {
     const { password, ...userWithoutPassword } = request.user as any;
 
     ResponseHelper.success(response, userWithoutPassword, 'Profile retrieved successfully');
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
+  async verifyEmail(
+    @Body() verifyEmailDto: VerifyEmailDto,
+    @Res() response: Response
+  ): Promise<void> {
+    const result = await this.authService.verifyEmail(verifyEmailDto);
+
+    ResponseHelper.success(response, result, 'Email verified successfully');
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  async resendVerification(
+    @Body() resendDto: ResendVerificationDto,
+    @Res() response: Response
+  ): Promise<void> {
+    const result = await this.authService.resendVerification(resendDto);
+
+    ResponseHelper.success(response, result, 'Verification email sent');
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+    @Res() response: Response
+  ): Promise<void> {
+    const result = await this.authService.forgotPassword(forgotPasswordDto);
+
+    ResponseHelper.success(response, result, 'Password reset instructions sent');
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Res() response: Response
+  ): Promise<void> {
+    const result = await this.authService.resetPassword(resetPasswordDto);
+
+    ResponseHelper.success(response, result, 'Password reset successfully');
   }
 
   // Private helper methods
