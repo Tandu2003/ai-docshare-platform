@@ -1,0 +1,120 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Welcome to AI DocShare!</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #059669;
+        margin-bottom: 10px;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 30px;
+        background-color: #059669;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+      .button:hover {
+        background-color: #047857;
+      }
+      .footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+        font-size: 14px;
+        color: #666;
+      }
+      .features {
+        background-color: #f0f9ff;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .feature-item {
+        margin: 10px 0;
+        padding-left: 20px;
+        position: relative;
+      }
+      .feature-item:before {
+        content: '✅';
+        position: absolute;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <div class='logo'>🎉 AI DocShare Platform</div>
+        <h1>Welcome Aboard!</h1>
+      </div>
+
+      <p>Hi {{firstName}},</p>
+
+      <p>Congratulations! Your email has been successfully verified and your AI DocShare Platform
+        account is now active. We're excited to have you join our community of knowledge sharers!</p>
+
+      <div class='features'>
+        <h3>🚀 What you can do now:</h3>
+        <div class='feature-item'>Upload and share your documents with the community</div>
+        <div class='feature-item'>Search and discover amazing content from other users</div>
+        <div class='feature-item'>Get AI-powered document analysis and recommendations</div>
+        <div class='feature-item'>Organize your favorites with bookmarks and folders</div>
+        <div class='feature-item'>Collaborate with others on shared documents</div>
+        <div class='feature-item'>Rate and comment on documents to help the community</div>
+      </div>
+
+      <div style='text-align: center;'>
+        <a href='{{dashboardUrl}}' class='button'>Go to Dashboard</a>
+      </div>
+
+      <p>Ready to get started? Here are some tips for new users:</p>
+      <ul>
+        <li><strong>Complete your profile:</strong>
+          Add a bio and avatar to build trust with the community</li>
+        <li><strong>Upload your first document:</strong> Share knowledge and help others learn</li>
+        <li><strong>Explore categories:</strong> Find documents in your areas of interest</li>
+        <li><strong>Follow community guidelines:</strong>
+          Help us maintain a respectful and valuable platform</li>
+      </ul>
+
+      <p>If you have any questions or need help getting started, don't hesitate to reach out to our
+        support team.</p>
+
+      <div class='footer'>
+        <p>Happy sharing!<br />The AI DocShare Team</p>
+        <p>
+          <small>
+            This email was sent to
+            {{email}}. If you have any questions, please contact our support team.
+          </small>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
