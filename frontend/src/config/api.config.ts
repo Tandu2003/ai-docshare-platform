@@ -14,6 +14,10 @@ export const API_ENDPOINTS = {
     REFRESH: '/auth/refresh',
     LOGOUT: '/auth/logout',
     ME: '/auth/me',
+    VERIFY_EMAIL: '/auth/verify-email',
+    RESEND_VERIFICATION: '/auth/resend-verification',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
   },
   // Future endpoints can be added here
   DOCUMENTS: {

@@ -1,5 +1,14 @@
 import { API_ENDPOINTS, STORAGE_KEYS } from '../config';
-import type { LoginDto, LoginResponse, RegisterDto, User } from '../types';
+import type {
+  ForgotPasswordDto,
+  LoginDto,
+  LoginResponse,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  User,
+  VerifyEmailDto,
+} from '../types';
 import { apiClient } from '../utils/api-client';
 
 class AuthService {
@@ -185,6 +194,74 @@ class AuthService {
   hasRole(roleName: string): boolean {
     const user = this.getUserData();
     return user?.role?.name === roleName;
+  }
+
+  /**
+   * Forgot password - Send reset password email
+   */
+  async forgotPassword(forgotPasswordData: ForgotPasswordDto): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, forgotPasswordData);
+
+      if (response.success) {
+        return { message: response.message || 'Password reset instructions sent' };
+      }
+
+      throw new Error(response.message || 'Failed to send password reset email');
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(resetPasswordData: ResetPasswordDto): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, resetPasswordData);
+
+      if (response.success) {
+        return { message: response.message || 'Password reset successfully' };
+      }
+
+      throw new Error(response.message || 'Failed to reset password');
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(verifyEmailData: VerifyEmailDto): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, verifyEmailData);
+
+      if (response.success) {
+        return { message: response.message || 'Email verified successfully' };
+      }
+
+      throw new Error(response.message || 'Failed to verify email');
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerification(resendData: ResendVerificationDto): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, resendData);
+
+      if (response.success) {
+        return { message: response.message || 'Verification email sent' };
+      }
+
+      throw new Error(response.message || 'Failed to send verification email');
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
   }
 
   // Private helper methods
