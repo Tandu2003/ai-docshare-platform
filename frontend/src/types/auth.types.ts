@@ -37,6 +37,23 @@ export interface LoginDto {
   password: string;
 }
 
+export interface ForgotPasswordDto {
+  email: string;
+}
+
+export interface ResetPasswordDto {
+  token: string;
+  password: string;
+}
+
+export interface VerifyEmailDto {
+  token: string;
+}
+
+export interface ResendVerificationDto {
+  email: string;
+}
+
 // Auth Tokens
 export interface AuthTokens {
   accessToken: string;
