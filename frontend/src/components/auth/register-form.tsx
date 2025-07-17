@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../hooks';
 import { type RegisterFormData, registerSchema } from '../../schemas';
@@ -113,11 +113,27 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           </Button>
 
           {onSwitchToLogin && (
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">Already have an account? </span>
-              <Button type="button" variant="link" className="p-0 h-auto" onClick={onSwitchToLogin}>
-                Sign in
-              </Button>
+            <div className="text-center text-sm space-y-2">
+              <div>
+                <span className="text-muted-foreground">Already have an account? </span>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="p-0 h-auto"
+                  onClick={onSwitchToLogin}
+                >
+                  Sign in
+                </Button>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Didn't receive verification email? </span>
+                <Link
+                  to="/auth/resend-verification"
+                  className="text-primary hover:text-primary/80 underline underline-offset-4"
+                >
+                  Resend
+                </Link>
+              </div>
             </div>
           )}
         </form>
