@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../hooks';
 import { type LoginFormData, loginSchema } from '../../schemas';
@@ -70,6 +70,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
             {...register('password')}
             error={errors.password?.message}
           />
+
+          <div className="flex justify-end">
+            <Link
+              to="/auth/forgot-password"
+              className="text-sm text-primary hover:text-primary/80 underline underline-offset-4"
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
             {isLoading || isSubmitting ? 'Signing in...' : 'Sign In'}

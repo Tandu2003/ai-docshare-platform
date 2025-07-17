@@ -1,7 +1,17 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 
 import { MainLayout, ProtectedRoute } from '../components/layout';
-import { DashboardPage, LoginPage, NotFoundPage, RegisterPage, UnauthorizedPage } from '../pages';
+import {
+  DashboardPage,
+  ForgotPasswordPage,
+  LoginPage,
+  NotFoundPage,
+  RegisterPage,
+  ResendVerificationPage,
+  ResetPasswordPage,
+  UnauthorizedPage,
+  VerifyEmailPage,
+} from '../pages';
 
 export const router = createBrowserRouter([
   // Redirect root to dashboard
@@ -30,6 +40,64 @@ export const router = createBrowserRouter([
         <RegisterPage />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '/auth/forgot-password',
+    element: (
+      <ProtectedRoute requireAuth={false}>
+        <ForgotPasswordPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/auth/reset-password',
+    element: (
+      <ProtectedRoute requireAuth={false}>
+        <ResetPasswordPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/auth/verify-email',
+    element: (
+      <ProtectedRoute requireAuth={false}>
+        <VerifyEmailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/auth/resend-verification',
+    element: (
+      <ProtectedRoute requireAuth={false}>
+        <ResendVerificationPage />
+      </ProtectedRoute>
+    ),
+  },
+
+  // Legacy routes for compatibility
+  {
+    path: '/login',
+    element: <Navigate to="/auth/login" replace />,
+  },
+  {
+    path: '/register',
+    element: <Navigate to="/auth/register" replace />,
+  },
+  {
+    path: '/forgot-password',
+    element: <Navigate to="/auth/forgot-password" replace />,
+  },
+  {
+    path: '/reset-password',
+    element: <Navigate to="/auth/reset-password" replace />,
+  },
+  {
+    path: '/verify-email',
+    element: <Navigate to="/auth/verify-email" replace />,
+  },
+  {
+    path: '/resend-verification',
+    element: <Navigate to="/auth/resend-verification" replace />,
   },
 
   // Main app layout with nested routes
