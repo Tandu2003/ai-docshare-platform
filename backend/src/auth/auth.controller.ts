@@ -23,7 +23,7 @@ import {
 } from './dto';
 import { JwtAuthGuard } from './guards';
 import { AuthUser } from './interfaces';
-import { ResponseHelper } from '../common';
+import { ResponseHelper } from '@/common';
 
 @Controller('auth')
 export class AuthController {

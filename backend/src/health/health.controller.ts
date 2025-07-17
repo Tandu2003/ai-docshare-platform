@@ -1,6 +1,6 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { success, notFound, internalError } from '../common';
+import { success, notFound, internalError } from '@/common';
 
 @Controller('health')
 export class HealthController {

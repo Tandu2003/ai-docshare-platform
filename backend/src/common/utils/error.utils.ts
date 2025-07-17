@@ -1,5 +1,5 @@
-import { AppError } from '../errors';
-import { HTTP_STATUS } from '../constants/http.constants';
+import { AppError } from '@/common/errors';
+import { HTTP_STATUS } from '@/common/constants/http.constants';
 
 export class ErrorUtils {
   /**
