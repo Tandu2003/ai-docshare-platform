@@ -9,8 +9,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
-import { MailService } from '../mail/mail.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { MailService } from '@/mail/mail.service';
 import {
   RegisterDto,
   LoginDto,
@@ -20,7 +20,7 @@ import {
   ResendVerificationDto,
 } from './dto';
 import { JwtPayload, AuthTokens, LoginResponse, AuthUser } from './interfaces';
-import { AuthenticationError } from '../common/errors';
+import { AuthenticationError } from '@/common/errors';
 
 @Injectable()
 export class AuthService {
