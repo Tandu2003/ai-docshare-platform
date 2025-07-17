@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, STORAGE_KEYS } from '../config';
+import { API_ENDPOINTS, STORAGE_KEYS } from '@/config';
 import type {
   ForgotPasswordDto,
   LoginDto,
@@ -8,8 +8,8 @@ import type {
   ResetPasswordDto,
   User,
   VerifyEmailDto,
-} from '../types';
-import { apiClient } from '../utils/api-client';
+} from '@/types';
+import { apiClient } from '@/utils/api-client';
 
 class AuthService {
   /**

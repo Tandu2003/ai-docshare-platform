@@ -4,11 +4,11 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { useAuth } from '../../hooks';
-import { type LoginFormData, loginSchema } from '../../schemas';
-import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { FormField } from '../ui/form-field';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { useAuth } from '@/hooks';
+import { type LoginFormData, loginSchema } from '@/schemas';
 
 interface LoginFormProps {
   onSuccess?: () => void;

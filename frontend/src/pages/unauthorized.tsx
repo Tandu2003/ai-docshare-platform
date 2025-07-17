@@ -2,7 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../components/ui/button';
+import { Button } from '@/components/ui/button';
 
 export const UnauthorizedPage: React.FC = () => {
   const navigate = useNavigate();

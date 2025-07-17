@@ -2,7 +2,6 @@ import { FileText, LogOut, Settings, User } from 'lucide-react';
 
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 
-import { useAuth } from '../../hooks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '../ui/alert-dialog';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Button } from '../ui/button';
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +22,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks';
 
 export const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();

@@ -6,8 +6,8 @@ import type {
   InternalAxiosRequestConfig,
 } from 'axios';
 
-import { API_CONFIG, HTTP_STATUS, STORAGE_KEYS } from '../config';
-import type { ApiResponse } from '../types';
+import { API_CONFIG, HTTP_STATUS, STORAGE_KEYS } from '@/config';
+import type { ApiResponse } from '@/types';
 
 class ApiClient {
   private client: AxiosInstance;
