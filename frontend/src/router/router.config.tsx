@@ -1,17 +1,11 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 
-import { MainLayout, ProtectedRoute } from '@/components/layout';
+import { MainLayout, ProtectedRoute } from '@/components/layout'
 import {
-  DashboardPage,
-  ForgotPasswordPage,
-  LoginPage,
-  NotFoundPage,
-  RegisterPage,
-  ResendVerificationPage,
-  ResetPasswordPage,
-  UnauthorizedPage,
-  VerifyEmailPage,
-} from '@/pages';
+    DashboardPage, ForgotPasswordPage, LoginPage, NotFoundPage, RegisterPage,
+    ResendVerificationPage, ResetPasswordPage, UnauthorizedPage, VerifyEmailPage
+} from '@/pages'
+import { UploadPage } from '@/pages/UploadPage'
 
 export const router = createBrowserRouter([
   // Redirect root to dashboard
@@ -123,11 +117,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'upload',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500 text-lg">Upload Page - Coming Soon</p>
-          </div>
-        ),
+        element: <UploadPage />,
       },
       {
         path: 'profile',

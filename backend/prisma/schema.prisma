@@ -50,6 +50,7 @@ model User {
   // Relations
   role                   Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
   documents              Document[]             @relation("DocumentUploader")
+  uploadedFiles          File[]                 @relation("FileUploader")
   ratings                Rating[]
   comments               Comment[]
   searches               SearchHistory[]
@@ -113,6 +114,7 @@ model Document {
   thumbnailPath String?
   uploaderId    String
   categoryId    String
+  fileId        String?  // Reference to File model
   downloadCount Int      @default(0)
   viewCount     Int      @default(0)
   averageRating Float    @default(0)
@@ -130,6 +132,7 @@ model Document {
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
   category        Category               @relation(fields: [categoryId], references: [id])
+  file            File?                  @relation("DocumentFile", fields: [fileId], references: [id])
   ratings         Rating[]
   comments        Comment[]
   aiAnalysis      AIAnalysis?
@@ -143,6 +146,7 @@ model Document {
   // Indexes
   @@index([uploaderId])
   @@index([categoryId])
+  @@index([fileId])
   @@index([isPublic])
   @@index([isApproved])
   @@index([isDraft])
@@ -498,6 +502,37 @@ model ActivityLog {
   @@index([createdAt])
   @@index([ipAddress])
   @@map("activity_logs")
+}
+
+// ================================
+// FILE STORAGE
+// ================================
+
+model File {
+  id          String   @id @default(cuid())
+  originalName String  // Original filename
+  fileName    String   // Stored filename (unique)
+  mimeType    String   // MIME type of the file
+  fileSize    BigInt   // File size in bytes
+  fileHash    String   @unique // SHA-256 hash for duplicate detection
+  storageUrl  String   // Cloudflare R2 URL
+  thumbnailUrl String? // Thumbnail URL if applicable
+  uploaderId  String   // User who uploaded the file
+  isPublic    Boolean  @default(false) // Whether file is publicly accessible
+  metadata    Json     @default("{}") // Additional metadata (dimensions, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  uploader  User       @relation("FileUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  documents Document[] @relation("DocumentFile")
+
+  // Indexes
+  @@index([uploaderId])
+  @@index([mimeType])
+  @@index([fileHash])
+  @@index([createdAt])
+  @@map("files")
 }
 
 // ================================
