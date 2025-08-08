@@ -1,12 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
+import { FormFieldPassword } from '@/components/ui/form-field-password';
 import { useAuth } from '@/hooks';
 import { type RegisterFormData, registerSchema } from '@/schemas';
 
@@ -16,13 +17,14 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin }) => {
-  const { register: registerUser, isLoading } = useAuth();
+  const { register: registerUser } = useAuth();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -30,6 +32,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   });
 
   const onSubmit = async (data: RegisterFormData) => {
+    setIsSubmitting(true);
     try {
       const result = await registerUser({
         email: data.email,
@@ -47,6 +50,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
     } catch (err) {
       // Error is handled by Redux and toast
       console.error('Registration failed:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -65,6 +70,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               placeholder="John"
               {...register('firstName')}
               error={errors.firstName?.message}
+              disabled={isSubmitting}
             />
 
             <FormField
@@ -73,6 +79,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               placeholder="Doe"
               {...register('lastName')}
               error={errors.lastName?.message}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -82,6 +89,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             placeholder="john.doe@example.com"
             {...register('email')}
             error={errors.email?.message}
+            disabled={isSubmitting}
           />
 
           <FormField
@@ -90,26 +98,27 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             placeholder="johndoe"
             {...register('username')}
             error={errors.username?.message}
+            disabled={isSubmitting}
           />
 
-          <FormField
+          <FormFieldPassword
             label="Password"
-            type="password"
             placeholder="Enter your password"
             {...register('password')}
             error={errors.password?.message}
+            disabled={isSubmitting}
           />
 
-          <FormField
+          <FormFieldPassword
             label="Confirm Password"
-            type="password"
             placeholder="Confirm your password"
             {...register('confirmPassword')}
             error={errors.confirmPassword?.message}
+            disabled={isSubmitting}
           />
 
-          <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
-            {isLoading || isSubmitting ? 'Creating account...' : 'Create Account'}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create Account'}
           </Button>
 
           {onSwitchToLogin && (
@@ -121,6 +130,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
                   variant="link"
                   className="p-0 h-auto"
                   onClick={onSwitchToLogin}
+                  disabled={isSubmitting}
                 >
                   Sign in
                 </Button>
