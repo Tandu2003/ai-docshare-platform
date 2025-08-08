@@ -123,6 +123,23 @@ const authSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
+    // Handle automatic logout from API client
+    handleAutoLogout: (state) => {
+      state.user = null;
+      state.accessToken = null;
+      state.isAuthenticated = false;
+      toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    },
+    // Set access token (for API client use)
+    setAccessToken: (state, action: PayloadAction<string>) => {
+      state.accessToken = action.payload;
+      state.isAuthenticated = !!(state.accessToken && state.user);
+    },
+    // Clear access token (for API client use)
+    clearAccessToken: (state) => {
+      state.accessToken = null;
+      state.isAuthenticated = false;
+    },
   },
   extraReducers: (builder) => {
     // Register
@@ -200,6 +217,7 @@ const authSlice = createSlice({
     builder
       .addCase(refreshToken.fulfilled, (state, action) => {
         state.accessToken = action.payload;
+        state.isAuthenticated = !!(state.accessToken && state.user);
       })
       .addCase(refreshToken.rejected, (state) => {
         // Clear auth on token refresh failure
@@ -235,7 +253,14 @@ const authSlice = createSlice({
 });
 
 // Export actions
-export const { setUser, clearAuth, setLoading } = authSlice.actions;
+export const {
+  setUser,
+  clearAuth,
+  setLoading,
+  handleAutoLogout,
+  setAccessToken,
+  clearAccessToken,
+} = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;
@@ -245,3 +270,4 @@ export const selectAuth = (state: { auth: AuthState }) => state.auth;
 export const selectUser = (state: { auth: AuthState }) => state.auth.user;
 export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
 export const selectIsLoading = (state: { auth: AuthState }) => state.auth.isLoading;
+export const selectAccessToken = (state: { auth: AuthState }) => state.auth.accessToken;
