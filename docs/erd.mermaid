@@ -1,0 +1,330 @@
+erDiagram
+    %% ================================
+    %% AUTHENTICATION & AUTHORIZATION
+    %% ================================
+
+    Role {
+        string id PK
+        string name UK
+        string description
+        json permissions
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    User {
+        string id PK
+        string email
+        string email UK
+        string username
+        string username UK
+        string password
+        string firstName
+        string lastName
+        string avatar
+        string bio
+        string roleId FK
+        boolean isVerified
+        boolean isActive
+        datetime lastLoginAt
+        string resetToken
+        datetime resetExpires
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    %% ================================
+    %% DOCUMENT MANAGEMENT
+    %% ================================
+
+    Category {
+        string id PK
+        string name
+        string name UK
+        string description
+        string icon
+        string color
+        string parentId FK
+        boolean isActive
+        int documentCount
+        int sortOrder
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Document {
+        string id PK
+        string title
+        string description
+        string fileName
+        bigint fileSize
+        string mimeType
+        string filePath
+        string thumbnailPath
+        string uploaderId FK
+        string categoryId FK
+        int downloadCount
+        int viewCount
+        float averageRating
+        int totalRatings
+        boolean isPublic
+        boolean isPremium
+        boolean isApproved
+        boolean isDraft
+        string[] tags
+        string language
+        string fileHash
+        string fileHash UK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    %% ================================
+    %% INTERACTION & ENGAGEMENT
+    %% ================================
+
+    Rating {
+        string id PK
+        string userId FK
+        string documentId FK
+        int rating
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Comment {
+        string id PK
+        string userId FK
+        string documentId FK
+        string parentId FK
+        string content
+        boolean isEdited
+        boolean isDeleted
+        int likesCount
+        datetime editedAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    CommentLike {
+        string id PK
+        string userId FK
+        string commentId FK
+        datetime createdAt
+    }
+
+    %% ================================
+    %% AI & ANALYTICS
+    %% ================================
+
+    AIAnalysis {
+        string id PK
+        string documentId FK
+        string documentId UK
+        string summary
+        string[] keyPoints
+        string[] suggestedTags
+        string difficulty
+        int readingTime
+        string language
+        float confidence
+        float sentimentScore
+        json topicModeling
+        json namedEntities
+        datetime processedAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    SearchHistory {
+        string id PK
+        string userId FK
+        string query
+        json filters
+        int resultsCount
+        string clickedDocumentId FK
+        string searchVector
+        string sessionId
+        string ipAddress
+        string userAgent
+        datetime searchedAt
+    }
+
+    RecommendationEngine {
+        string id PK
+        string userId FK
+        string documentId FK
+        float score
+        string reason
+        string algorithm
+        json metadata
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    %% ================================
+    %% USER EXPERIENCE
+    %% ================================
+
+    Notification {
+        string id PK
+        string userId FK
+        string type
+        string title
+        string message
+        json data
+        boolean isRead
+        datetime readAt
+        datetime createdAt
+    }
+
+    BookmarkFolder {
+        string id PK
+        string userId FK
+        string name
+        string description
+        boolean isDefault
+        int sortOrder
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Bookmark {
+        string id PK
+        string userId FK
+        string documentId FK
+        string folderId FK
+        string notes
+        datetime createdAt
+    }
+
+    Download {
+        string id PK
+        string userId FK
+        string documentId FK
+        string ipAddress
+        string userAgent
+        string referrer
+        datetime downloadedAt
+    }
+
+    %% ================================
+    %% COLLABORATION & MODERATION
+    %% ================================
+
+    Collaboration {
+        string id PK
+        string documentId FK
+        string senderId FK
+        string receiverId FK
+        enum type
+        enum status
+        string message
+        string[] permissions
+        datetime expiresAt
+        datetime respondedAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Report {
+        string id PK
+        string reporterId FK
+        string reportedUserId FK
+        string documentId FK
+        enum type
+        string reason
+        string description
+        enum status
+        string adminNotes
+        datetime resolvedAt
+        string resolvedById
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    %% ================================
+    %% SYSTEM ADMINISTRATION
+    %% ================================
+
+    SystemSetting {
+        string id PK
+        string key
+        string key UK
+        string value
+        string type
+        string description
+        boolean isPublic
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    ActivityLog {
+        string id PK
+        string userId FK
+        string action
+        string resourceType
+        string resourceId
+        string ipAddress
+        string userAgent
+        json metadata
+        datetime createdAt
+    }
+
+    %% ================================
+    %% RELATIONSHIPS
+    %% ================================
+
+    %% User & Role
+    Role ||--o{ User : "has"
+
+    %% Category Hierarchy
+    Category ||--o{ Category : "parent/child"
+    Category ||--o{ Document : "contains"
+
+    %% Document Relationships
+    User ||--o{ Document : "uploads"
+    Document ||--o{ Rating : "receives"
+    Document ||--o{ Comment : "has"
+    Document ||--o{ AIAnalysis : "analyzed_by"
+    Document ||--o{ SearchHistory : "clicked_in"
+    Document ||--o{ RecommendationEngine : "recommended_in"
+    Document ||--o{ Bookmark : "bookmarked_in"
+    Document ||--o{ Download : "downloaded_in"
+    Document ||--o{ Collaboration : "shared_in"
+    Document ||--o{ Report : "reported_in"
+
+    %% User Relationships
+    User ||--o{ Rating : "gives"
+    User ||--o{ Comment : "writes"
+    User ||--o{ CommentLike : "likes"
+    User ||--o{ SearchHistory : "performs"
+    User ||--o{ RecommendationEngine : "receives"
+    User ||--o{ Notification : "receives"
+    User ||--o{ BookmarkFolder : "creates"
+    User ||--o{ Bookmark : "creates"
+    User ||--o{ Download : "performs"
+    User ||--o{ Collaboration : "sends"
+    User ||--o{ Collaboration : "receives"
+    User ||--o{ Report : "reports"
+    User ||--o{ Report : "reported_by"
+    User ||--o{ ActivityLog : "performs"
+
+    %% Comment Relationships
+    Comment ||--o{ Comment : "replies_to"
+    Comment ||--o{ CommentLike : "liked_by"
+
+    %% Bookmark Relationships
+    BookmarkFolder ||--o{ Bookmark : "contains"
+
+    %% Unique Constraints
+    Rating }|--|| User : "unique_user_document"
+    Rating }|--|| Document : "unique_user_document"
+    Bookmark }|--|| User : "unique_user_document"
+    Bookmark }|--|| Document : "unique_user_document"
+    CommentLike }|--|| User : "unique_user_comment"
+    CommentLike }|--|| Comment : "unique_user_comment"
+    AIAnalysis }|--|| Document : "unique_document"
+    RecommendationEngine }|--|| User : "unique_user_document_algorithm"
+    RecommendationEngine }|--|| Document : "unique_user_document_algorithm"
