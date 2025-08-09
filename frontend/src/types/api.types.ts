@@ -1,9 +1,9 @@
 // Base API Response Interface
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
-  error?: any;
+  error?: unknown;
   meta?: {
     timestamp: string;
     page?: number;
@@ -25,7 +25,7 @@ export interface PaginationMeta {
 export interface ErrorResponse {
   success: false;
   message: string;
-  error?: any;
+  error?: unknown;
   meta: {
     timestamp: string;
   };
