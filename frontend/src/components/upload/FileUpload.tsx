@@ -1,17 +1,18 @@
-import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react'
-import React, { useCallback, useRef, useState } from 'react'
+import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
-import { FileUploadResponse, UploadFileData, UploadService } from '@/services/upload.service'
+import React, { useCallback, useRef, useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { FileUploadResponse, UploadFileData, UploadService } from '@/services/upload.service';
 
 interface FileUploadProps {
   onUploadComplete?: (results: FileUploadResponse[]) => void;
@@ -64,6 +65,35 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       });
   }, []);
 
+  // Process files helper function wrapped in useCallback to avoid recreation
+  const handleFiles = useCallback(
+    (newFiles: File[]) => {
+      const processedFiles: FileWithMetadata[] = newFiles.map((file) => ({
+        file,
+        id: Math.random().toString(36).substring(7),
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      }));
+
+      // Validate files only if allowed types are loaded
+      if (allowedTypesLoaded) {
+        processedFiles.forEach((fileWithMetadata) => {
+          const error = UploadService.validateFile(fileWithMetadata.file, allowedTypes);
+          if (error) {
+            fileWithMetadata.error = error;
+          }
+        });
+      }
+
+      if (multiple) {
+        setFiles((prev) => [...prev, ...processedFiles]);
+      } else {
+        setFiles(processedFiles.slice(0, 1));
+      }
+    },
+    [allowedTypes, allowedTypesLoaded, multiple]
+  );
+
+  // Handle drag events
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -74,45 +104,29 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  // Handle drop events
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(Array.from(e.dataTransfer.files));
-    }
-  }, []);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFiles(Array.from(e.dataTransfer.files));
+      }
+    },
+    [handleFiles]
+  );
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleFiles(Array.from(e.target.files));
-    }
-  };
-
-  const handleFiles = (newFiles: File[]) => {
-    const processedFiles: FileWithMetadata[] = newFiles.map((file) => ({
-      file,
-      id: Math.random().toString(36).substring(7),
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-    }));
-
-    // Validate files only if allowed types are loaded
-    if (allowedTypesLoaded) {
-      processedFiles.forEach((fileWithMetadata) => {
-        const error = UploadService.validateFile(fileWithMetadata.file, allowedTypes);
-        if (error) {
-          fileWithMetadata.error = error;
-        }
-      });
-    }
-
-    if (multiple) {
-      setFiles((prev) => [...prev, ...processedFiles]);
-    } else {
-      setFiles(processedFiles.slice(0, 1));
-    }
-  };
+  // Handle file input
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        handleFiles(Array.from(e.target.files));
+      }
+    },
+    [handleFiles]
+  );
 
   const removeFile = (fileId: string) => {
     setFiles((prev) => {
@@ -153,40 +167,96 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
     setUploading(true);
 
+    // Update files with progress indicators
+    setFiles((prev) => prev.map((f) => (!f.error ? { ...f, progress: 0 } : f)));
+
     try {
       // Extract File objects from FileWithMetadata
       const fileObjects = validFiles.map((f) => f.file);
       console.log({ fileObjects });
-      let results: FileUploadResponse[];
 
-      if (multiple) {
-        console.log('Uploading multiple files...');
-        results = await UploadService.uploadMultipleFiles(fileObjects, uploadData);
-      } else {
-        console.log('Uploading single file...');
-        const singleResult = await UploadService.uploadSingleFile(fileObjects[0], uploadData);
-        results = [singleResult];
+      // Use the unified upload method with progress tracking
+      console.log('Uploading files...');
+
+      // Set initial progress
+      const fileProgresses = new Map<string, number>();
+      validFiles.forEach((f) => fileProgresses.set(f.id, 5)); // Start at 5%
+
+      // Update progress periodically to show activity
+      const progressInterval = setInterval(() => {
+        setFiles((prev) =>
+          prev.map((f) => {
+            if (!f.error && !f.uploaded && fileProgresses.has(f.id)) {
+              const currentProgress = fileProgresses.get(f.id) || 0;
+              // Simulate gradual progress up to 90% (the last 10% when complete)
+              const newProgress = Math.min(90, currentProgress + 5);
+              fileProgresses.set(f.id, newProgress);
+              return { ...f, progress: newProgress };
+            }
+            return f;
+          })
+        );
+      }, 500);
+
+      try {
+        // Perform the upload
+        const uploadResult = await UploadService.uploadFiles(fileObjects, uploadData);
+
+        // Clear the progress interval
+        clearInterval(progressInterval);
+
+        // Convert to array if single result
+        const results: FileUploadResponse[] = Array.isArray(uploadResult)
+          ? uploadResult
+          : [uploadResult];
+
+        console.log('Upload successful:', results);
+
+        // Mark files as uploaded
+        setFiles((prev) => prev.map((f) => ({ ...f, uploaded: true, progress: 100 })));
+
+        onUploadComplete?.(results);
+
+        // Reset form after successful upload
+        setTimeout(() => {
+          setFiles([]);
+          setUploadData({ isPublic: true, language: 'en', tags: [] });
+        }, 2000);
+      } catch (error) {
+        // This shouldn't normally happen since uploadFiles already handles errors
+        // but just in case there's an uncaught exception
+        clearInterval(progressInterval);
+        throw error; // Re-throw to be caught by the outer catch block
       }
-
-      console.log('Upload successful:', results);
-
-      // Mark files as uploaded
-      setFiles((prev) => prev.map((f) => ({ ...f, uploaded: true, progress: 100 })));
-
-      onUploadComplete?.(results);
-
-      // Reset form after successful upload
-      setTimeout(() => {
-        setFiles([]);
-        setUploadData({ isPublic: true, language: 'en', tags: [] });
-      }, 2000);
     } catch (error) {
       console.error('Upload error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+
+      // Extract a user-friendly error message
+      let errorMessage: string;
+
+      if (error instanceof Error) {
+        // Try to determine if it's an R2 error vs database error
+        if (error.message.includes('database') || error.message.includes('prisma')) {
+          errorMessage =
+            'Your file was uploaded to the cloud, but there was an issue saving its information. Please contact support.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage =
+            'The upload timed out. Please try again with a smaller file or check your network connection.';
+        } else if (error.message.includes('Upload failed:')) {
+          // Keep the specific error message from the server
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message || 'Upload failed';
+        }
+      } else {
+        errorMessage = 'Upload failed due to an unknown error';
+      }
+
+      console.log('Showing error to user:', errorMessage);
       onUploadError?.(errorMessage);
 
       // Mark files with errors
-      setFiles((prev) => prev.map((f) => ({ ...f, error: errorMessage })));
+      setFiles((prev) => prev.map((f) => ({ ...f, error: errorMessage, progress: undefined })));
     } finally {
       setUploading(false);
     }

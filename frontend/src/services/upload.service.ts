@@ -1,10 +1,6 @@
-import { api } from '@/config/api'
-
-interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  status?: string;
-}
+import { api } from '@/config/api';
+// Using the standard API response interface
+import { ApiResponse } from '@/types/api.types';
 
 export interface UploadFileData {
   title?: string;
@@ -53,41 +49,12 @@ export interface FilesListResponse {
 
 export class UploadService {
   /**
-   * Upload a single file
+   * Upload files (single or multiple)
    */
-  static async uploadSingleFile(
-    file: File,
-    data: UploadFileData = {}
-  ): Promise<FileUploadResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    // Append other data
-    if (data.title) formData.append('title', data.title);
-    if (data.description) formData.append('description', data.description);
-    if (data.categoryId) formData.append('categoryId', data.categoryId);
-    if (data.isPublic !== undefined) formData.append('isPublic', String(data.isPublic));
-    if (data.language) formData.append('language', data.language);
-    if (data.tags) {
-      data.tags.forEach((tag) => formData.append('tags[]', tag));
-    }
-
-    const response = await api.post<ApiResponse<FileUploadResponse>>('/upload/single', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    return response.data!.data;
-  }
-
-  /**
-   * Upload multiple files
-   */
-  static async uploadMultipleFiles(
+  static async uploadFiles(
     files: File[],
     data: UploadFileData = {}
-  ): Promise<FileUploadResponse[]> {
+  ): Promise<FileUploadResponse[] | FileUploadResponse> {
     const formData = new FormData();
 
     // Append files
@@ -105,17 +72,87 @@ export class UploadService {
       data.tags.forEach((tag) => formData.append('tags[]', tag));
     }
 
-    const response = await api.post<ApiResponse<FileUploadResponse[]>>(
-      '/upload/multiple',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    try {
+      console.log('Uploading files to server:', {
+        fileCount: files.length,
+        totalSize: files.reduce((sum, file) => sum + file.size, 0),
+        files: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
+      });
 
-    return response.data!.data;
+      const response = await api.post<FileUploadResponse[] | FileUploadResponse>(
+        '/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          // Increase timeout for large files
+          timeout: 60000 * 2, // 2 minutes
+        }
+      );
+
+      console.log('Upload response received:', response.data);
+      console.log({ response });
+      // Check if response is successful based on the success flag
+      if (!response.data || !response.success) {
+        const errorMessage = response.message || 'Invalid response from server';
+        console.error('Upload failed despite 201 status code:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in upload service:', error);
+
+      // Handle specific error types
+      if (error instanceof Error) {
+        // Just rethrow if we've already created a specific error
+        throw error;
+      }
+
+      // Enhance error message with details from the server for axios errors
+      const axiosError = error as { response?: { data?: { message?: string; error?: string } } };
+      if (axiosError.response?.data?.message) {
+        throw new Error(`Upload failed: ${axiosError.response.data.message}`);
+      } else if (axiosError.response?.data?.error) {
+        throw new Error(`Upload failed: ${axiosError.response.data.error}`);
+      }
+
+      // Generic error
+      throw new Error('File upload failed. Please try again.');
+    }
+  }
+
+  /**
+   * Upload a single file (for backward compatibility)
+   */
+  static async uploadSingleFile(
+    file: File,
+    data: UploadFileData = {}
+  ): Promise<FileUploadResponse> {
+    try {
+      const result = await this.uploadFiles([file], data);
+      return Array.isArray(result) ? result[0] : result;
+    } catch (error) {
+      console.error('Error in uploadSingleFile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload multiple files (for backward compatibility)
+   */
+  static async uploadMultipleFiles(
+    files: File[],
+    data: UploadFileData = {}
+  ): Promise<FileUploadResponse[]> {
+    try {
+      const result = await this.uploadFiles(files, data);
+      return Array.isArray(result) ? result : [result];
+    } catch (error) {
+      console.error('Error in uploadMultipleFiles:', error);
+      throw error;
+    }
   }
 
   /**
@@ -135,55 +172,110 @@ export class UploadService {
       params.append('mimeType', mimeType);
     }
 
-    const response = await api.get<ApiResponse<FilesListResponse>>(`/upload/my-files?${params}`);
-    return response.data!.data;
+    try {
+      const response = await api.get<FilesListResponse>(`/upload/my-files?${params}`);
+
+      if (!response.data || !response.success) {
+        throw new Error(response.message || 'Failed to fetch user files');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user files:', error);
+      throw error instanceof Error ? error : new Error('Failed to fetch user files');
+    }
   }
 
   /**
    * Get file details
    */
   static async getFile(fileId: string): Promise<UploadedFile> {
-    const response = await api.get<ApiResponse<UploadedFile>>(`/upload/file/${fileId}`);
-    return response.data!.data;
+    try {
+      const response = await api.get<UploadedFile>(`/upload/file/${fileId}`);
+
+      if (!response.data || !response.success) {
+        throw new Error(response.message || 'Failed to fetch file details');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching file with ID ${fileId}:`, error);
+      throw error instanceof Error ? error : new Error('Failed to fetch file details');
+    }
   }
 
   /**
    * Get download URL
    */
   static async getDownloadUrl(fileId: string): Promise<string> {
-    const response = await api.get<ApiResponse<{ downloadUrl: string }>>(
-      `/upload/download/${fileId}`
-    );
-    return response.data!.data.downloadUrl;
+    try {
+      const response = await api.get<ApiResponse<{ downloadUrl: string }>>(
+        `/upload/download/${fileId}`
+      );
+
+      if (!response.data || !response.data.success || !response.data.data?.downloadUrl) {
+        throw new Error(response.data?.message || 'Failed to get download URL');
+      }
+
+      return response.data.data.downloadUrl;
+    } catch (error) {
+      console.error(`Error getting download URL for file ${fileId}:`, error);
+      throw error instanceof Error ? error : new Error('Failed to get download URL');
+    }
   }
 
   /**
    * Delete file
    */
   static async deleteFile(fileId: string): Promise<void> {
-    await api.delete(`/upload/file/${fileId}`);
+    try {
+      const response = await api.delete<ApiResponse<void>>(`/upload/file/${fileId}`);
+
+      if (!response.data || !response.data.success) {
+        throw new Error(response.data?.message || 'Failed to delete file');
+      }
+    } catch (error) {
+      console.error(`Error deleting file ${fileId}:`, error);
+      throw error instanceof Error ? error : new Error('Failed to delete file');
+    }
   }
 
   /**
    * Get allowed file types
    */
   static async getAllowedTypes(): Promise<string[]> {
-    const response =
-      await api.get<ApiResponse<{ allowedTypes: string[] }>>('/upload/allowed-types');
-    return response.data!.data.allowedTypes;
+    try {
+      const response =
+        await api.get<ApiResponse<{ allowedTypes: string[] }>>('/upload/allowed-types');
+
+      if (!response.data || !response.data.success || !response.data.data?.allowedTypes) {
+        throw new Error(response.data?.message || 'Failed to get allowed file types');
+      }
+
+      return response.data.data.allowedTypes;
+    } catch (error) {
+      console.error('Error getting allowed file types:', error);
+      // Return empty array as fallback to allow all file types
+      console.warn('Defaulting to accept all file types');
+      return [];
+    }
   }
 
   /**
    * Format file size
+   * Can handle number or string input (for BigInt string values)
    */
-  static formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
+  static formatFileSize(bytes: number | string): string {
+    // Convert string to number if needed
+    const bytesNum = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
+
+    if (bytesNum === 0 || isNaN(bytesNum)) return '0 Bytes';
 
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const i = Math.floor(Math.log(bytesNum) / Math.log(k));
 
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytesNum / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   /**
