@@ -1,17 +1,29 @@
-import { Request, Response } from 'express'
+import { Request, Response } from 'express';
 
 import {
-    BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Req, Res,
-    UploadedFile, UploadedFiles, UseGuards, UseInterceptors
-} from '@nestjs/common'
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
-import { ResponseHelper } from '../common/helpers/response.helper'
-import { CloudflareR2Service } from './cloudflare-r2.service'
-import { UploadFileDto } from './dto/upload-file.dto'
-import { UploadService } from './upload.service'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { CloudflareR2Service } from './cloudflare-r2.service';
+import { UploadFileDto } from './dto/upload-file.dto';
+import { UploadService } from './upload.service';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -30,44 +42,8 @@ export class UploadController {
     private readonly r2Service: CloudflareR2Service
   ) {}
 
-  @Post('single')
-  @ApiOperation({ summary: 'Upload a single file' })
-  @ApiConsumes('multipart/form-data')
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'File uploaded successfully',
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB
-      },
-    })
-  )
-  async uploadSingleFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() uploadData: UploadFileDto,
-    @Req() req: AuthenticatedRequest,
-    @Res() res: Response
-  ) {
-    const userId = req.user.id;
-
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-
-    // Transform isPublic from string to boolean if needed
-    if (typeof uploadData.isPublic === 'string') {
-      uploadData.isPublic = uploadData.isPublic === 'true';
-    }
-
-    const result = await this.uploadService.uploadSingleFile(file, uploadData, userId);
-
-    return ResponseHelper.success(res, result, 'File uploaded successfully', HttpStatus.CREATED);
-  }
-
-  @Post('multiple')
-  @ApiOperation({ summary: 'Upload multiple files' })
+  @Post()
+  @ApiOperation({ summary: 'Upload files' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -80,7 +56,7 @@ export class UploadController {
       },
     })
   )
-  async uploadMultipleFiles(
+  async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() uploadData: UploadFileDto,
     @Req() req: AuthenticatedRequest,
@@ -92,15 +68,67 @@ export class UploadController {
       throw new BadRequestException('No files provided');
     }
 
-    // Transform isPublic from string to boolean if needed
-    if (typeof uploadData.isPublic === 'string') {
-      uploadData.isPublic = uploadData.isPublic === 'true';
-      console.log(`Transformed isPublic to boolean: ${uploadData.isPublic}`);
+    try {
+      // Transform isPublic from string to boolean if needed
+      if (typeof uploadData.isPublic === 'string') {
+        uploadData.isPublic = uploadData.isPublic === 'true';
+      }
+
+      console.log('Processing files upload with data:', {
+        files: files.map((f) => ({ name: f.originalname, size: f.size, type: f.mimetype })),
+        uploadData,
+      });
+
+      // Process single file or multiple files based on the number of files
+      let result;
+      if (files.length === 1) {
+        // Single file upload
+        result = await this.uploadService.uploadSingleFile(files[0], uploadData, userId);
+      } else {
+        // Multiple files upload
+        result = await this.uploadService.uploadMultipleFiles(files, uploadData, userId);
+      }
+
+      console.log('Upload completed successfully');
+      return ResponseHelper.success(res, result, 'Files uploaded successfully', HttpStatus.CREATED);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+
+      // Check if it's a BigInt serialization error
+      if (
+        error instanceof Error &&
+        error.message.includes('BigInt') &&
+        error.message.includes('serialize')
+      ) {
+        console.error('BigInt serialization error detected');
+
+        // Log the error details
+        console.error(error);
+
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          status: 'error',
+          message: 'Error processing large file sizes',
+          details: 'There was an issue handling the file size data',
+        });
+      }
+
+      // Send a more user-friendly error response
+      if (error instanceof BadRequestException) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: 'error',
+          message: error.message,
+        });
+      }
+
+      // For all other errors, send a 500 with some details
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: 'error',
+        message: 'An error occurred while processing your upload',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
 
-    const results = await this.uploadService.uploadMultipleFiles(files, uploadData, userId);
-
-    return ResponseHelper.success(res, results, 'Files uploaded successfully', HttpStatus.CREATED);
+    // This code is no longer used as we've consolidated the endpoints
   }
 
   @Get('my-files')
@@ -182,7 +210,7 @@ export class UploadController {
     status: HttpStatus.OK,
     description: 'Allowed file types retrieved successfully',
   })
-  async getAllowedTypes(@Res() res: Response) {
+  getAllowedTypes(@Res() res: Response) {
     const allowedTypes = this.r2Service.getAllowedDocumentTypes();
 
     return ResponseHelper.success(

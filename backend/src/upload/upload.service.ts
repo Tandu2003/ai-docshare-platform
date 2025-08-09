@@ -30,31 +30,43 @@ export class UploadService {
     uploadData: UploadFileDto,
     userId: string
   ): Promise<FileResult> {
-    // Validate file
-    this.validateFile(file);
-
-    // Check for duplicates by hash
-    const fileHash = this.r2Service.generateFileHash(file.buffer);
-    const existingFile = await this.prisma.file.findUnique({
-      where: { fileHash },
-    });
-
-    if (existingFile) {
-      this.logger.warn(`Duplicate file detected: ${file.originalname}`);
-      // Return existing file instead of uploading again
-      return { file: existingFile };
-    }
-
     try {
+      // Validate file
+      this.validateFile(file);
+
+      this.logger.log(`Starting upload for file: ${file.originalname} (${file.size} bytes)`);
+
+      // Check for duplicates by hash
+      const fileHash = this.r2Service.generateFileHash(file.buffer);
+      const existingFile = await this.prisma.file.findUnique({
+        where: { fileHash },
+      });
+
+      if (existingFile) {
+        this.logger.warn(`Duplicate file detected: ${file.originalname}`);
+        // Return existing file instead of uploading again
+        return { file: existingFile };
+      }
+
       // Upload to R2
       const keyPrefix = `uploads/${userId}/`;
       const uniqueKey = this.generateUniqueKey(keyPrefix, file.originalname);
+
+      this.logger.log(`Uploading to R2 with key: ${uniqueKey}`);
+
       const uploadResult = await this.r2Service.uploadFile(file, uniqueKey, {
         uploaderId: userId,
         originalName: file.originalname,
       });
 
+      this.logger.log(`File uploaded to R2 successfully: ${uploadResult.url}`);
+
       // Create file record in database
+      this.logger.log(`Creating database record for file: ${file.originalname}`);
+
+      // Store file size as BigInt but add string size for easier serialization
+      const fileSizeString = file.size.toString();
+
       const fileRecord = await this.prisma.file.create({
         data: {
           originalName: file.originalname,
@@ -68,13 +80,19 @@ export class UploadService {
           metadata: {
             uploadedAt: new Date().toISOString(),
             userAgent: 'web-upload',
+            fileSizeString: fileSizeString, // Store as string for serialization
           },
         },
       });
 
+      // Convert BigInt to string before logging
+      this.logger.log(`Database record created for file: ${fileRecord.id}`);
+
       // Create document record if document data is provided
       let documentRecord;
       if (uploadData.title || uploadData.description || uploadData.categoryId) {
+        this.logger.log(`Creating document record for file: ${file.originalname}`);
+
         const defaultCategory = await this.getOrCreateDefaultCategory();
 
         documentRecord = await this.prisma.document.create({
@@ -82,7 +100,7 @@ export class UploadService {
             title: uploadData.title || file.originalname,
             description: uploadData.description,
             fileName: file.originalname,
-            fileSize: BigInt(file.size),
+            fileSize: BigInt(file.size), // Keep BigInt for database
             mimeType: file.mimetype,
             filePath: uploadResult.url,
             uploaderId: userId,
@@ -94,15 +112,32 @@ export class UploadService {
             fileHash,
           },
         });
+
+        this.logger.log(`Document record created: ${documentRecord.id}`);
       }
 
       this.logger.log(`File uploaded successfully: ${file.originalname} by user ${userId}`);
       return { file: fileRecord, document: documentRecord };
     } catch (error) {
       this.logger.error(
-        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error instanceof Error ? error.stack : ''
+        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+
+      if (error instanceof Error) {
+        this.logger.error(`Error stack: ${error.stack || 'No stack trace available'}`);
+      }
+
+      // Check if the file was uploaded to R2 but database creation failed
+      if (error.message && error.message.includes('prisma')) {
+        this.logger.error('Database error occurred after file was uploaded to R2');
+
+        // Try to handle specific Prisma errors
+        if (error.code) {
+          this.logger.error(`Prisma error code: ${error.code}`);
+        }
+      }
+
+      // Re-throw with more specific message
       throw new BadRequestException(
         `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

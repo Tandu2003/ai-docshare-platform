@@ -1,8 +1,38 @@
 import { Response } from 'express';
-import { ApiResponse, PaginationMeta, BaseMeta } from '../interfaces/api-response.interface';
-import { HTTP_STATUS, HTTP_MESSAGES } from '../constants/http.constants';
+
+import { HTTP_MESSAGES, HTTP_STATUS } from '../constants/http.constants';
+import { ApiResponse, BaseMeta, PaginationMeta } from '../interfaces/api-response.interface';
 
 export class ResponseHelper {
+  /**
+   * Convert BigInt values to strings to make them JSON-serializable
+   */
+  private static convertBigIntsToString(obj: any): any {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+
+    if (typeof obj === 'bigint') {
+      return obj.toString();
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.convertBigIntsToString(item));
+    }
+
+    if (typeof obj === 'object') {
+      const converted: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          converted[key] = this.convertBigIntsToString(obj[key]);
+        }
+      }
+      return converted;
+    }
+
+    return obj;
+  }
+
   /**
    * Success response
    */
@@ -12,10 +42,13 @@ export class ResponseHelper {
     message: string = HTTP_MESSAGES.SUCCESS,
     statusCode: number = HTTP_STATUS.OK
   ): Response<ApiResponse<T>> {
+    // Convert BigInt values to strings to make them JSON-serializable
+    const safeData = this.convertBigIntsToString(data);
+
     const response: ApiResponse<T> = {
       success: true,
       message,
-      data,
+      data: safeData as T,
       meta: this.createBaseMeta(),
     };
 

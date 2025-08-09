@@ -1,11 +1,15 @@
-import { createHash } from 'crypto'
+import { createHash } from 'crypto';
 
 import {
-    DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client
-} from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CloudflareR2Service {
@@ -47,30 +51,41 @@ export class CloudflareR2Service {
       this.logger.log('Testing Cloudflare R2 connection...');
       this.logger.log(`Bucket: ${this.bucketName}`);
       this.logger.log(`Endpoint: ${this.configService.get<string>('CLOUDFLARE_R2_ENDPOINT')}`);
-      
+
       // Try to list bucket to test credentials
       const { HeadBucketCommand, ListObjectsV2Command } = await import('@aws-sdk/client-s3');
-      
+
       // Test bucket access
       const headCommand = new HeadBucketCommand({
         Bucket: this.bucketName,
       });
-      
+
       await this.s3Client.send(headCommand);
       this.logger.log('Bucket access test successful');
-      
+
       // Test list permissions
       const listCommand = new ListObjectsV2Command({
         Bucket: this.bucketName,
         MaxKeys: 1,
       });
-      
+
       await this.s3Client.send(listCommand);
       this.logger.log('Cloudflare R2 connection and permissions successful');
-    } catch (error: any) {
-      this.logger.error(`Cloudflare R2 connection failed: ${error.message}`);
-      this.logger.error('Error code:', error.Code || 'Unknown');
-      this.logger.error('Error name:', error.name || 'Unknown');
+    } catch (error) {
+      this.logger.error(
+        `Cloudflare R2 connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      this.logger.error('Error details:', error);
+
+      if (typeof error === 'object' && error !== null) {
+        if ('Code' in error) {
+          this.logger.error('Error code:', error.Code || 'Unknown');
+        }
+        if ('name' in error) {
+          this.logger.error('Error name:', error.name || 'Unknown');
+        }
+      }
+
       this.logger.error('Please check your R2 credentials and bucket configuration');
     }
   }
@@ -86,7 +101,11 @@ export class CloudflareR2Service {
     try {
       this.logger.log(`Attempting to upload file: ${key} to bucket: ${this.bucketName}`);
       this.logger.debug(`File size: ${file.size}, mimetype: ${file.mimetype}`);
-      
+
+      if (!file.buffer || file.buffer.length === 0) {
+        throw new Error('File buffer is empty');
+      }
+
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
@@ -96,17 +115,28 @@ export class CloudflareR2Service {
         Metadata: metadata,
       });
 
-      this.logger.debug(`S3 Client config - Endpoint: ${this.s3Client.config.endpoint}`);
-      
       await this.s3Client.send(command);
       const url = `${this.publicUrl}/${key}`;
 
       this.logger.log(`File uploaded successfully: ${key}`);
       return { url, key };
     } catch (error) {
-      this.logger.error(`Failed to upload file: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       this.logger.error(`Error details:`, error);
-      throw new Error(`Failed to upload file: ${error.message}`);
+
+      if (error.code) {
+        this.logger.error(`AWS S3 Error Code: ${error.code}`);
+      }
+
+      if (error.$metadata) {
+        this.logger.error(`AWS S3 Metadata:`, error.$metadata);
+      }
+
+      throw new Error(
+        `Failed to upload file: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+      );
     }
   }
 
@@ -150,8 +180,14 @@ export class CloudflareR2Service {
 
       return await getSignedUrl(this.s3Client, command, { expiresIn });
     } catch (error) {
-      this.logger.error(`Failed to generate signed URL: ${error.message}`, error.stack);
-      throw new Error(`Failed to generate signed URL: ${error.message}`);
+      this.logger.error(
+        `Failed to generate signed URL: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      this.logger.error('Error details:', error);
+
+      throw new Error(
+        `Failed to generate signed URL: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+      );
     }
   }
 
@@ -168,8 +204,24 @@ export class CloudflareR2Service {
       await this.s3Client.send(command);
       this.logger.log(`File deleted successfully: ${key}`);
     } catch (error) {
-      this.logger.error(`Failed to delete file: ${error.message}`, error.stack);
-      throw new Error(`Failed to delete file: ${error.message}`);
+      this.logger.error(
+        `Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      this.logger.error('Error details:', error);
+
+      if (typeof error === 'object' && error !== null) {
+        if ('code' in error) {
+          this.logger.error(`AWS S3 Error Code: ${error.code}`);
+        }
+
+        if ('$metadata' in error) {
+          this.logger.error('AWS S3 Metadata:', error.$metadata);
+        }
+      }
+
+      throw new Error(
+        `Failed to delete file: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+      );
     }
   }
 
@@ -186,9 +238,18 @@ export class CloudflareR2Service {
       await this.s3Client.send(command);
       return true;
     } catch (error) {
-      if (error.name === 'NotFound') {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        error.name === 'NotFound'
+      ) {
         return false;
       }
+
+      this.logger.error(
+        `Error checking if file exists: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       throw error;
     }
   }
