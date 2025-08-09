@@ -1,6 +1,6 @@
-import { api } from '@/config/api';
+import { api } from '@/config/api'
 // Using the standard API response interface
-import { ApiResponse } from '@/types/api.types';
+import { ApiResponse } from '@/types/api.types'
 
 export interface UploadFileData {
   title?: string;
@@ -209,15 +209,13 @@ export class UploadService {
    */
   static async getDownloadUrl(fileId: string): Promise<string> {
     try {
-      const response = await api.get<ApiResponse<{ downloadUrl: string }>>(
-        `/upload/download/${fileId}`
-      );
+      const response = await api.get<{ downloadUrl: string }>(`/upload/download/${fileId}`);
 
-      if (!response.data || !response.data.success || !response.data.data?.downloadUrl) {
-        throw new Error(response.data?.message || 'Failed to get download URL');
+      if (!response.data || !response.success || !response.data?.downloadUrl) {
+        throw new Error(response.message || 'Failed to get download URL');
       }
 
-      return response.data.data.downloadUrl;
+      return response.data.downloadUrl;
     } catch (error) {
       console.error(`Error getting download URL for file ${fileId}:`, error);
       throw error instanceof Error ? error : new Error('Failed to get download URL');
@@ -229,10 +227,10 @@ export class UploadService {
    */
   static async deleteFile(fileId: string): Promise<void> {
     try {
-      const response = await api.delete<ApiResponse<void>>(`/upload/file/${fileId}`);
+      const response = await api.delete<void>(`/upload/file/${fileId}`);
 
-      if (!response.data || !response.data.success) {
-        throw new Error(response.data?.message || 'Failed to delete file');
+      if (!response.data || !response.success) {
+        throw new Error(response.message || 'Failed to delete file');
       }
     } catch (error) {
       console.error(`Error deleting file ${fileId}:`, error);
@@ -245,14 +243,13 @@ export class UploadService {
    */
   static async getAllowedTypes(): Promise<string[]> {
     try {
-      const response =
-        await api.get<ApiResponse<{ allowedTypes: string[] }>>('/upload/allowed-types');
+      const response = await api.get<{ allowedTypes: string[] }>('/upload/allowed-types');
 
-      if (!response.data || !response.data.success || !response.data.data?.allowedTypes) {
-        throw new Error(response.data?.message || 'Failed to get allowed file types');
+      if (!response.data || !response.success) {
+        throw new Error(response.message || 'Failed to get allowed file types');
       }
 
-      return response.data.data.allowedTypes;
+      return response.data.allowedTypes;
     } catch (error) {
       console.error('Error getting allowed file types:', error);
       // Return empty array as fallback to allow all file types
