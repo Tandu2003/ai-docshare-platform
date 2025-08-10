@@ -26,3 +26,16 @@ export const incrementViewCount = async (fileId: string): Promise<void> => {
     console.error('Failed to increment view count', error);
   }
 };
+
+export const handleDownload = async (fileId: string): Promise<string> => {
+  try {
+    const response = await apiClient.post<{ downloadUrl: string }>(`/upload/download/${fileId}`);
+    if (!response.data?.downloadUrl) {
+      throw new Error('Download URL not provided');
+    }
+    return response.data.downloadUrl;
+  } catch (error) {
+    console.error('Failed to get download URL', error);
+    throw new Error('Could not get download link.');
+  }
+};

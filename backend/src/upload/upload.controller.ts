@@ -1,8 +1,8 @@
 import { Request, Response } from 'express'
 
 import {
-    BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Req, Res,
-    UploadedFiles, UseGuards, UseInterceptors
+    BadRequestException, Body, Controller, Delete, Get, HttpStatus, Logger, Param, Post, Query, Req,
+    Res, UploadedFiles, UseGuards, UseInterceptors
 } from '@nestjs/common'
 import { FilesInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
@@ -26,6 +26,8 @@ interface AuthenticatedRequest extends Request {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UploadController {
+  private readonly logger = new Logger(UploadController.name);
+
   constructor(
     private readonly uploadService: UploadService,
     private readonly r2Service: CloudflareR2Service
@@ -194,21 +196,50 @@ export class UploadController {
   }
 
   @Public()
-  @Post('view/:fileId')
-  @ApiOperation({ summary: 'Increment view count for a file' })
+  @Post('view/:documentId')
+  @ApiOperation({ summary: 'Increment view count for a document' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'View count incremented successfully',
   })
-  async incrementViewCount(@Param('fileId') fileId: string, @Res() res: Response) {
+  async incrementViewCount(@Param('documentId') documentId: string, @Res() res: Response) {
     try {
-      await this.uploadService.incrementViewCount(fileId);
+      await this.uploadService.incrementViewCount(documentId);
       return ResponseHelper.success(res, null, 'View count incremented');
     } catch (error) {
-      // It's not critical if this fails, so we can just log it
-      console.error(`Failed to increment view count for file ${fileId}`, error);
-      // Still return a success response to not block the user
+      this.logger.error(`Failed to increment view count for document ${documentId}`, error);
       return ResponseHelper.success(res, null, 'View count increment failed but proceeding');
+    }
+  }
+
+  @Public()
+  @Post('download/:documentId')
+  @ApiOperation({ summary: 'Increment download count and get download URL' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download count incremented and URL generated',
+  })
+  async downloadFile(@Param('documentId') documentId: string, @Res() res: Response) {
+    try {
+      const updatedDocument = await this.uploadService.incrementDownloadCount(documentId);
+
+      if (!updatedDocument) {
+        return ResponseHelper.error(res, 'Document not found', HttpStatus.NOT_FOUND);
+      }
+
+      const downloadUrl = await this.r2Service.getSignedDownloadUrl(
+        this.r2Service.extractKeyFromUrl(updatedDocument.filePath),
+        3600
+      ); // 1 hour expiry
+
+      return ResponseHelper.success(res, { downloadUrl }, 'Download URL generated');
+    } catch (error) {
+      this.logger.error(`Failed to process download for document ${documentId}`, error);
+      return ResponseHelper.error(
+        res,
+        'Could not process download request',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 

@@ -336,27 +336,12 @@ export class UploadService {
   }
 
   /**
-   * Get download URL for file
-   */
-  async getDownloadUrl(fileId: string, userId?: string): Promise<string> {
-    const file = await this.getFile(fileId, userId);
-
-    if (file.isPublic) {
-      return file.storageUrl;
-    } else {
-      // Generate signed URL for private files
-      return await this.r2Service.getSignedDownloadUrl(file.fileName, 3600); // 1 hour
-    }
-  }
-
-  /**
    * Increment view count for a document
    */
-  async incrementViewCount(fileId: string): Promise<void> {
+  async incrementViewCount(documentId: string): Promise<void> {
     try {
-      // We find the document associated with the fileId first
-      const document = await this.prisma.document.findFirst({
-        where: { fileId: fileId },
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
       });
 
       if (document) {
@@ -366,16 +351,65 @@ export class UploadService {
         });
         this.logger.log(`Incremented view count for document: ${document.id}`);
       } else {
-        this.logger.warn(
-          `Could not find document associated with fileId: ${fileId} to increment view count.`
-        );
+        this.logger.warn(`Could not find document with ID: ${documentId} to increment view count.`);
       }
     } catch (error) {
       this.logger.error(
-        `Failed to increment view count for file ${fileId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to increment view count for document ${documentId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
         error instanceof Error ? error.stack : ''
       );
       // Do not re-throw, as this is not a critical failure
+    }
+  }
+
+  /**
+   * Increment download count for a document
+   */
+  async incrementDownloadCount(documentId: string): Promise<any> {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId, isPublic: true },
+      });
+
+      if (document) {
+        const updatedDocument = await this.prisma.document.update({
+          where: { id: document.id },
+          data: { downloadCount: { increment: 1 } },
+        });
+        this.logger.log(`Incremented download count for document: ${document.id}`);
+        return updatedDocument;
+      } else {
+        this.logger.warn(
+          `Could not find public document with ID: ${documentId} to increment download count.`
+        );
+        return null;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to increment download count for document ${documentId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        error instanceof Error ? error.stack : ''
+      );
+      // Not a critical failure, so don't re-throw
+      return null;
+    }
+  }
+
+  /**
+   * Get download URL for file
+   */
+  async getDownloadUrl(fileId: string, userId?: string): Promise<string> {
+    const file = await this.getFile(fileId, userId);
+
+    if (file.isPublic) {
+      return file.storageUrl;
+    } else {
+      // Generate signed URL for private files
+      const key = this.r2Service.extractKeyFromUrl(file.fileName);
+      return await this.r2Service.getSignedDownloadUrl(key, 3600); // 1 hour
     }
   }
 
@@ -405,7 +439,6 @@ export class UploadService {
   private generateUniqueKey(prefix: string, originalName: string): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);
-    const extension = originalName.substring(originalName.lastIndexOf('.'));
     const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 50);
 
     return `${prefix}${timestamp}_${random}_${sanitizedName}`;

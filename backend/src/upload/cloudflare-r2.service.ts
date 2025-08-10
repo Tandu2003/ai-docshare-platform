@@ -1,15 +1,11 @@
-import { createHash } from 'crypto';
+import { createHash } from 'crypto'
 
 import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+    DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client
+} from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class CloudflareR2Service {
@@ -320,5 +316,26 @@ export class CloudflareR2Service {
       'image/tiff',
       'image/webp',
     ];
+  }
+
+  /**
+   * Extract key from full URL
+   * Converts full R2 URL back to just the key for signed URL generation
+   */
+  extractKeyFromUrl(urlOrKey: string): string {
+    // If it's already just a key (doesn't start with http), return as is
+    if (!urlOrKey.startsWith('http')) {
+      return urlOrKey;
+    }
+
+    try {
+      const url = new URL(urlOrKey);
+      // Remove leading slash from pathname to get the key
+      return url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
+    } catch {
+      // If URL parsing fails, assume it's already a key
+      this.logger.warn(`Failed to parse URL: ${urlOrKey}, treating as key`);
+      return urlOrKey;
+    }
   }
 }

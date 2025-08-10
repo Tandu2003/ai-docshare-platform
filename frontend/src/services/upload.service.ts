@@ -13,11 +13,13 @@ export interface UploadFileData {
 
 export type UploadedFile = {
   id: string;
-  originalName: string;
+  originalName?: string;
+  title?: string;
   fileName: string;
   mimeType: string;
   fileSize: string;
-  filePath: string;
+  storageUrl?: string;
+  filePath?: string;
   isPublic: boolean;
   createdAt: string;
   uploader: {
@@ -33,6 +35,8 @@ export type UploadedFile = {
     downloadCount: number;
     viewCount: number;
   }[];
+  viewCount?: number;
+  downloadCount?: number;
 };
 
 export interface FileUploadResponse {
