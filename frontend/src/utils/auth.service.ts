@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, STORAGE_KEYS } from '@/config';
+import { API_ENDPOINTS } from '@/config';
 import type {
   ForgotPasswordDto,
   LoginDto,
@@ -97,6 +97,14 @@ class AuthService {
    */
   async getCurrentUser(): Promise<User> {
     try {
+      if (import.meta.env.DEV) {
+        const currentToken = this.getAccessToken();
+        console.log(
+          '[AuthService] getCurrentUser - Current token from store:',
+          currentToken ? currentToken.substring(0, 20) + '...' : 'null'
+        );
+      }
+
       const response = await apiClient.get<User>(API_ENDPOINTS.AUTH.ME);
 
       if (response.success && response.data) {
@@ -107,6 +115,9 @@ class AuthService {
 
       throw new Error(response.message || 'Failed to get user profile');
     } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.log('[AuthService] getCurrentUser error:', error);
+      }
       throw this.handleAuthError(error);
     }
   }
@@ -119,7 +130,16 @@ class AuthService {
       const response = await apiClient.post<{ accessToken: string }>(API_ENDPOINTS.AUTH.REFRESH);
 
       if (response.success && response.data?.accessToken) {
-        // Token will be set in Redux store by API client
+        // Set token in API client which will trigger Redux update
+        apiClient.setAuthToken(response.data.accessToken);
+
+        if (import.meta.env.DEV) {
+          console.log(
+            '[AuthService] refreshToken - Set new token:',
+            response.data.accessToken.substring(0, 20) + '...'
+          );
+        }
+
         return response.data.accessToken;
       }
 
@@ -134,23 +154,37 @@ class AuthService {
    * Initialize authentication state on app startup
    * Always try to refresh token first to validate session
    */
-  async initializeAuth(): Promise<boolean> {
+  async initializeAuth(): Promise<{ user: User; token: string } | null> {
     try {
       // Always try to refresh token first to validate current session
       const newToken = await this.refreshToken();
 
+      if (import.meta.env.DEV) {
+        console.log(
+          '[AuthService] Refresh token result:',
+          newToken ? newToken.substring(0, 20) + '...' : 'null'
+        );
+      }
+
       if (newToken) {
+        // Small delay to ensure token is properly set in Redux store and synced to ApiClient
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         // If refresh successful, get current user data
         const user = await this.getCurrentUser();
         this.setUserData(user);
-        return true;
+
+        return { user, token: newToken };
       }
 
-      return false;
+      return null;
     } catch (error) {
+      if (import.meta.env.DEV) {
+        console.log('[AuthService] initializeAuth error:', error);
+      }
       // Refresh failed, clear any stale data
       this.clearAuthData();
-      return false;
+      return null;
     }
   }
 

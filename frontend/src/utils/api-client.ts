@@ -9,8 +9,8 @@ import type {
 import { API_CONFIG, HTTP_STATUS } from '@/config';
 import type { ApiResponse } from '@/types';
 
-// We'll need to access Redux store, so we'll use a different approach
-// Let's create a simple token manager that can be updated from Redux
+// TokenManager is used for callback notifications to Redux store
+// The actual token retrieval is done directly from Redux store for synchronization
 class TokenManager {
   private static instance: TokenManager;
   private token: string | null = null;
@@ -48,12 +48,15 @@ class TokenManager {
     this.setTokenCallback = setToken;
     this.clearTokenCallback = clearToken;
   }
+
+  // Token is now accessed directly from Redux store via ApiClient.getTokenFromStore callback
 }
 
 class ApiClient {
   private client: AxiosInstance;
   private refreshPromise: Promise<string | null> | null = null;
   private tokenManager = TokenManager.getInstance();
+  private getTokenFromStore: (() => string | null) | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -75,6 +78,13 @@ class ApiClient {
         const token = this.getAccessToken();
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
+
+          // Debug log to verify token is being sent
+          if (import.meta.env.DEV) {
+            console.log('[ApiClient] Sending request with token:', token.substring(0, 20) + '...');
+          }
+        } else if (import.meta.env.DEV) {
+          console.log('[ApiClient] Sending request without token');
         }
         return config;
       },
@@ -114,6 +124,10 @@ class ApiClient {
   }
 
   private getAccessToken(): string | null {
+    // Get token from Redux store if getter is available, otherwise fallback to TokenManager
+    if (this.getTokenFromStore) {
+      return this.getTokenFromStore();
+    }
     return this.tokenManager.getToken();
   }
 
@@ -214,6 +228,7 @@ class ApiClient {
 
   // Auth specific methods
   setAuthToken(token: string): void {
+    // Set token in TokenManager to trigger Redux callback
     this.tokenManager.setToken(token);
   }
 
@@ -222,9 +237,17 @@ class ApiClient {
   }
 
   // Method to connect with Redux store
-  connectToRedux(setTokenAction: (token: string) => void, clearTokenAction: () => void): void {
+  connectToRedux(
+    setTokenAction: (token: string) => void,
+    clearTokenAction: () => void,
+    getTokenFromStore: () => string | null
+  ): void {
     this.tokenManager.setCallbacks(setTokenAction, clearTokenAction);
+    this.getTokenFromStore = getTokenFromStore;
   }
+
+  // Note: Synchronization is now handled via the getTokenFromStore callback
+  // passed to connectToRedux, so no manual sync method is needed
 
   // File upload method
   async uploadFile<T>(

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAppDispatch } from '@/hooks';
+import { store } from '@/store';
 import { clearAccessToken, handleAutoLogout, initializeAuth, setAccessToken } from '@/store/slices';
 import { apiClient } from '@/utils/api-client';
 
@@ -18,7 +19,8 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) =>
         // Connect API client to Redux store
         apiClient.connectToRedux(
           (token: string) => dispatch(setAccessToken(token)),
-          () => dispatch(clearAccessToken())
+          () => dispatch(clearAccessToken()),
+          () => store.getState().auth.accessToken
         );
 
         // Initialize auth state on app startup
@@ -32,6 +34,9 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) =>
 
     initAuth();
   }, [dispatch]);
+
+  // Note: TokenManager synchronization is now handled via the getTokenFromStore callback
+  // passed to connectToRedux, so no manual sync is needed
 
   // Listen for automatic logout events from API client
   useEffect(() => {
