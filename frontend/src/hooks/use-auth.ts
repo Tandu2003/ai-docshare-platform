@@ -5,6 +5,7 @@ import {
   loginUser,
   logoutUser,
   registerUser,
+  selectAccessToken,
   selectAuth,
   selectIsAuthenticated,
   selectIsLoading,
@@ -20,6 +21,7 @@ export const useAuth = () => {
   const user = useAppSelector(selectUser);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const isLoading = useAppSelector(selectIsLoading);
+  const accessToken = useAppSelector(selectAccessToken);
 
   // Actions
   const login = useCallback(
@@ -78,6 +80,7 @@ export const useAuth = () => {
     user,
     isAuthenticated,
     isLoading,
+    accessToken,
 
     // Actions
     login,

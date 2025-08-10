@@ -6,12 +6,54 @@ import type {
   InternalAxiosRequestConfig,
 } from 'axios';
 
-import { API_CONFIG, HTTP_STATUS, STORAGE_KEYS } from '@/config';
+import { API_CONFIG, HTTP_STATUS } from '@/config';
 import type { ApiResponse } from '@/types';
+
+// We'll need to access Redux store, so we'll use a different approach
+// Let's create a simple token manager that can be updated from Redux
+class TokenManager {
+  private static instance: TokenManager;
+  private token: string | null = null;
+  private setTokenCallback: ((token: string) => void) | null = null;
+  private clearTokenCallback: (() => void) | null = null;
+
+  private constructor() {}
+
+  static getInstance(): TokenManager {
+    if (!TokenManager.instance) {
+      TokenManager.instance = new TokenManager();
+    }
+    return TokenManager.instance;
+  }
+
+  setToken(token: string): void {
+    this.token = token;
+    if (this.setTokenCallback) {
+      this.setTokenCallback(token);
+    }
+  }
+
+  getToken(): string | null {
+    return this.token;
+  }
+
+  clearToken(): void {
+    this.token = null;
+    if (this.clearTokenCallback) {
+      this.clearTokenCallback();
+    }
+  }
+
+  setCallbacks(setToken: (token: string) => void, clearToken: () => void): void {
+    this.setTokenCallback = setToken;
+    this.clearTokenCallback = clearToken;
+  }
+}
 
 class ApiClient {
   private client: AxiosInstance;
   private refreshPromise: Promise<string | null> | null = null;
+  private tokenManager = TokenManager.getInstance();
 
   constructor() {
     this.client = axios.create({
@@ -72,15 +114,7 @@ class ApiClient {
   }
 
   private getAccessToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-  }
-
-  private setAccessToken(token: string): void {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
-  }
-
-  private removeAccessToken(): void {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    return this.tokenManager.getToken();
   }
 
   private async refreshToken(): Promise<string | null> {
@@ -109,7 +143,8 @@ class ApiClient {
 
       const { data } = response.data as ApiResponse<{ accessToken: string }>;
       if (data?.accessToken) {
-        this.setAccessToken(data.accessToken);
+        // Update token in token manager (which will update Redux)
+        this.tokenManager.setToken(data.accessToken);
         return data.accessToken;
       }
 
@@ -121,9 +156,9 @@ class ApiClient {
   }
 
   private handleAuthError(): void {
-    this.removeAccessToken();
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    // Dispatch logout action or redirect to login
+    // Clear token in token manager (which will update Redux)
+    this.tokenManager.clearToken();
+    // Dispatch logout event
     window.dispatchEvent(new CustomEvent('auth:logout'));
   }
 
@@ -179,11 +214,16 @@ class ApiClient {
 
   // Auth specific methods
   setAuthToken(token: string): void {
-    this.setAccessToken(token);
+    this.tokenManager.setToken(token);
   }
 
   clearAuth(): void {
-    this.removeAccessToken();
+    this.tokenManager.clearToken();
+  }
+
+  // Method to connect with Redux store
+  connectToRedux(setTokenAction: (token: string) => void, clearTokenAction: () => void): void {
+    this.tokenManager.setCallbacks(setTokenAction, clearTokenAction);
   }
 
   // File upload method

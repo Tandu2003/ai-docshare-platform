@@ -7,6 +7,10 @@ import { AuthInitializer } from '@/components/auth';
 import '@/index.css';
 import { router } from '@/router';
 import { store } from '@/store';
+import { setStore } from '@/utils/auth.service';
+
+// Set store for AuthService to access Redux state
+setStore(store);
 
 function App() {
   return (

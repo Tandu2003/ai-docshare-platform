@@ -11,7 +11,17 @@ import type {
 } from '@/types';
 import { apiClient } from '@/utils/api-client';
 
+// We need to access the store to get the access token
+// This is a simple way to access the store from outside React components
+let store: any = null;
+
+export const setStore = (reduxStore: any) => {
+  store = reduxStore;
+};
+
 class AuthService {
+  private userData: User | null = null;
+
   /**
    * Register a new user
    */
@@ -109,7 +119,7 @@ class AuthService {
       const response = await apiClient.post<{ accessToken: string }>(API_ENDPOINTS.AUTH.REFRESH);
 
       if (response.success && response.data?.accessToken) {
-        this.setAccessToken(response.data.accessToken);
+        // Token will be set in Redux store by API client
         return response.data.accessToken;
       }
 
@@ -122,60 +132,58 @@ class AuthService {
 
   /**
    * Initialize authentication state on app startup
-   * Try to refresh token if no access token but user data exists
+   * Always try to refresh token first to validate session
    */
   async initializeAuth(): Promise<boolean> {
-    const accessToken = this.getAccessToken();
-    const userData = this.getUserData();
+    try {
+      // Always try to refresh token first to validate current session
+      const newToken = await this.refreshToken();
 
-    // If we have both token and user data, we're authenticated
-    if (accessToken && userData) {
-      return true;
-    }
-
-    // If we have user data but no token, try to refresh
-    if (userData && !accessToken) {
-      try {
-        await this.refreshToken();
+      if (newToken) {
+        // If refresh successful, get current user data
+        const user = await this.getCurrentUser();
+        this.setUserData(user);
         return true;
-      } catch (error) {
-        // Refresh failed, clear auth data
-        this.clearAuthData();
-        return false;
       }
-    }
 
-    // No user data, not authenticated
-    return false;
+      return false;
+    } catch (error) {
+      // Refresh failed, clear any stale data
+      this.clearAuthData();
+      return false;
+    }
   }
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    const token = this.getAccessToken();
-    const user = this.getUserData();
-    return !!(token && user);
+    return !!this.userData;
   }
 
   /**
-   * Get stored access token
+   * Get stored access token (from Redux store)
    */
   getAccessToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    if (store) {
+      return store.getState().auth.accessToken;
+    }
+    return null;
   }
 
   /**
-   * Get stored user data
+   * Get stored user data (from memory)
    */
   getUserData(): User | null {
-    try {
-      const userData = localStorage.getItem(STORAGE_KEYS.USER);
-      return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      return null;
-    }
+    return this.userData;
+  }
+
+  /**
+   * Clear auth data (public method for API client)
+   */
+  clearAuthData(): void {
+    this.userData = null;
+    apiClient.clearAuth();
   }
 
   /**
@@ -267,30 +275,18 @@ class AuthService {
   // Private helper methods
 
   private handleAuthSuccess(authData: LoginResponse): void {
-    if (authData.tokens?.accessToken) {
-      this.setAccessToken(authData.tokens.accessToken);
-    }
-
     if (authData.user) {
       this.setUserData(authData.user as User);
     }
 
-    // Set token in API client
-    apiClient.setAuthToken(authData.tokens?.accessToken || '');
-  }
-
-  private setAccessToken(token: string): void {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+    // Token will be set in Redux store by API client
+    if (authData.tokens?.accessToken) {
+      apiClient.setAuthToken(authData.tokens.accessToken);
+    }
   }
 
   private setUserData(user: User): void {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-  }
-
-  private clearAuthData(): void {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    apiClient.clearAuth();
+    this.userData = user;
   }
 
   private handleAuthError(error: any): Error {

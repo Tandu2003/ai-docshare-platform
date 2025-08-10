@@ -1,12 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
+import { FormFieldPassword } from '@/components/ui/form-field-password';
 import { useAuth } from '@/hooks';
 import { type LoginFormData, loginSchema } from '@/schemas';
 
@@ -16,13 +17,14 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) => {
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -30,6 +32,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    setIsSubmitting(true);
     try {
       const result = await login({
         emailOrUsername: data.emailOrUsername,
@@ -44,6 +47,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
     } catch (err) {
       // Error is handled by Redux and toast
       console.error('Login failed:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -61,14 +66,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
             placeholder="Enter your email or username"
             {...register('emailOrUsername')}
             error={errors.emailOrUsername?.message}
+            disabled={isSubmitting}
           />
 
-          <FormField
+          <FormFieldPassword
             label="Password"
-            type="password"
             placeholder="Enter your password"
             {...register('password')}
             error={errors.password?.message}
+            disabled={isSubmitting}
           />
 
           <div className="flex justify-end">
@@ -80,8 +86,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
             </Link>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
-            {isLoading || isSubmitting ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
 
           {onSwitchToRegister && (
@@ -92,6 +98,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
                 variant="link"
                 className="p-0 h-auto"
                 onClick={onSwitchToRegister}
+                disabled={isSubmitting}
               >
                 Sign up
               </Button>

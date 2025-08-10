@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useAppDispatch, useAppSelector } from '@/hooks';
-import { initializeAuth, selectIsLoading } from '@/store/slices';
+import { useAppDispatch } from '@/hooks';
+import { clearAccessToken, handleAutoLogout, initializeAuth, setAccessToken } from '@/store/slices';
+import { apiClient } from '@/utils/api-client';
 
 interface AuthInitializerProps {
   children: React.ReactNode;
@@ -9,15 +10,44 @@ interface AuthInitializerProps {
 
 export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const isLoading = useAppSelector(selectIsLoading);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    // Initialize auth state on app startup
-    dispatch(initializeAuth());
+    const initAuth = async () => {
+      try {
+        // Connect API client to Redux store
+        apiClient.connectToRedux(
+          (token: string) => dispatch(setAccessToken(token)),
+          () => dispatch(clearAccessToken())
+        );
+
+        // Initialize auth state on app startup
+        await dispatch(initializeAuth());
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initAuth();
+  }, [dispatch]);
+
+  // Listen for automatic logout events from API client
+  useEffect(() => {
+    const handleLogout = () => {
+      dispatch(handleAutoLogout());
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+    };
   }, [dispatch]);
 
   // Show loading while initializing auth
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
