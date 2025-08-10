@@ -1,29 +1,18 @@
-import { Request, Response } from 'express';
+import { Request, Response } from 'express'
 
 import {
-  BadRequestException,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
-  UploadedFiles,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+    BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Req, Res,
+    UploadedFiles, UseGuards, UseInterceptors
+} from '@nestjs/common'
+import { FilesInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ResponseHelper } from '../common/helpers/response.helper';
-import { CloudflareR2Service } from './cloudflare-r2.service';
-import { UploadFileDto } from './dto/upload-file.dto';
-import { UploadService } from './upload.service';
+import { Public } from '../auth/decorators/public.decorator'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { ResponseHelper } from '../common/helpers/response.helper'
+import { CloudflareR2Service } from './cloudflare-r2.service'
+import { UploadFileDto } from './dto/upload-file.dto'
+import { UploadService } from './upload.service'
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -204,6 +193,25 @@ export class UploadController {
     return ResponseHelper.success(res, null, 'File deleted successfully');
   }
 
+  @Public()
+  @Post('view/:fileId')
+  @ApiOperation({ summary: 'Increment view count for a file' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'View count incremented successfully',
+  })
+  async incrementViewCount(@Param('fileId') fileId: string, @Res() res: Response) {
+    try {
+      await this.uploadService.incrementViewCount(fileId);
+      return ResponseHelper.success(res, null, 'View count incremented');
+    } catch (error) {
+      // It's not critical if this fails, so we can just log it
+      console.error(`Failed to increment view count for file ${fileId}`, error);
+      // Still return a success response to not block the user
+      return ResponseHelper.success(res, null, 'View count increment failed but proceeding');
+    }
+  }
+
   @Get('allowed-types')
   @ApiOperation({ summary: 'Get allowed file types' })
   @ApiResponse({
@@ -218,5 +226,26 @@ export class UploadController {
       { allowedTypes },
       'Allowed file types retrieved successfully'
     );
+  }
+
+  @Public()
+  @Get('public')
+  @ApiOperation({ summary: 'Get all public files' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Public files retrieved successfully',
+  })
+  async getPublicFiles(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Query('mimeType') mimeType: string,
+    @Res() res: Response
+  ) {
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    const result = await this.uploadService.getPublicFiles(pageNum, limitNum, mimeType);
+
+    return ResponseHelper.success(res, result, 'Public files retrieved successfully');
   }
 }

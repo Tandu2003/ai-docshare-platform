@@ -256,6 +256,49 @@ export class UploadService {
   }
 
   /**
+   * Get public files
+   */
+  async getPublicFiles(
+    page: number = 1,
+    limit: number = 20,
+    mimeType?: string
+  ): Promise<{ files: any[]; total: number; page: number; limit: number }> {
+    const offset = (page - 1) * limit;
+
+    const where = {
+      isPublic: true,
+      ...(mimeType && { mimeType: { contains: mimeType } }),
+    };
+
+    const [files, total] = await Promise.all([
+      this.prisma.document.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      }),
+      this.prisma.document.count({ where }),
+    ]);
+
+    return {
+      files,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
    * Delete file
    */
   async deleteFile(fileId: string, userId: string): Promise<void> {
@@ -303,6 +346,36 @@ export class UploadService {
     } else {
       // Generate signed URL for private files
       return await this.r2Service.getSignedDownloadUrl(file.fileName, 3600); // 1 hour
+    }
+  }
+
+  /**
+   * Increment view count for a document
+   */
+  async incrementViewCount(fileId: string): Promise<void> {
+    try {
+      // We find the document associated with the fileId first
+      const document = await this.prisma.document.findFirst({
+        where: { fileId: fileId },
+      });
+
+      if (document) {
+        await this.prisma.document.update({
+          where: { id: document.id },
+          data: { viewCount: { increment: 1 } },
+        });
+        this.logger.log(`Incremented view count for document: ${document.id}`);
+      } else {
+        this.logger.warn(
+          `Could not find document associated with fileId: ${fileId} to increment view count.`
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to increment view count for file ${fileId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : ''
+      );
+      // Do not re-throw, as this is not a critical failure
     }
   }
 

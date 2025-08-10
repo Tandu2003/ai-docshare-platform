@@ -9,3 +9,4 @@ export { ForgotPasswordPage } from './forgot-password';
 export { ResetPasswordPage } from './reset-password';
 export { VerifyEmailPage } from './verify-email';
 export { ResendVerificationPage } from './resend-verification';
+export { default as DocumentsPage } from './DocumentsPage';

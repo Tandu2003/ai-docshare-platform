@@ -1,19 +1,15 @@
-import { Download, ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
+import { Download, ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 
-import React, { useEffect, useState } from 'react';
-
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { UploadService, UploadedFile } from '@/services/upload.service';
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { UploadedFile, UploadService } from '@/services/upload.service'
 
 interface FileListProps {
   refreshTrigger?: number;
@@ -218,7 +214,7 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white">
-                      <DropdownMenuItem onClick={() => window.open(file.storageUrl, '_blank')}>
+                      <DropdownMenuItem onClick={() => window.open(file.filePath, '_blank')}>
                         <ExternalLink className="h-4 w-4 mr-2" />
                         View File
                       </DropdownMenuItem>

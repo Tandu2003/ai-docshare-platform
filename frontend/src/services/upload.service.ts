@@ -17,7 +17,7 @@ export type UploadedFile = {
   fileName: string;
   mimeType: string;
   fileSize: string;
-  storageUrl: string;
+  filePath: string;
   isPublic: boolean;
   createdAt: string;
   uploader: {
@@ -26,6 +26,13 @@ export type UploadedFile = {
     firstName: string;
     lastName: string;
   };
+  documents?: {
+    id: string;
+    title: string;
+    isPublic: boolean;
+    downloadCount: number;
+    viewCount: number;
+  }[];
 };
 
 export interface FileUploadResponse {
