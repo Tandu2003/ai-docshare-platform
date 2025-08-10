@@ -3,7 +3,7 @@ import React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { handleDownload, incrementViewCount } from '@/services/document.service'
+import { downloadFile, incrementViewCount } from '@/services/document.service'
 import { UploadedFile, UploadService } from '@/services/upload.service'
 
 interface DocumentViewerProps {
@@ -19,8 +19,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
 
   const onDownload = async () => {
     try {
-      const url = await handleDownload(file.id);
-      window.open(url, '_blank');
+      await downloadFile(file.id, file.title || file.originalName);
     } catch (error) {
       alert((error as Error).message);
     }

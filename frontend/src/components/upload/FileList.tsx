@@ -9,6 +9,7 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { downloadFile } from '@/services/document.service'
 import { UploadedFile, UploadService } from '@/services/upload.service'
 
 interface FileListProps {
@@ -75,8 +76,7 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
 
   const handleDownload = async (file: UploadedFile) => {
     try {
-      const downloadUrl = await UploadService.getDownloadUrl(file.id);
-      window.open(downloadUrl, '_blank');
+      await downloadFile(file.id, file.title || file.originalName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate download link');
     }

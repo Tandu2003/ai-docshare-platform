@@ -1,12 +1,12 @@
-import { Download, Eye, User } from 'lucide-react';
-import React from 'react';
+import { Download, Eye, User } from 'lucide-react'
+import React from 'react'
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { handleDownload } from '@/services/document.service';
-import { UploadedFile } from '@/services/upload.service';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { downloadFile } from '@/services/document.service'
+import { UploadedFile } from '@/services/upload.service'
 
-import { Button } from '../ui/button';
-import DocumentViewer from './DocumentViewer';
+import { Button } from '../ui/button'
+import DocumentViewer from './DocumentViewer'
 
 interface DocumentCardProps {
   file: UploadedFile;
@@ -15,8 +15,7 @@ interface DocumentCardProps {
 const DocumentCard: React.FC<DocumentCardProps> = ({ file }) => {
   const onDownload = async () => {
     try {
-      const url = await handleDownload(file.id);
-      window.open(url, '_blank');
+      await downloadFile(file.id, file.title || file.originalName);
     } catch (error) {
       alert((error as Error).message);
     }

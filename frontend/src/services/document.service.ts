@@ -39,3 +39,49 @@ export const handleDownload = async (fileId: string): Promise<string> => {
     throw new Error('Could not get download link.');
   }
 };
+
+export const downloadFile = async (fileId: string, fileName?: string): Promise<void> => {
+  try {
+    // Get the download URL
+    const downloadUrl = await handleDownload(fileId);
+
+    // Fetch the file as a blob
+    const response = await fetch(downloadUrl);
+    if (!response.ok) {
+      throw new Error('Failed to fetch file');
+    }
+
+    const blob = await response.blob();
+
+    // Create a blob URL
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = blobUrl;
+
+    // Set the download attribute with the filename
+    if (fileName) {
+      link.download = fileName;
+    } else {
+      // Extract filename from URL if not provided
+      const url = new URL(downloadUrl);
+      const pathName = url.pathname;
+      const extractedName = pathName.substring(pathName.lastIndexOf('/') + 1);
+      // Remove query parameters from filename
+      const cleanName = extractedName.split('?')[0];
+      link.download = cleanName || 'download';
+    }
+
+    // Add to DOM, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up the blob URL
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Failed to download file', error);
+    throw new Error('Could not download file.');
+  }
+};
