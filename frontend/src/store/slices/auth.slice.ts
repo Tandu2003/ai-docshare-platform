@@ -93,11 +93,9 @@ export const initializeAuth = createAsyncThunk(
   'auth/initializeAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const isAuthenticated = await authService.initializeAuth();
-      if (isAuthenticated) {
-        const user = authService.getUserData();
-        const token = authService.getAccessToken();
-        return { user, token };
+      const result = await authService.initializeAuth();
+      if (result && result.user && result.token) {
+        return { user: result.user, token: result.token };
       }
       return null;
     } catch (error: any) {
