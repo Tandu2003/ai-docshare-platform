@@ -1,0 +1,118 @@
+import { Request, Response } from 'express'
+
+import {
+    BadRequestException, Body, Controller, Get, HttpStatus, Logger, Param, Post, Query, Req, Res, UseGuards
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+
+import { Public } from '../auth/decorators/public.decorator'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { ResponseHelper } from '../common/helpers/response.helper'
+import { DocumentsService } from './documents.service'
+import { CreateDocumentDto } from './dto/create-document.dto'
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    [key: string]: any;
+  };
+}
+
+@ApiTags('Documents')
+@Controller('documents')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class DocumentsController {
+  private readonly logger = new Logger(DocumentsController.name);
+
+  constructor(private readonly documentsService: DocumentsService) {}
+
+  @Post('create')
+  @ApiOperation({ summary: 'Create a document from uploaded files' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Document created successfully',
+  })
+  async createDocument(
+    @Body() createDocumentDto: CreateDocumentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    const userId = req.user.id;
+
+    try {
+      const document = await this.documentsService.createDocument(createDocumentDto, userId);
+
+      return ResponseHelper.success(
+        res,
+        document,
+        'Document created successfully',
+        HttpStatus.CREATED
+      );
+    } catch (error) {
+      this.logger.error('Error creating document:', error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'An error occurred while creating document',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Public()
+  @Post('download/:documentId')
+  @ApiOperation({ summary: 'Download all files of a document' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document files download prepared',
+  })
+  async downloadDocument(@Param('documentId') documentId: string, @Res() res: Response) {
+    try {
+      const downloadData = await this.documentsService.prepareDocumentDownload(documentId);
+
+      return ResponseHelper.success(res, downloadData, 'Document download prepared');
+    } catch (error) {
+      this.logger.error(`Failed to prepare download for document ${documentId}`, error);
+      return ResponseHelper.error(
+        res,
+        'Could not prepare document download',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('my')
+  @ApiOperation({ summary: 'Get user documents with pagination' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User documents retrieved successfully',
+  })
+  async getUserDocuments(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    const userId = req.user.id;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+
+    try {
+      const documents = await this.documentsService.getUserDocuments(userId, pageNum, limitNum);
+
+      return ResponseHelper.success(res, documents, 'Documents retrieved successfully');
+    } catch (error) {
+      this.logger.error('Error getting user documents:', error);
+      return ResponseHelper.error(
+        res,
+        'Failed to get user documents',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+}

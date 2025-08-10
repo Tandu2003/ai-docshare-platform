@@ -1,6 +1,4 @@
 import { api } from '@/config/api'
-// Using the standard API response interface
-import { ApiResponse } from '@/types/api.types'
 
 export interface UploadFileData {
   title?: string;

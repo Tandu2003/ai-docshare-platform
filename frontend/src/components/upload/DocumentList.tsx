@@ -9,99 +9,135 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { downloadFile } from '@/services/document.service'
-import { UploadedFile, UploadService } from '@/services/upload.service'
+import { Document, DocumentsService } from '@/services/files.service'
 
-interface FileListProps {
+interface DocumentListProps {
   refreshTrigger?: number;
-  onFileDeleted?: (fileId: string) => void;
+  onDocumentDeleted?: (documentId: string) => void;
   className?: string;
 }
 
-export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDeleted, className }) => {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+export const DocumentList: React.FC<DocumentListProps> = ({
+  refreshTrigger,
+  onDocumentDeleted,
+  className,
+}) => {
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [mimeTypeFilter, setMimeTypeFilter] = useState<string>('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const limit = 20;
+  const limit = 10;
 
-  const loadFiles = async (pageNum: number = 1, search: string = '', mimeType: string = '') => {
+  const loadDocuments = async (pageNum: number = 1, search: string = '') => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await UploadService.getUserFiles(pageNum, limit, mimeType || undefined);
-
-      // Filter by search term on frontend (could be moved to backend)
-      let filteredFiles = response.files;
+      const response = await DocumentsService.getUserDocuments(pageNum, limit);
+      console.log({ response });
+      // Filter by search term on frontend if provided
+      let filteredDocuments = response.documents;
       if (search) {
-        filteredFiles = response.files.filter((file) =>
-          file.originalName?.toLowerCase().includes(search.toLowerCase())
+        filteredDocuments = response.documents.filter((document) =>
+          document.title?.toLowerCase().includes(search.toLowerCase())
         );
       }
 
-      setFiles(filteredFiles);
+      setDocuments(filteredDocuments);
       setTotal(response.total);
       setPage(pageNum);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load files');
+      setError('Failed to load documents');
+      console.error('Error loading documents:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadFiles(1, searchTerm, mimeTypeFilter);
-  }, [refreshTrigger, searchTerm, mimeTypeFilter]);
+    loadDocuments(1, searchTerm);
+  }, [refreshTrigger]);
 
-  const handleDelete = async (fileId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      loadDocuments(1, searchTerm);
+    }, 300);
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchTerm]);
+
+  const handleDownload = async (document: Document) => {
+    try {
+      setLoading(true);
+      await DocumentsService.downloadDocument(document.id);
+    } catch (err) {
+      setError('Failed to download document');
+      console.error('Error downloading document:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (documentId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
-      setDeletingId(fileId);
-      await UploadService.deleteFile(fileId);
-      setFiles((prev) => prev.filter((f) => f.id !== fileId));
-      onFileDeleted?.(fileId);
+      setDeletingId(documentId);
+      await DocumentsService.deleteDocument(documentId);
+
+      // Remove from local state
+      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+      setTotal((prev) => prev - 1);
+
+      // Notify parent component
+      onDocumentDeleted?.(documentId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete file');
+      setError('Failed to delete document');
+      console.error('Error deleting document:', err);
     } finally {
       setDeletingId(null);
     }
   };
 
-  const handleDownload = async (file: UploadedFile) => {
-    try {
-      await downloadFile(file.id, file.title || file.originalName);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate download link');
-    }
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const mimeTypeOptions = [
-    { value: '', label: 'All Types' },
-    { value: 'application/pdf', label: 'PDF' },
-    { value: 'image/', label: 'Images' },
-    { value: 'text/', label: 'Text Files' },
-    { value: 'application/msword', label: 'Word Documents' },
-    { value: 'application/vnd.ms-excel', label: 'Excel Files' },
-  ];
+  const getDocumentIcon = (document: Document) => {
+    // Return icon based on first file's mime type or default
+    if (document.files && document.files.length > 0) {
+      const firstFile = document.files[0];
+      const mimeType = firstFile.mimeType;
 
-  if (loading && files.length === 0) {
+      if (mimeType?.includes('pdf')) return '📄';
+      if (mimeType?.includes('image')) return '🖼️';
+      if (mimeType?.includes('video')) return '🎥';
+      if (mimeType?.includes('audio')) return '🎵';
+      if (mimeType?.includes('word')) return '📝';
+      if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return '📊';
+      if (mimeType?.includes('powerpoint') || mimeType?.includes('presentation')) return '📊';
+    }
+    return '📄'; // Default document icon
+  };
+
+  const getTotalFileSize = (document: Document) => {
+    if (!document.files || document.files.length === 0) return 0;
+    return document.files.reduce((total, file) => total + (file.fileSize || 0), 0);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  if (loading && documents.length === 0) {
     return (
       <Card className={className}>
         <CardContent className="p-6">
@@ -124,14 +160,14 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
           <Button
             variant="outline"
             size="sm"
-            onClick={() => loadFiles(page, searchTerm, mimeTypeFilter)}
+            onClick={() => loadDocuments(page, searchTerm)}
             disabled={loading}
           >
             Refresh
           </Button>
         </CardTitle>
 
-        {/* Search and Filter */}
+        {/* Search */}
         <div className="flex gap-4 mt-4">
           <div className="flex-1">
             <div className="relative">
@@ -144,17 +180,6 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
               />
             </div>
           </div>
-          <select
-            value={mimeTypeFilter}
-            onChange={(e) => setMimeTypeFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {mimeTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
         </div>
       </CardHeader>
 
@@ -165,35 +190,42 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
           </Alert>
         )}
 
-        {files.length === 0 ? (
+        {documents.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-500">No documents found</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {files.map((file) => (
+            {documents.map((document) => (
               <div
-                key={file.id}
+                key={document.id}
                 className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
               >
-                {/* File Icon/Preview */}
+                {/* Document Icon/Preview */}
                 <div className="flex-shrink-0">
                   <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">{UploadService.getFileIcon(file.mimeType)}</span>
+                    <span className="text-2xl">{getDocumentIcon(document)}</span>
                   </div>
                 </div>
 
                 {/* Document Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate">{file.originalName}</h4>
+                  <h4 className="font-medium truncate">{document.title}</h4>
                   <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                    <span>{UploadService.formatFileSize(file.fileSize)}</span>
-                    <span>{formatDate(file.createdAt)}</span>
-                    <Badge variant={file.isPublic ? 'default' : 'secondary'} className="text-xs">
-                      {file.isPublic ? 'Public' : 'Private'}
+                    <span>{formatFileSize(getTotalFileSize(document))}</span>
+                    <span>{formatDate(document.createdAt)}</span>
+                    <span>{document.files?.length || 0} files</span>
+                    <Badge
+                      variant={document.isPublic ? 'default' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {document.isPublic ? 'Public' : 'Private'}
                     </Badge>
                   </div>
+                  {document.description && (
+                    <p className="text-sm text-gray-600 mt-1 truncate">{document.description}</p>
+                  )}
                 </div>
 
                 {/* Actions */}
@@ -201,7 +233,7 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleDownload(file)}
+                    onClick={() => handleDownload(document)}
                     disabled={loading}
                   >
                     <Download className="h-4 w-4" />
@@ -214,21 +246,17 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white">
-                      <DropdownMenuItem onClick={() => window.open(file.filePath, '_blank')}>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Document
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownload(file)}>
+                      <DropdownMenuItem onClick={() => handleDownload(document)}>
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDelete(file.id)}
-                        disabled={deletingId === file.id}
+                        onClick={() => handleDelete(document.id)}
+                        disabled={deletingId === document.id}
                         className="text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        {deletingId === file.id ? 'Deleting...' : 'Delete'}
+                        {deletingId === document.id ? 'Deleting...' : 'Delete'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -242,13 +270,14 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
         {total > limit && (
           <div className="flex items-center justify-between mt-6">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} documents
+              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}{' '}
+              documents
             </p>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => loadFiles(page - 1, searchTerm, mimeTypeFilter)}
+                onClick={() => loadDocuments(page - 1, searchTerm)}
                 disabled={page <= 1 || loading}
               >
                 Previous
@@ -256,7 +285,7 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => loadFiles(page + 1, searchTerm, mimeTypeFilter)}
+                onClick={() => loadDocuments(page + 1, searchTerm)}
                 disabled={page * limit >= total || loading}
               >
                 Next

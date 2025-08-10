@@ -1,5 +1,6 @@
 import { apiClient } from '@/utils/api-client'
 
+import { DocumentsService, FilesService } from './files.service'
 import { UploadedFile } from './upload.service'
 
 export interface PaginatedDocuments {
@@ -85,3 +86,6 @@ export const downloadFile = async (fileId: string, fileName?: string): Promise<v
     throw new Error('Could not download file.');
   }
 };
+
+// Re-export new services for easy access
+export { DocumentsService, FilesService };
