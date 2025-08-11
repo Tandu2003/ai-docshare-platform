@@ -1,10 +1,15 @@
-import {
-    BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException
-} from '@nestjs/common'
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { PrismaService } from '../prisma/prisma.service'
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface FileUploadResult {
   id: string;
@@ -36,7 +41,9 @@ export class FilesService {
       const results: any[] = [];
 
       for (const file of files) {
-        this.logger.log(`Processing file: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`);
+        this.logger.log(
+          `Processing file: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`
+        );
         const result = await this.uploadFile(file, userId);
         results.push(result.data);
       }

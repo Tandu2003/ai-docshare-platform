@@ -1,16 +1,20 @@
-import { Download, ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { Download, ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useEffect, useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { downloadFile } from '@/services/document.service'
-import { UploadedFile, UploadService } from '@/services/upload.service'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { downloadFile } from '@/services/document.service';
+import { UploadService, UploadedFile } from '@/services/upload.service';
 
 interface FileListProps {
   refreshTrigger?: number;
@@ -242,7 +246,8 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
         {total > limit && (
           <div className="flex items-center justify-between mt-6">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} documents
+              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}{' '}
+              documents
             </p>
             <div className="flex gap-2">
               <Button

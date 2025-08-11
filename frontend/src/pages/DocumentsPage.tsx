@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 
-import DocumentCard from '@/components/document/DocumentCard'
-import { Button } from '@/components/ui/button'
-import { getDocuments, PaginatedDocuments } from '@/services/document.service'
+import DocumentCard from '@/components/document/DocumentCard';
+import { Button } from '@/components/ui/button';
+import { DocumentsService, PaginatedDocuments } from '@/services/files.service';
 
 const DocumentsPage: React.FC = () => {
   const [documents, setDocuments] = useState<PaginatedDocuments | null>(null);
@@ -14,7 +14,7 @@ const DocumentsPage: React.FC = () => {
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        const data = await getDocuments(page, 9); // 9 for a 3x3 grid
+        const data = await DocumentsService.getPublicDocuments(page, 9); // 9 for a 3x3 grid
         setDocuments(data);
         setError(null);
       } catch (err) {
@@ -56,8 +56,8 @@ const DocumentsPage: React.FC = () => {
         {!loading && !error && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {documents?.files.map((file) => (
-                <DocumentCard key={file.id} file={file} />
+              {documents?.documents.map((document) => (
+                <DocumentCard key={document.id} document={document} />
               ))}
             </div>
 
@@ -68,7 +68,7 @@ const DocumentsPage: React.FC = () => {
               <span className="mx-4 self-center">Page {page}</span>
               <Button
                 onClick={() => setPage(page + 1)}
-                disabled={!documents || documents.files.length < 9 || loading}
+                disabled={!documents || documents.documents.length < 9 || loading}
               >
                 Next
               </Button>

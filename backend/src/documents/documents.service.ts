@@ -1,9 +1,12 @@
 import {
-    BadRequestException, Injectable, InternalServerErrorException, Logger
-} from '@nestjs/common'
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service'
-import { CreateDocumentDto } from './dto/create-document.dto'
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -274,6 +277,92 @@ export class DocumentsService {
     } catch (error) {
       this.logger.error('Error getting user documents:', error);
       throw new InternalServerErrorException('Failed to get user documents');
+    }
+  }
+
+  /**
+   * Get public documents with pagination
+   */
+  async getPublicDocuments(page: number = 1, limit: number = 10) {
+    try {
+      const skip = (page - 1) * limit;
+
+      this.logger.log(`Getting public documents, page ${page}, limit ${limit}`);
+
+      const [documents, total] = await Promise.all([
+        this.prisma.document.findMany({
+          where: {
+            isPublic: true,
+          },
+          include: {
+            files: {
+              include: {
+                file: true,
+              },
+              orderBy: {
+                order: 'asc',
+              },
+            },
+            category: true,
+            uploader: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip,
+          take: limit,
+        }),
+        this.prisma.document.count({
+          where: {
+            isPublic: true,
+          },
+        }),
+      ]);
+
+      // Transform the data to include file details
+      const transformedDocuments = documents.map((document) => ({
+        id: document.id,
+        title: document.title,
+        description: document.description,
+        isPublic: document.isPublic,
+        tags: document.tags,
+        language: document.language,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
+        uploaderId: document.uploaderId,
+        categoryId: document.categoryId,
+        category: document.category,
+        uploader: document.uploader,
+        downloadCount: document.downloadCount,
+        viewCount: document.viewCount,
+        averageRating: document.averageRating,
+        files: document.files.map((df) => ({
+          id: df.file.id,
+          originalName: df.file.originalName,
+          fileName: df.file.fileName,
+          mimeType: df.file.mimeType,
+          fileSize: df.file.fileSize,
+          storageUrl: df.file.storageUrl,
+          order: df.order,
+        })),
+      }));
+
+      return {
+        documents: transformedDocuments,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      this.logger.error('Error getting public documents:', error);
+      throw new InternalServerErrorException('Failed to get public documents');
     }
   }
 }

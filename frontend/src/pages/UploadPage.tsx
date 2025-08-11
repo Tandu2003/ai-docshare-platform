@@ -1,16 +1,15 @@
-import React, { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from 'sonner';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DocumentList } from '@/components/upload/DocumentList'
-import { FileUpload } from '@/components/upload/FileUpload'
+import React, { useState } from 'react';
 
-import type { FileUploadResponse } from '@/services/upload.service';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DocumentList } from '@/components/upload/DocumentList';
+import { FileUpload } from '@/components/upload/FileUpload';
 
 export const UploadPage: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handleUploadComplete = (results: FileUploadResponse[]) => {
+  const handleUploadComplete = () => {
     toast.success('Files uploaded successfully');
     setRefreshTrigger((prev) => prev + 1);
   };

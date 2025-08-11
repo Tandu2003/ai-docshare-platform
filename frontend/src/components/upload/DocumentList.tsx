@@ -1,15 +1,19 @@
-import { Download, ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { Download, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useEffect, useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Document, DocumentsService } from '@/services/files.service'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Document, DocumentsService } from '@/services/files.service';
 
 interface DocumentListProps {
   refreshTrigger?: number;

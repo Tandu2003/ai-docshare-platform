@@ -1,49 +1,53 @@
-import { Download, Eye, User } from 'lucide-react'
-import React from 'react'
+import { Download, Eye, User } from 'lucide-react';
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { downloadFile } from '@/services/document.service'
-import { UploadedFile } from '@/services/upload.service'
+import React from 'react';
 
-import { Button } from '../ui/button'
-import DocumentViewer from './DocumentViewer'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { downloadFile } from '@/services/document.service';
+import { Document } from '@/services/files.service';
+import { UploadedFile } from '@/services/upload.service';
+
+import { Button } from '../ui/button';
+import DocumentViewer from './DocumentViewer';
 
 interface DocumentCardProps {
-  file: UploadedFile;
+  document: Document;
 }
 
-const DocumentCard: React.FC<DocumentCardProps> = ({ file }) => {
+const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
   const onDownload = async () => {
     try {
-      await downloadFile(file.id, file.title || file.originalName);
+      await downloadFile(document.id, document.title || 'document');
     } catch (error) {
       alert((error as Error).message);
     }
   };
 
+  const firstFile = document.files[0] as unknown as UploadedFile;
+
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <CardTitle className="truncate text-lg">{file.title || file.originalName}</CardTitle>
+        <CardTitle className="truncate text-lg">{document.title || 'Untitled'}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="text-sm text-gray-500 space-y-2">
           <div className="flex items-center">
             <User className="mr-2 h-4 w-4" />
-            <span>{file.uploader.firstName || 'Anonymous'}</span>
+            <span>{document.uploader?.firstName || 'Anonymous'}</span>
           </div>
           <div className="flex items-center">
             <Eye className="mr-2 h-4 w-4" />
-            <span>{file.viewCount || 0} views</span>
+            <span>{document.viewCount || 0} views</span>
           </div>
           <div className="flex items-center">
             <Download className="mr-2 h-4 w-4" />
-            <span>{file.downloadCount || 0} downloads</span>
+            <span>{document.downloadCount || 0} downloads</span>
           </div>
         </div>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
-        <DocumentViewer file={file} />
+        <DocumentViewer file={firstFile} />
         <Button size="sm" onClick={onDownload}>
           <Download className="mr-2 h-4 w-4" /> Download
         </Button>

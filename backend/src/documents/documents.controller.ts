@@ -1,15 +1,26 @@
-import { Request, Response } from 'express'
+import { Request, Response } from 'express';
 
 import {
-    BadRequestException, Body, Controller, Get, HttpStatus, Logger, Param, Post, Query, Req, Res, UseGuards
-} from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '../auth/decorators/public.decorator'
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
-import { ResponseHelper } from '../common/helpers/response.helper'
-import { DocumentsService } from './documents.service'
-import { CreateDocumentDto } from './dto/create-document.dto'
+import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { DocumentsService } from './documents.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -81,6 +92,35 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Could not prepare document download',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Public()
+  @Get('public')
+  @ApiOperation({ summary: 'Get public documents with pagination' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Public documents retrieved successfully',
+  })
+  async getPublicDocuments(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Res() res: Response
+  ) {
+    try {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+
+      const result = await this.documentsService.getPublicDocuments(pageNum, limitNum);
+
+      return ResponseHelper.success(res, result, 'Public documents retrieved successfully');
+    } catch (error) {
+      this.logger.error('Error getting public documents:', error);
+      return ResponseHelper.error(
+        res,
+        'An error occurred while retrieving public documents',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

@@ -1,5 +1,5 @@
-import { ApiResponse } from '@/types'
-import { apiClient } from '@/utils/api-client'
+import { ApiResponse } from '@/types';
+import { apiClient } from '@/utils/api-client';
 
 export interface FileUploadResult {
   id: string;
@@ -32,9 +32,18 @@ export interface Document {
   updatedAt: string;
   uploaderId: string;
   categoryId: string;
+  downloadCount?: number;
+  viewCount?: number;
+  averageRating?: number;
   category?: {
     id: string;
     name: string;
+  };
+  uploader?: {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
   };
   files: Array<{
     id: string;
@@ -185,6 +194,29 @@ export class DocumentsService {
     } catch (error) {
       console.error('Failed to get user documents:', error);
       throw new Error('Failed to get user documents');
+    }
+  }
+
+  /**
+   * Get public documents with pagination
+   */
+  static async getPublicDocuments(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedDocuments> {
+    try {
+      const response = await apiClient.get<PaginatedDocuments>(
+        `/documents/public?page=${page}&limit=${limit}`
+      );
+
+      if (!response.data) {
+        throw new Error('No data returned from API');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get public documents:', error);
+      throw new Error('Failed to get public documents');
     }
   }
 

@@ -1,12 +1,15 @@
-import * as crypto from 'crypto'
-import { v4 as uuidv4 } from 'uuid'
+import * as crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
-    DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client
-} from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CloudflareR2Service {
@@ -20,10 +23,16 @@ export class CloudflareR2Service {
     const secretAccessKey = this.configService.get<string>('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
     this.bucketName = this.configService.get<string>('CLOUDFLARE_R2_BUCKET_NAME') || 'docshare';
 
-    this.logger.log(`R2 Config: endpoint=${endpoint}, accessKeyId=${accessKeyId?.substring(0, 8)}..., bucket=${this.bucketName}`);
+    this.logger.log(
+      `R2 Config: endpoint=${endpoint}, accessKeyId=${accessKeyId?.substring(0, 8)}..., bucket=${this.bucketName}`
+    );
 
     if (!endpoint || !accessKeyId || !secretAccessKey) {
-      this.logger.error('Missing R2 credentials:', { endpoint: !!endpoint, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey });
+      this.logger.error('Missing R2 credentials:', {
+        endpoint: !!endpoint,
+        accessKeyId: !!accessKeyId,
+        secretAccessKey: !!secretAccessKey,
+      });
       throw new Error('Cloudflare R2 credentials not configured');
     }
 
@@ -49,7 +58,7 @@ export class CloudflareR2Service {
   }> {
     try {
       this.logger.log(`Starting upload for file: ${file.originalname}, size: ${file.size}`);
-      
+
       // Generate file hash
       const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
       this.logger.log(`Generated file hash: ${fileHash}`);
@@ -96,7 +105,7 @@ export class CloudflareR2Service {
       this.logger.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
       });
       throw new BadRequestException(`Failed to upload file: ${error.message}`);
     }

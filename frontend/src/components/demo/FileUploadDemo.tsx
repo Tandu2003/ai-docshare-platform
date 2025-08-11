@@ -1,13 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
-    CreateDocumentData, DocumentsService, FilesService, FileUploadResult
-} from '@/services/files.service'
+  CreateDocumentData,
+  DocumentsService,
+  FileUploadResult,
+  FilesService,
+} from '@/services/files.service';
 
 const FileUploadDemo: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -32,11 +35,13 @@ const FileUploadDemo: React.FC = () => {
     setIsUploading(true);
     try {
       const results = await FilesService.uploadFiles(selectedFiles);
-      setUploadedFiles(results);
-      setDocumentData((prev) => ({
-        ...prev,
-        fileIds: results.map((f) => f.id),
-      }));
+      if (results.data) {
+        setUploadedFiles(results.data);
+        setDocumentData((prev) => ({
+          ...prev,
+          fileIds: results.data!.map((f) => f.id),
+        }));
+      }
       alert('Files uploaded successfully!');
     } catch (error) {
       alert('Failed to upload files: ' + (error as Error).message);

@@ -1,17 +1,27 @@
-import { Request, Response } from 'express'
+import { Request, Response } from 'express';
 
 import {
-    BadRequestException, Body, Controller, HttpStatus, Logger, Param, Post, Req, Res, UploadedFiles,
-    UseGuards, UseInterceptors
-} from '@nestjs/common'
-import { FilesInterceptor } from '@nestjs/platform-express'
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+  BadRequestException,
+  Body,
+  Controller,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Req,
+  Res,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '../auth/decorators/public.decorator'
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { ResponseHelper } from '../common/helpers/response.helper'
-import { FilesService } from './files.service'
+import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from './files.service';
 
 interface AuthenticatedRequest extends Request {
   user: {
