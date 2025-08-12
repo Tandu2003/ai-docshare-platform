@@ -1,6 +1,4 @@
 import { api } from '@/config/api'
-// Using the standard API response interface
-import { ApiResponse } from '@/types/api.types'
 
 export interface UploadFileData {
   title?: string;
@@ -13,11 +11,13 @@ export interface UploadFileData {
 
 export type UploadedFile = {
   id: string;
-  originalName: string;
+  originalName?: string;
+  title?: string;
   fileName: string;
   mimeType: string;
   fileSize: string;
-  storageUrl: string;
+  storageUrl?: string;
+  filePath?: string;
   isPublic: boolean;
   createdAt: string;
   uploader: {
@@ -26,6 +26,15 @@ export type UploadedFile = {
     firstName: string;
     lastName: string;
   };
+  documents?: {
+    id: string;
+    title: string;
+    isPublic: boolean;
+    downloadCount: number;
+    viewCount: number;
+  }[];
+  viewCount?: number;
+  downloadCount?: number;
 };
 
 export interface FileUploadResponse {

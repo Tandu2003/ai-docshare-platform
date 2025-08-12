@@ -5,6 +5,7 @@ import {
     DashboardPage, ForgotPasswordPage, LoginPage, NotFoundPage, RegisterPage,
     ResendVerificationPage, ResetPasswordPage, UnauthorizedPage, VerifyEmailPage
 } from '@/pages'
+import DocumentsPage from '@/pages/DocumentsPage'
 import { UploadPage } from '@/pages/UploadPage'
 
 export const router = createBrowserRouter([
@@ -109,11 +110,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'documents',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500 text-lg">Documents Page - Coming Soon</p>
-          </div>
-        ),
+        element: <DocumentsPage />,
       },
       {
         path: 'upload',

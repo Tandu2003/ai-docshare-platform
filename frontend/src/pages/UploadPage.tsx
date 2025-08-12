@@ -1,25 +1,17 @@
-import React, { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from 'sonner';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FileList } from '@/components/upload/FileList'
-import { FileUpload } from '@/components/upload/FileUpload'
+import React, { useState } from 'react';
 
-import type { FileUploadResponse } from '@/services/upload.service';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DocumentList } from '@/components/upload/DocumentList';
+import { FileUpload } from '@/components/upload/FileUpload';
 
 export const UploadPage: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handleUploadComplete = (results: FileUploadResponse[]) => {
-    const successCount = results.filter((r) => r.file).length;
-    const errorCount = results.filter((r) => 'error' in r).length;
-
-    if (successCount > 0) {
-      toast.success(
-        `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}${errorCount > 0 ? `, ${errorCount} failed` : ''}`
-      );
-      setRefreshTrigger((prev) => prev + 1);
-    }
+  const handleUploadComplete = () => {
+    toast.success('Files uploaded successfully');
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const handleUploadError = (error: string) => {
@@ -43,8 +35,8 @@ export const UploadPage: React.FC = () => {
 
         <Tabs defaultValue="upload" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload">Upload Files</TabsTrigger>
-            <TabsTrigger value="files">My Files</TabsTrigger>
+            <TabsTrigger value="upload">Upload Documents</TabsTrigger>
+            <TabsTrigger value="files">My Documents</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-6">
@@ -56,7 +48,7 @@ export const UploadPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="files" className="space-y-6">
-            <FileList refreshTrigger={refreshTrigger} onFileDeleted={handleFileDeleted} />
+            <DocumentList refreshTrigger={refreshTrigger} onDocumentDeleted={handleFileDeleted} />
           </TabsContent>
         </Tabs>
       </div>

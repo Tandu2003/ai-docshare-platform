@@ -107,14 +107,8 @@ model Document {
   id            String   @id @default(cuid())
   title         String
   description   String?
-  fileName      String
-  fileSize      BigInt
-  mimeType      String
-  filePath      String
-  thumbnailPath String?
   uploaderId    String
   categoryId    String
-  fileId        String?  // Reference to File model
   downloadCount Int      @default(0)
   viewCount     Int      @default(0)
   averageRating Float    @default(0)
@@ -125,14 +119,13 @@ model Document {
   isDraft       Boolean  @default(false)
   tags          String[] @default([])
   language      String   @default("en")
-  fileHash      String   @unique // For duplicate detection
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
   category        Category               @relation(fields: [categoryId], references: [id])
-  file            File?                  @relation("DocumentFile", fields: [fileId], references: [id])
+  files           DocumentFile[]         // Many-to-many relationship with files
   ratings         Rating[]
   comments        Comment[]
   aiAnalysis      AIAnalysis?
@@ -146,7 +139,6 @@ model Document {
   // Indexes
   @@index([uploaderId])
   @@index([categoryId])
-  @@index([fileId])
   @@index([isPublic])
   @@index([isApproved])
   @@index([isDraft])
@@ -155,9 +147,26 @@ model Document {
   @@index([viewCount])
   @@index([createdAt])
   @@index([tags])
-  @@index([mimeType])
-  @@index([fileHash])
   @@map("documents")
+}
+
+// Junction table for Document-File many-to-many relationship
+model DocumentFile {
+  id         String   @id @default(cuid())
+  documentId String
+  fileId     String
+  order      Int      @default(0) // For ordering files within a document
+  createdAt  DateTime @default(now())
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  file     File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([documentId, fileId]) // One file can only be added once to a document
+  @@index([documentId])
+  @@index([fileId])
+  @@map("document_files")
 }
 
 // ================================
@@ -524,8 +533,8 @@ model File {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  uploader  User       @relation("FileUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
-  documents Document[] @relation("DocumentFile")
+  uploader       User           @relation("FileUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  documentFiles  DocumentFile[] // Many-to-many relationship with documents
 
   // Indexes
   @@index([uploaderId])

@@ -12,10 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { FileUploadResponse, UploadFileData, UploadService } from '@/services/upload.service';
+import { DocumentsService, FilesService } from '@/services/files.service';
+import { UploadService } from '@/services/upload.service';
 
 interface FileUploadProps {
-  onUploadComplete?: (results: FileUploadResponse[]) => void;
+  onUploadComplete?: (document: any) => void;
   onUploadError?: (error: string) => void;
   multiple?: boolean;
   className?: string;
@@ -28,6 +29,15 @@ interface FileWithMetadata {
   error?: string;
   uploaded?: boolean;
   progress?: number;
+  uploadedFileId?: string; // Store the uploaded file ID from backend
+}
+
+interface DocumentData {
+  title?: string;
+  description?: string;
+  isPublic: boolean;
+  language: string;
+  tags: string[];
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -37,7 +47,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   className,
 }) => {
   const [files, setFiles] = useState<FileWithMetadata[]>([]);
-  const [uploadData, setUploadData] = useState<UploadFileData>({
+  const [uploadData, setUploadData] = useState<DocumentData>({
     isPublic: true,
     language: 'en',
     tags: [],
@@ -67,7 +77,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   // Process files helper function wrapped in useCallback to avoid recreation
   const handleFiles = useCallback(
-    (newFiles: File[]) => {
+    async (newFiles: File[]) => {
       const processedFiles: FileWithMetadata[] = newFiles.map((file) => ({
         file,
         id: Math.random().toString(36).substring(7),
@@ -84,14 +94,67 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         });
       }
 
+      // Add files to state first
       if (multiple) {
         setFiles((prev) => [...prev, ...processedFiles]);
       } else {
         setFiles(processedFiles.slice(0, 1));
       }
+
+      // Auto-upload valid files
+      const validFiles = processedFiles.filter((f) => !f.error);
+      if (validFiles.length > 0) {
+        await uploadFilesToStorage(validFiles);
+      }
     },
     [allowedTypes, allowedTypesLoaded, multiple]
   );
+
+  // Upload files to storage immediately
+  const uploadFilesToStorage = async (filesToUpload: FileWithMetadata[]) => {
+    try {
+      // Set uploading state for these files
+      setFiles((prev) =>
+        prev.map((f) => (filesToUpload.find((tf) => tf.id === f.id) ? { ...f, progress: 10 } : f))
+      );
+
+      const fileObjects = filesToUpload.map((f) => f.file);
+      const uploadResults = await FilesService.uploadFiles(fileObjects);
+      const uploadData = uploadResults.data;
+
+      if (!uploadData || uploadData.length === 0) {
+        throw new Error('No data returned from API');
+      }
+      console.log({ uploadResults });
+      // Update files with uploaded file IDs
+      setFiles((prev) =>
+        prev.map((f) => {
+          const fileIndex = filesToUpload.findIndex((tf) => tf.id === f.id);
+          console.log({ fileIndex, uploadResults });
+          if (fileIndex !== -1 && uploadData[fileIndex]) {
+            return {
+              ...f,
+              uploaded: true,
+              progress: 100,
+              uploadedFileId: uploadData[fileIndex].id,
+            };
+          }
+          return f;
+        })
+      );
+    } catch (error) {
+      console.error('Failed to upload files:', error);
+      alert('Failed to upload files. Please try again.');
+      // Mark files with error
+      setFiles((prev) =>
+        prev.map((f) =>
+          filesToUpload.find((tf) => tf.id === f.id)
+            ? { ...f, error: 'Upload failed', progress: undefined }
+            : f
+        )
+      );
+    }
+  };
 
   // Handle drag events
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -140,7 +203,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const addTag = () => {
     if (newTag.trim() && !uploadData.tags?.includes(newTag.trim())) {
-      setUploadData((prev) => ({
+      setUploadData((prev: DocumentData) => ({
         ...prev,
         tags: [...(prev.tags || []), newTag.trim()],
       }));
@@ -149,114 +212,46 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const removeTag = (tag: string) => {
-    setUploadData((prev) => ({
+    setUploadData((prev: DocumentData) => ({
       ...prev,
-      tags: prev.tags?.filter((t) => t !== tag) || [],
+      tags: prev.tags?.filter((t: string) => t !== tag) || [],
     }));
   };
 
-  const handleUpload = async () => {
-    const validFiles = files.filter((f) => !f.error);
-    if (validFiles.length === 0) return;
+  const handleCreateDocument = async () => {
+    const uploadedFiles = files.filter((f) => f.uploaded && f.uploadedFileId);
+    if (uploadedFiles.length === 0) {
+      onUploadError?.('Please upload files first');
+      return;
+    }
 
-    console.log(
-      'Starting upload with files:',
-      validFiles.map((f) => ({ name: f.file.name, size: f.file.size, type: f.file.type }))
-    );
-    console.log('Upload data:', uploadData);
+    if (!uploadData.title?.trim()) {
+      onUploadError?.('Please provide a title for the document');
+      return;
+    }
 
     setUploading(true);
 
-    // Update files with progress indicators
-    setFiles((prev) => prev.map((f) => (!f.error ? { ...f, progress: 0 } : f)));
-
     try {
-      // Extract File objects from FileWithMetadata
-      const fileObjects = validFiles.map((f) => f.file);
-      console.log({ fileObjects });
+      const documentData = {
+        title: uploadData.title,
+        description: uploadData.description,
+        fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
+        isPublic: uploadData.isPublic,
+        tags: uploadData.tags,
+        language: uploadData.language,
+      };
 
-      // Use the unified upload method with progress tracking
-      console.log('Uploading files...');
+      const document = await DocumentsService.createDocument(documentData);
+      console.log({ document });
+      onUploadComplete?.(document);
 
-      // Set initial progress
-      const fileProgresses = new Map<string, number>();
-      validFiles.forEach((f) => fileProgresses.set(f.id, 5)); // Start at 5%
-
-      // Update progress periodically to show activity
-      const progressInterval = setInterval(() => {
-        setFiles((prev) =>
-          prev.map((f) => {
-            if (!f.error && !f.uploaded && fileProgresses.has(f.id)) {
-              const currentProgress = fileProgresses.get(f.id) || 0;
-              // Simulate gradual progress up to 90% (the last 10% when complete)
-              const newProgress = Math.min(90, currentProgress + 5);
-              fileProgresses.set(f.id, newProgress);
-              return { ...f, progress: newProgress };
-            }
-            return f;
-          })
-        );
-      }, 500);
-
-      try {
-        // Perform the upload
-        const uploadResult = await UploadService.uploadFiles(fileObjects, uploadData);
-
-        // Clear the progress interval
-        clearInterval(progressInterval);
-
-        // Convert to array if single result
-        const results: FileUploadResponse[] = Array.isArray(uploadResult)
-          ? uploadResult
-          : [uploadResult];
-
-        console.log('Upload successful:', results);
-
-        // Mark files as uploaded
-        setFiles((prev) => prev.map((f) => ({ ...f, uploaded: true, progress: 100 })));
-
-        onUploadComplete?.(results);
-
-        // Reset form after successful upload
-        setTimeout(() => {
-          setFiles([]);
-          setUploadData({ isPublic: true, language: 'en', tags: [] });
-        }, 2000);
-      } catch (error) {
-        // This shouldn't normally happen since uploadFiles already handles errors
-        // but just in case there's an uncaught exception
-        clearInterval(progressInterval);
-        throw error; // Re-throw to be caught by the outer catch block
-      }
+      // Reset form after successful document creation
+      setFiles([]);
+      setUploadData({ isPublic: true, language: 'en', tags: [] });
     } catch (error) {
-      console.error('Upload error:', error);
-
-      // Extract a user-friendly error message
-      let errorMessage: string;
-
-      if (error instanceof Error) {
-        // Try to determine if it's an R2 error vs database error
-        if (error.message.includes('database') || error.message.includes('prisma')) {
-          errorMessage =
-            'Your file was uploaded to the cloud, but there was an issue saving its information. Please contact support.';
-        } else if (error.message.includes('timeout')) {
-          errorMessage =
-            'The upload timed out. Please try again with a smaller file or check your network connection.';
-        } else if (error.message.includes('Upload failed:')) {
-          // Keep the specific error message from the server
-          errorMessage = error.message;
-        } else {
-          errorMessage = error.message || 'Upload failed';
-        }
-      } else {
-        errorMessage = 'Upload failed due to an unknown error';
-      }
-
-      console.log('Showing error to user:', errorMessage);
-      onUploadError?.(errorMessage);
-
-      // Mark files with errors
-      setFiles((prev) => prev.map((f) => ({ ...f, error: errorMessage, progress: undefined })));
+      console.error('Failed to create document:', error);
+      onUploadError?.(error instanceof Error ? error.message : 'Failed to create document');
     } finally {
       setUploading(false);
     }
@@ -286,7 +281,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         >
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <p className="text-lg font-medium mb-2">
-            Drop files here or{' '}
+            Drop documents here or{' '}
             <Button
               variant="link"
               className="p-0 h-auto"
@@ -296,7 +291,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </Button>
           </p>
           <p className="text-sm text-gray-500">
-            {multiple ? 'Upload multiple files' : 'Upload a single file'} (max 100MB each)
+            {multiple ? 'Upload multiple documents' : 'Upload a single document'} (max 100MB each)
           </p>
           <input
             ref={fileInputRef}
@@ -308,10 +303,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           />
         </div>
 
-        {/* File List */}
+        {/* Document List */}
         {files.length > 0 && (
           <div className="space-y-3">
-            <h3 className="font-medium">Selected Files</h3>
+            <h3 className="font-medium">Selected Documents</h3>
             {files.map((file) => (
               <div
                 key={file.id}
@@ -375,12 +370,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Upload Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title (optional)</Label>
+            <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
               value={uploadData.title || ''}
-              onChange={(e) => setUploadData((prev) => ({ ...prev, title: e.target.value }))}
+              onChange={(e) =>
+                setUploadData((prev: DocumentData) => ({ ...prev, title: e.target.value }))
+              }
               placeholder="Document title"
+              required
             />
           </div>
 
@@ -389,7 +387,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <select
               id="language"
               value={uploadData.language}
-              onChange={(e) => setUploadData((prev) => ({ ...prev, language: e.target.value }))}
+              onChange={(e) =>
+                setUploadData((prev: DocumentData) => ({ ...prev, language: e.target.value }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="en">English</option>
@@ -405,7 +405,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <Textarea
             id="description"
             value={uploadData.description || ''}
-            onChange={(e) => setUploadData((prev) => ({ ...prev, description: e.target.value }))}
+            onChange={(e) =>
+              setUploadData((prev: DocumentData) => ({ ...prev, description: e.target.value }))
+            }
             placeholder="Brief description of the document"
             rows={3}
           />
@@ -415,7 +417,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="space-y-2">
           <Label>Tags</Label>
           <div className="flex flex-wrap gap-2 mb-2">
-            {uploadData.tags?.map((tag) => (
+            {uploadData.tags?.map((tag: string) => (
               <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                 {tag}
                 <Button
@@ -447,27 +449,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             id="isPublic"
             checked={uploadData.isPublic}
             onCheckedChange={(checked) =>
-              setUploadData((prev) => ({ ...prev, isPublic: !!checked }))
+              setUploadData((prev: DocumentData) => ({ ...prev, isPublic: !!checked }))
             }
           />
           <Label htmlFor="isPublic">Make this document public</Label>
         </div>
 
-        {/* Upload Button */}
+        {/* Create Document Button */}
         <Button
-          onClick={handleUpload}
-          disabled={files.length === 0 || files.some((f) => f.error) || uploading}
+          onClick={handleCreateDocument}
+          disabled={
+            files.length === 0 ||
+            !files.some((f) => f.uploaded) ||
+            !uploadData.title?.trim() ||
+            uploading
+          }
           className="w-full"
         >
           {uploading ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              Uploading...
+              Creating Document...
             </>
           ) : (
             <>
               <Upload className="h-4 w-4 mr-2" />
-              Upload {files.length > 1 ? `${files.length} Files` : 'File'}
+              Create Document
             </>
           )}
         </Button>
