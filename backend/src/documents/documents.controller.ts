@@ -18,6 +18,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
@@ -191,7 +192,7 @@ export class DocumentsController {
     }
   }
 
-  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post(':documentId/view')
   @ApiOperation({ summary: 'Track document view' })
   @ApiResponse({
@@ -205,11 +206,33 @@ export class DocumentsController {
     @Res() res: Response
   ) {
     try {
-      // Get user ID if authenticated
-      const userId = (req as any).user?.id;
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const userAgent = req.get('User-Agent');
+      // Get user ID if authenticated (optional)
+      const userId = (req as any).user?.id || null;
+      
+      // Get IP address with multiple fallback methods
+      let ipAddress = req.ip || 
+        req.connection?.remoteAddress || 
+        req.socket?.remoteAddress || 
+        'unknown';
+        
+      // Handle x-forwarded-for header (can be array)
+      if (!ipAddress || ipAddress === 'unknown') {
+        const forwardedFor = req.headers['x-forwarded-for'];
+        const realIp = req.headers['x-real-ip'];
+        
+        if (forwardedFor) {
+          ipAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
+        } else if (realIp) {
+          ipAddress = Array.isArray(realIp) ? realIp[0] : realIp;
+        }
+      }
+        
+      const userAgent = req.get('User-Agent') || 'unknown';
       const { referrer } = viewDocumentDto;
+
+      this.logger.log(
+        `Tracking view for document ${documentId}: userId=${userId}, ip=${ipAddress}`
+      );
 
       const result = await this.documentsService.viewDocument(
         documentId,
