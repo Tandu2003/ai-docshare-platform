@@ -342,7 +342,10 @@ const DocumentDetailPage: React.FC = () => {
                   <>
                     <Separator />
                     <div>
-                      <p className="text-sm font-medium">Last updated</p>
+                      <p className="text-sm font-medium flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        Last updated
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(document.updatedAt)}
                       </p>
