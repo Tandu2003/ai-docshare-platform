@@ -48,23 +48,19 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  role                   Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  documents              Document[]             @relation("DocumentUploader")
-  uploadedFiles          File[]                 @relation("FileUploader")
-  ratings                Rating[]
-  comments               Comment[]
-  searches               SearchHistory[]
-  notifications          Notification[]
-  bookmarks              Bookmark[]
-  bookmarkFolders        BookmarkFolder[]
-  downloads              Download[]
-  recommendations        RecommendationEngine[]
-  sentCollaborations     Collaboration[]        @relation("CollaborationSender")
-  receivedCollaborations Collaboration[]        @relation("CollaborationReceiver")
-  reportsMade            Report[]               @relation("ReportReporter")
-  reportsReceived        Report[]               @relation("ReportReported")
-  CommentLike            CommentLike[]
-  ActivityLog            ActivityLog[]
+  role            Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  documents       Document[]             @relation("DocumentUploader")
+  uploadedFiles   File[]                 @relation("FileUploader")
+  ratings         Rating[]
+  comments        Comment[]
+  searches        SearchHistory[]
+  notifications   Notification[]
+  bookmarks       Bookmark[]
+  bookmarkFolders BookmarkFolder[]
+  downloads       Download[]
+  recommendations RecommendationEngine[]
+  CommentLike     CommentLike[]
+  ActivityLog     ActivityLog[]
 
   // Indexes
   @@index([email])
@@ -125,7 +121,7 @@ model Document {
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
   category        Category               @relation(fields: [categoryId], references: [id])
-  files           DocumentFile[]         // Many-to-many relationship with files
+  files           DocumentFile[] // Many-to-many relationship with files
   ratings         Rating[]
   comments        Comment[]
   aiAnalysis      AIAnalysis?
@@ -133,8 +129,6 @@ model Document {
   bookmarks       Bookmark[]
   downloads       Download[]
   recommendations RecommendationEngine[]
-  collaborations  Collaboration[]
-  reports         Report[]               @relation("ReportedDocument")
 
   // Indexes
   @@index([uploaderId])
@@ -408,66 +402,8 @@ model Download {
 }
 
 // ================================
-// COLLABORATION & MODERATION
+// COLLABORATION & MODERATION (Removed: Collaboration, Report)
 // ================================
-
-model Collaboration {
-  id          String              @id @default(cuid())
-  documentId  String
-  senderId    String
-  receiverId  String
-  type        CollaborationType
-  status      CollaborationStatus @default(PENDING)
-  message     String?
-  permissions String[]            @default([]) // "view", "comment", "edit"
-  expiresAt   DateTime?
-  respondedAt DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  // Relations
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  sender   User     @relation("CollaborationSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User     @relation("CollaborationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  // Indexes
-  @@index([documentId])
-  @@index([senderId])
-  @@index([receiverId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("collaborations")
-}
-
-model Report {
-  id             String       @id @default(cuid())
-  reporterId     String
-  reportedUserId String?
-  documentId     String?
-  type           ReportType
-  reason         String
-  description    String?
-  status         ReportStatus @default(PENDING)
-  adminNotes     String?
-  resolvedAt     DateTime?
-  resolvedById   String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  // Relations
-  reporter     User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  reportedUser User?     @relation("ReportReported", fields: [reportedUserId], references: [id])
-  document     Document? @relation("ReportedDocument", fields: [documentId], references: [id])
-
-  // Indexes
-  @@index([reporterId])
-  @@index([reportedUserId])
-  @@index([documentId])
-  @@index([type])
-  @@index([status])
-  @@index([createdAt])
-  @@map("reports")
-}
 
 // ================================
 // SYSTEM ADMINISTRATION
@@ -518,23 +454,23 @@ model ActivityLog {
 // ================================
 
 model File {
-  id          String   @id @default(cuid())
-  originalName String  // Original filename
-  fileName    String   // Stored filename (unique)
-  mimeType    String   // MIME type of the file
-  fileSize    BigInt   // File size in bytes
-  fileHash    String   @unique // SHA-256 hash for duplicate detection
-  storageUrl  String   // Cloudflare R2 URL
+  id           String   @id @default(cuid())
+  originalName String // Original filename
+  fileName     String // Stored filename (unique)
+  mimeType     String // MIME type of the file
+  fileSize     BigInt // File size in bytes
+  fileHash     String   @unique // SHA-256 hash for duplicate detection
+  storageUrl   String // Cloudflare R2 URL
   thumbnailUrl String? // Thumbnail URL if applicable
-  uploaderId  String   // User who uploaded the file
-  isPublic    Boolean  @default(false) // Whether file is publicly accessible
-  metadata    Json     @default("{}") // Additional metadata (dimensions, etc.)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  uploaderId   String // User who uploaded the file
+  isPublic     Boolean  @default(false) // Whether file is publicly accessible
+  metadata     Json     @default("{}") // Additional metadata (dimensions, etc.)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  uploader       User           @relation("FileUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
-  documentFiles  DocumentFile[] // Many-to-many relationship with documents
+  uploader      User           @relation("FileUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  documentFiles DocumentFile[] // Many-to-many relationship with documents
 
   // Indexes
   @@index([uploaderId])
@@ -547,32 +483,3 @@ model File {
 // ================================
 // ENUMS
 // ================================
-
-enum CollaborationType {
-  SHARE
-  REVIEW
-  COLLABORATE
-}
-
-enum CollaborationStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  EXPIRED
-}
-
-enum ReportType {
-  SPAM
-  INAPPROPRIATE_CONTENT
-  COPYRIGHT_VIOLATION
-  HARASSMENT
-  FAKE_DOCUMENT
-  OTHER
-}
-
-enum ReportStatus {
-  PENDING
-  INVESTIGATING
-  RESOLVED
-  DISMISSED
-}
