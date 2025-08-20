@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { ViewDocumentDto } from './dto/view-document.dto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -151,6 +152,80 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Failed to get user documents',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Public()
+  @Get(':documentId')
+  @ApiOperation({ summary: 'Get document details by ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document details retrieved successfully',
+  })
+  async getDocumentById(
+    @Param('documentId') documentId: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    try {
+      // Get user ID if authenticated
+      const userId = (req as any).user?.id;
+
+      const document = await this.documentsService.getDocumentById(documentId, userId);
+
+      return ResponseHelper.success(res, document, 'Document retrieved successfully');
+    } catch (error) {
+      this.logger.error(`Error getting document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(res, 'Failed to get document', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Public()
+  @Post(':documentId/view')
+  @ApiOperation({ summary: 'Track document view' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document view tracked successfully',
+  })
+  async viewDocument(
+    @Param('documentId') documentId: string,
+    @Body() viewDocumentDto: ViewDocumentDto,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    try {
+      // Get user ID if authenticated
+      const userId = (req as any).user?.id;
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('User-Agent');
+      const { referrer } = viewDocumentDto;
+
+      const result = await this.documentsService.viewDocument(
+        documentId,
+        userId,
+        ipAddress,
+        userAgent,
+        referrer
+      );
+
+      return ResponseHelper.success(res, result, 'Document view tracked successfully');
+    } catch (error) {
+      this.logger.error(`Error tracking view for document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Failed to track document view',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

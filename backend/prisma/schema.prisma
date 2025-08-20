@@ -58,6 +58,7 @@ model User {
   bookmarks       Bookmark[]
   bookmarkFolders BookmarkFolder[]
   downloads       Download[]
+  views           View[]
   recommendations RecommendationEngine[]
   CommentLike     CommentLike[]
   ActivityLog     ActivityLog[]
@@ -128,6 +129,7 @@ model Document {
   searches        SearchHistory[]
   bookmarks       Bookmark[]
   downloads       Download[]
+  views           View[]
   recommendations RecommendationEngine[]
 
   // Indexes
@@ -399,6 +401,27 @@ model Download {
   @@index([downloadedAt])
   @@index([ipAddress])
   @@map("downloads")
+}
+
+model View {
+  id         String   @id @default(cuid())
+  userId     String?  // nullable for anonymous views
+  documentId String
+  ipAddress  String?
+  userAgent  String?
+  referrer   String?
+  viewedAt   DateTime @default(now())
+
+  // Relations
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([viewedAt])
+  @@index([ipAddress])
+  @@map("views")
 }
 
 // ================================

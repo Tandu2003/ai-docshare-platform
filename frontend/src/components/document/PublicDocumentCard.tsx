@@ -1,6 +1,7 @@
-import { Download, Eye, FileText, User } from 'lucide-react';
+import { Download, ExternalLink, Eye, FileText, User } from 'lucide-react';
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,18 @@ interface PublicDocumentCardProps {
 }
 
 const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => {
+  const navigate = useNavigate();
+
   const onDownload = async () => {
     try {
       await DocumentsService.downloadDocument(document.id);
     } catch (error) {
       alert((error as Error).message);
     }
+  };
+
+  const onViewDetails = () => {
+    navigate(`/documents/${document.id}`);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -124,8 +131,12 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
         </div>
       </CardContent>
 
-      <CardFooter className="pt-0">
-        <Button onClick={onDownload} className="w-full" size="sm">
+      <CardFooter className="pt-0 flex gap-2">
+        <Button onClick={onViewDetails} variant="outline" className="flex-1" size="sm">
+          <ExternalLink className="mr-2 h-4 w-4" />
+          View Details
+        </Button>
+        <Button onClick={onDownload} className="flex-1" size="sm">
           <Download className="mr-2 h-4 w-4" />
           Download
         </Button>

@@ -1,6 +1,7 @@
-import { Download, Eye, User } from 'lucide-react';
+import { Download, ExternalLink, Eye, User } from 'lucide-react';
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { downloadFile } from '@/services/document.service';
@@ -15,12 +16,18 @@ interface DocumentCardProps {
 }
 
 const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
+  const navigate = useNavigate();
+
   const onDownload = async () => {
     try {
       await downloadFile(document.id, document.title || 'document');
     } catch (error) {
       alert((error as Error).message);
     }
+  };
+
+  const onViewDetails = () => {
+    navigate(`/documents/${document.id}`);
   };
 
   const firstFile = document.files[0] as unknown as UploadedFile;
@@ -48,6 +55,9 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <DocumentViewer file={firstFile} />
+        <Button size="sm" variant="outline" onClick={onViewDetails}>
+          <ExternalLink className="mr-2 h-4 w-4" /> View Details
+        </Button>
         <Button size="sm" onClick={onDownload}>
           <Download className="mr-2 h-4 w-4" /> Download
         </Button>

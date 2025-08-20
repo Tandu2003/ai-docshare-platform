@@ -365,4 +365,155 @@ export class DocumentsService {
       throw new InternalServerErrorException('Failed to get public documents');
     }
   }
+
+  /**
+   * Track document view
+   */
+  async viewDocument(
+    documentId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    referrer?: string
+  ) {
+    try {
+      this.logger.log(`Tracking view for document ${documentId} by user ${userId || 'anonymous'}`);
+
+      // Check if document exists and is public (or user has access)
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        select: {
+          id: true,
+          isPublic: true,
+          uploaderId: true,
+          viewCount: true,
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      // Check access permissions
+      if (!document.isPublic && document.uploaderId !== userId) {
+        throw new BadRequestException('Document is not public');
+      }
+
+      // Create view record
+      await this.prisma.view.create({
+        data: {
+          documentId,
+          userId: userId || null,
+          ipAddress,
+          userAgent,
+          referrer,
+        },
+      });
+
+      // Increment view count
+      await this.prisma.document.update({
+        where: { id: documentId },
+        data: { viewCount: { increment: 1 } },
+      });
+
+      this.logger.log(`View tracked successfully for document ${documentId}`);
+
+      return {
+        success: true,
+        message: 'View tracked successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Error tracking view for document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to track document view');
+    }
+  }
+
+  /**
+   * Get document details with files
+   */
+  async getDocumentById(documentId: string, userId?: string) {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+          category: true,
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+          _count: {
+            select: {
+              ratings: true,
+              comments: true,
+              views: true,
+              downloads: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      // Check access permissions
+      if (!document.isPublic && document.uploaderId !== userId) {
+        throw new BadRequestException('Document is not public');
+      }
+
+      return {
+        id: document.id,
+        title: document.title,
+        description: document.description,
+        tags: document.tags,
+        language: document.language,
+        isPublic: document.isPublic,
+        isPremium: document.isPremium,
+        viewCount: document.viewCount,
+        downloadCount: document.downloadCount,
+        averageRating: document.averageRating,
+        totalRatings: document.totalRatings,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
+        uploader: document.uploader,
+        category: document.category,
+        files: document.files.map((df) => ({
+          id: df.file.id,
+          originalName: df.file.originalName,
+          fileName: df.file.fileName,
+          mimeType: df.file.mimeType,
+          fileSize: df.file.fileSize,
+          storageUrl: df.file.storageUrl,
+          thumbnailUrl: df.file.thumbnailUrl,
+          order: df.order,
+        })),
+        stats: {
+          ratingsCount: document._count.ratings,
+          commentsCount: document._count.comments,
+          viewsCount: document._count.views,
+          downloadsCount: document._count.downloads,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error getting document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get document');
+    }
+  }
 }
