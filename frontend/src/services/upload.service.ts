@@ -252,13 +252,13 @@ export class UploadService {
    */
   static async getAllowedTypes(): Promise<string[]> {
     try {
-      const response = await api.get<{ allowedTypes: string[] }>('/upload/allowed-types');
+      const response = await api.get<{ types: string[]; description: string }>('/documents/upload/allowed-types');
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to get allowed file types');
       }
 
-      return response.data.allowedTypes;
+      return response.data.types;
     } catch (error) {
       console.error('Error getting allowed file types:', error);
       // Return empty array as fallback to allow all file types

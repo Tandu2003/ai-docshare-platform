@@ -19,6 +19,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
@@ -37,7 +38,10 @@ interface AuthenticatedRequest extends Request {
 export class DocumentsController {
   private readonly logger = new Logger(DocumentsController.name);
 
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly filesService: FilesService
+  ) {}
 
   @Post('create')
   @ApiOperation({ summary: 'Create a document from uploaded files' })
@@ -226,6 +230,27 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Failed to track document view',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Public()
+  @Get('upload/allowed-types')
+  @ApiOperation({ summary: 'Get allowed file types for upload' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Allowed file types retrieved successfully',
+  })
+  async getAllowedFileTypes(@Res() res: Response) {
+    try {
+      const allowedTypes = this.filesService.getAllowedTypes();
+      return ResponseHelper.success(res, allowedTypes, 'Allowed file types retrieved successfully');
+    } catch (error) {
+      this.logger.error('Error getting allowed file types:', error);
+      return ResponseHelper.error(
+        res,
+        'Failed to get allowed file types',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

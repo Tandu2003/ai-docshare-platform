@@ -18,32 +18,39 @@ export class CloudflareR2Service {
   private readonly bucketName: string;
 
   constructor(private configService: ConfigService) {
-    const endpoint = this.configService.get<string>('CLOUDFLARE_R2_ENDPOINT');
-    const accessKeyId = this.configService.get<string>('CLOUDFLARE_R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.get<string>('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
-    this.bucketName = this.configService.get<string>('CLOUDFLARE_R2_BUCKET_NAME') || 'docshare';
+    try {
+      const endpoint = this.configService.get<string>('CLOUDFLARE_R2_ENDPOINT');
+      const accessKeyId = this.configService.get<string>('CLOUDFLARE_R2_ACCESS_KEY_ID');
+      const secretAccessKey = this.configService.get<string>('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+      this.bucketName = this.configService.get<string>('CLOUDFLARE_R2_BUCKET_NAME') || 'docshare';
 
-    this.logger.log(
-      `R2 Config: endpoint=${endpoint}, accessKeyId=${accessKeyId?.substring(0, 8)}..., bucket=${this.bucketName}`
-    );
+      this.logger.log(
+        `R2 Config: endpoint=${endpoint}, accessKeyId=${accessKeyId?.substring(0, 8)}..., bucket=${this.bucketName}`
+      );
 
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
-      this.logger.error('Missing R2 credentials:', {
-        endpoint: !!endpoint,
-        accessKeyId: !!accessKeyId,
-        secretAccessKey: !!secretAccessKey,
+      if (!endpoint || !accessKeyId || !secretAccessKey) {
+        this.logger.error('Missing R2 credentials:', {
+          endpoint: !!endpoint,
+          accessKeyId: !!accessKeyId,
+          secretAccessKey: !!secretAccessKey,
+        });
+        throw new Error('Cloudflare R2 credentials not configured');
+      }
+
+      this.s3Client = new S3Client({
+        region: 'auto',
+        endpoint: endpoint,
+        credentials: {
+          accessKeyId,
+          secretAccessKey,
+        },
       });
-      throw new Error('Cloudflare R2 credentials not configured');
-    }
 
-    this.s3Client = new S3Client({
-      region: 'auto',
-      endpoint: endpoint,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
+      this.logger.log('CloudflareR2Service initialized successfully');
+    } catch (error) {
+      this.logger.error('Failed to initialize CloudflareR2Service:', error);
+      throw error;
+    }
   }
 
   async uploadFile(
@@ -58,6 +65,15 @@ export class CloudflareR2Service {
   }> {
     try {
       this.logger.log(`Starting upload for file: ${file.originalname}, size: ${file.size}`);
+
+      // Validate inputs
+      if (!file || !file.buffer) {
+        throw new Error('Invalid file: missing buffer');
+      }
+
+      if (!userId) {
+        throw new Error('Invalid userId');
+      }
 
       // Generate file hash
       const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
@@ -82,9 +98,9 @@ export class CloudflareR2Service {
         },
       });
 
-      this.logger.log(`Sending upload command to R2...`);
-      await this.s3Client.send(command);
-      this.logger.log(`Upload to R2 completed successfully`);
+      this.logger.log(`Sending upload command to R2 bucket: ${this.bucketName}...`);
+      const result = await this.s3Client.send(command);
+      this.logger.log(`Upload to R2 completed successfully:`, result);
 
       const publicUrl = this.configService.get<string>('CLOUDFLARE_R2_PUBLIC_URL');
       const storageUrl = publicUrl
@@ -106,6 +122,7 @@ export class CloudflareR2Service {
         message: error.message,
         stack: error.stack,
         name: error.name,
+        code: error.Code || error.code,
       });
       throw new BadRequestException(`Failed to upload file: ${error.message}`);
     }

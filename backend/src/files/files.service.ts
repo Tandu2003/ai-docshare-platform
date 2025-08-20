@@ -72,6 +72,7 @@ export class FilesService {
 
       // Generate file hash first to check for duplicates
       const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+      this.logger.log(`Generated file hash: ${fileHash}`);
 
       // Check if file with same hash already exists
       const existingFile = await this.prisma.file.findUnique({
@@ -96,9 +97,12 @@ export class FilesService {
       }
 
       // Upload to R2 only if not duplicate
+      this.logger.log(`Uploading to R2 storage...`);
       const uploadResult = await this.r2Service.uploadFile(file, userId);
+      this.logger.log(`R2 upload completed:`, uploadResult);
 
       // Save file metadata to database
+      this.logger.log(`Saving file metadata to database...`);
       const fileRecord = await this.prisma.file.create({
         data: {
           originalName: file.originalname,
@@ -130,7 +134,15 @@ export class FilesService {
       };
     } catch (error) {
       this.logger.error('Error uploading file:', error);
-      throw new InternalServerErrorException('Failed to upload file');
+      this.logger.error('Error message:', error.message);
+      this.logger.error('Error stack:', error.stack);
+      
+      // Re-throw the original error if it's already a known exception
+      if (error instanceof BadRequestException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
     }
   }
 
@@ -173,6 +185,8 @@ export class FilesService {
    * Validate uploaded file
    */
   private validateFile(file: Express.Multer.File) {
+    this.logger.log(`Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`);
+    
     // Check file size
     if (file.size > this.maxFileSize) {
       throw new BadRequestException(
@@ -182,17 +196,103 @@ export class FilesService {
 
     // Check file type
     const allowedTypes = [
+      // PDF files
       'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'text/plain',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      
+      // Microsoft Office documents
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+      'application/vnd.ms-powerpoint', // .ppt
+      
+      // Text files
+      'text/plain', // .txt
+      'text/markdown', // .md
+      'text/csv', // .csv
+      'application/rtf', // .rtf
+      
+      // Image files
+      'image/jpeg', // .jpg, .jpeg
+      'image/png', // .png
+      'image/gif', // .gif
+      'image/bmp', // .bmp
+      'image/webp', // .webp
+      'image/svg+xml', // .svg
+      
+      // Archive files
+      'application/zip', // .zip
+      'application/x-rar-compressed', // .rar
+      'application/x-7z-compressed', // .7z
+      
+      // Other common formats
+      'application/json', // .json
+      'application/xml', // .xml
+      'text/xml', // .xml
+      'text/html', // .html
+      'text/css', // .css
+      'application/javascript', // .js
+      'text/javascript', // .js
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('File type not supported');
+      this.logger.error(`File type not supported: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`);
+      throw new BadRequestException(`File type not supported: ${file.mimetype}. Please upload a supported file format.`);
     }
+    
+    this.logger.log(`File validation passed for: ${file.originalname}`);
+  }
+
+  /**
+   * Get allowed file types
+   */
+  getAllowedTypes(): { types: string[]; description: string } {
+    const allowedTypes = [
+      // PDF files
+      'application/pdf',
+      
+      // Microsoft Office documents
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+      'application/vnd.ms-powerpoint', // .ppt
+      
+      // Text files
+      'text/plain', // .txt
+      'text/markdown', // .md
+      'text/csv', // .csv
+      'application/rtf', // .rtf
+      
+      // Image files
+      'image/jpeg', // .jpg, .jpeg
+      'image/png', // .png
+      'image/gif', // .gif
+      'image/bmp', // .bmp
+      'image/webp', // .webp
+      'image/svg+xml', // .svg
+      
+      // Archive files
+      'application/zip', // .zip
+      'application/x-rar-compressed', // .rar
+      'application/x-7z-compressed', // .7z
+      
+      // Other common formats
+      'application/json', // .json
+      'application/xml', // .xml
+      'text/xml', // .xml
+      'text/html', // .html
+      'text/css', // .css
+      'application/javascript', // .js
+      'text/javascript', // .js
+    ];
+
+    return {
+      types: allowedTypes,
+      description: 'Supported file types for upload'
+    };
   }
 
   /**
