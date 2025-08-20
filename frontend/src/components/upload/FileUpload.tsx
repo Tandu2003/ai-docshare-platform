@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { DocumentsService, FilesService } from '@/services/files.service';
@@ -270,7 +271,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Drop Zone */}
         <div
           className={cn(
-            'border-2 border-dashed rounded-lg p-6 text-center transition-colors',
+            'border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer',
             dragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400',
             files.length > 0 && 'mb-4'
           )}
@@ -278,17 +279,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <p className="text-lg font-medium mb-2">
-            Drop documents here or{' '}
-            <Button
-              variant="link"
-              className="p-0 h-auto"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              browse
-            </Button>
+            Click here or drop documents to upload
           </p>
           <p className="text-sm text-gray-500">
             {multiple ? 'Upload multiple documents' : 'Upload a single document'} (max 100MB each)
@@ -384,19 +379,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="language">Language</Label>
-            <select
-              id="language"
+            <Select
               value={uploadData.language}
-              onChange={(e) =>
-                setUploadData((prev: DocumentData) => ({ ...prev, language: e.target.value }))
+              onValueChange={(value) =>
+                setUploadData((prev: DocumentData) => ({ ...prev, language: value }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="en">English</option>
-              <option value="vi">Vietnamese</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="vi">Vietnamese</SelectItem>
+                <SelectItem value="es">Spanish</SelectItem>
+                <SelectItem value="fr">French</SelectItem>
+                <SelectItem value="de">German</SelectItem>
+                <SelectItem value="zh">Chinese</SelectItem>
+                <SelectItem value="ja">Japanese</SelectItem>
+                <SelectItem value="ko">Korean</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -423,8 +425,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-4 w-4 p-0"
+                  className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
                   onClick={() => removeTag(tag)}
+                  title={`Remove ${tag} tag`}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -435,16 +438,34 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <Input
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Add a tag"
-              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              placeholder="Add a tag (e.g., research, tutorial, guide)"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
+              className="flex-1"
             />
-            <Button type="button" size="sm" onClick={addTag}>
+            <Button 
+              type="button" 
+              size="sm" 
+              onClick={addTag}
+              disabled={!newTag.trim()}
+              className="px-3"
+            >
               <Plus className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Add</span>
             </Button>
           </div>
+          {uploadData.tags && uploadData.tags.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {uploadData.tags.length} tag{uploadData.tags.length > 1 ? 's' : ''} added
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 p-3 rounded-lg border bg-muted/50">
           <Checkbox
             id="isPublic"
             checked={uploadData.isPublic}
@@ -452,7 +473,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               setUploadData((prev: DocumentData) => ({ ...prev, isPublic: !!checked }))
             }
           />
-          <Label htmlFor="isPublic">Make this document public</Label>
+          <div className="flex-1">
+            <Label htmlFor="isPublic" className="font-medium cursor-pointer">
+              Make this document public
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Public documents can be viewed by anyone without login
+            </p>
+          </div>
         </div>
 
         {/* Create Document Button */}
