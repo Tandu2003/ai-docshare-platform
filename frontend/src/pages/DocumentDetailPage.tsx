@@ -242,9 +242,6 @@ const DocumentDetailPage: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium truncate">{file.originalName}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {file.mimeType.split('/')[1].toUpperCase()}
-                          </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {formatFileSize(file.fileSize)}
