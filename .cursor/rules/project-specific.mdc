@@ -1,0 +1,69 @@
+---
+type: 'mdc'
+alwaysApply: true
+---
+
+# AI DocShare Platform - Project Specific Rules
+
+## Project Structure
+
+This is a full-stack document sharing platform with AI capabilities, consisting of:
+
+- **Backend**: NestJS API with Prisma ORM
+- **Frontend**: React + TypeScript with Redux Toolkit
+- **Database**: Prisma schema with document management
+
+## Backend Architecture (NestJS)
+
+- **Main Entry**: [main.ts](mdc:backend/src/main.ts)
+- **App Module**: [app.module.ts](mdc:backend/src/app.module.ts)
+- **Core Modules**:
+  - [Auth Module](mdc:backend/src/auth/auth.module.ts) - JWT authentication
+  - [Documents Module](mdc:backend/src/documents/documents.module.ts) - Document management
+  - [Files Module](mdc:backend/src/files/files.module.ts) - File handling
+  - [Upload Module](mdc:backend/src/upload/upload.module.ts) - File uploads
+  - [Mail Module](mdc:backend/src/mail/mail.module.ts) - Email services
+
+## Frontend Architecture (React)
+
+- **Main Entry**: [main.tsx](mdc:frontend/src/main.tsx)
+- **App Component**: [App.tsx](mdc:frontend/src/App.tsx)
+- **Key Features**:
+  - Authentication system with login/register
+  - Document management and viewing
+  - File upload and management
+  - Public document sharing
+
+## Database Schema
+
+- **Prisma Schema**: [schema.prisma](mdc:backend/prisma/schema.prisma)
+- Use Prisma for all database operations
+- Implement proper relationships between entities
+
+## Authentication Flow
+
+- JWT-based authentication
+- Email verification system
+- Password reset functionality
+- Public routes for unauthenticated access
+
+## File Management
+
+- Cloudflare R2 integration for file storage
+- Support for document uploads
+- File preview and management
+- Public file sharing capabilities
+
+## AI Integration
+
+- AI module for document processing
+- Document analysis and categorization
+- Smart search and recommendations
+
+## Development Guidelines
+
+- Follow the established module structure
+- Use existing error handling patterns
+- Implement proper validation with DTOs
+- Maintain consistent API response formats
+- Use the established authentication guards and decorators

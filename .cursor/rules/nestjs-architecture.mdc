@@ -1,0 +1,96 @@
+---
+type: 'mdc'
+globs: backend/**/*.ts
+---
+
+# NestJS Architecture and Coding Standards
+
+## Module Architecture
+
+- Use modular architecture with clear separation of concerns
+- One module per main domain/route
+- One controller per route (plus secondary controllers for sub-routes)
+- Organize modules with consistent structure:
+  ```
+  module-name/
+  ├── module-name.module.ts
+  ├── module-name.controller.ts
+  ├── module-name.service.ts
+  ├── dto/
+  │   ├── create-module-name.dto.ts
+  │   └── update-module-name.dto.ts
+  ├── entities/
+  │   └── module-name.entity.ts
+  └── interfaces/
+      └── module-name.interface.ts
+  ```
+
+## Controllers
+
+- Keep controllers thin - delegate business logic to services
+- Use DTOs validated with class-validator for inputs
+- Return simple types or response interfaces for outputs
+- Use proper HTTP status codes and response formats
+- Implement `admin/test` method in each controller as smoke test
+
+## Services
+
+- Encapsulate business logic and persistence in services
+- One service per entity/domain
+- Use dependency injection for external dependencies
+- Keep services focused on single responsibility
+- Use transactions for multi-step operations
+
+## DTOs and Validation
+
+- Use class-validator decorators for input validation
+- Create separate DTOs for create, update, and response operations
+- Use class-transformer for data transformation
+- Validate all inputs at the controller level
+
+## Entities and Persistence
+
+- Use Prisma for data persistence (as seen in your project)
+- Define clear entity relationships
+- Use proper indexing and constraints
+- Implement soft deletes where appropriate
+
+## Error Handling
+
+- Use global exception filters for consistent error responses
+- Create custom exception classes for domain-specific errors
+- Return appropriate HTTP status codes
+- Log errors with sufficient context
+
+## Guards and Authentication
+
+- Use guards for permission management
+- Implement JWT authentication strategy
+- Use decorators for public routes
+- Implement role-based access control
+
+## Testing Standards
+
+- Use Jest framework for testing
+- Write unit tests for each controller and service
+- Write end-to-end tests for each API module
+- Use test database for integration tests
+- Mock external dependencies appropriately
+
+## Configuration
+
+- Use ConfigModule for environment configuration
+- Validate environment variables
+- Use configuration service for dependency injection
+- Keep sensitive data in environment variables
+
+## File Naming Conventions
+
+- Controllers: `*.controller.ts`
+- Services: `*.service.ts`
+- Modules: `*.module.ts`
+- DTOs: `*.dto.ts`
+- Entities: `*.entity.ts`
+- Guards: `*.guard.ts`
+- Strategies: `*.strategy.ts`
+- Interfaces: `*.interface.ts`

@@ -1,0 +1,222 @@
+---
+type: 'mdc'
+globs: frontend/**/*.tsx,frontend/**/*.ts
+---
+
+# Frontend Development Standards - React, TypeScript, Vite, Redux Toolkit, Shadcn UI
+
+> **Note**: This rule complements the
+> [Development Philosophy](mdc:.cursor/rules/development-philosophy.mdc) rule. For comprehensive
+> development guidelines, refer to both rules.
+
+## Code Style and Structure
+
+### Functional Programming Approach
+
+- Use functional and declarative programming patterns
+- **Avoid classes** - use functional components exclusively
+- Write concise, technical TypeScript code with accurate examples
+- Prefer iteration and modularization over code duplication
+- Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`, `canSubmit`)
+
+### File Structure
+
+Structure files with clear separation in this order:
+
+1. **Exported component** (main component)
+2. **Subcomponents** (local components)
+3. **Helpers** (utility functions)
+4. **Static content** (constants, data)
+5. **Types** (interfaces, type definitions)
+
+## Naming Conventions
+
+### Directories and Files
+
+- Use **lowercase with dashes** for directories (e.g., `components/auth-wizard/`)
+- Use **kebab-case** for file names (e.g., `auth-wizard.tsx`, `user-profile.tsx`)
+- Favor **named exports** for components over default exports
+
+### Redux Organization
+
+- Keep Redux slices inside `store/` directory
+- Use descriptive names with dashes (e.g., `auth-slice.ts`, `documents-slice.ts`)
+- Follow the pattern: `feature-slice.ts`
+
+## TypeScript Usage
+
+### Type Definitions
+
+- Use TypeScript for **all code** - no JavaScript files
+- **Prefer `interface` over `type`** unless unions are needed
+- **Avoid enums** - use maps or union types instead
+- Use functional components with TypeScript interfaces
+- Strongly type Redux state and actions
+
+### Interface Examples
+
+```typescript
+interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  isVerified: boolean;
+}
+
+interface AuthState {
+  user: UserProfile | null;
+  isLoading: boolean;
+  hasError: boolean;
+  errorMessage: string | null;
+}
+```
+
+## Syntax and Formatting
+
+### Function Declarations
+
+- Use the **`function` keyword** for pure functions
+- Avoid unnecessary curly braces in conditionals
+- Use concise syntax for simple statements
+
+### Examples
+
+```typescript
+// Preferred function syntax
+function handleSubmit(event: FormEvent) {
+  event.preventDefault();
+  // ... logic
+}
+
+// Concise conditionals
+if (isLoading) return <Spinner />;
+if (hasError) return <ErrorMessage />;
+
+// Simple statements without braces
+if (isValid) dispatch(submitForm());
+```
+
+### JSX Patterns
+
+- Use **declarative JSX**
+- Keep JSX clean and readable
+- Use conditional rendering with ternary operators or logical AND
+
+## UI and Styling
+
+### Component Libraries
+
+- Use **Shadcn UI** for base components
+- Use **Radix UI** for complex interactive components
+- Use **Tailwind CSS** for styling and layout
+
+### Responsive Design
+
+- Implement **mobile-first approach** with Tailwind CSS
+- Use responsive utilities: `sm:`, `md:`, `lg:`, `xl:`
+- Ensure components work on all screen sizes
+
+### Tailwind Usage
+
+```typescript
+// Mobile-first responsive design
+<div className='p-4 sm:p-6 lg:p-8'>
+  <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold'>Document Title</h1>
+</div>
+```
+
+## Performance Optimization
+
+### State Management
+
+- **Minimize `useEffect` and `useState`**
+- Delegate app-wide state to **Redux Toolkit**
+- Derive UI state from Redux whenever possible
+- Use `createSelector` for memoized selectors
+
+### Code Splitting
+
+- Use **React.lazy + Suspense** for non-critical components
+- Implement lazy loading for routes and heavy components
+
+### Image Optimization
+
+- Use **WebP format** when possible
+- Include **size data** for images
+- Implement **lazy loading** for images below the fold
+
+### Redux Performance
+
+```typescript
+import { createSelector } from '@reduxjs/toolkit';
+
+export const selectFilteredDocuments = createSelector(
+  [selectAllDocuments, selectSearchTerm],
+  (documents, searchTerm) =>
+    documents.filter((doc) => doc.title.toLowerCase().includes(searchTerm.toLowerCase())),
+);
+```
+
+## Key Conventions
+
+### Redux Toolkit
+
+- Use **RTK slices** for state management
+- Follow the established pattern in your project
+- Keep actions and reducers co-located in slices
+
+### Component Composition
+
+- Keep components **small and composable**
+- Use composition over inheritance
+- Break complex components into smaller, focused pieces
+
+### Web Vitals
+
+- Optimize for **LCP** (Largest Contentful Paint)
+- Minimize **CLS** (Cumulative Layout Shift)
+- Improve **FID** (First Input Delay)
+
+### Routing and State
+
+- Use **nuqs** if routing/search param state management is needed
+- Integrate with React Router for navigation
+- Keep URL state in sync with Redux state
+
+## File Organization Example
+
+```typescript
+// 1. Main exported component
+export function UserProfile({ userId }: UserProfileProps) {
+  // Component logic
+}
+
+// 2. Subcomponents
+function ProfileHeader({ user }: { user: User }) {
+  // Subcomponent logic
+}
+
+// 3. Helper functions
+function formatDisplayName(user: User): string {
+  return `${user.firstName} ${user.lastName}`;
+}
+
+// 4. Static content
+const PROFILE_SECTIONS = ['personal', 'security', 'preferences'] as const;
+
+// 5. Types
+interface UserProfileProps {
+  userId: string;
+}
+```
+
+## Integration with Development Philosophy
+
+This rule works in conjunction with the
+[Development Philosophy](mdc:.cursor/rules/development-philosophy.mdc) rule to provide:
+
+- **Code Style**: Tab indentation, no semicolons, 80-character line limit
+- **Testing**: Jest + React Testing Library with Arrange-Act-Assert
+- **Security**: Input sanitization, XSS prevention
+- **Accessibility**: ARIA attributes, keyboard navigation
+- **Error Handling**: React Hook Form + Zod validation
