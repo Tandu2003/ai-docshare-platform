@@ -1,12 +1,13 @@
-import { Module } from '@nestjs/common'
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { PrismaModule } from '../prisma/prisma.module'
-import { FilesController } from './files.controller'
-import { FilesService } from './files.service'
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { PrismaModule } from '../prisma/prisma.module';
+import { FilesController } from './files.controller';
+import { FilesService } from './files.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ConfigModule],
   controllers: [FilesController],
   providers: [FilesService, CloudflareR2Service],
   exports: [FilesService],

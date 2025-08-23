@@ -1,12 +1,16 @@
-import * as cookieParser from 'cookie-parser'
-import helmet from 'helmet'
+import * as cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
-import { AppModule } from '@/app.module'
-import { ValidationPipe } from '@nestjs/common'
-import { NestFactory } from '@nestjs/core'
+import { AppModule } from '@/app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 
-(async () => {
+async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Trust proxy to get real IP addresses
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
 
   // Security middleware
   app.use(helmet());
@@ -32,4 +36,9 @@ import { NestFactory } from '@nestjs/core'
 
   const port = process.env.PORT ?? 8080;
   await app.listen(port);
-})();
+}
+
+bootstrap().catch((error) => {
+  console.error('Error starting application:', error);
+  process.exit(1);
+});

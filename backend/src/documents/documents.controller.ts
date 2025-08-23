@@ -18,9 +18,12 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { ViewDocumentDto } from './dto/view-document.dto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -36,7 +39,10 @@ interface AuthenticatedRequest extends Request {
 export class DocumentsController {
   private readonly logger = new Logger(DocumentsController.name);
 
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly filesService: FilesService
+  ) {}
 
   @Post('create')
   @ApiOperation({ summary: 'Create a document from uploaded files' })
@@ -151,6 +157,123 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Failed to get user documents',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Public()
+  @Get(':documentId')
+  @ApiOperation({ summary: 'Get document details by ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document details retrieved successfully',
+  })
+  async getDocumentById(
+    @Param('documentId') documentId: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    try {
+      // Get user ID if authenticated
+      const userId = (req as any).user?.id;
+
+      const document = await this.documentsService.getDocumentById(documentId, userId);
+
+      return ResponseHelper.success(res, document, 'Document retrieved successfully');
+    } catch (error) {
+      this.logger.error(`Error getting document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(res, 'Failed to get document', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
+  @Post(':documentId/view')
+  @ApiOperation({ summary: 'Track document view' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document view tracked successfully',
+  })
+  async viewDocument(
+    @Param('documentId') documentId: string,
+    @Body() viewDocumentDto: ViewDocumentDto,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    try {
+      // Get user ID if authenticated (optional)
+      const userId = (req as any).user?.id || null;
+      
+      // Get IP address with multiple fallback methods
+      let ipAddress = req.ip || 
+        req.connection?.remoteAddress || 
+        req.socket?.remoteAddress || 
+        'unknown';
+        
+      // Handle x-forwarded-for header (can be array)
+      if (!ipAddress || ipAddress === 'unknown') {
+        const forwardedFor = req.headers['x-forwarded-for'];
+        const realIp = req.headers['x-real-ip'];
+        
+        if (forwardedFor) {
+          ipAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
+        } else if (realIp) {
+          ipAddress = Array.isArray(realIp) ? realIp[0] : realIp;
+        }
+      }
+        
+      const userAgent = req.get('User-Agent') || 'unknown';
+      const { referrer } = viewDocumentDto;
+
+      this.logger.log(
+        `Tracking view for document ${documentId}: userId=${userId}, ip=${ipAddress}`
+      );
+
+      const result = await this.documentsService.viewDocument(
+        documentId,
+        userId,
+        ipAddress,
+        userAgent,
+        referrer
+      );
+
+      return ResponseHelper.success(res, result, 'Document view tracked successfully');
+    } catch (error) {
+      this.logger.error(`Error tracking view for document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Failed to track document view',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Public()
+  @Get('upload/allowed-types')
+  @ApiOperation({ summary: 'Get allowed file types for upload' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Allowed file types retrieved successfully',
+  })
+  async getAllowedFileTypes(@Res() res: Response) {
+    try {
+      const allowedTypes = this.filesService.getAllowedTypes();
+      return ResponseHelper.success(res, allowedTypes, 'Allowed file types retrieved successfully');
+    } catch (error) {
+      this.logger.error('Error getting allowed file types:', error);
+      return ResponseHelper.error(
+        res,
+        'Failed to get allowed file types',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

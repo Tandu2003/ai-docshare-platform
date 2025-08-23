@@ -1,13 +1,61 @@
-import { apiClient } from '@/utils/api-client'
+import { apiClient } from '@/utils/api-client';
 
-import { DocumentsService, FilesService } from './files.service'
-import { UploadedFile } from './upload.service'
+import { DocumentsService, FilesService } from './files.service';
+import { UploadedFile } from './upload.service';
 
 export interface PaginatedDocuments {
   files: UploadedFile[];
   total: number;
   page: number;
   limit: number;
+}
+
+export interface DocumentView {
+  id: string;
+  title: string;
+  description?: string;
+  tags: string[];
+  language: string;
+  isPublic: boolean;
+  isPremium: boolean;
+  viewCount: number;
+  downloadCount: number;
+  averageRating: number;
+  totalRatings: number;
+  createdAt: string;
+  updatedAt: string;
+  uploader: {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  category: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  files: {
+    id: string;
+    originalName: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: bigint;
+    storageUrl: string;
+    thumbnailUrl?: string;
+    order: number;
+  }[];
+  stats: {
+    ratingsCount: number;
+    commentsCount: number;
+    viewsCount: number;
+    downloadsCount: number;
+  };
+}
+
+export interface ViewDocumentRequest {
+  referrer?: string;
 }
 
 export const getDocuments = async (page = 1, limit = 10): Promise<PaginatedDocuments> => {
@@ -18,6 +66,40 @@ export const getDocuments = async (page = 1, limit = 10): Promise<PaginatedDocum
     throw new Error('No data returned from API');
   }
   return response.data;
+};
+
+/**
+ * Get document details by ID
+ */
+export const getDocumentById = async (documentId: string): Promise<DocumentView> => {
+  const response = await apiClient.get<DocumentView>(`/documents/${documentId}`);
+  if (!response.data) {
+    throw new Error('No data returned from API');
+  }
+  return response.data;
+};
+
+/**
+ * Track document view
+ */
+export const viewDocument = async (
+  documentId: string,
+  options?: ViewDocumentRequest
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/documents/${documentId}/view`,
+      options || {}
+    );
+    if (!response.data) {
+      throw new Error('No data returned from API');
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Failed to track document view', error);
+    // Don't throw error for view tracking as it's not critical
+    return { success: false, message: 'Failed to track view' };
+  }
 };
 
 export const incrementViewCount = async (fileId: string): Promise<void> => {
