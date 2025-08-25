@@ -1,14 +1,15 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import * as archiver from 'archiver'
+import { Readable } from 'stream'
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { FilesService } from '../files/files.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
+import {
+    BadRequestException, Injectable, InternalServerErrorException, Logger
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { FilesService } from '../files/files.service'
+import { PrismaService } from '../prisma/prisma.service'
+import { CreateDocumentDto } from './dto/create-document.dto'
 
 @Injectable()
 export class DocumentsService {
@@ -17,7 +18,8 @@ export class DocumentsService {
   constructor(
     private prisma: PrismaService,
     private filesService: FilesService,
-    private r2Service: CloudflareR2Service
+    private r2Service: CloudflareR2Service,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -663,15 +665,70 @@ export class DocumentsService {
   private async createZipDownload(files: any[]): Promise<string> {
     try {
       this.logger.log(`Creating ZIP for ${files.length} files`);
-      // For now, return the first file's URL
-      // TODO: Implement actual ZIP creation with archiver or similar
-      if (files.length > 0) {
-        this.logger.log(`Using first file for ZIP: ${files[0].originalName}`);
-        const downloadUrl = await this.r2Service.getSignedDownloadUrl(files[0].storageUrl, 300);
-        this.logger.log(`Generated ZIP URL: ${downloadUrl.substring(0, 100)}...`);
-        return downloadUrl;
+      
+      if (files.length === 0) {
+        throw new Error('No files to zip');
       }
-      throw new Error('No files to zip');
+
+      // Create ZIP archive
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      const chunks: Buffer[] = [];
+
+      // Collect ZIP data
+      archive.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+
+      // Handle ZIP completion
+      const zipPromise = new Promise<Buffer>((resolve, reject) => {
+        archive.on('end', () => {
+          const zipBuffer = Buffer.concat(chunks);
+          this.logger.log(`ZIP created successfully, size: ${zipBuffer.length} bytes`);
+          resolve(zipBuffer);
+        });
+
+        archive.on('error', (error) => {
+          this.logger.error('ZIP creation error:', error);
+          reject(error);
+        });
+      });
+
+      // Add files to ZIP
+      for (const file of files) {
+        try {
+          this.logger.log(`Adding file to ZIP: ${file.originalName}`);
+          
+          // Get file stream from R2
+          const fileStream = await this.r2Service.getFileStream(file.storageUrl);
+          
+          // Add file to archive
+          archive.append(fileStream, { name: file.originalName });
+        } catch (fileError) {
+          this.logger.error(`Error adding file ${file.originalName} to ZIP:`, fileError);
+          // Continue with other files instead of failing completely
+        }
+      }
+
+      // Finalize ZIP
+      await archive.finalize();
+      
+      // Wait for ZIP completion
+      const zipBuffer = await zipPromise;
+
+      // Upload ZIP to R2 and get signed URL
+      const zipKey = `downloads/zip-${Date.now()}-${Math.random().toString(36).substring(7)}.zip`;
+      await this.r2Service.uploadBuffer(zipBuffer, zipKey, 'application/zip');
+      
+      // Create storage URL using public URL and get signed URL for the ZIP file (30 minutes expiry)
+      const publicUrl = this.configService.get<string>('CLOUDFLARE_R2_PUBLIC_URL');
+      const storageUrl = publicUrl
+        ? `${publicUrl}/${zipKey}`
+        : `${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${this.r2Service.bucketName}/${zipKey}`;
+      const zipUrl = await this.r2Service.getSignedDownloadUrl(storageUrl, 1800);
+      
+      this.logger.log(`ZIP uploaded and signed URL generated: ${zipUrl.substring(0, 100)}...`);
+      
+      return zipUrl;
     } catch (error) {
       this.logger.error('Error creating ZIP download:', error);
       throw new InternalServerErrorException('Failed to create ZIP download');

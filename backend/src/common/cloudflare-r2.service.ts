@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { Readable } from 'stream';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -15,7 +16,7 @@ import { ConfigService } from '@nestjs/config';
 export class CloudflareR2Service {
   private readonly logger = new Logger(CloudflareR2Service.name);
   private readonly s3Client: S3Client;
-  private readonly bucketName: string;
+  public readonly bucketName: string;
 
   constructor(private configService: ConfigService) {
     try {
@@ -165,6 +166,58 @@ export class CloudflareR2Service {
     } catch (error) {
       this.logger.error('Error deleting file from R2:', error);
       throw new BadRequestException('Failed to delete file');
+    }
+  }
+
+  /**
+   * Upload buffer to R2
+   */
+  async uploadBuffer(buffer: Buffer, key: string, contentType: string): Promise<string> {
+    try {
+      this.logger.log(`Uploading buffer to R2: ${key} (${buffer.length} bytes)`);
+
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+      });
+
+      await this.s3Client.send(command);
+      
+      const storageUrl = `https://${this.bucketName}.${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${key}`;
+      this.logger.log(`Buffer uploaded successfully: ${storageUrl}`);
+      
+      return storageUrl;
+    } catch (error) {
+      this.logger.error('Error uploading buffer to R2:', error);
+      throw new BadRequestException('Failed to upload buffer to storage');
+    }
+  }
+
+  /**
+   * Get file stream from R2
+   */
+  async getFileStream(storageUrl: string): Promise<Readable> {
+    try {
+      const key = this.extractKeyFromUrl(storageUrl);
+      this.logger.log(`Getting file stream for: ${key}`);
+
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      const response = await this.s3Client.send(command);
+      
+      if (!response.Body) {
+        throw new Error('No file body received');
+      }
+
+      return response.Body as Readable;
+    } catch (error) {
+      this.logger.error('Error getting file stream:', error);
+      throw new BadRequestException('Failed to get file stream');
     }
   }
 
