@@ -163,9 +163,9 @@ export const downloadDocument = async (
     console.log('API response:', response);
     console.log('Response data:', response.data);
 
-    if (response.data?.success && response.data?.data) {
-      console.log('Download data extracted:', response.data.data);
-      return response.data.data;
+    if (response?.success && response?.data) {
+      console.log('Download data extracted:', response.data);
+      return response.data;
     } else {
       console.error('Invalid response format:', response.data);
       throw new Error(response.data?.message || 'Failed to prepare document download');
