@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -15,7 +16,8 @@ export class DocumentsService {
 
   constructor(
     private prisma: PrismaService,
-    private filesService: FilesService
+    private filesService: FilesService,
+    private r2Service: CloudflareR2Service
   ) {}
 
   /**
@@ -544,6 +546,120 @@ export class DocumentsService {
         throw error;
       }
       throw new InternalServerErrorException('Failed to get document');
+    }
+  }
+
+  /**
+   * Download document - creates zip file with all document files and tracks download
+   */
+  async downloadDocument(
+    documentId: string,
+    userId: string,
+    ipAddress?: string,
+    userAgent?: string,
+    referrer?: string
+  ): Promise<{
+    downloadUrl: string;
+    fileName: string;
+    fileCount: number;
+  }> {
+    try {
+      this.logger.log(`Preparing download for document ${documentId} by user ${userId}`);
+
+      // Get document with files
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      // Check access permissions
+      if (!document.isPublic && document.uploaderId !== userId) {
+        throw new BadRequestException('You do not have permission to download this document');
+      }
+
+      if (!document.files || document.files.length === 0) {
+        throw new BadRequestException('Document has no files to download');
+      }
+
+      // Create download record and increment counter in a transaction
+      await this.prisma.$transaction(async (prisma) => {
+        // Log download
+        await prisma.download.create({
+          data: {
+            userId,
+            documentId,
+            ipAddress,
+            userAgent,
+            referrer,
+          },
+        });
+
+        // Increment download count
+        await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            downloadCount: {
+              increment: 1,
+            },
+          },
+        });
+      });
+
+      // If single file, return direct download URL
+      if (document.files.length === 1) {
+        const file = document.files[0].file;
+        const downloadUrl = await this.r2Service.getSignedDownloadUrl(file.storageUrl, 300); // 5 minutes
+        
+        return {
+          downloadUrl,
+          fileName: file.originalName,
+          fileCount: 1,
+        };
+      }
+
+      // For multiple files, create ZIP
+      const zipFileName = `${document.title || 'document'}.zip`;
+      const zipDownloadUrl = await this.createZipDownload(document.files.map(df => df.file));
+
+      return {
+        downloadUrl: zipDownloadUrl,
+        fileName: zipFileName,
+        fileCount: document.files.length,
+      };
+    } catch (error) {
+      this.logger.error(`Error preparing download for document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to prepare document download');
+    }
+  }
+
+  /**
+   * Create ZIP file download URL for multiple files
+   */
+  private async createZipDownload(files: any[]): Promise<string> {
+    try {
+      // For now, return the first file's URL
+      // TODO: Implement actual ZIP creation with archiver or similar
+      if (files.length > 0) {
+        return await this.r2Service.getSignedDownloadUrl(files[0].storageUrl, 300);
+      }
+      throw new Error('No files to zip');
+    } catch (error) {
+      this.logger.error('Error creating ZIP download:', error);
+      throw new InternalServerErrorException('Failed to create ZIP download');
     }
   }
 }

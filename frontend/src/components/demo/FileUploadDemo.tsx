@@ -11,6 +11,7 @@ import {
   FileUploadResult,
   FilesService,
 } from '@/services/files.service';
+import { UploadService } from '@/services/upload.service';
 
 const FileUploadDemo: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -80,14 +81,6 @@ const FileUploadDemo: React.FC = () => {
     }
   };
 
-  const handleDownloadFile = async (fileId: string, fileName: string) => {
-    try {
-      await FilesService.downloadFile(fileId, fileName);
-    } catch (error) {
-      alert('Failed to download file: ' + (error as Error).message);
-    }
-  };
-
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <Card>
@@ -135,9 +128,9 @@ const FileUploadDemo: React.FC = () => {
               {uploadedFiles.map((file) => (
                 <div key={file.id} className="flex justify-between items-center p-2 border rounded">
                   <span>{file.originalName}</span>
-                  <Button size="sm" onClick={() => handleDownloadFile(file.id, file.originalName)}>
-                    Download
-                  </Button>
+                  <span className="text-sm text-gray-500">
+                    {UploadService.formatFileSize(file.fileSize)}
+                  </span>
                 </div>
               ))}
             </div>

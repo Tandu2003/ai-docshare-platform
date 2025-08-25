@@ -18,7 +18,6 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
@@ -103,7 +102,7 @@ export class FilesController {
     description: 'Secure file URL generated successfully',
   })
   async getSecureFileUrl(
-    @Param('fileId') fileId: string, 
+    @Param('fileId') fileId: string,
     @Req() req: Request,
     @Res() res: Response
   ) {
@@ -124,28 +123,6 @@ export class FilesController {
       return ResponseHelper.error(
         res,
         'Could not generate secure file URL',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Public()
-  @Post('download/:fileId')
-  @ApiOperation({ summary: 'Get download URL for a file' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Download URL generated successfully',
-  })
-  async downloadFile(@Param('fileId') fileId: string, @Res() res: Response) {
-    try {
-      const downloadUrl = await this.filesService.getDownloadUrl(fileId);
-
-      return ResponseHelper.success(res, { downloadUrl }, 'Download URL generated');
-    } catch (error) {
-      this.logger.error(`Failed to generate download URL for file ${fileId}`, error);
-      return ResponseHelper.error(
-        res,
-        'Could not generate download URL',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

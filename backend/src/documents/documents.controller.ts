@@ -1,29 +1,20 @@
-import { Request, Response } from 'express';
+import { Request, Response } from 'express'
 
 import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+    BadRequestException, Body, Controller, Get, HttpStatus, Logger, Param, Post, Query, Req, Res,
+    UseGuards
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 
-import { Public } from '../auth/decorators/public.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { ResponseHelper } from '../common/helpers/response.helper';
-import { FilesService } from '../files/files.service';
-import { DocumentsService } from './documents.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { ViewDocumentDto } from './dto/view-document.dto';
+import { Public } from '../auth/decorators/public.decorator'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard'
+import { ResponseHelper } from '../common/helpers/response.helper'
+import { FilesService } from '../files/files.service'
+import { DocumentsService } from './documents.service'
+import { CreateDocumentDto } from './dto/create-document.dto'
+import { DownloadDocumentDto } from './dto/download-document.dto'
+import { ViewDocumentDto } from './dto/view-document.dto'
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -82,22 +73,60 @@ export class DocumentsController {
   }
 
   @Public()
-  @Post('download/:documentId')
+  @Post(':documentId/download')
   @ApiOperation({ summary: 'Download all files of a document' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Document files download prepared',
   })
-  async downloadDocument(@Param('documentId') documentId: string, @Res() res: Response) {
+  async downloadDocument(
+    @Param('documentId') documentId: string,
+    @Body() downloadDto: DownloadDocumentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
     try {
-      const downloadData = await this.documentsService.prepareDocumentDownload(documentId);
+      const userId = req.user.id;
 
-      return ResponseHelper.success(res, downloadData, 'Document download prepared');
+      // Extract IP address from request
+      let ipAddress = 
+        downloadDto.ipAddress ||
+        req.ip ||
+        req.connection?.remoteAddress ||
+        req.socket?.remoteAddress ||
+        'unknown';
+
+      // Clean up IPv6 mapped IPv4 addresses
+      if (ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+
+      const userAgent = downloadDto.userAgent || req.get('User-Agent') || 'unknown';
+      const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
+
+      this.logger.log(
+        `Download request for document ${documentId} from user ${userId}, IP: ${ipAddress}`
+      );
+
+      const downloadResult = await this.documentsService.downloadDocument(
+        documentId,
+        userId,
+        ipAddress,
+        userAgent,
+        referrer
+      );
+
+      return ResponseHelper.success(res, downloadResult, 'Document download prepared successfully');
     } catch (error) {
-      this.logger.error(`Failed to prepare download for document ${documentId}`, error);
+      this.logger.error(`Error preparing download for document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
       return ResponseHelper.error(
         res,
-        'Could not prepare document download',
+        'Failed to prepare document download',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

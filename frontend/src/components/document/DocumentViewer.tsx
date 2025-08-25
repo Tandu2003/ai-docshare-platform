@@ -1,9 +1,9 @@
-import { Download, Eye, Info } from 'lucide-react'
+import { Eye, Info } from 'lucide-react'
 import React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { downloadFile, incrementViewCount } from '@/services/document.service'
+import { incrementViewCount } from '@/services/document.service'
 import { UploadedFile, UploadService } from '@/services/upload.service'
 
 interface DocumentViewerProps {
@@ -14,14 +14,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
   const onOpenChange = (isOpen: boolean) => {
     if (isOpen) {
       incrementViewCount(file.id);
-    }
-  };
-
-  const onDownload = async () => {
-    try {
-      await downloadFile(file.id, file.originalName);
-    } catch (error) {
-      alert((error as Error).message);
     }
   };
 
@@ -51,9 +43,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
             <p className="text-xs text-gray-500">{UploadService.formatFileSize(file.fileSize)}</p>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={onDownload}>
-              <Download className="mr-2 h-4 w-4" /> Download
-            </Button>
             <Button variant="ghost" size="sm">
               <Info className="mr-2 h-4 w-4" /> Details
             </Button>

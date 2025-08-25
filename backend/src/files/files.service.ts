@@ -1,15 +1,11 @@
-import * as crypto from 'crypto';
+import * as crypto from 'crypto'
 
 import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+    BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException
+} from '@nestjs/common'
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { PrismaService } from '../prisma/prisma.service'
 
 export interface FileUploadResult {
   id: string;

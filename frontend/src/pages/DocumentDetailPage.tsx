@@ -1,32 +1,20 @@
 import {
-  ArrowLeft,
-  Calendar,
-  Download,
-  ExternalLink,
-  Eye,
-  FileText,
-  MessageSquare,
-  Star,
-  User,
-} from 'lucide-react';
-import { toast } from 'sonner';
+    ArrowLeft, Calendar, Download, ExternalLink, Eye, FileText, MessageSquare, Star, User
+} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
-  DocumentView,
-  downloadFile,
-  getDocumentById,
-  viewDocument,
-} from '@/services/document.service';
+    DocumentView, getDocumentById, triggerFileDownload, viewDocument
+} from '@/services/document.service'
 
 const DocumentDetailPage: React.FC = () => {
   const { documentId } = useParams<{ documentId: string }>();
@@ -34,7 +22,7 @@ const DocumentDetailPage: React.FC = () => {
   const [document, setDocument] = useState<DocumentView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (!documentId) {
@@ -67,16 +55,18 @@ const DocumentDetailPage: React.FC = () => {
     }
   };
 
-  const handleDownload = async (fileId: string, fileName: string) => {
+  const handleDownloadDocument = async () => {
+    if (!document) return;
+    
     try {
-      setDownloading(fileId);
-      await downloadFile(fileId, fileName);
-      toast.success('File downloaded successfully');
+      setIsDownloading(true);
+      await triggerFileDownload(document.id);
+      toast.success('Document downloaded successfully');
     } catch (err) {
       console.error('Download error:', err);
-      toast.error('Failed to download file');
+      toast.error('Failed to download document');
     } finally {
-      setDownloading(null);
+      setIsDownloading(false);
     }
   };
 
@@ -208,6 +198,22 @@ const DocumentDetailPage: React.FC = () => {
                     <span>{document.stats.commentsCount} comments</span>
                   </div>
                 </div>
+
+                {/* Download Document Button */}
+                <div className="mt-4">
+                  <Button 
+                    onClick={handleDownloadDocument}
+                    disabled={isDownloading}
+                    className="flex items-center gap-2"
+                  >
+                    {isDownloading ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isDownloading ? 'Downloading...' : 'Download Document'}
+                  </Button>
+                </div>
               </div>
 
               {/* Premium Badge */}
@@ -258,18 +264,6 @@ const DocumentDetailPage: React.FC = () => {
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleDownload(file.id, file.originalName)}
-                          disabled={downloading === file.id}
-                        >
-                          {downloading === file.id ? (
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                        </Button>
                       </div>
                     </div>
                   ))}

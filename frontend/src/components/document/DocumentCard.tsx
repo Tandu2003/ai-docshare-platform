@@ -1,21 +1,15 @@
-import { Download, ExternalLink, Eye, User } from 'lucide-react';
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Download, ExternalLink, Eye, User } from 'lucide-react'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { downloadFile } from '@/services/document.service';
-import { Document } from '@/services/files.service';
+    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle
+} from '@/components/ui/card'
+import { triggerFileDownload } from '@/services/document.service'
+import { Document } from '@/services/files.service'
 
-import { Button } from '../ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Button } from '../ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 interface DocumentCardProps {
   document: Document;
@@ -23,12 +17,18 @@ interface DocumentCardProps {
 
 const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
   const navigate = useNavigate();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const onDownload = async () => {
+    if (isDownloading) return;
+    
     try {
-      await downloadFile(document.id, document.title || 'document');
+      setIsDownloading(true);
+      await triggerFileDownload(document.id, document.title);
     } catch (error) {
       alert((error as Error).message);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -77,13 +77,14 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button size="sm" onClick={onDownload}>
-              <Download className="h-4 w-4" />
+            <Button size="sm" onClick={onDownload} disabled={isDownloading}>
+              <Download className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`} />
+              {isDownloading && <span className="ml-2">Downloading...</span>}
             </Button>
           </TooltipTrigger>
 
           <TooltipContent>
-            <p>Download all files</p>
+            <p>{isDownloading ? 'Preparing download...' : 'Download all files'}</p>
           </TooltipContent>
         </Tooltip>
       </CardFooter>

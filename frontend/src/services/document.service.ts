@@ -1,7 +1,7 @@
-import { apiClient } from '@/utils/api-client';
+import { apiClient } from '@/utils/api-client'
 
-import { DocumentsService, FilesService } from './files.service';
-import { UploadedFile } from './upload.service';
+import { DocumentsService, FilesService } from './files.service'
+import { UploadedFile } from './upload.service'
 
 export interface PaginatedDocuments {
   files: UploadedFile[];
@@ -111,65 +111,6 @@ export const incrementViewCount = async (fileId: string): Promise<void> => {
   }
 };
 
-export const handleDownload = async (fileId: string): Promise<string> => {
-  try {
-    const response = await apiClient.post<{ downloadUrl: string }>(`/upload/download/${fileId}`);
-    if (!response.data?.downloadUrl) {
-      throw new Error('Download URL not provided');
-    }
-    return response.data.downloadUrl;
-  } catch (error) {
-    console.error('Failed to get download URL', error);
-    throw new Error('Could not get download link.');
-  }
-};
-
-export const downloadFile = async (fileId: string, fileName?: string): Promise<void> => {
-  try {
-    // Get the download URL
-    const downloadUrl = await handleDownload(fileId);
-
-    // Fetch the file as a blob
-    const response = await fetch(downloadUrl);
-    if (!response.ok) {
-      throw new Error('Failed to fetch file');
-    }
-
-    const blob = await response.blob();
-
-    // Create a blob URL
-    const blobUrl = window.URL.createObjectURL(blob);
-
-    // Create a temporary anchor element to trigger download
-    const link = document.createElement('a');
-    link.href = blobUrl;
-
-    // Set the download attribute with the filename
-    if (fileName) {
-      link.download = fileName;
-    } else {
-      // Extract filename from URL if not provided
-      const url = new URL(downloadUrl);
-      const pathName = url.pathname;
-      const extractedName = pathName.substring(pathName.lastIndexOf('/') + 1);
-      // Remove query parameters from filename
-      const cleanName = extractedName.split('?')[0];
-      link.download = cleanName || 'download';
-    }
-
-    // Add to DOM, click, and remove
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Clean up the blob URL
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (error) {
-    console.error('Failed to download file', error);
-    throw new Error('Could not download file.');
-  }
-};
-
 /**
  * Get secure URL for file access (with expiration)
  */
@@ -189,6 +130,66 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
   } catch (error: any) {
     console.error('Failed to get secure file URL', error);
     throw new Error(error.response?.data?.message || 'Could not get secure file URL.');
+  }
+};
+
+/**
+ * Download entire document (all files as ZIP if multiple)
+ */
+export const downloadDocument = async (documentId: string): Promise<{
+  downloadUrl: string;
+  fileName: string;
+  fileCount: number;
+}> => {
+  try {
+    const response = await apiClient.post<{
+      success: boolean;
+      data: {
+        downloadUrl: string;
+        fileName: string;
+        fileCount: number;
+      };
+      message?: string;
+    }>(`/documents/${documentId}/download`, {
+      ipAddress: '', // Will be extracted from request
+      userAgent: navigator.userAgent,
+      referrer: window.location.href,
+    });
+    
+    if (response.data?.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data?.message || 'Failed to prepare document download');
+    }
+  } catch (error: any) {
+    console.error('Failed to prepare document download', error);
+    throw new Error(error.response?.data?.message || 'Could not prepare document download.');
+  }
+};
+
+/**
+ * Trigger actual file download in browser
+ */
+export const triggerFileDownload = async (documentId: string, documentTitle?: string): Promise<void> => {
+  try {
+    // Get download URL
+    const downloadData = await downloadDocument(documentId);
+    
+    // Create temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = downloadData.downloadUrl;
+    link.download = downloadData.fileName || `${documentTitle || 'document'}.zip`;
+    
+    // Add to DOM temporarily, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    console.log(`Downloaded ${downloadData.fileCount} file(s) as ${downloadData.fileName}`);
+  } catch (error) {
+    console.error('Failed to download document', error);
+    throw error;
   }
 };
 

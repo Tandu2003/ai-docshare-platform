@@ -1,12 +1,12 @@
-import { Download, ExternalLink, Eye, FileText, User } from 'lucide-react';
+import { Download, ExternalLink, Eye, FileText, User } from 'lucide-react'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Document, DocumentsService } from '@/services/files.service';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { triggerFileDownload } from '@/services/document.service'
+import { Document } from '@/services/files.service'
 
 interface PublicDocumentCardProps {
   document: Document;
@@ -14,12 +14,18 @@ interface PublicDocumentCardProps {
 
 const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => {
   const navigate = useNavigate();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const onDownload = async () => {
+    if (isDownloading) return;
+    
     try {
-      await DocumentsService.downloadDocument(document.id);
+      setIsDownloading(true);
+      await triggerFileDownload(document.id, document.title);
     } catch (error) {
       alert((error as Error).message);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -36,7 +42,7 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
   };
 
   const getTotalFileSize = () => {
-    return document.files.reduce((total, file) => total + file.fileSize, 0);
+    return document.files.reduce((total, file) => total + Number(file.fileSize), 0);
   };
 
   const getDocumentIcon = () => {
@@ -136,9 +142,9 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
           <ExternalLink className="mr-2 h-4 w-4" />
           View Details
         </Button>
-        <Button onClick={onDownload} className="flex-1" size="sm">
-          <Download className="mr-2 h-4 w-4" />
-          Download
+        <Button onClick={onDownload} className="flex-1" size="sm" disabled={isDownloading}>
+          <Download className={`mr-2 h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`} />
+          {isDownloading ? 'Downloading...' : 'Download'}
         </Button>
       </CardFooter>
     </Card>
