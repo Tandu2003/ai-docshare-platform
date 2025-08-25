@@ -1,8 +1,8 @@
-import { Download, FileText, Upload, Users } from 'lucide-react';
+import { Download, FileText, Upload, Users } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks';
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/hooks'
 
 export const DashboardPage: React.FC = () => {
   const { user, hasPermission, isAdmin, isModerator } = useAuth();
@@ -98,7 +98,7 @@ export const DashboardPage: React.FC = () => {
             <div className="flex flex-wrap gap-2">
               {user?.role.permissions.map((permission) => (
                 <Badge key={permission} variant="outline" className="text-xs">
-                  {permission.replace(/[_:]/g, ' ').toLowerCase()}
+                  {/* {permission.replace(/[_:]/g, ' ').toLowerCase()} */}
                 </Badge>
               ))}
             </div>

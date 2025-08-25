@@ -19,7 +19,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
 
   const onDownload = async () => {
     try {
-      await downloadFile(file.id, file.title || file.originalName);
+      await downloadFile(file.id, file.originalName);
     } catch (error) {
       alert((error as Error).message);
     }
@@ -34,12 +34,12 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-[80vw] h-full flex flex-col">
         <SheetHeader>
-          <SheetTitle className="truncate">{file.title || file.originalName}</SheetTitle>
+          <SheetTitle className="truncate">{file.originalName}</SheetTitle>
         </SheetHeader>
         <div className="flex-1">
           <iframe
             src={`https://docs.google.com/gview?url=${encodeURIComponent(
-              file.filePath || file.storageUrl || ''
+              file.secureUrl || ''
             )}&embedded=true`}
             className="w-full h-full"
             frameBorder="0"
@@ -47,7 +47,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
         </div>
         <div className="p-4 border-t flex justify-between items-center">
           <div>
-            <p className="text-sm font-medium">{file.title || file.originalName}</p>
+            <p className="text-sm font-medium">{file.originalName}</p>
             <p className="text-xs text-gray-500">{UploadService.formatFileSize(file.fileSize)}</p>
           </div>
           <div className="flex gap-2">

@@ -249,11 +249,11 @@ const DocumentDetailPage: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {file.storageUrl && (
+                        {file.secureUrl && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(file.storageUrl, '_blank')}
+                            onClick={() => window.open(file.secureUrl, '_blank')}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>

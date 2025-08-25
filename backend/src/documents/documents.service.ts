@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
+import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 
@@ -12,7 +13,10 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private filesService: FilesService
+  ) {}
 
   /**
    * Create a document from uploaded files
@@ -181,7 +185,7 @@ export class DocumentsService {
         fileName: df.file.fileName,
         mimeType: df.file.mimeType,
         fileSize: df.file.fileSize,
-        storageUrl: df.file.storageUrl,
+        // storageUrl: df.file.storageUrl, // Removed for security - use secure endpoint
         order: df.order,
       })),
     };
@@ -244,29 +248,36 @@ export class DocumentsService {
         }),
       ]);
 
-      // Transform the data to include file details
-      const transformedDocuments = documents.map((document) => ({
-        id: document.id,
-        title: document.title,
-        description: document.description,
-        isPublic: document.isPublic,
-        tags: document.tags,
-        language: document.language,
-        createdAt: document.createdAt,
-        updatedAt: document.updatedAt,
-        uploaderId: document.uploaderId,
-        categoryId: document.categoryId,
-        category: document.category,
-        files: document.files.map((df) => ({
-          id: df.file.id,
-          originalName: df.file.originalName,
-          fileName: df.file.fileName,
-          mimeType: df.file.mimeType,
-          fileSize: df.file.fileSize,
-          storageUrl: df.file.storageUrl,
-          order: df.order,
-        })),
-      }));
+      // Transform the data and add secure URLs
+      const transformedDocuments = await Promise.all(
+        documents.map(async (document) => {
+          const filesData = document.files.map((df) => ({
+            id: df.file.id,
+            originalName: df.file.originalName,
+            fileName: df.file.fileName,
+            mimeType: df.file.mimeType,
+            fileSize: df.file.fileSize,
+            order: df.order,
+          }));
+
+          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
+
+          return {
+            id: document.id,
+            title: document.title,
+            description: document.description,
+            isPublic: document.isPublic,
+            tags: document.tags,
+            language: document.language,
+            createdAt: document.createdAt,
+            updatedAt: document.updatedAt,
+            uploaderId: document.uploaderId,
+            categoryId: document.categoryId,
+            category: document.category,
+            files: filesWithSecureUrls,
+          };
+        })
+      );
 
       return {
         documents: transformedDocuments,
@@ -283,7 +294,7 @@ export class DocumentsService {
   /**
    * Get public documents with pagination
    */
-  async getPublicDocuments(page: number = 1, limit: number = 10) {
+  async getPublicDocuments(page: number = 1, limit: number = 10, userId?: string) {
     try {
       const skip = (page - 1) * limit;
 
@@ -326,33 +337,47 @@ export class DocumentsService {
         }),
       ]);
 
-      // Transform the data to include file details
-      const transformedDocuments = documents.map((document) => ({
-        id: document.id,
-        title: document.title,
-        description: document.description,
-        isPublic: document.isPublic,
-        tags: document.tags,
-        language: document.language,
-        createdAt: document.createdAt,
-        updatedAt: document.updatedAt,
-        uploaderId: document.uploaderId,
-        categoryId: document.categoryId,
-        category: document.category,
-        uploader: document.uploader,
-        downloadCount: document.downloadCount,
-        viewCount: document.viewCount,
-        averageRating: document.averageRating,
-        files: document.files.map((df) => ({
-          id: df.file.id,
-          originalName: df.file.originalName,
-          fileName: df.file.fileName,
-          mimeType: df.file.mimeType,
-          fileSize: df.file.fileSize,
-          storageUrl: df.file.storageUrl,
-          order: df.order,
-        })),
-      }));
+      // Transform the data and add secure URLs
+      const transformedDocuments = await Promise.all(
+        documents.map(async (document) => {
+          const filesData = document.files.map((df) => ({
+            id: df.file.id,
+            originalName: df.file.originalName,
+            fileName: df.file.fileName,
+            mimeType: df.file.mimeType,
+            fileSize: df.file.fileSize,
+            order: df.order,
+          }));
+
+          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
+
+          return {
+            id: document.id,
+            title: document.title,
+            description: document.description,
+            isPublic: document.isPublic,
+            tags: document.tags,
+            language: document.language,
+            createdAt: document.createdAt,
+            updatedAt: document.updatedAt,
+            uploaderId: document.uploaderId,
+            categoryId: document.categoryId,
+            category: document.category,
+            uploader: document.uploader,
+            downloadCount: document.downloadCount,
+            viewCount: document.viewCount,
+            averageRating: document.averageRating,
+            files: filesWithSecureUrls,
+          };
+        })
+      );
+
+      return {
+        documents: transformedDocuments,
+        total,
+        page,
+        limit,
+      };
 
       return {
         documents: transformedDocuments,
@@ -475,6 +500,20 @@ export class DocumentsService {
         throw new BadRequestException('Document is not public');
       }
 
+      // Prepare file data without secure URLs first
+      const filesData = (document as any).files?.map((df: any) => ({
+        id: df.file.id,
+        originalName: df.file.originalName,
+        fileName: df.file.fileName,
+        mimeType: df.file.mimeType,
+        fileSize: df.file.fileSize,
+        thumbnailUrl: df.file.thumbnailUrl,
+        order: df.order,
+      })) || [];
+
+      // Add secure URLs to files
+      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
+
       return {
         id: document.id,
         title: document.title,
@@ -491,17 +530,7 @@ export class DocumentsService {
         updatedAt: document.updatedAt?.toISOString() || new Date().toISOString(),
         uploader: (document as any).uploader,
         category: (document as any).category,
-        files:
-          (document as any).files?.map((df: any) => ({
-            id: df.file.id,
-            originalName: df.file.originalName,
-            fileName: df.file.fileName,
-            mimeType: df.file.mimeType,
-            fileSize: df.file.fileSize,
-            storageUrl: df.file.storageUrl,
-            thumbnailUrl: df.file.thumbnailUrl,
-            order: df.order,
-          })) || [],
+        files: filesWithSecureUrls,
         stats: {
           ratingsCount: (document as any)._count?.ratings || 0,
           commentsCount: (document as any)._count?.comments || 0,

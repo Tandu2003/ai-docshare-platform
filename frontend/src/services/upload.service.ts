@@ -9,33 +9,18 @@ export interface UploadFileData {
   language?: string;
 }
 
-export type UploadedFile = {
+export interface UploadedFile {
   id: string;
-  originalName?: string;
-  title?: string;
+  originalName: string;
   fileName: string;
   mimeType: string;
-  fileSize: string;
-  storageUrl?: string;
-  filePath?: string;
-  isPublic: boolean;
+  fileSize: number;
+  fileHash: string;
   createdAt: string;
-  uploader: {
-    id: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-  };
-  documents?: {
-    id: string;
-    title: string;
-    isPublic: boolean;
-    downloadCount: number;
-    viewCount: number;
-  }[];
-  viewCount?: number;
-  downloadCount?: number;
-};
+  // storageUrl?: string; // Removed for security - use getSecureFileUrl instead
+  secureUrl?: string; // Temporary secure URL
+  expiresAt?: string; // When secure URL expires
+}
 
 export interface FileUploadResponse {
   file: UploadedFile;

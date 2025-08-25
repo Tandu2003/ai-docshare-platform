@@ -42,9 +42,10 @@ export interface DocumentView {
     fileName: string;
     mimeType: string;
     fileSize: bigint;
-    storageUrl: string;
     thumbnailUrl?: string;
     order: number;
+    secureUrl?: string; // Temporary secure URL with expiration
+    expiresAt?: string; // When the secure URL expires
   }[];
   stats: {
     ratingsCount: number;
@@ -166,6 +167,28 @@ export const downloadFile = async (fileId: string, fileName?: string): Promise<v
   } catch (error) {
     console.error('Failed to download file', error);
     throw new Error('Could not download file.');
+  }
+};
+
+/**
+ * Get secure URL for file access (with expiration)
+ */
+export const getSecureFileUrl = async (fileId: string): Promise<string> => {
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { secureUrl: string };
+      message?: string;
+    }>(`/files/${fileId}/secure-url`);
+    
+    if (response.data?.success) {
+      return response.data.data.secureUrl;
+    } else {
+      throw new Error(response.data?.message || 'Failed to get secure file URL');
+    }
+  } catch (error: any) {
+    console.error('Failed to get secure file URL', error);
+    throw new Error(error.response?.data?.message || 'Could not get secure file URL.');
   }
 };
 

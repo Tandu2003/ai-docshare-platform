@@ -17,7 +17,7 @@ export interface FileUploadResult {
   fileName: string;
   mimeType: string;
   fileSize: string;
-  storageUrl: string;
+  // storageUrl: string; // Removed for security - use secure endpoint
   fileHash: string;
 }
 
@@ -90,7 +90,7 @@ export class FilesService {
             fileSize: Number(existingFile.fileSize),
             mimeType: existingFile.mimeType,
             fileHash: existingFile.fileHash,
-            storageUrl: existingFile.storageUrl,
+            // Don't return direct storage URL for security
             createdAt: existingFile.createdAt,
           },
         };
@@ -128,7 +128,7 @@ export class FilesService {
           fileSize: Number(fileRecord.fileSize),
           mimeType: fileRecord.mimeType,
           fileHash: fileRecord.fileHash,
-          storageUrl: fileRecord.storageUrl,
+          // Don't return direct storage URL for security
           createdAt: fileRecord.createdAt,
         },
       };
@@ -163,6 +163,66 @@ export class FilesService {
     } catch (error) {
       this.logger.error('Error getting download URL:', error);
       throw new InternalServerErrorException('Failed to get download URL');
+    }
+  }
+
+  /**
+   * Get secure preview/access URL for a file (with expiration)
+   */
+  async getSecureFileUrl(fileId: string, userId?: string): Promise<string> {
+    try {
+      const file = await this.prisma.file.findUnique({
+        where: { id: fileId },
+        include: {
+          uploader: true,
+        },
+      });
+
+      if (!file) {
+        throw new NotFoundException('File not found');
+      }
+
+      // Check if user has access to the file
+      if (!file.isPublic && file.uploaderId !== userId) {
+        throw new BadRequestException('You do not have access to this file');
+      }
+
+      // Generate signed URL with 1 hour expiration
+      return await this.r2Service.getSignedDownloadUrl(file.storageUrl, 3600); // 1 hour
+    } catch (error) {
+      this.logger.error('Error getting secure file URL:', error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get secure file URL');
+    }
+  }
+
+  /**
+   * Add secure URLs to file objects for API responses
+   */
+  async addSecureUrlsToFiles(files: any[], userId?: string): Promise<any[]> {
+    try {
+      const filesWithUrls = await Promise.all(
+        files.map(async (file) => {
+          try {
+            const secureUrl = await this.getSecureFileUrl(file.id, userId);
+            return {
+              ...file,
+              secureUrl,
+              expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(), // 1 hour from now
+            };
+          } catch (error) {
+            // If can't get secure URL, return file without it
+            this.logger.warn(`Could not get secure URL for file ${file.id}:`, error.message);
+            return file;
+          }
+        })
+      );
+      return filesWithUrls;
+    } catch (error) {
+      this.logger.error('Error adding secure URLs to files:', error);
+      return files; // Return original files if something goes wrong
     }
   }
 

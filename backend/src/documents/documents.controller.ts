@@ -103,7 +103,7 @@ export class DocumentsController {
     }
   }
 
-  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
   @ApiResponse({
@@ -113,13 +113,17 @@ export class DocumentsController {
   async getPublicDocuments(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Req() req: Request,
     @Res() res: Response
   ) {
     try {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+      
+      // Get user ID if authenticated
+      const userId = (req as any).user?.id;
 
-      const result = await this.documentsService.getPublicDocuments(pageNum, limitNum);
+      const result = await this.documentsService.getPublicDocuments(pageNum, limitNum, userId);
 
       return ResponseHelper.success(res, result, 'Public documents retrieved successfully');
     } catch (error) {

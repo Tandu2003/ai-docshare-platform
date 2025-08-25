@@ -24,39 +24,47 @@ export interface CreateDocumentData {
 export interface Document {
   id: string;
   title: string;
-  description: string | null;
+  description?: string;
+  uploaderId: string;
+  categoryId: string;
+  downloadCount: number;
+  viewCount: number;
+  // storageUrl: string; // Removed for security
+  secureUrl?: string; // Temporary secure URL
+  expiresAt?: string; // Expiration time
+  averageRating: number;
+  totalRatings: number;
   isPublic: boolean;
+  isPremium: boolean;
   tags: string[];
   language: string;
   createdAt: string;
   updatedAt: string;
-  uploaderId: string;
-  categoryId: string;
-  downloadCount?: number;
-  viewCount?: number;
-  averageRating?: number;
-  category?: {
-    id: string;
-    name: string;
-  };
   uploader?: {
     id: string;
     username: string;
     firstName: string;
     lastName: string;
+    avatar?: string;
   };
-  files: Array<{
+  category?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  files: {
     id: string;
     originalName: string;
     fileName: string;
     mimeType: string;
-    fileSize: number;
-    storageUrl: string;
+    fileSize: bigint;
+    // storageUrl: string; // Removed for security
+    secureUrl?: string; // Temporary secure URL
+    expiresAt?: string; // Expiration time
+    thumbnailUrl?: string;
     order: number;
-  }>;
-}
-
-export interface PaginatedDocuments {
+  }[];
+}export interface PaginatedDocuments {
   documents: Document[];
   total: number;
   page: number;

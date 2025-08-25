@@ -128,7 +128,7 @@ export class CloudflareR2Service {
     }
   }
 
-  async getSignedDownloadUrl(storageUrl: string): Promise<string> {
+  async getSignedDownloadUrl(storageUrl: string, expiresIn: number = 3600): Promise<string> {
     try {
       // Extract key from storage URL
       const key = this.extractKeyFromUrl(storageUrl);
@@ -138,7 +138,7 @@ export class CloudflareR2Service {
         Key: key,
       });
 
-      const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+      const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
       return signedUrl;
     } catch (error) {
       this.logger.error('Error generating signed URL:', error);
