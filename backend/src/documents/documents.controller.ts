@@ -72,7 +72,7 @@ export class DocumentsController {
     }
   }
 
-  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post(':documentId/download')
   @ApiOperation({ summary: 'Download all files of a document' })
   @ApiResponse({
@@ -86,7 +86,7 @@ export class DocumentsController {
     @Res() res: Response
   ) {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id; // Use optional chaining since user might not be authenticated
 
       // Extract IP address from request
       let ipAddress = 

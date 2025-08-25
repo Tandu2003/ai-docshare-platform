@@ -554,7 +554,7 @@ export class DocumentsService {
    */
   async downloadDocument(
     documentId: string,
-    userId: string,
+    userId?: string, // Make userId optional for guest users
     ipAddress?: string,
     userAgent?: string,
     referrer?: string
@@ -564,7 +564,7 @@ export class DocumentsService {
     fileCount: number;
   }> {
     try {
-      this.logger.log(`Preparing download for document ${documentId} by user ${userId}`);
+      this.logger.log(`Preparing download for document ${documentId} by user ${userId || 'guest'}`);
 
       // Get document with files
       const document = await this.prisma.document.findUnique({
@@ -583,9 +583,14 @@ export class DocumentsService {
         throw new BadRequestException('Document not found');
       }
 
-      // Check access permissions
-      if (!document.isPublic && document.uploaderId !== userId) {
-        throw new BadRequestException('You do not have permission to download this document');
+      // Check access permissions - only check if user is authenticated
+      if (!document.isPublic) {
+        if (!userId) {
+          throw new BadRequestException('Authentication required to download private documents');
+        }
+        if (document.uploaderId !== userId) {
+          throw new BadRequestException('You do not have permission to download this document');
+        }
       }
 
       if (!document.files || document.files.length === 0) {
@@ -594,18 +599,20 @@ export class DocumentsService {
 
       // Create download record and increment counter in a transaction
       await this.prisma.$transaction(async (prisma) => {
-        // Log download
-        await prisma.download.create({
-          data: {
-            userId,
-            documentId,
-            ipAddress,
-            userAgent,
-            referrer,
-          },
-        });
+        // Log download only if user is authenticated (for now, until prisma client is regenerated)
+        if (userId) {
+          await prisma.download.create({
+            data: {
+              userId,
+              documentId,
+              ipAddress,
+              userAgent,
+              referrer,
+            },
+          });
+        }
 
-        // Increment download count
+        // Increment download count regardless of authentication
         await prisma.document.update({
           where: { id: documentId },
           data: {
@@ -619,7 +626,10 @@ export class DocumentsService {
       // If single file, return direct download URL
       if (document.files.length === 1) {
         const file = document.files[0].file;
+        this.logger.log(`Preparing single file download: ${file.originalName}`);
         const downloadUrl = await this.r2Service.getSignedDownloadUrl(file.storageUrl, 300); // 5 minutes
+        
+        this.logger.log(`Generated download URL: ${downloadUrl.substring(0, 100)}...`);
         
         return {
           downloadUrl,
@@ -629,8 +639,9 @@ export class DocumentsService {
       }
 
       // For multiple files, create ZIP
+      this.logger.log(`Preparing ZIP download for ${document.files.length} files`);
       const zipFileName = `${document.title || 'document'}.zip`;
-      const zipDownloadUrl = await this.createZipDownload(document.files.map(df => df.file));
+      const zipDownloadUrl = await this.createZipDownload(document.files.map((df) => df.file));
 
       return {
         downloadUrl: zipDownloadUrl,
@@ -651,10 +662,14 @@ export class DocumentsService {
    */
   private async createZipDownload(files: any[]): Promise<string> {
     try {
+      this.logger.log(`Creating ZIP for ${files.length} files`);
       // For now, return the first file's URL
       // TODO: Implement actual ZIP creation with archiver or similar
       if (files.length > 0) {
-        return await this.r2Service.getSignedDownloadUrl(files[0].storageUrl, 300);
+        this.logger.log(`Using first file for ZIP: ${files[0].originalName}`);
+        const downloadUrl = await this.r2Service.getSignedDownloadUrl(files[0].storageUrl, 300);
+        this.logger.log(`Generated ZIP URL: ${downloadUrl.substring(0, 100)}...`);
+        return downloadUrl;
       }
       throw new Error('No files to zip');
     } catch (error) {

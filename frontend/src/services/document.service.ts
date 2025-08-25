@@ -1,7 +1,7 @@
-import { apiClient } from '@/utils/api-client'
+import { apiClient } from '@/utils/api-client';
 
-import { DocumentsService, FilesService } from './files.service'
-import { UploadedFile } from './upload.service'
+import { DocumentsService, FilesService } from './files.service';
+import { UploadedFile } from './upload.service';
 
 export interface PaginatedDocuments {
   files: UploadedFile[];
@@ -121,7 +121,7 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
       data: { secureUrl: string };
       message?: string;
     }>(`/files/${fileId}/secure-url`);
-    
+
     if (response.data?.success) {
       return response.data.data.secureUrl;
     } else {
@@ -136,12 +136,16 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
 /**
  * Download entire document (all files as ZIP if multiple)
  */
-export const downloadDocument = async (documentId: string): Promise<{
+export const downloadDocument = async (
+  documentId: string
+): Promise<{
   downloadUrl: string;
   fileName: string;
   fileCount: number;
 }> => {
   try {
+    console.log('Calling download API for document:', documentId);
+
     const response = await apiClient.post<{
       success: boolean;
       data: {
@@ -155,38 +159,137 @@ export const downloadDocument = async (documentId: string): Promise<{
       userAgent: navigator.userAgent,
       referrer: window.location.href,
     });
-    
-    if (response.data?.success) {
+
+    console.log('API response:', response);
+    console.log('Response data:', response.data);
+
+    if (response.data?.success && response.data?.data) {
+      console.log('Download data extracted:', response.data.data);
       return response.data.data;
     } else {
+      console.error('Invalid response format:', response.data);
       throw new Error(response.data?.message || 'Failed to prepare document download');
     }
   } catch (error: any) {
-    console.error('Failed to prepare document download', error);
+    console.error('API call failed:', error);
+    console.error('Error response:', error.response?.data);
     throw new Error(error.response?.data?.message || 'Could not prepare document download.');
   }
 };
 
 /**
+ * Test download URL by opening in new tab (for debugging)
+ */
+export const testDownloadUrl = (url: string) => {
+  console.log('Testing download URL:', url);
+  window.open(url, '_blank');
+};
+
+/**
  * Trigger actual file download in browser
  */
-export const triggerFileDownload = async (documentId: string, documentTitle?: string): Promise<void> => {
+export const triggerFileDownload = async (
+  documentId: string,
+  documentTitle?: string
+): Promise<void> => {
   try {
+    console.log('Starting download for document:', documentId);
+
     // Get download URL
     const downloadData = await downloadDocument(documentId);
-    
-    // Create temporary link and trigger download
-    const link = document.createElement('a');
-    link.href = downloadData.downloadUrl;
-    link.download = downloadData.fileName || `${documentTitle || 'document'}.zip`;
-    
-    // Add to DOM temporarily, click, and remove
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Show success message
-    console.log(`Downloaded ${downloadData.fileCount} file(s) as ${downloadData.fileName}`);
+    console.log('Download data received:', downloadData);
+
+    const fileName = downloadData.fileName || `${documentTitle || 'document'}.zip`;
+
+    try {
+      // Method 1: Fetch as blob and download (best for CORS and security)
+      console.log('Fetching file as blob from URL:', downloadData.downloadUrl);
+
+      // Validate URL first
+      if (!downloadData.downloadUrl || !downloadData.downloadUrl.startsWith('http')) {
+        throw new Error(`Invalid download URL: ${downloadData.downloadUrl}`);
+      }
+
+      const response = await fetch(downloadData.downloadUrl);
+      console.log('Fetch response status:', response.status, response.statusText);
+      console.log('Fetch response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fetch error response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${errorText}`);
+      }
+
+      const blob = await response.blob();
+      console.log('Blob received:', {
+        size: blob.size,
+        type: blob.type,
+      });
+
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+
+      // Create blob URL and download
+      const blobUrl = window.URL.createObjectURL(blob);
+      console.log('Blob URL created:', blobUrl);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+
+      console.log('Download link created:', {
+        href: link.href,
+        download: link.download,
+      });
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      window.URL.revokeObjectURL(blobUrl);
+
+      console.log(`Successfully downloaded ${fileName}`);
+      return;
+    } catch (fetchError) {
+      console.log('Blob method failed, trying direct download:', fetchError);
+
+      // Method 2: Direct download link (fallback)
+      try {
+        console.log('Trying window.open method...');
+        const newWindow = window.open(downloadData.downloadUrl, '_blank');
+        if (newWindow) {
+          console.log('Successfully opened download in new window');
+          return;
+        } else {
+          console.log('Window.open was blocked, trying direct link');
+        }
+      } catch (windowError) {
+        console.log('Window.open failed:', windowError);
+      }
+
+      // Method 3: Direct link click (last resort)
+      console.log('Trying direct link click...');
+      const link = document.createElement('a');
+      link.href = downloadData.downloadUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      link.style.display = 'none';
+
+      console.log('Created fallback download link:', {
+        href: link.href,
+        download: link.download,
+        target: link.target,
+      });
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log(`Attempted direct download of ${fileName}`);
+    }
   } catch (error) {
     console.error('Failed to download document', error);
     throw error;

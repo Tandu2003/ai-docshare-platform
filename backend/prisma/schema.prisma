@@ -384,7 +384,7 @@ model Bookmark {
 
 model Download {
   id           String   @id @default(cuid())
-  userId       String
+  userId       String? // Allow null for guest downloads
   documentId   String
   ipAddress    String?
   userAgent    String?
@@ -392,7 +392,7 @@ model Download {
   downloadedAt DateTime @default(now())
 
   // Relations
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade) // Make optional
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   // Indexes
