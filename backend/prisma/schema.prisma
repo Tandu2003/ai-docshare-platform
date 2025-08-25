@@ -101,23 +101,25 @@ model Category {
 }
 
 model Document {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   title         String
   description   String?
   uploaderId    String
   categoryId    String
-  downloadCount Int      @default(0)
-  viewCount     Int      @default(0)
-  averageRating Float    @default(0)
-  totalRatings  Int      @default(0)
-  isPublic      Boolean  @default(true)
-  isPremium     Boolean  @default(false)
-  isApproved    Boolean  @default(false)
-  isDraft       Boolean  @default(false)
-  tags          String[] @default([])
-  language      String   @default("en")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  downloadCount Int       @default(0)
+  viewCount     Int       @default(0)
+  averageRating Float     @default(0)
+  totalRatings  Int       @default(0)
+  isPublic      Boolean   @default(true)
+  isPremium     Boolean   @default(false)
+  isApproved    Boolean   @default(false)
+  isDraft       Boolean   @default(false)
+  tags          String[]  @default([])
+  language      String    @default("en")
+  zipFileUrl    String?   // Cached ZIP file URL for multi-file documents
+  zipFileCreatedAt DateTime? // When the ZIP file was created
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)

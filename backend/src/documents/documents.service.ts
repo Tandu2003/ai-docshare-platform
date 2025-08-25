@@ -1,15 +1,18 @@
-import * as archiver from 'archiver'
-import { Readable } from 'stream'
+import * as archiver from 'archiver';
+import { Readable } from 'stream';
 
 import {
-    BadRequestException, Injectable, InternalServerErrorException, Logger
-} from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { FilesService } from '../files/files.service'
-import { PrismaService } from '../prisma/prisma.service'
-import { CreateDocumentDto } from './dto/create-document.dto'
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { FilesService } from '../files/files.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -19,7 +22,7 @@ export class DocumentsService {
     private prisma: PrismaService,
     private filesService: FilesService,
     private r2Service: CloudflareR2Service,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   /**
@@ -264,7 +267,10 @@ export class DocumentsService {
             order: df.order,
           }));
 
-          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
+          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
+            filesData,
+            userId
+          );
 
           return {
             id: document.id,
@@ -353,7 +359,10 @@ export class DocumentsService {
             order: df.order,
           }));
 
-          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
+          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
+            filesData,
+            userId
+          );
 
           return {
             id: document.id,
@@ -505,15 +514,16 @@ export class DocumentsService {
       }
 
       // Prepare file data without secure URLs first
-      const filesData = (document as any).files?.map((df: any) => ({
-        id: df.file.id,
-        originalName: df.file.originalName,
-        fileName: df.file.fileName,
-        mimeType: df.file.mimeType,
-        fileSize: df.file.fileSize,
-        thumbnailUrl: df.file.thumbnailUrl,
-        order: df.order,
-      })) || [];
+      const filesData =
+        (document as any).files?.map((df: any) => ({
+          id: df.file.id,
+          originalName: df.file.originalName,
+          fileName: df.file.fileName,
+          mimeType: df.file.mimeType,
+          fileSize: df.file.fileSize,
+          thumbnailUrl: df.file.thumbnailUrl,
+          order: df.order,
+        })) || [];
 
       // Add secure URLs to files
       const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
@@ -630,9 +640,9 @@ export class DocumentsService {
         const file = document.files[0].file;
         this.logger.log(`Preparing single file download: ${file.originalName}`);
         const downloadUrl = await this.r2Service.getSignedDownloadUrl(file.storageUrl, 300); // 5 minutes
-        
+
         this.logger.log(`Generated download URL: ${downloadUrl.substring(0, 100)}...`);
-        
+
         return {
           downloadUrl,
           fileName: file.originalName,
@@ -640,10 +650,30 @@ export class DocumentsService {
         };
       }
 
-      // For multiple files, create ZIP
+      // For multiple files, create or use cached ZIP
       this.logger.log(`Preparing ZIP download for ${document.files.length} files`);
+
+      // Check if ZIP file already exists and is still valid
+      if (document.zipFileUrl) {
+        this.logger.log(`Using cached ZIP file for document ${documentId}`);
+
+        // Generate new signed URL for the existing ZIP file
+        const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(document.zipFileUrl, 1800);
+        const zipFileName = `${document.title || 'document'}.zip`;
+
+        return {
+          downloadUrl: zipDownloadUrl,
+          fileName: zipFileName,
+          fileCount: document.files.length,
+        };
+      }
+
+      // Create new ZIP file
       const zipFileName = `${document.title || 'document'}.zip`;
-      const zipDownloadUrl = await this.createZipDownload(document.files.map((df) => df.file));
+      const zipDownloadUrl = await this.createZipDownload(
+        document.files.map((df) => df.file),
+        documentId
+      );
 
       return {
         downloadUrl: zipDownloadUrl,
@@ -662,10 +692,12 @@ export class DocumentsService {
   /**
    * Create ZIP file download URL for multiple files
    */
-  private async createZipDownload(files: any[]): Promise<string> {
+  private async createZipDownload(files: any[], documentId: string): Promise<string> {
     try {
-      this.logger.log(`Creating ZIP for ${files.length} files`);
-      
+      this.logger.log(
+        `Creating new ZIP file for document ${documentId} with ${files.length} files`
+      );
+
       if (files.length === 0) {
         throw new Error('No files to zip');
       }
@@ -697,10 +729,10 @@ export class DocumentsService {
       for (const file of files) {
         try {
           this.logger.log(`Adding file to ZIP: ${file.originalName}`);
-          
+
           // Get file stream from R2
           const fileStream = await this.r2Service.getFileStream(file.storageUrl);
-          
+
           // Add file to archive
           archive.append(fileStream, { name: file.originalName });
         } catch (fileError) {
@@ -711,23 +743,37 @@ export class DocumentsService {
 
       // Finalize ZIP
       await archive.finalize();
-      
+
       // Wait for ZIP completion
       const zipBuffer = await zipPromise;
 
       // Upload ZIP to R2 and get signed URL
       const zipKey = `downloads/zip-${Date.now()}-${Math.random().toString(36).substring(7)}.zip`;
       await this.r2Service.uploadBuffer(zipBuffer, zipKey, 'application/zip');
-      
+
       // Create storage URL using public URL and get signed URL for the ZIP file (30 minutes expiry)
       const publicUrl = this.configService.get<string>('CLOUDFLARE_R2_PUBLIC_URL');
       const storageUrl = publicUrl
         ? `${publicUrl}/${zipKey}`
         : `${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${this.r2Service.bucketName}/${zipKey}`;
+
+      // Save ZIP file URL to document for caching
+      await this.prisma.document.update({
+        where: { id: documentId },
+        data: {
+          zipFileUrl: storageUrl,
+          zipFileCreatedAt: new Date(),
+        },
+      });
+
       const zipUrl = await this.r2Service.getSignedDownloadUrl(storageUrl, 1800);
-      
-      this.logger.log(`ZIP uploaded and signed URL generated: ${zipUrl.substring(0, 100)}...`);
-      
+
+      this.logger.log(
+        `ZIP uploaded, cached, and signed URL generated: ${zipUrl.substring(0, 100)}...`
+      );
+
+      return zipUrl;
+
       return zipUrl;
     } catch (error) {
       this.logger.error('Error creating ZIP download:', error);
