@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { triggerFileDownload } from '@/services/document.service';
 import { Document, DocumentsService } from '@/services/files.service';
 
 interface DocumentListProps {
@@ -77,7 +78,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const handleDownload = async (document: Document) => {
     try {
       setLoading(true);
-      await DocumentsService.downloadDocument(document.id);
+      await triggerFileDownload(document.id, document.title);
     } catch (err) {
       setError('Failed to download document');
       console.error('Error downloading document:', err);
@@ -130,7 +131,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   const getTotalFileSize = (document: Document) => {
     if (!document.files || document.files.length === 0) return 0;
-    return document.files.reduce((total, file) => total + (file.fileSize || 0), 0);
+    return document.files.reduce((total, file) => total + Number(file.fileSize || 0), 0);
   };
 
   const formatFileSize = (bytes: number) => {

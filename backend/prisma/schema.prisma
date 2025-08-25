@@ -58,6 +58,7 @@ model User {
   bookmarks       Bookmark[]
   bookmarkFolders BookmarkFolder[]
   downloads       Download[]
+  views           View[]
   recommendations RecommendationEngine[]
   CommentLike     CommentLike[]
   ActivityLog     ActivityLog[]
@@ -100,23 +101,25 @@ model Category {
 }
 
 model Document {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   title         String
   description   String?
   uploaderId    String
   categoryId    String
-  downloadCount Int      @default(0)
-  viewCount     Int      @default(0)
-  averageRating Float    @default(0)
-  totalRatings  Int      @default(0)
-  isPublic      Boolean  @default(true)
-  isPremium     Boolean  @default(false)
-  isApproved    Boolean  @default(false)
-  isDraft       Boolean  @default(false)
-  tags          String[] @default([])
-  language      String   @default("en")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  downloadCount Int       @default(0)
+  viewCount     Int       @default(0)
+  averageRating Float     @default(0)
+  totalRatings  Int       @default(0)
+  isPublic      Boolean   @default(true)
+  isPremium     Boolean   @default(false)
+  isApproved    Boolean   @default(false)
+  isDraft       Boolean   @default(false)
+  tags          String[]  @default([])
+  language      String    @default("en")
+  zipFileUrl    String?   // Cached ZIP file URL for multi-file documents
+  zipFileCreatedAt DateTime? // When the ZIP file was created
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
@@ -128,6 +131,7 @@ model Document {
   searches        SearchHistory[]
   bookmarks       Bookmark[]
   downloads       Download[]
+  views           View[]
   recommendations RecommendationEngine[]
 
   // Indexes
@@ -382,7 +386,7 @@ model Bookmark {
 
 model Download {
   id           String   @id @default(cuid())
-  userId       String
+  userId       String? // Allow null for guest downloads
   documentId   String
   ipAddress    String?
   userAgent    String?
@@ -390,7 +394,7 @@ model Download {
   downloadedAt DateTime @default(now())
 
   // Relations
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade) // Make optional
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   // Indexes
@@ -399,6 +403,27 @@ model Download {
   @@index([downloadedAt])
   @@index([ipAddress])
   @@map("downloads")
+}
+
+model View {
+  id         String   @id @default(cuid())
+  userId     String?  // nullable for anonymous views
+  documentId String
+  ipAddress  String?
+  userAgent  String?
+  referrer   String?
+  viewedAt   DateTime @default(now())
+
+  // Relations
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([viewedAt])
+  @@index([ipAddress])
+  @@map("views")
 }
 
 // ================================

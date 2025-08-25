@@ -1,12 +1,20 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 
-import { MainLayout, ProtectedRoute } from '@/components/layout'
+import { MainLayout, ProtectedRoute } from '@/components/layout';
 import {
-    DashboardPage, ForgotPasswordPage, LoginPage, NotFoundPage, RegisterPage,
-    ResendVerificationPage, ResetPasswordPage, UnauthorizedPage, VerifyEmailPage
-} from '@/pages'
-import DocumentsPage from '@/pages/DocumentsPage'
-import { UploadPage } from '@/pages/UploadPage'
+  DashboardPage,
+  ForgotPasswordPage,
+  LoginPage,
+  NotFoundPage,
+  RegisterPage,
+  ResendVerificationPage,
+  ResetPasswordPage,
+  UnauthorizedPage,
+  VerifyEmailPage,
+} from '@/pages';
+import DocumentDetailPage from '@/pages/DocumentDetailPage';
+import DocumentsPage from '@/pages/DocumentsPage';
+import { UploadPage } from '@/pages/UploadPage';
 
 export const router = createBrowserRouter([
   // Redirect root to dashboard
@@ -111,6 +119,10 @@ export const router = createBrowserRouter([
       {
         path: 'documents',
         element: <DocumentsPage />,
+      },
+      {
+        path: 'documents/:documentId',
+        element: <DocumentDetailPage />,
       },
       {
         path: 'upload',
