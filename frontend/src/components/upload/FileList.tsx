@@ -1,9 +1,8 @@
-import { Download, ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
+import { ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
 
 import React, { useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -13,8 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { downloadFile } from '@/services/document.service';
-import { UploadService, UploadedFile } from '@/services/upload.service';
+import { UploadedFile, UploadService } from '@/services/upload.service';
 
 interface FileListProps {
   refreshTrigger?: number;
@@ -75,14 +73,6 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
       setError(err instanceof Error ? err.message : 'Failed to delete file');
     } finally {
       setDeletingId(null);
-    }
-  };
-
-  const handleDownload = async (file: UploadedFile) => {
-    try {
-      await downloadFile(file.id, file.title || file.originalName);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate download link');
     }
   };
 
@@ -194,23 +184,11 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                   <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
                     <span>{UploadService.formatFileSize(file.fileSize)}</span>
                     <span>{formatDate(file.createdAt)}</span>
-                    <Badge variant={file.isPublic ? 'default' : 'secondary'} className="text-xs">
-                      {file.isPublic ? 'Public' : 'Private'}
-                    </Badge>
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload(file)}
-                    disabled={loading}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="ghost">
@@ -218,14 +196,12 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white">
-                      <DropdownMenuItem onClick={() => window.open(file.filePath, '_blank')}>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Document
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownload(file)}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </DropdownMenuItem>
+                      {file.secureUrl && (
+                        <DropdownMenuItem onClick={() => window.open(file.secureUrl, '_blank')}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View Document
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         onClick={() => handleDelete(file.id)}
                         disabled={deletingId === file.id}

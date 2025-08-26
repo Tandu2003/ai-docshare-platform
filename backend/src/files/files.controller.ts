@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpStatus,
   Logger,
   Param,
@@ -17,8 +18,8 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from './files.service';
@@ -93,23 +94,35 @@ export class FilesController {
     }
   }
 
-  @Public()
-  @Post('download/:fileId')
-  @ApiOperation({ summary: 'Get download URL for a file' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get(':fileId/secure-url')
+  @ApiOperation({ summary: 'Get secure access URL for a file' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Download URL generated successfully',
+    description: 'Secure file URL generated successfully',
   })
-  async downloadFile(@Param('fileId') fileId: string, @Res() res: Response) {
+  async getSecureFileUrl(
+    @Param('fileId') fileId: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
     try {
-      const downloadUrl = await this.filesService.getDownloadUrl(fileId);
+      // Get user ID if authenticated
+      const userId = (req as any).user?.id;
+      
+      const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
 
-      return ResponseHelper.success(res, { downloadUrl }, 'Download URL generated');
+      return ResponseHelper.success(res, { secureUrl }, 'Secure file URL generated');
     } catch (error) {
-      this.logger.error(`Failed to generate download URL for file ${fileId}`, error);
+      this.logger.error(`Failed to generate secure URL for file ${fileId}`, error);
+      
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+      
       return ResponseHelper.error(
         res,
-        'Could not generate download URL',
+        'Could not generate secure file URL',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

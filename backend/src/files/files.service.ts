@@ -1,15 +1,11 @@
-import * as crypto from 'crypto';
+import * as crypto from 'crypto'
 
 import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+    BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException
+} from '@nestjs/common'
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { PrismaService } from '../prisma/prisma.service'
 
 export interface FileUploadResult {
   id: string;
@@ -17,7 +13,7 @@ export interface FileUploadResult {
   fileName: string;
   mimeType: string;
   fileSize: string;
-  storageUrl: string;
+  // storageUrl: string; // Removed for security - use secure endpoint
   fileHash: string;
 }
 
@@ -72,6 +68,7 @@ export class FilesService {
 
       // Generate file hash first to check for duplicates
       const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+      this.logger.log(`Generated file hash: ${fileHash}`);
 
       // Check if file with same hash already exists
       const existingFile = await this.prisma.file.findUnique({
@@ -89,16 +86,19 @@ export class FilesService {
             fileSize: Number(existingFile.fileSize),
             mimeType: existingFile.mimeType,
             fileHash: existingFile.fileHash,
-            storageUrl: existingFile.storageUrl,
+            // Don't return direct storage URL for security
             createdAt: existingFile.createdAt,
           },
         };
       }
 
       // Upload to R2 only if not duplicate
+      this.logger.log(`Uploading to R2 storage...`);
       const uploadResult = await this.r2Service.uploadFile(file, userId);
+      this.logger.log(`R2 upload completed:`, uploadResult);
 
       // Save file metadata to database
+      this.logger.log(`Saving file metadata to database...`);
       const fileRecord = await this.prisma.file.create({
         data: {
           originalName: file.originalname,
@@ -124,13 +124,21 @@ export class FilesService {
           fileSize: Number(fileRecord.fileSize),
           mimeType: fileRecord.mimeType,
           fileHash: fileRecord.fileHash,
-          storageUrl: fileRecord.storageUrl,
+          // Don't return direct storage URL for security
           createdAt: fileRecord.createdAt,
         },
       };
     } catch (error) {
       this.logger.error('Error uploading file:', error);
-      throw new InternalServerErrorException('Failed to upload file');
+      this.logger.error('Error message:', error.message);
+      this.logger.error('Error stack:', error.stack);
+      
+      // Re-throw the original error if it's already a known exception
+      if (error instanceof BadRequestException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
     }
   }
 
@@ -155,6 +163,66 @@ export class FilesService {
   }
 
   /**
+   * Get secure preview/access URL for a file (with expiration)
+   */
+  async getSecureFileUrl(fileId: string, userId?: string): Promise<string> {
+    try {
+      const file = await this.prisma.file.findUnique({
+        where: { id: fileId },
+        include: {
+          uploader: true,
+        },
+      });
+
+      if (!file) {
+        throw new NotFoundException('File not found');
+      }
+
+      // Check if user has access to the file
+      if (!file.isPublic && file.uploaderId !== userId) {
+        throw new BadRequestException('You do not have access to this file');
+      }
+
+      // Generate signed URL with 1 hour expiration
+      return await this.r2Service.getSignedDownloadUrl(file.storageUrl, 3600); // 1 hour
+    } catch (error) {
+      this.logger.error('Error getting secure file URL:', error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get secure file URL');
+    }
+  }
+
+  /**
+   * Add secure URLs to file objects for API responses
+   */
+  async addSecureUrlsToFiles(files: any[], userId?: string): Promise<any[]> {
+    try {
+      const filesWithUrls = await Promise.all(
+        files.map(async (file) => {
+          try {
+            const secureUrl = await this.getSecureFileUrl(file.id, userId);
+            return {
+              ...file,
+              secureUrl,
+              expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(), // 1 hour from now
+            };
+          } catch (error) {
+            // If can't get secure URL, return file without it
+            this.logger.warn(`Could not get secure URL for file ${file.id}:`, error.message);
+            return file;
+          }
+        })
+      );
+      return filesWithUrls;
+    } catch (error) {
+      this.logger.error('Error adding secure URLs to files:', error);
+      return files; // Return original files if something goes wrong
+    }
+  }
+
+  /**
    * Get file by ID
    */
   async getFile(fileId: string): Promise<any> {
@@ -173,6 +241,8 @@ export class FilesService {
    * Validate uploaded file
    */
   private validateFile(file: Express.Multer.File) {
+    this.logger.log(`Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`);
+    
     // Check file size
     if (file.size > this.maxFileSize) {
       throw new BadRequestException(
@@ -182,17 +252,103 @@ export class FilesService {
 
     // Check file type
     const allowedTypes = [
+      // PDF files
       'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'text/plain',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      
+      // Microsoft Office documents
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+      'application/vnd.ms-powerpoint', // .ppt
+      
+      // Text files
+      'text/plain', // .txt
+      'text/markdown', // .md
+      'text/csv', // .csv
+      'application/rtf', // .rtf
+      
+      // Image files
+      'image/jpeg', // .jpg, .jpeg
+      'image/png', // .png
+      'image/gif', // .gif
+      'image/bmp', // .bmp
+      'image/webp', // .webp
+      'image/svg+xml', // .svg
+      
+      // Archive files
+      'application/zip', // .zip
+      'application/x-rar-compressed', // .rar
+      'application/x-7z-compressed', // .7z
+      
+      // Other common formats
+      'application/json', // .json
+      'application/xml', // .xml
+      'text/xml', // .xml
+      'text/html', // .html
+      'text/css', // .css
+      'application/javascript', // .js
+      'text/javascript', // .js
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('File type not supported');
+      this.logger.error(`File type not supported: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`);
+      throw new BadRequestException(`File type not supported: ${file.mimetype}. Please upload a supported file format.`);
     }
+    
+    this.logger.log(`File validation passed for: ${file.originalname}`);
+  }
+
+  /**
+   * Get allowed file types
+   */
+  getAllowedTypes(): { types: string[]; description: string } {
+    const allowedTypes = [
+      // PDF files
+      'application/pdf',
+      
+      // Microsoft Office documents
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+      'application/vnd.ms-powerpoint', // .ppt
+      
+      // Text files
+      'text/plain', // .txt
+      'text/markdown', // .md
+      'text/csv', // .csv
+      'application/rtf', // .rtf
+      
+      // Image files
+      'image/jpeg', // .jpg, .jpeg
+      'image/png', // .png
+      'image/gif', // .gif
+      'image/bmp', // .bmp
+      'image/webp', // .webp
+      'image/svg+xml', // .svg
+      
+      // Archive files
+      'application/zip', // .zip
+      'application/x-rar-compressed', // .rar
+      'application/x-7z-compressed', // .7z
+      
+      // Other common formats
+      'application/json', // .json
+      'application/xml', // .xml
+      'text/xml', // .xml
+      'text/html', // .html
+      'text/css', // .css
+      'application/javascript', // .js
+      'text/javascript', // .js
+    ];
+
+    return {
+      types: allowedTypes,
+      description: 'Supported file types for upload'
+    };
   }
 
   /**

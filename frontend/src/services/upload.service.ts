@@ -9,33 +9,18 @@ export interface UploadFileData {
   language?: string;
 }
 
-export type UploadedFile = {
+export interface UploadedFile {
   id: string;
-  originalName?: string;
-  title?: string;
+  originalName: string;
   fileName: string;
   mimeType: string;
-  fileSize: string;
-  storageUrl?: string;
-  filePath?: string;
-  isPublic: boolean;
+  fileSize: number;
+  fileHash: string;
   createdAt: string;
-  uploader: {
-    id: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-  };
-  documents?: {
-    id: string;
-    title: string;
-    isPublic: boolean;
-    downloadCount: number;
-    viewCount: number;
-  }[];
-  viewCount?: number;
-  downloadCount?: number;
-};
+  // storageUrl?: string; // Removed for security - use getSecureFileUrl instead
+  secureUrl?: string; // Temporary secure URL
+  expiresAt?: string; // When secure URL expires
+}
 
 export interface FileUploadResponse {
   file: UploadedFile;
@@ -252,13 +237,13 @@ export class UploadService {
    */
   static async getAllowedTypes(): Promise<string[]> {
     try {
-      const response = await api.get<{ allowedTypes: string[] }>('/upload/allowed-types');
+      const response = await api.get<{ types: string[]; description: string }>('/documents/upload/allowed-types');
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to get allowed file types');
       }
 
-      return response.data.allowedTypes;
+      return response.data.types;
     } catch (error) {
       console.error('Error getting allowed file types:', error);
       // Return empty array as fallback to allow all file types
