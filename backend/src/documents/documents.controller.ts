@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { CheckPolicy } from '@/common/casl';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -39,6 +40,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Post('create')
+  @CheckPolicy({ action: 'create', subject: 'Document' })
   @ApiOperation({ summary: 'Create a document from uploaded files' })
   @ApiResponse({
     status: HttpStatus.CREATED,

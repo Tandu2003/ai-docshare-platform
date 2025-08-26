@@ -52,9 +52,28 @@ export const useAuth = () => {
 
   // Permission helpers
   const hasPermission = useCallback(
-    (permission: string): boolean => {
+    (permissionOrAction: string, subject?: string): boolean => {
       if (!user?.role?.permissions) return false;
-      return user.role.permissions.includes(permission);
+
+      // Support signature: hasPermission('action:subject') or hasPermission('action', 'Subject')
+      const [actionFromString, subjectFromString] =
+        subject === undefined && permissionOrAction.includes(':')
+          ? permissionOrAction.split(':', 2)
+          : [permissionOrAction, subject];
+
+      const action = actionFromString?.trim();
+      const normalizedSubject = subjectFromString?.trim();
+
+      return user.role.permissions.some((p) => {
+        const matchesAction = p.action === action;
+        if (!matchesAction) return false;
+        if (!normalizedSubject) return true;
+        // Compare case-insensitively; backend subjects are PascalCase
+        return (
+          typeof p.subject === 'string' &&
+          p.subject.toLowerCase() === normalizedSubject.toLowerCase()
+        );
+      });
     },
     [user]
   );

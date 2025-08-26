@@ -227,7 +227,7 @@ class AuthService {
     const user = this.getUserData();
     if (!user?.role?.permissions) return false;
 
-    return user.role.permissions.includes(permission);
+    return user.role.permissions.some((p) => p.action === permission);
   }
 
   /**
@@ -310,7 +310,7 @@ class AuthService {
 
   private handleAuthSuccess(authData: LoginResponse): void {
     if (authData.user) {
-      this.setUserData(authData.user as User);
+      this.setUserData(authData.user as unknown as User);
     }
 
     // Token will be set in Redux store by API client

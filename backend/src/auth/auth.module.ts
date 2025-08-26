@@ -8,6 +8,8 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { MailModule } from '@/mail/mail.module';
+import { RoleService } from './role.service';
+import { RoleController } from './role.controller';
 
 @Module({
   imports: [
@@ -46,8 +48,8 @@ import { MailModule } from '@/mail/mail.module';
     PrismaModule,
     MailModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  controllers: [AuthController, RoleController],
+  providers: [AuthService, JwtStrategy, RoleService],
+  exports: [AuthService, JwtStrategy, PassportModule, RoleService],
 })
 export class AuthModule {}

@@ -1,5 +1,6 @@
 import { AuthModule } from '@/auth/auth.module'
 import { DatabaseInitService, GlobalExceptionFilter } from '@/common'
+import { CaslModule } from '@/common/casl'
 import { ConfigModule } from '@/config/config.module'
 // import { DocumentModule } from '@/document/document.module';
 import { DocumentsModule } from '@/documents/documents.module'
@@ -8,7 +9,8 @@ import { HealthModule } from '@/health/health.module'
 import { PrismaModule } from '@/prisma/prisma.module'
 // import { UploadModule } from '@/upload/upload.module';
 import { Module } from '@nestjs/common'
-import { APP_FILTER } from '@nestjs/core'
+import { APP_FILTER, APP_GUARD } from '@nestjs/core'
+import { CaslGuard } from '@/common/casl'
 
 @Module({
   imports: [
@@ -16,6 +18,7 @@ import { APP_FILTER } from '@nestjs/core'
     PrismaModule,
     HealthModule,
     AuthModule,
+    CaslModule,
     // UploadModule,
     // DocumentModule,
     FilesModule,
@@ -27,6 +30,11 @@ import { APP_FILTER } from '@nestjs/core'
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
+    },
+    // Global CASL Guard as provider
+    {
+      provide: APP_GUARD,
+      useClass: CaslGuard,
     },
     // Database initialization service
     DatabaseInitService,

@@ -1,8 +1,38 @@
 // User role and permissions
+export interface Permission {
+  action:
+    | 'create'
+    | 'read'
+    | 'update'
+    | 'delete'
+    | 'manage'
+    | 'approve'
+    | 'moderate'
+    | 'upload'
+    | 'download'
+    | 'comment'
+    | 'rate'
+    | 'bookmark'
+    | 'share';
+  subject:
+    | 'User'
+    | 'Document'
+    | 'File'
+    | 'Category'
+    | 'Comment'
+    | 'Rating'
+    | 'Bookmark'
+    | 'Notification'
+    | 'SystemSetting'
+    | 'all';
+  conditions?: Record<string, any>;
+}
+
 export interface Role {
   id: string;
   name: string;
-  permissions: string[];
+  description: string;
+  permissions: Permission[];
 }
 
 // User interface
@@ -65,6 +95,7 @@ export interface LoginResponse {
   user: Omit<User, 'role'> & {
     role: {
       name: string;
+      description: string;
       permissions: string[];
     };
   };
