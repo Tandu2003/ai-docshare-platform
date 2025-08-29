@@ -1,0 +1,41 @@
+---
+type: 'mdc'
+globs: frontend/**/*.tsx,frontend/**/*.ts
+---
+
+# Frontend React Standards - Legacy (Refer to frontend-standards.mdc for current standards)
+
+## Note
+
+This rule file contains legacy standards. For current comprehensive frontend development standards,
+refer to [frontend-standards.mdc](mdc:.cursor/rules/frontend-standards.mdc).
+
+## Key Differences from Current Standards
+
+- **Function Syntax**: Current standard uses `function` keyword, not arrow functions
+- **TypeScript**: Prefer `interface` over `type` unless unions needed
+- **State Management**: Minimize local state, use Redux Toolkit extensively
+- **File Structure**: Specific ordering: exported component → subcomponents → helpers → static
+  content → types
+- **Naming**: Strict kebab-case for files and directories
+- **Performance**: Focus on Web Vitals and Redux optimization
+
+## Migration Guide
+
+When updating existing components:
+
+1. Convert arrow functions to `function` declarations
+2. Restructure files according to the new organization pattern
+3. Move local state to Redux where appropriate
+4. Update naming conventions to kebab-case
+5. Implement performance optimizations with `createSelector`
+
+## Current Standards Reference
+
+See [frontend-standards.mdc](mdc:.cursor/rules/frontend-standards.mdc) for:
+
+- Complete coding standards
+- TypeScript best practices
+- Performance optimization techniques
+- UI framework guidelines (Shadcn UI, Radix UI, Tailwind)
+- Redux Toolkit patterns

@@ -38,15 +38,20 @@ export const AuthPage: React.FC = () => {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Permissions</h3>
               <div className="flex flex-wrap gap-2">
-                {user.role.permissions.map((permission) => (
+                {user.role.permissions.map((permission, index) => (
                   <span
-                    key={permission}
+                    key={`${permission.action}-${permission.subject}-${index}`}
                     className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
                   >
-                    {permission}
+                    {permission.action} {permission.subject}
                   </span>
                 ))}
               </div>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Role Description</h3>
+              <p>{user.role.description}</p>
             </div>
 
             <Button onClick={logout} className="w-full" variant="outline">

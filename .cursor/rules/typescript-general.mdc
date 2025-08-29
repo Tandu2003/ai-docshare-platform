@@ -1,0 +1,76 @@
+---
+type: 'mdc'
+alwaysApply: true
+---
+
+# TypeScript General Coding Standards
+
+## Basic Principles
+
+- Use English for all code and documentation
+- Always declare types for variables and functions (parameters and return values)
+- Avoid using `any` - create necessary types instead
+- Use JSDoc to document public classes and methods
+- Don't leave blank lines within functions
+- One export per file
+
+## Nomenclature
+
+- **Classes**: Use PascalCase (e.g., `UserService`, `DocumentController`)
+- **Variables/Functions/Methods**: Use camelCase (e.g., `getUserById`, `isValidEmail`)
+- **Files/Directories**: Use kebab-case (e.g., `user-service.ts`, `auth-guard.ts`)
+- **Environment Variables**: Use UPPERCASE (e.g., `DATABASE_URL`, `JWT_SECRET`)
+- **Constants**: Avoid magic numbers, define constants
+- **Function Names**: Start with verbs (e.g., `createUser`, `validateInput`)
+- **Boolean Variables**: Use descriptive verbs (e.g., `isLoading`, `hasError`, `canDelete`)
+- **Complete Words**: Use full words instead of abbreviations (except standard ones like API, URL,
+  i/j for loops, err for errors, ctx for contexts, req/res/next for middleware)
+
+## Functions
+
+- Write short functions with single purpose (< 20 instructions)
+- Name functions with verb + description
+  - Boolean returns: `isX`, `hasX`, `canX` (e.g., `isValidEmail`)
+  - Void functions: `executeX`, `saveX` (e.g., `saveUser`)
+- Avoid nesting blocks using early returns and utility functions
+- Use higher-order functions (map, filter, reduce) to avoid nesting
+- Use arrow functions for simple functions (< 3 instructions)
+- Use named functions for complex functions
+- Use default parameters instead of null/undefined checks
+- Follow RO-RO pattern (Receive Object, Return Object) for multiple parameters
+- Maintain single level of abstraction
+
+## Data
+
+- Don't abuse primitive types - encapsulate in composite types
+- Avoid data validations in functions - use classes with internal validation
+- Prefer immutability:
+  - Use `readonly` for unchanging data
+  - Use `as const` for literal constants
+
+## Classes
+
+- Follow SOLID principles
+- Prefer composition over inheritance
+- Declare interfaces to define contracts
+- Write small classes with single purpose:
+  - < 200 instructions
+  - < 10 public methods
+  - < 10 properties
+
+## Exceptions
+
+- Use exceptions for unexpected errors
+- Catch exceptions only to:
+  - Fix expected problems
+  - Add context
+  - Otherwise use global handlers
+
+## Testing
+
+- Follow Arrange-Act-Assert convention
+- Name test variables clearly:
+  - `inputX`, `mockX`, `actualX`, `expectedX`
+- Write unit tests for each public function
+- Use test doubles for dependencies (except non-expensive third-party deps)
+- Write acceptance tests for each module using Given-When-Then convention

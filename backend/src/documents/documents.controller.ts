@@ -1,20 +1,31 @@
-import { Request, Response } from 'express'
+import { Request, Response } from 'express';
 
 import {
-    BadRequestException, Body, Controller, Get, HttpStatus, Logger, Param, Post, Query, Req, Res,
-    UseGuards
-} from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '../auth/decorators/public.decorator'
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard'
-import { ResponseHelper } from '../common/helpers/response.helper'
-import { FilesService } from '../files/files.service'
-import { DocumentsService } from './documents.service'
-import { CreateDocumentDto } from './dto/create-document.dto'
-import { DownloadDocumentDto } from './dto/download-document.dto'
-import { ViewDocumentDto } from './dto/view-document.dto'
+import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { DocumentsService } from './documents.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { CheckPolicy } from '@/common/casl';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { FilesService } from '../files/files.service';
+import { DownloadDocumentDto } from './dto/download-document.dto';
+import { ViewDocumentDto } from './dto/view-document.dto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -36,6 +47,7 @@ export class DocumentsController {
   ) {}
 
   @Post('create')
+  @CheckPolicy({ action: 'create', subject: 'Document' })
   @ApiOperation({ summary: 'Create a document from uploaded files' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -72,8 +84,9 @@ export class DocumentsController {
     }
   }
 
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post(':documentId/download')
+  @CheckPolicy({ action: 'download', subject: 'Document' })
   @ApiOperation({ summary: 'Download all files of a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -89,7 +102,7 @@ export class DocumentsController {
       const userId = req.user?.id; // Use optional chaining since user might not be authenticated
 
       // Extract IP address from request
-      let ipAddress = 
+      let ipAddress =
         downloadDto.ipAddress ||
         req.ip ||
         req.connection?.remoteAddress ||
@@ -132,6 +145,7 @@ export class DocumentsController {
     }
   }
 
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
@@ -146,9 +160,9 @@ export class DocumentsController {
     @Res() res: Response
   ) {
     try {
-      const pageNum = Math.max(1, parseInt(page, 10) || 1);
-      const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
-      
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
+
       // Get user ID if authenticated
       const userId = (req as any).user?.id;
 
@@ -178,8 +192,8 @@ export class DocumentsController {
     @Res() res: Response
   ) {
     const userId = req.user.id;
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 10;
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 10;
 
     try {
       const documents = await this.documentsService.getUserDocuments(userId, pageNum, limitNum);
@@ -225,6 +239,7 @@ export class DocumentsController {
     }
   }
 
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Post(':documentId/view')
   @ApiOperation({ summary: 'Track document view' })
@@ -241,25 +256,25 @@ export class DocumentsController {
     try {
       // Get user ID if authenticated (optional)
       const userId = (req as any).user?.id || null;
-      
+
       // Get IP address with multiple fallback methods
-      let ipAddress = req.ip || 
-        req.connection?.remoteAddress || 
-        req.socket?.remoteAddress || 
-        'unknown';
-        
+      let ipAddress =
+        req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
+
       // Handle x-forwarded-for header (can be array)
       if (!ipAddress || ipAddress === 'unknown') {
         const forwardedFor = req.headers['x-forwarded-for'];
         const realIp = req.headers['x-real-ip'];
-        
+
         if (forwardedFor) {
-          ipAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
+          ipAddress = Array.isArray(forwardedFor)
+            ? forwardedFor[0]
+            : forwardedFor.split(',')[0].trim();
         } else if (realIp) {
           ipAddress = Array.isArray(realIp) ? realIp[0] : realIp;
         }
       }
-        
+
       const userAgent = req.get('User-Agent') || 'unknown';
       const { referrer } = viewDocumentDto;
 

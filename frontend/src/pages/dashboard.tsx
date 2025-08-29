@@ -1,8 +1,8 @@
-import { Download, FileText, Upload, Users } from 'lucide-react'
+import { Download, FileText, Upload, Users } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/hooks'
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks';
 
 export const DashboardPage: React.FC = () => {
   const { user, hasPermission, isAdmin, isModerator } = useAuth();
@@ -96,11 +96,18 @@ export const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {user?.role.permissions.map((permission) => (
-                <Badge key={permission} variant="outline" className="text-xs">
-                  {/* {permission.replace(/[_:]/g, ' ').toLowerCase()} */}
-                </Badge>
-              ))}
+              {user?.role.permissions.map((permission, idx) => {
+                const label = `${permission.action} ${permission.subject}`.toLowerCase();
+                return (
+                  <Badge
+                    key={`${permission.action}:${permission.subject}:${idx}`}
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    {label}
+                  </Badge>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -135,7 +142,7 @@ export const DashboardPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {hasPermission('upload:documents') && (
+            {hasPermission('upload', 'File') && (
               <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
                 <Upload className="h-6 w-6 text-blue-600 mb-2" />
                 <h3 className="font-medium">Upload Document</h3>
