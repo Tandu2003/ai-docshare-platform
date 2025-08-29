@@ -74,7 +74,7 @@ export class UploadService {
       });
 
       const response = await api.post<FileUploadResponse[] | FileUploadResponse>(
-        '/upload',
+        '/files/upload',
         formData,
         {
           headers: {
@@ -167,7 +167,7 @@ export class UploadService {
     }
 
     try {
-      const response = await api.get<FilesListResponse>(`/upload/my-files?${params}`);
+      const response = await api.get<FilesListResponse>(`/files/my-files?${params}`);
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to fetch user files');
@@ -185,7 +185,7 @@ export class UploadService {
    */
   static async getFile(fileId: string): Promise<UploadedFile> {
     try {
-      const response = await api.get<UploadedFile>(`/upload/file/${fileId}`);
+      const response = await api.get<UploadedFile>(`/files/file/${fileId}`);
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to fetch file details');
@@ -203,7 +203,7 @@ export class UploadService {
    */
   static async getDownloadUrl(fileId: string): Promise<string> {
     try {
-      const response = await api.get<{ downloadUrl: string }>(`/upload/download/${fileId}`);
+      const response = await api.get<{ downloadUrl: string }>(`/files/download/${fileId}`);
 
       if (!response.data || !response.success || !response.data?.downloadUrl) {
         throw new Error(response.message || 'Failed to get download URL');
@@ -221,7 +221,7 @@ export class UploadService {
    */
   static async deleteFile(fileId: string): Promise<void> {
     try {
-      const response = await api.delete<void>(`/upload/file/${fileId}`);
+      const response = await api.delete<void>(`/files/file/${fileId}`);
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to delete file');

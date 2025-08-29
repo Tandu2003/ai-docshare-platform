@@ -118,7 +118,6 @@ export function Header() {
 
   // CASL permission checks
   const canReadNotifications = useCan('read', 'Notification');
-  const canReadUserProfile = useCan('read', 'User');
   const canModerateUsers = useCan('moderate', 'User');
 
   const handleLogout = () => {
@@ -220,8 +219,8 @@ export function Header() {
               </DropdownMenu>
             )}
 
-            {/* User Menu - Only for users with profile permissions */}
-            {canReadUserProfile ? (
+            {/* User Menu - Only for authenticated users */}
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2">

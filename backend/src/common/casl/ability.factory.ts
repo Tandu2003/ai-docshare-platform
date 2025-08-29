@@ -46,10 +46,12 @@ export class AbilityFactory {
   createForUser(user: any): AppAbility {
     const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
-    // Default permissions for all users
+    // Default permissions for all users (including unauthenticated)
     can('read', 'Document', { isPublic: true });
     can('read', 'Category');
     can('read', 'File', { isPublic: true });
+    can('create', 'Document'); // Cho phép tạo tài liệu (sẽ được kiểm tra auth ở controller level)
+    can('upload', 'File'); // Cho phép upload file (sẽ được kiểm tra auth ở controller level)
 
     if (!user || !user.role) {
       return build();
@@ -89,6 +91,12 @@ export class AbilityFactory {
         break;
       case 'user':
         can('read', 'Document', { isPublic: true, isApproved: true });
+        can('create', 'Document'); // Thêm quyền tạo tài liệu
+        can('update', 'Document', { uploaderId: user.id }); // Thêm quyền cập nhật tài liệu của mình
+        can('delete', 'Document', { uploaderId: user.id }); // Thêm quyền xóa tài liệu của mình
+        can('upload', 'File'); // Thêm quyền upload file
+        can('read', 'Document', { uploaderId: user.id }); // Thêm quyền đọc tài liệu của mình
+        can('read', 'File', { uploaderId: user.id }); // Thêm quyền đọc file của mình
         can('create', 'Comment');
         can('update', 'Comment', { userId: user.id });
         can('delete', 'Comment', { userId: user.id });
@@ -97,6 +105,7 @@ export class AbilityFactory {
         can('create', 'Bookmark');
         can('delete', 'Bookmark', { userId: user.id });
         can('download', 'Document', { isPublic: true, isApproved: true });
+        can('download', 'Document', { uploaderId: user.id }); // Thêm quyền download tài liệu của mình
         break;
     }
 

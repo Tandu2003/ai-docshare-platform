@@ -112,6 +112,72 @@ export class AuthController {
     ResponseHelper.success(response, userWithoutPassword, 'Profile retrieved successfully');
   }
 
+  @Get('abilities')
+  @UseGuards(JwtAuthGuard)
+  async getUserAbilities(
+    @Req() request: Request & { user: AuthUser },
+    @Res() response: Response
+  ): Promise<void> {
+    try {
+      const user = request.user;
+      console.log('🔐 Getting abilities for user:', user.id, user.role?.name);
+
+      // Create simple permissions based on user role
+      let rules: any[] = [];
+
+      if (user.role?.name === 'admin') {
+        rules = [{ action: 'manage', subject: 'all' }];
+      } else if (user.role?.name === 'moderator') {
+        rules = [
+          { action: 'read', subject: 'all' },
+          { action: 'update', subject: 'Document', conditions: { isApproved: false } },
+          { action: 'approve', subject: 'Document' },
+          { action: 'moderate', subject: 'Comment' },
+          { action: 'moderate', subject: 'User' },
+        ];
+      } else if (user.role?.name === 'publisher') {
+        rules = [
+          { action: 'create', subject: 'Document' },
+          { action: 'update', subject: 'Document', conditions: { uploaderId: user.id } },
+          { action: 'delete', subject: 'Document', conditions: { uploaderId: user.id } },
+          { action: 'upload', subject: 'File' },
+          { action: 'read', subject: 'Document', conditions: { uploaderId: user.id } },
+          { action: 'read', subject: 'File', conditions: { uploaderId: user.id } },
+        ];
+      } else {
+        // Default user permissions
+        rules = [
+          { action: 'read', subject: 'Document', conditions: { isPublic: true, isApproved: true } },
+          { action: 'create', subject: 'Document' },
+          { action: 'update', subject: 'Document', conditions: { uploaderId: user.id } },
+          { action: 'delete', subject: 'Document', conditions: { uploaderId: user.id } },
+          { action: 'upload', subject: 'File' },
+          { action: 'read', subject: 'Document', conditions: { uploaderId: user.id } },
+          { action: 'read', subject: 'File', conditions: { uploaderId: user.id } },
+          { action: 'create', subject: 'Comment' },
+          { action: 'update', subject: 'Comment', conditions: { userId: user.id } },
+          { action: 'delete', subject: 'Comment', conditions: { userId: user.id } },
+          { action: 'create', subject: 'Rating' },
+          { action: 'update', subject: 'Rating', conditions: { userId: user.id } },
+          { action: 'create', subject: 'Bookmark' },
+          { action: 'delete', subject: 'Bookmark', conditions: { userId: user.id } },
+          {
+            action: 'download',
+            subject: 'Document',
+            conditions: { isPublic: true, isApproved: true },
+          },
+          { action: 'download', subject: 'Document', conditions: { uploaderId: user.id } },
+        ];
+      }
+
+      console.log('🔐 Created rules for role:', user.role?.name, 'Count:', rules.length);
+      ResponseHelper.success(response, { rules }, 'User abilities retrieved successfully');
+    } catch (error) {
+      console.error('🔐 Error in getUserAbilities:', error);
+      ResponseHelper.error(response, 'Failed to get user abilities', 500);
+    }
+  }
+
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
