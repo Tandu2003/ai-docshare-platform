@@ -1,15 +1,21 @@
-import { Download, ExternalLink, Eye, User } from 'lucide-react'
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Download, ExternalLink, Eye, User } from 'lucide-react';
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
-    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle
-} from '@/components/ui/card'
-import { triggerFileDownload } from '@/services/document.service'
-import { Document } from '@/services/files.service'
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { triggerFileDownload } from '@/services/document.service';
+import { Document } from '@/services/files.service';
 
-import { Button } from '../ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 interface DocumentCardProps {
   document: Document;
@@ -21,7 +27,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
 
   const onDownload = async () => {
     if (isDownloading) return;
-    
+
     try {
       setIsDownloading(true);
       await triggerFileDownload(document.id, document.title);

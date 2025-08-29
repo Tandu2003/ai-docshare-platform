@@ -1,21 +1,26 @@
-import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react'
-import React, { useCallback, useRef, useState } from 'react'
+import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
+import React, { useCallback, useRef, useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
-import { DocumentsService, FilesService } from '@/services/files.service'
-import { UploadService } from '@/services/upload.service'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { DocumentsService, FilesService } from '@/services/files.service';
+import { UploadService } from '@/services/upload.service';
 
 interface FileUploadProps {
   onUploadComplete?: (document: any) => void;
@@ -283,9 +288,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-lg font-medium mb-2">
-            Click here or drop documents to upload
-          </p>
+          <p className="text-lg font-medium mb-2">Click here or drop documents to upload</p>
           <p className="text-sm text-gray-500">
             {multiple ? 'Upload multiple documents' : 'Upload a single document'} (max 100MB each)
           </p>
@@ -448,9 +451,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               }}
               className="flex-1"
             />
-            <Button 
-              type="button" 
-              size="sm" 
+            <Button
+              type="button"
+              size="sm"
               onClick={addTag}
               disabled={!newTag.trim()}
               className="px-3"

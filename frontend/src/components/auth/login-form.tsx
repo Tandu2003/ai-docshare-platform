@@ -42,7 +42,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
       if (result.meta.requestStatus === 'fulfilled') {
         reset();
         onSuccess?.();
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err) {
       // Error is handled by Redux and toast

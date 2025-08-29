@@ -1,4 +1,4 @@
-import { api } from '@/config/api'
+import { api } from '@/config/api';
 
 export interface UploadFileData {
   title?: string;
@@ -237,7 +237,9 @@ export class UploadService {
    */
   static async getAllowedTypes(): Promise<string[]> {
     try {
-      const response = await api.get<{ types: string[]; description: string }>('/documents/upload/allowed-types');
+      const response = await api.get<{ types: string[]; description: string }>(
+        '/documents/upload/allowed-types'
+      );
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to get allowed file types');

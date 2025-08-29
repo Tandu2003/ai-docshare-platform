@@ -1,20 +1,32 @@
 import {
-    ArrowLeft, Calendar, Download, ExternalLink, Eye, FileText, MessageSquare, Star, User
-} from 'lucide-react'
-import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { toast } from 'sonner'
+  ArrowLeft,
+  Calendar,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  MessageSquare,
+  Star,
+  User,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-    DocumentView, getDocumentById, triggerFileDownload, viewDocument
-} from '@/services/document.service'
+  DocumentView,
+  getDocumentById,
+  triggerFileDownload,
+  viewDocument,
+} from '@/services/document.service';
 
 const DocumentDetailPage: React.FC = () => {
   const { documentId } = useParams<{ documentId: string }>();
@@ -57,7 +69,7 @@ const DocumentDetailPage: React.FC = () => {
 
   const handleDownloadDocument = async () => {
     if (!document) return;
-    
+
     try {
       setIsDownloading(true);
       await triggerFileDownload(document.id);
@@ -201,7 +213,7 @@ const DocumentDetailPage: React.FC = () => {
 
                 {/* Download Document Button */}
                 <div className="mt-4">
-                  <Button 
+                  <Button
                     onClick={handleDownloadDocument}
                     disabled={isDownloading}
                     className="flex items-center gap-2"

@@ -1,6 +1,6 @@
-import { apiClient } from '@/utils/api-client'
+import { apiClient } from '@/utils/api-client';
 
-import { UploadedFile } from './upload.service'
+import { UploadedFile } from './upload.service';
 
 export interface PaginatedPublicFiles {
   files: UploadedFile[];

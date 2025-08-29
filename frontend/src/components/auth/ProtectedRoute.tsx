@@ -1,9 +1,9 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/hooks';
 import { useCan } from '@/lib/casl';
 
-import { RequireAuth } from '../auth/RequireAuth';
+import { RequireAuth } from './RequireAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,7 +17,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  requireAuth = false, // Default to false - only check CASL permissions
+  requireAuth = true,
   requiredAction,
   requiredSubject,
   requiredConditions,
@@ -25,8 +25,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredActionText,
 }) => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
 
-  // If auth is explicitly required but user is not authenticated
+  // If auth is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
     return (
       <RequireAuth
@@ -37,29 +38,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // If auth is not required but user is authenticated (for login/register pages)
-  if (!requireAuth && isAuthenticated && requiredAction === undefined) {
+  if (!requireAuth && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  // Check CASL permissions - this is the main access control mechanism
+  // If specific permissions are required, check them using CASL
   if (requiredAction && requiredSubject) {
-    const canAccess = useCan(requiredAction, requiredSubject, undefined, requiredConditions);
+    const canAccess = useCan(requiredAction, requiredSubject, requiredConditions);
 
     if (!canAccess) {
-      // If user is not authenticated and needs to be for this action
-      if (!isAuthenticated) {
-        return (
-          <RequireAuth
-            message={
-              message ||
-              `Bạn cần đăng nhập để ${requiredActionText || requiredAction} ${requiredSubject}`
-            }
-            requiredAction={requiredActionText || `${requiredAction} ${requiredSubject}`}
-          />
-        );
-      }
-
-      // If user is authenticated but doesn't have permission
       return (
         <RequireAuth
           message={message || `Bạn không có quyền ${requiredAction} ${requiredSubject}`}

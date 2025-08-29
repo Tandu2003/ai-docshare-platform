@@ -17,8 +17,8 @@ export const UnauthorizedPage: React.FC = () => {
           believe this is an error.
         </p>
         <div className="space-y-2">
-          <Button onClick={() => navigate('/dashboard')} className="w-full">
-            Go to Dashboard
+          <Button onClick={() => navigate('/')} className="w-full">
+            Go to Home
           </Button>
           <Button variant="outline" onClick={() => navigate(-1)} className="w-full">
             Go Back

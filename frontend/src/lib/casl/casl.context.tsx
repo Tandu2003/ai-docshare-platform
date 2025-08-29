@@ -7,7 +7,7 @@ import { AbilityFactory, AppAbility, User } from './ability.factory';
 interface CaslContextType {
   ability: AppAbility;
   user: User | null;
-  can: (action: string, subject: string, conditions?: any) => boolean;
+  can: (action: string, subject: string, field?: string, conditions?: any) => boolean;
 }
 
 const CaslContext = createContext<CaslContextType | null>(null);
@@ -20,8 +20,14 @@ interface CaslProviderProps {
 export function CaslProvider({ children, user }: CaslProviderProps) {
   const ability = AbilityFactory.createForUser(user);
 
-  const can = (action: string, subject: string, conditions?: any) => {
-    return ability.can(action as any, subject as any, conditions);
+  const can = (action: string, subject: string, field?: string, conditions?: any) => {
+    if (conditions) {
+      return ability.can(action as any, subject as any, field, conditions);
+    }
+    if (field) {
+      return ability.can(action as any, subject as any, field);
+    }
+    return ability.can(action as any, subject as any);
   };
 
   const value: CaslContextType = {
@@ -65,7 +71,7 @@ export function CanComponent({
 }
 
 // Custom hook for checking permissions
-export function useCan(action: string, subject: string, conditions?: any) {
+export function useCan(action: string, subject: string, field?: string, conditions?: any) {
   const { can } = useCasl();
-  return can(action, subject, conditions);
+  return can(action, subject, field, conditions);
 }

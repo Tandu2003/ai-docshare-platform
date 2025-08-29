@@ -16,8 +16,8 @@ export const NotFoundPage: React.FC = () => {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <div className="space-y-2">
-          <Button onClick={() => navigate('/dashboard')} className="w-full">
-            Go to Dashboard
+          <Button onClick={() => navigate('/')} className="w-full">
+            Go to Home
           </Button>
           <Button variant="outline" onClick={() => navigate(-1)} className="w-full">
             Go Back

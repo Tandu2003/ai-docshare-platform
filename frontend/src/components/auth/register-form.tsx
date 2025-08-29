@@ -45,7 +45,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
       if (result.meta.requestStatus === 'fulfilled') {
         reset();
         onSuccess?.();
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err) {
       // Error is handled by Redux and toast

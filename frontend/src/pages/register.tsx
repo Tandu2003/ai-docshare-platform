@@ -6,7 +6,7 @@ export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleSuccess = () => {
-    navigate('/dashboard', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const switchToLogin = () => {

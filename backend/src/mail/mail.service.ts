@@ -95,7 +95,7 @@ export class MailService {
         context: {
           firstName: data.firstName,
           email: data.email,
-          dashboardUrl: `${this.frontendUrl}/dashboard`,
+          dashboardUrl: `${this.frontendUrl}`,
           frontendUrl: this.frontendUrl,
         },
       });
@@ -119,7 +119,7 @@ export class MailService {
         context: {
           firstName: data.firstName,
           email: data.email,
-          dashboardUrl: `${this.frontendUrl}/dashboard`,
+          dashboardUrl: `${this.frontendUrl}`,
           frontendUrl: this.frontendUrl,
         },
       });
