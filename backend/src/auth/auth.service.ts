@@ -353,11 +353,11 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException('User not found, please register first');
       }
 
       if (user.isVerified) {
-        throw new BadRequestException('Email is already verified');
+        throw new BadRequestException('Email is already verified, please login');
       }
 
       // Generate new verification token
@@ -403,11 +403,7 @@ export class AuthService {
       });
 
       if (!user) {
-        // Don't reveal if email exists for security
-        return {
-          message:
-            'If an account with that email exists, we have sent password reset instructions.',
-        };
+        throw new BadRequestException('Account not found, please register first');
       }
 
       if (!user.isVerified) {
@@ -435,7 +431,7 @@ export class AuthService {
       });
 
       return {
-        message: 'If an account with that email exists, we have sent password reset instructions.',
+        message: 'Password reset instructions sent! Please check your inbox.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {

@@ -10,7 +10,7 @@ This guide explains how to use the CASL (Conditional Access Control Lists) Role-
 ### Backend (NestJS)
 
 - **CASL Module**: `backend/src/common/casl/`
-- **Ability Factory**: Creates user abilities based on roles and permissions
+- **Ability Factory**: Merges permissions from all roles of the user
 - **CASL Guard**: Protects API endpoints
 - **Policy Decorators**: `@CheckPolicy` and `@CheckPolicies`
 
@@ -64,7 +64,7 @@ This guide explains how to use the CASL (Conditional Access Control Lists) Role-
 
 ## Backend Usage
 
-### Protecting API Endpoints
+### Protecting API Endpoints (Protected routes)
 
 ```typescript
 import { CheckPolicy } from '@/common/casl';
@@ -82,6 +82,12 @@ export class DocumentsController {
   async updateDocument(@Param('id') id: string, @Body() updateDocumentDto: UpdateDocumentDto) {
     // Only users with 'update:Document' permission can access
   }
+
+  // Require login + permission to download (even for public documents)
+  @UseGuards(JwtAuthGuard)
+  @Post(':documentId/download')
+  @CheckPolicy({ action: 'download', subject: 'Document' })
+  async downloadDocument(...) {}
 }
 ```
 
@@ -155,7 +161,7 @@ function AdminPanel() {
 }
 ```
 
-### Accessing User Context
+### Accessing User Context (Multi-role)
 
 ```typescript
 import { useCasl } from '@/lib/casl';
@@ -172,13 +178,18 @@ function UserProfile() {
       <h1>
         {user.firstName} {user.lastName}
       </h1>
-      <p>Role: {user.role.name}</p>
-
-      <div className='permissions'>
-        {user.role.permissions.map((permission, index) => (
-          <Badge key={index}>
-            {permission.action} {permission.subject}
-          </Badge>
+      <div className='roles'>
+        {user.roles?.map((role) => (
+          <div key={role.id}>
+            <p>Role: {role.name}</p>
+            <div className='permissions'>
+              {role.permissions?.map((p, index) => (
+                <Badge key={index}>
+                  {p.action} {p.subject}
+                </Badge>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

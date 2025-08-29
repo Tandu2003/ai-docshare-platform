@@ -9,7 +9,7 @@ This document describes the Role-Based Access Control (RBAC) system implemented 
 
 ### Backend (NestJS)
 
-- **AbilityFactory**: Creates CASL abilities based on user roles and permissions
+- **AbilityFactory**: Creates CASL abilities based on a single user role
 - **CaslGuard**: Global guard that checks permissions before allowing access
 - **RoleService**: Manages roles and permissions in the database
 - **Decorators**: `@CheckPolicy` and `@CheckPolicies` for fine-grained control
@@ -65,7 +65,7 @@ This document describes the Role-Based Access Control (RBAC) system implemented 
 
 ## Usage Examples
 
-### Backend Controller
+### Backend Controller (Protected)
 
 ```typescript
 @Post('create')
@@ -73,6 +73,14 @@ This document describes the Role-Based Access Control (RBAC) system implemented 
 async createDocument(@Body() dto: CreateDocumentDto) {
   // Only users with 'create Document' permission can access
 }
+```
+
+### Backend Controller (Public route)
+
+```typescript
+@Public()
+@Get('public')
+async getPublicDocuments(...) { /* no CheckPolicy for true public */ }
 ```
 
 ### Frontend Component
@@ -97,16 +105,25 @@ function DocumentActions({ document }) {
 
 ## Database Schema
 
-The system uses the existing `Role` model with a `permissions` JSON field:
+The system uses a one-to-many `Role` ↔ `User` relationship with `permissions` stored as structured
+JSON:
 
 ```prisma
 model Role {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  permissions Json     @default("[]") // Array of permission objects
+  permissions Json     @default("[]") // Array<Permission>
   isActive    Boolean  @default(true)
   // ... other fields
+  users       User[]
+}
+```
+
+```prisma
+model User {
+  // ... fields
+  role  Role @relation(fields: [roleId], references: [id])
 }
 ```
 
@@ -140,6 +157,10 @@ Permissions can include dynamic conditions that reference request context:
 }
 ```
 
+Note: The backend also applies role-based overrides (e.g., owner conditions) in `AbilityFactory`. If
+you want to rely 100% on DB-stored conditions, add a variable interpolation strategy or field
+matcher for `$user.*`.
+
 ## Setup Instructions
 
 ### 1. Initialize Default Roles
@@ -162,6 +183,34 @@ cd ../frontend
 npm run dev
 ```
 
+## Route Protection Model
+
+- Protected endpoints (require auth): use `JwtAuthGuard` and `@CheckPolicy`.
+- Public endpoints (no auth, no policy): use `@Public()` and do not add `@CheckPolicy`.
+- Semi-public with optional auth (anonymous allowed, but still policy-evaluated) is currently not
+  enabled by default because `CaslGuard` expects an authenticated `request.user`. If needed, adjust
+  the guard to build abilities for anonymous users.
+
+### Examples
+
+```typescript
+// Protected & authorized: must be logged in and have 'download Document'
+@UseGuards(JwtAuthGuard)
+@Post(':documentId/download')
+@CheckPolicy({ action: 'download', subject: 'Document' })
+async downloadDocument() {}
+
+// True public: no auth and no policy
+@Public()
+@Get('public')
+async listPublic() {}
+
+// Optional auth (if used) should avoid policy when anonymous
+@UseGuards(OptionalJwtAuthGuard)
+@Get(':fileId/secure-url')
+async getSecureUrl() {}
+```
+
 ## Testing Permissions
 
 1. **Login as different users** with different roles
@@ -171,7 +220,7 @@ npm run dev
 
 ## Security Features
 
-- **JWT Authentication**: Required for all protected routes
+- **JWT Authentication**: Required for all protected routes (e.g., document downloads)
 - **Role-based Access**: Permissions tied to user roles
 - **Conditional Permissions**: Fine-grained control based on resource ownership
 - **Global Guard**: Automatic permission checking on all endpoints

@@ -1,6 +1,5 @@
 import { AbilityBuilder, createMongoAbility, PureAbility } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 export type Actions =
   | 'create'
@@ -45,7 +44,7 @@ export interface RolePermissions {
 @Injectable()
 export class AbilityFactory {
   createForUser(user: any): AppAbility {
-    const { can, cannot, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+    const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
     // Default permissions for all users
     can('read', 'Document', { isPublic: true });
@@ -57,27 +56,22 @@ export class AbilityFactory {
     }
 
     const role = user.role;
-    const permissions = role.permissions as Permission[];
-
-    if (!permissions || !Array.isArray(permissions)) {
-      return build();
+    const perms = role?.permissions as Permission[];
+    if (perms && Array.isArray(perms)) {
+      perms.forEach((permission) => {
+        if (permission.conditions) {
+          can(permission.action, permission.subject, permission.conditions);
+        } else {
+          can(permission.action, permission.subject);
+        }
+      });
     }
 
-    // Apply role-based permissions
-    permissions.forEach((permission) => {
-      if (permission.conditions) {
-        can(permission.action, permission.subject, permission.conditions);
-      } else {
-        can(permission.action, permission.subject);
-      }
-    });
-
     // Role-specific overrides
-    switch (role.name) {
+    switch (role?.name) {
       case 'admin':
         can('manage', 'all');
         break;
-
       case 'moderator':
         can('read', 'all');
         can('update', 'Document', { isApproved: false });
@@ -85,7 +79,6 @@ export class AbilityFactory {
         can('moderate', 'Comment');
         can('moderate', 'User');
         break;
-
       case 'publisher':
         can('create', 'Document');
         can('update', 'Document', { uploaderId: user.id });
@@ -94,7 +87,6 @@ export class AbilityFactory {
         can('read', 'Document', { uploaderId: user.id });
         can('read', 'File', { uploaderId: user.id });
         break;
-
       case 'user':
         can('read', 'Document', { isPublic: true, isApproved: true });
         can('create', 'Comment');

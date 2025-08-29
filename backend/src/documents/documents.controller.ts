@@ -84,8 +84,9 @@ export class DocumentsController {
     }
   }
 
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post(':documentId/download')
+  @CheckPolicy({ action: 'download', subject: 'Document' })
   @ApiOperation({ summary: 'Download all files of a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -144,6 +145,7 @@ export class DocumentsController {
     }
   }
 
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
@@ -237,6 +239,7 @@ export class DocumentsController {
     }
   }
 
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Post(':documentId/view')
   @ApiOperation({ summary: 'Track document view' })

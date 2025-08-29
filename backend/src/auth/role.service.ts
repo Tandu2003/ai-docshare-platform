@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common'
-import { PrismaService } from '@/prisma/prisma.service'
-import { Permission, RolePermissions } from '@/common/casl'
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@/prisma/prisma.service';
+import { Permission, RolePermissions } from '@/common/casl';
 
 @Injectable()
 export class RoleService {
@@ -13,7 +13,7 @@ export class RoleService {
         description,
         permissions: permissions as any,
       },
-    })
+    });
   }
 
   async updateRolePermissions(roleId: string, permissions: Permission[]): Promise<any> {
@@ -22,15 +22,15 @@ export class RoleService {
       data: {
         permissions: permissions as any,
       },
-    })
+    });
   }
 
   async getRolePermissions(roleId: string): Promise<Permission[]> {
     const role = await this.prisma.role.findUnique({
       where: { id: roleId },
-    })
+    });
 
-    return (role?.permissions as unknown as Permission[]) || []
+    return (role?.permissions as unknown as Permission[]) || [];
   }
 
   async getAllRoles(): Promise<any[]> {
@@ -50,7 +50,7 @@ export class RoleService {
           },
         },
       },
-    })
+    });
   }
 
   async assignRoleToUser(userId: string, roleId: string): Promise<any> {
@@ -60,7 +60,7 @@ export class RoleService {
       include: {
         role: true,
       },
-    })
+    });
   }
 
   async getUserRole(userId: string): Promise<any> {
@@ -69,9 +69,9 @@ export class RoleService {
       include: {
         role: true,
       },
-    })
+    });
 
-    return user?.role
+    return user?.role;
   }
 
   // Predefined role templates
@@ -79,9 +79,7 @@ export class RoleService {
     return [
       {
         role: 'admin',
-        permissions: [
-          { action: 'manage', subject: 'all' },
-        ],
+        permissions: [{ action: 'manage', subject: 'all' }],
       },
       {
         role: 'moderator',
@@ -115,25 +113,29 @@ export class RoleService {
           { action: 'update', subject: 'Rating', conditions: { userId: '$user.id' } },
           { action: 'create', subject: 'Bookmark' },
           { action: 'delete', subject: 'Bookmark', conditions: { userId: '$user.id' } },
-          { action: 'download', subject: 'Document', conditions: { isPublic: true, isApproved: true } },
+          {
+            action: 'download',
+            subject: 'Document',
+            conditions: { isPublic: true, isApproved: true },
+          },
         ],
       },
-    ]
+    ];
   }
 
   async initializeDefaultRoles(): Promise<void> {
-    const defaultRoles = this.getDefaultRoles()
+    const defaultRoles = this.getDefaultRoles();
 
     for (const roleData of defaultRoles) {
       const existingRole = await this.prisma.role.findUnique({
         where: { name: roleData.role },
-      })
+      });
 
       if (!existingRole) {
-        await this.createRole(roleData.role, `Default ${roleData.role} role`, roleData.permissions)
+        await this.createRole(roleData.role, `Default ${roleData.role} role`, roleData.permissions);
       } else {
         // Update existing role with default permissions if needed
-        await this.updateRolePermissions(existingRole.id, roleData.permissions)
+        await this.updateRolePermissions(existingRole.id, roleData.permissions);
       }
     }
   }

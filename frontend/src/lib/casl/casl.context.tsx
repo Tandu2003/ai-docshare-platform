@@ -49,15 +49,16 @@ export function CanComponent({
   this: conditions,
   children,
 }: {
-  I: string;
-  do: string;
+  I?: string;
+  do?: string;
   on: string;
   this?: any;
   children: ReactNode;
 }) {
   const { ability } = useCasl();
+  const finalAction = action ?? I;
   return (
-    <Can ability={ability} I={I} do={action} on={subject} this={conditions}>
+    <Can ability={ability} do={finalAction as any} on={subject as any} this={conditions}>
       {children}
     </Can>
   );

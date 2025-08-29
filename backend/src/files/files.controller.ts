@@ -17,12 +17,14 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CheckPolicy } from '@/common/casl';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from './files.service';
+import { Public } from '@/auth/decorators/public.decorator';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -44,6 +46,7 @@ export class FilesController {
   ) {}
 
   @Post('upload')
+  @CheckPolicy({ action: 'upload', subject: 'File' })
   @ApiOperation({ summary: 'Upload files to storage' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
@@ -94,8 +97,10 @@ export class FilesController {
     }
   }
 
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':fileId/secure-url')
+  @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({ summary: 'Get secure access URL for a file' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -109,17 +114,17 @@ export class FilesController {
     try {
       // Get user ID if authenticated
       const userId = (req as any).user?.id;
-      
+
       const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
 
       return ResponseHelper.success(res, { secureUrl }, 'Secure file URL generated');
     } catch (error) {
       this.logger.error(`Failed to generate secure URL for file ${fileId}`, error);
-      
+
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
-      
+
       return ResponseHelper.error(
         res,
         'Could not generate secure file URL',
