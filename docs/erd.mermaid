@@ -57,11 +57,6 @@ erDiagram
         string id PK
         string title
         string description
-        string fileName
-        bigint fileSize
-        string mimeType
-        string filePath
-        string thumbnailPath
         string uploaderId FK
         string categoryId FK
         int downloadCount
@@ -74,10 +69,19 @@ erDiagram
         boolean isDraft
         string[] tags
         string language
-        string fileHash
-        string fileHash UK
+        string zipFileUrl
+        datetime zipFileCreatedAt
         datetime createdAt
         datetime updatedAt
+    }
+
+    %% Junction for Document-File many-to-many
+    DocumentFile {
+        string id PK
+        string documentId FK
+        string fileId FK
+        int order
+        datetime createdAt
     }
 
     %% ================================
@@ -209,40 +213,17 @@ erDiagram
         datetime downloadedAt
     }
 
-    %% ================================
-    %% COLLABORATION & MODERATION
-    %% ================================
-
-    Collaboration {
+    View {
         string id PK
+        string userId FK
         string documentId FK
-        string senderId FK
-        string receiverId FK
-        enum type
-        enum status
-        string message
-        string[] permissions
-        datetime expiresAt
-        datetime respondedAt
-        datetime createdAt
-        datetime updatedAt
+        string ipAddress
+        string userAgent
+        string referrer
+        datetime viewedAt
     }
 
-    Report {
-        string id PK
-        string reporterId FK
-        string reportedUserId FK
-        string documentId FK
-        enum type
-        string reason
-        string description
-        enum status
-        string adminNotes
-        datetime resolvedAt
-        string resolvedById
-        datetime createdAt
-        datetime updatedAt
-    }
+    %% (Collaboration & Report removed in schema)
 
     %% ================================
     %% SYSTEM ADMINISTRATION
@@ -273,6 +254,27 @@ erDiagram
     }
 
     %% ================================
+    %% FILE STORAGE
+    %% ================================
+
+    File {
+        string id PK
+        string originalName
+        string fileName
+        string mimeType
+        bigint fileSize
+        string fileHash
+        string fileHash UK
+        string storageUrl
+        string thumbnailUrl
+        string uploaderId FK
+        boolean isPublic
+        json metadata
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    %% ================================
     %% RELATIONSHIPS
     %% ================================
 
@@ -292,8 +294,9 @@ erDiagram
     Document ||--o{ RecommendationEngine : "recommended_in"
     Document ||--o{ Bookmark : "bookmarked_in"
     Document ||--o{ Download : "downloaded_in"
-    Document ||--o{ Collaboration : "shared_in"
-    Document ||--o{ Report : "reported_in"
+    Document ||--o{ View : "viewed_in"
+    Document ||--o{ DocumentFile : "has_files"
+    File ||--o{ DocumentFile : "in_documents"
 
     %% User Relationships
     User ||--o{ Rating : "gives"
@@ -305,10 +308,7 @@ erDiagram
     User ||--o{ BookmarkFolder : "creates"
     User ||--o{ Bookmark : "creates"
     User ||--o{ Download : "performs"
-    User ||--o{ Collaboration : "sends"
-    User ||--o{ Collaboration : "receives"
-    User ||--o{ Report : "reports"
-    User ||--o{ Report : "reported_by"
+    User ||--o{ View : "views"
     User ||--o{ ActivityLog : "performs"
 
     %% Comment Relationships
@@ -317,6 +317,9 @@ erDiagram
 
     %% Bookmark Relationships
     BookmarkFolder ||--o{ Bookmark : "contains"
+
+    %% File Relationships
+    User ||--o{ File : "uploads"
 
     %% Unique Constraints
     Rating }|--|| User : "unique_user_document"
@@ -328,3 +331,5 @@ erDiagram
     AIAnalysis }|--|| Document : "unique_document"
     RecommendationEngine }|--|| User : "unique_user_document_algorithm"
     RecommendationEngine }|--|| Document : "unique_user_document_algorithm"
+    DocumentFile }|--|| Document : "unique_document_file"
+    DocumentFile }|--|| File : "unique_document_file"
