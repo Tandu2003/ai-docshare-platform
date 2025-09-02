@@ -1,5 +1,5 @@
-import { AbilityBuilder, createMongoAbility, PureAbility } from '@casl/ability';
-import { Injectable } from '@nestjs/common';
+import { AbilityBuilder, createMongoAbility, PureAbility } from '@casl/ability'
+import { Injectable } from '@nestjs/common'
 
 export type Actions =
   | 'create'
@@ -48,6 +48,7 @@ export class AbilityFactory {
 
     // Default permissions for all users
     can('read', 'Document', { isPublic: true });
+    can('upload', 'File');
     can('read', 'Category');
     can('read', 'File', { isPublic: true });
 
