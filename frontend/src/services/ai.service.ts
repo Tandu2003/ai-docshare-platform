@@ -61,7 +61,7 @@ export class AIService {
     try {
       const response = await apiClient.post('/documents/create-with-ai', request);
 
-      if (response.success) {
+      if (response.success && response.data) {
         return response.data;
       }
 
@@ -79,7 +79,7 @@ export class AIService {
     try {
       const response = await apiClient.get(`/ai/analysis/${documentId}`);
 
-      if (response.success) {
+      if (response.success && response.data) {
         return response.data;
       }
 
@@ -95,9 +95,9 @@ export class AIService {
    */
   static async testConnection(): Promise<{ gemini: boolean }> {
     try {
-      const response = await apiClient.get('/ai/test-connection');
+      const response = await apiClient.get<{ gemini: boolean }>('/ai/test-connection');
 
-      if (response.success) {
+      if (response.success && response.data) {
         return response.data;
       }
 

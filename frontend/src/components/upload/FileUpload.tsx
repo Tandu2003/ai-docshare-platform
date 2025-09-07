@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react'
 import React, { useCallback, useRef, useState } from 'react'
 
+import { AIAnalysisComponent } from '@/components/ai/AIAnalysisComponent'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,10 +15,9 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { AIService, DocumentAnalysisResult } from '@/services/ai.service'
 import { DocumentsService, FilesService } from '@/services/files.service'
 import { UploadService } from '@/services/upload.service'
-import { AIService, DocumentAnalysisResult } from '@/services/ai.service'
-import { AIAnalysisComponent } from '@/components/ai/AIAnalysisComponent'
 
 interface FileUploadProps {
   onUploadComplete?: (document: any) => void;
