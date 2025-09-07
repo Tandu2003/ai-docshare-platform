@@ -27,9 +27,7 @@ export class AIService {
   /**
    * Analyze documents using AI to generate metadata
    */
-  static async analyzeDocument(
-    request: AIAnalysisRequest
-  ): Promise<ApiResponse<AIAnalysisResponse>> {
+  static async analyzeDocument(request: AIAnalysisRequest): Promise<any> {
     try {
       const response = await apiClient.post<AIAnalysisResponse>('/ai/analyze-document', request);
 
