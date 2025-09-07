@@ -90,6 +90,11 @@ export class AbilityFactory {
         break;
       case 'user':
         can('read', 'Document', { isPublic: true, isApproved: true });
+        can('read', 'Document', { uploaderId: user.id });
+        can('create', 'Document');
+        can('upload', 'File');
+        can('update', 'Document', { uploaderId: user.id });
+        can('delete', 'Document', { uploaderId: user.id });
         can('create', 'Comment');
         can('update', 'Comment', { userId: user.id });
         can('delete', 'Comment', { userId: user.id });
@@ -98,6 +103,7 @@ export class AbilityFactory {
         can('create', 'Bookmark');
         can('delete', 'Bookmark', { userId: user.id });
         can('download', 'Document', { isPublic: true, isApproved: true });
+        can('download', 'Document', { uploaderId: user.id });
         break;
     }
 
