@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsOptional, IsString, IsObject } from 'class-validator';
 
 export class CreateDocumentDto {
   @IsString()
@@ -28,4 +28,21 @@ export class CreateDocumentDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  useAI?: boolean;
+
+  @IsOptional()
+  @IsObject()
+  aiAnalysis?: {
+    title?: string;
+    description?: string;
+    tags?: string[];
+    summary?: string;
+    keyPoints?: string[];
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    language?: string;
+    confidence?: number;
+  };
 }

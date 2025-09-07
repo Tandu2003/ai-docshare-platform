@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 
+import { CheckPolicy } from '@/common/casl';
 import {
   BadRequestException,
   Body,
@@ -18,12 +19,11 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { CheckPolicy } from '@/common/casl';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { FilesService } from '../files/files.service';
 import { DownloadDocumentDto } from './dto/download-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
 
@@ -45,61 +45,6 @@ export class DocumentsController {
     private readonly documentsService: DocumentsService,
     private readonly filesService: FilesService
   ) {}
-
-  @Post('create-with-ai')
-  @CheckPolicy({ action: 'create', subject: 'Document' })
-  @ApiOperation({ summary: 'Create a document from uploaded files with AI analysis' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Document created successfully with AI analysis',
-  })
-  async createDocumentWithAI(
-    @Body()
-    body: {
-      document: CreateDocumentDto;
-      aiAnalysis?: {
-        title?: string;
-        description?: string;
-        tags?: string[];
-        summary?: string;
-        keyPoints?: string[];
-        difficulty?: string;
-        language?: string;
-        confidence?: number;
-      };
-    },
-    @Req() req: AuthenticatedRequest,
-    @Res() res: Response
-  ) {
-    const userId = req.user.id;
-
-    try {
-      const document = await this.documentsService.createDocumentWithAI(
-        body.document,
-        userId,
-        body.aiAnalysis
-      );
-
-      return ResponseHelper.success(
-        res,
-        document,
-        'Document created successfully with AI analysis',
-        HttpStatus.CREATED
-      );
-    } catch (error) {
-      this.logger.error('Error creating document with AI:', error);
-
-      if (error instanceof BadRequestException) {
-        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
-      }
-
-      return ResponseHelper.error(
-        res,
-        'Failed to create document with AI analysis',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
 
   @Post('create')
   @CheckPolicy({ action: 'create', subject: 'Document' })

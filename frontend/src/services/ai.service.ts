@@ -1,4 +1,5 @@
-import { apiClient } from '@/utils/api-client'
+import { ApiResponse } from '@/types';
+import { apiClient } from '@/utils/api-client';
 
 export interface DocumentAnalysisResult {
   title?: string;
@@ -22,53 +23,24 @@ export interface AIAnalysisRequest {
   fileIds: string[];
 }
 
-export interface CreateDocumentWithAIRequest {
-  document: {
-    title?: string;
-    description?: string;
-    fileIds: string[];
-    categoryId?: string;
-    isPublic?: boolean;
-    tags?: string[];
-    language?: string;
-  };
-  aiAnalysis?: DocumentAnalysisResult;
-}
-
 export class AIService {
   /**
    * Analyze documents using AI to generate metadata
    */
-  static async analyzeDocument(request: AIAnalysisRequest): Promise<AIAnalysisResponse> {
+  static async analyzeDocument(
+    request: AIAnalysisRequest
+  ): Promise<ApiResponse<AIAnalysisResponse>> {
     try {
       const response = await apiClient.post<AIAnalysisResponse>('/ai/analyze-document', request);
 
       if (response.success && response.data) {
-        return response.data;
+        return response;
       }
 
       throw new Error(response.message || 'Failed to analyze document');
     } catch (error) {
       console.error('Error analyzing document:', error);
       throw error instanceof Error ? error : new Error('Failed to analyze document');
-    }
-  }
-
-  /**
-   * Create document with AI analysis
-   */
-  static async createDocumentWithAI(request: CreateDocumentWithAIRequest): Promise<any> {
-    try {
-      const response = await apiClient.post('/documents/create-with-ai', request);
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error(response.message || 'Failed to create document with AI');
-    } catch (error) {
-      console.error('Error creating document with AI:', error);
-      throw error instanceof Error ? error : new Error('Failed to create document with AI');
     }
   }
 
@@ -161,7 +133,10 @@ export class AIService {
   /**
    * Validate AI analysis confidence
    */
-  static isHighConfidenceAnalysis(analysis: DocumentAnalysisResult, threshold: number = 0.7): boolean {
+  static isHighConfidenceAnalysis(
+    analysis: DocumentAnalysisResult,
+    threshold: number = 0.7
+  ): boolean {
     return (analysis.confidence || 0) >= threshold;
   }
 
@@ -193,7 +168,7 @@ export class AIService {
   static isFileTypeSupported(fileName: string): boolean {
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (!extension) return false;
-    
+
     return this.getSupportedFileTypes().includes(extension);
   }
 
@@ -202,11 +177,11 @@ export class AIService {
    */
   static formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

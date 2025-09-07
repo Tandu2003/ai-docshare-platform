@@ -264,38 +264,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setUploading(true);
 
     try {
-      // Use AI-enhanced document creation if analysis is available
-      if (aiAnalysis.analysis && aiAnalysis.isApplied) {
-        const aiDocumentData = {
-          document: {
-            title: uploadData.title,
-            description: uploadData.description,
-            fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
-            isPublic: uploadData.isPublic,
-            tags: uploadData.tags,
-            language: uploadData.language,
-          },
-          aiAnalysis: aiAnalysis.analysis,
-        };
+      const documentData = {
+        title: uploadData.title,
+        description: uploadData.description,
+        fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
+        isPublic: uploadData.isPublic,
+        tags: uploadData.tags,
+        language: uploadData.language,
+        useAI: aiAnalysis.analysis && aiAnalysis.isApplied,
+        aiAnalysis: aiAnalysis.analysis && aiAnalysis.isApplied ? aiAnalysis.analysis : undefined,
+      };
 
-        const document = await AIService.createDocumentWithAI(aiDocumentData);
-        console.log({ document });
-        onUploadComplete?.(document);
-      } else {
-        // Fallback to regular document creation
-        const documentData = {
-          title: uploadData.title,
-          description: uploadData.description,
-          fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
-          isPublic: uploadData.isPublic,
-          tags: uploadData.tags,
-          language: uploadData.language,
-        };
-
-        const document = await DocumentsService.createDocument(documentData);
-        console.log({ document });
-        onUploadComplete?.(document);
-      }
+      const document = await DocumentsService.createDocument(documentData);
+      console.log({ document });
+      onUploadComplete?.(document);
 
       // Reset form after successful document creation
       setFiles([]);
