@@ -46,6 +46,61 @@ export class DocumentsController {
     private readonly filesService: FilesService
   ) {}
 
+  @Post('create-with-ai')
+  @CheckPolicy({ action: 'create', subject: 'Document' })
+  @ApiOperation({ summary: 'Create a document from uploaded files with AI analysis' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Document created successfully with AI analysis',
+  })
+  async createDocumentWithAI(
+    @Body()
+    body: {
+      document: CreateDocumentDto;
+      aiAnalysis?: {
+        title?: string;
+        description?: string;
+        tags?: string[];
+        summary?: string;
+        keyPoints?: string[];
+        difficulty?: string;
+        language?: string;
+        confidence?: number;
+      };
+    },
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    const userId = req.user.id;
+
+    try {
+      const document = await this.documentsService.createDocumentWithAI(
+        body.document,
+        userId,
+        body.aiAnalysis
+      );
+
+      return ResponseHelper.success(
+        res,
+        document,
+        'Document created successfully with AI analysis',
+        HttpStatus.CREATED
+      );
+    } catch (error) {
+      this.logger.error('Error creating document with AI:', error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Failed to create document with AI analysis',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   @Post('create')
   @CheckPolicy({ action: 'create', subject: 'Document' })
   @ApiOperation({ summary: 'Create a document from uploaded files' })

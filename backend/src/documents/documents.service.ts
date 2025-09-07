@@ -773,11 +773,71 @@ export class DocumentsService {
       );
 
       return zipUrl;
-
-      return zipUrl;
     } catch (error) {
       this.logger.error('Error creating ZIP download:', error);
       throw new InternalServerErrorException('Failed to create ZIP download');
+    }
+  }
+
+  /**
+   * Create document with AI analysis support
+   */
+  async createDocumentWithAI(
+    createDocumentDto: CreateDocumentDto,
+    userId: string,
+    aiAnalysis?: {
+      title?: string;
+      description?: string;
+      tags?: string[];
+      summary?: string;
+      keyPoints?: string[];
+      difficulty?: string;
+      language?: string;
+      confidence?: number;
+    }
+  ) {
+    try {
+      // Use AI analysis data to fill in missing fields
+      const finalData = {
+        ...createDocumentDto,
+        title: createDocumentDto.title || aiAnalysis?.title || 'Untitled Document',
+        description: createDocumentDto.description || aiAnalysis?.description || '',
+        tags: createDocumentDto.tags?.length ? createDocumentDto.tags : (aiAnalysis?.tags || []),
+        language: createDocumentDto.language || aiAnalysis?.language || 'en',
+      };
+
+      this.logger.log(`Creating document with AI analysis for user ${userId}`);
+
+      // Create the document
+      const document = await this.createDocument(finalData, userId);
+
+      // Save AI analysis if provided
+      if (aiAnalysis && aiAnalysis.confidence && aiAnalysis.confidence > 0) {
+        try {
+          await this.prisma.aIAnalysis.create({
+            data: {
+              documentId: document.id,
+              summary: aiAnalysis.summary,
+              keyPoints: aiAnalysis.keyPoints || [],
+              suggestedTags: aiAnalysis.tags || [],
+              difficulty: aiAnalysis.difficulty || 'beginner',
+              language: aiAnalysis.language || 'en',
+              confidence: aiAnalysis.confidence,
+              processedAt: new Date(),
+            },
+          });
+
+          this.logger.log(`AI analysis saved for document: ${document.id}`);
+        } catch (analysisError) {
+          this.logger.error('Error saving AI analysis:', analysisError);
+          // Don't fail document creation if AI analysis saving fails
+        }
+      }
+
+      return document;
+    } catch (error) {
+      this.logger.error('Error creating document with AI:', error);
+      throw error;
     }
   }
 }

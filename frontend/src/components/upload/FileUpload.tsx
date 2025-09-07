@@ -16,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { DocumentsService, FilesService } from '@/services/files.service'
 import { UploadService } from '@/services/upload.service'
+import { AIService, DocumentAnalysisResult } from '@/services/ai.service'
+import { AIAnalysisComponent } from '@/components/ai/AIAnalysisComponent'
 
 interface FileUploadProps {
   onUploadComplete?: (document: any) => void;
@@ -42,6 +44,11 @@ interface DocumentData {
   tags: string[];
 }
 
+interface AIAnalysisData {
+  analysis: DocumentAnalysisResult | null;
+  isApplied: boolean;
+}
+
 export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadComplete,
   onUploadError,
@@ -53,6 +60,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     isPublic: true,
     language: 'en',
     tags: [],
+  });
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisData>({
+    analysis: null,
+    isApplied: false,
   });
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -220,6 +231,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }));
   };
 
+  const handleAIAnalysisComplete = (analysis: DocumentAnalysisResult) => {
+    setAiAnalysis({
+      analysis,
+      isApplied: true,
+    });
+
+    // Auto-fill form with AI suggestions if fields are empty
+    const mergedData = AIService.mergeWithUserInput(uploadData, analysis);
+    
+    setUploadData(prev => ({
+      ...prev,
+      title: prev.title || mergedData.title,
+      description: prev.description || mergedData.description,
+      tags: prev.tags.length > 0 ? prev.tags : mergedData.tags,
+      language: prev.language || mergedData.language,
+    }));
+  };
+
   const handleCreateDocument = async () => {
     const uploadedFiles = files.filter((f) => f.uploaded && f.uploadedFileId);
     if (uploadedFiles.length === 0) {
@@ -235,22 +264,43 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setUploading(true);
 
     try {
-      const documentData = {
-        title: uploadData.title,
-        description: uploadData.description,
-        fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
-        isPublic: uploadData.isPublic,
-        tags: uploadData.tags,
-        language: uploadData.language,
-      };
+      // Use AI-enhanced document creation if analysis is available
+      if (aiAnalysis.analysis && aiAnalysis.isApplied) {
+        const aiDocumentData = {
+          document: {
+            title: uploadData.title,
+            description: uploadData.description,
+            fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
+            isPublic: uploadData.isPublic,
+            tags: uploadData.tags,
+            language: uploadData.language,
+          },
+          aiAnalysis: aiAnalysis.analysis,
+        };
 
-      const document = await DocumentsService.createDocument(documentData);
-      console.log({ document });
-      onUploadComplete?.(document);
+        const document = await AIService.createDocumentWithAI(aiDocumentData);
+        console.log({ document });
+        onUploadComplete?.(document);
+      } else {
+        // Fallback to regular document creation
+        const documentData = {
+          title: uploadData.title,
+          description: uploadData.description,
+          fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
+          isPublic: uploadData.isPublic,
+          tags: uploadData.tags,
+          language: uploadData.language,
+        };
+
+        const document = await DocumentsService.createDocument(documentData);
+        console.log({ document });
+        onUploadComplete?.(document);
+      }
 
       // Reset form after successful document creation
       setFiles([]);
       setUploadData({ isPublic: true, language: 'en', tags: [] });
+      setAiAnalysis({ analysis: null, isApplied: false });
     } catch (error) {
       console.error('Failed to create document:', error);
       onUploadError?.(error instanceof Error ? error.message : 'Failed to create document');
@@ -258,6 +308,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setUploading(false);
     }
   };
+
+
 
   return (
     <Card className={cn('w-full max-w-4xl mx-auto', className)}>
@@ -361,6 +413,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               </div>
             ))}
           </div>
+        )}
+
+        {/* AI Analysis Section */}
+        {files.some((f) => f.uploaded) && (
+          <AIAnalysisComponent
+            fileIds={files.filter((f) => f.uploaded && f.uploadedFileId).map((f) => f.uploadedFileId!)}
+            onAnalysisComplete={handleAIAnalysisComplete}
+          />
         )}
 
         {/* Upload Settings */}
