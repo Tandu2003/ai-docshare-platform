@@ -1,35 +1,36 @@
+import { Public } from '@/auth/decorators/public.decorator';
+import { ResponseHelper } from '@/common';
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
-  Res,
+  Post,
   Req,
+  Res,
   UseGuards,
-  Get,
-  Query,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import {
-  RegisterDto,
-  LoginDto,
   ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendVerificationDto,
   ResetPasswordDto,
   VerifyEmailDto,
-  ResendVerificationDto,
 } from './dto';
 import { JwtAuthGuard } from './guards';
 import { AuthUser } from './interfaces';
-import { ResponseHelper } from '@/common';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async register(@Body() registerDto: RegisterDto, @Res() response: Response): Promise<void> {
@@ -44,6 +45,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   async login(@Body() loginDto: LoginDto, @Res() response: Response): Promise<void> {
@@ -64,6 +66,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 requests per minute
   async refreshToken(@Req() request: Request, @Res() response: Response): Promise<void> {

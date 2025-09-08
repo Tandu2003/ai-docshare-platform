@@ -1,5 +1,4 @@
 import * as archiver from 'archiver';
-import { Readable } from 'stream';
 
 import {
   BadRequestException,
@@ -44,14 +43,9 @@ export class DocumentsService {
 
       this.logger.log(`Creating document for user ${userId} with files: ${fileIds.join(', ')}`);
 
-      // TEMPORARY: Check if using the test user ID
-      const isTestUser = userId === '1';
-
-      // Validate that all files exist and belong to the user (skip ownership check for test user)
+      // Validate that all files exist and belong to the user
       let files = await this.prisma.file.findMany({
-        where: isTestUser
-          ? { id: { in: fileIds } } // For test user, just check file IDs
-          : { id: { in: fileIds }, uploaderId: userId }, // Normal case
+        where: { id: { in: fileIds }, uploaderId: userId },
       });
 
       if (files.length !== fileIds.length) {
@@ -59,22 +53,7 @@ export class DocumentsService {
           `Files validation failed. Found ${files.length} files, expected ${fileIds.length}`
         );
 
-        if (isTestUser) {
-          // For test user, try to get the files regardless of ownership
-          const allFiles = await this.prisma.file.findMany({
-            where: { id: { in: fileIds } },
-          });
-
-          if (allFiles.length !== fileIds.length) {
-            throw new BadRequestException('Some files not found in the system');
-          }
-
-          // Use these files instead
-          files = allFiles;
-          this.logger.log(`Test mode: Using ${files.length} files regardless of ownership`);
-        } else {
-          throw new BadRequestException('Some files not found or do not belong to the user');
-        }
+        throw new BadRequestException('Some files not found or do not belong to the user');
       }
 
       this.logger.log(
@@ -93,27 +72,12 @@ export class DocumentsService {
 
       this.logger.log(`Using category: ${category.name} (${category.id})`);
 
-      // TEMPORARY: Check if using test user ID and look for a real user to use instead
-      let realUserId = userId;
-      if (userId === '1') {
-        const anyUser = await this.prisma.user.findFirst({
-          where: { isActive: true },
-          select: { id: true },
-        });
-        if (anyUser) {
-          this.logger.log(`Using real user ID ${anyUser.id} for test purposes`);
-          realUserId = anyUser.id;
-        } else {
-          throw new BadRequestException('No active users found. Please create a user first.');
-        }
-      }
-
       // Create one document with multiple files
       const document = await this.prisma.document.create({
         data: {
           title,
           description,
-          uploaderId: realUserId, // Use the real user ID if available
+          uploaderId: userId,
           categoryId: category.id,
           isPublic,
           tags,

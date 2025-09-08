@@ -47,9 +47,7 @@ export class DocumentsController {
   ) {}
 
   @Post('create')
-  // Temporarily using Public decorator to bypass permission check
-  @Public()
-  // @CheckPolicy({ action: 'create', subject: 'Document' })
+  @CheckPolicy({ action: 'create', subject: 'Document' })
   @ApiOperation({ summary: 'Create a document from uploaded files' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -60,7 +58,10 @@ export class DocumentsController {
     @Req() req: AuthenticatedRequest,
     @Res() res: Response
   ) {
-    const userId = req.user?.id || '1'; // Provide a default user ID for testing
+    const userId = req.user?.id;
+    if (!userId) {
+      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
 
     try {
       const document = await this.documentsService.createDocument(createDocumentDto, userId);
