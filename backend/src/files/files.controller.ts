@@ -18,10 +18,8 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '@/auth/decorators/public.decorator';
 import { PrismaService } from '@/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from './files.service';
@@ -106,8 +104,6 @@ export class FilesController {
     }
   }
 
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Get(':fileId/secure-url')
   @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({ summary: 'Get secure access URL for a file' })

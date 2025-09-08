@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
 import { Permission, RolePermissions } from '@/common/casl';
+import { PrismaService } from '@/prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class RoleService {
@@ -82,42 +82,33 @@ export class RoleService {
         permissions: [{ action: 'manage', subject: 'all' }],
       },
       {
-        role: 'moderator',
-        permissions: [
-          { action: 'read', subject: 'all' },
-          { action: 'update', subject: 'Document' },
-          { action: 'approve', subject: 'Document' },
-          { action: 'moderate', subject: 'Comment' },
-          { action: 'moderate', subject: 'User' },
-        ],
-      },
-      {
-        role: 'publisher',
-        permissions: [
-          { action: 'create', subject: 'Document' },
-          { action: 'read', subject: 'Document' },
-          { action: 'update', subject: 'Document', conditions: { uploaderId: '$user.id' } },
-          { action: 'delete', subject: 'Document', conditions: { uploaderId: '$user.id' } },
-          { action: 'upload', subject: 'File' },
-          { action: 'read', subject: 'File', conditions: { uploaderId: '$user.id' } },
-        ],
-      },
-      {
         role: 'user',
         permissions: [
+          // Documents
           { action: 'read', subject: 'Document', conditions: { isPublic: true, isApproved: true } },
+          { action: 'read', subject: 'Document', conditions: { uploaderId: '$user.id' } },
+          { action: 'create', subject: 'Document' },
+          { action: 'update', subject: 'Document', conditions: { uploaderId: '$user.id' } },
+          { action: 'delete', subject: 'Document', conditions: { uploaderId: '$user.id' } },
+          // Files
+          { action: 'upload', subject: 'File' },
+          // Comments
           { action: 'create', subject: 'Comment' },
           { action: 'update', subject: 'Comment', conditions: { userId: '$user.id' } },
           { action: 'delete', subject: 'Comment', conditions: { userId: '$user.id' } },
+          // Ratings
           { action: 'create', subject: 'Rating' },
           { action: 'update', subject: 'Rating', conditions: { userId: '$user.id' } },
+          // Bookmarks
           { action: 'create', subject: 'Bookmark' },
           { action: 'delete', subject: 'Bookmark', conditions: { userId: '$user.id' } },
+          // Download
           {
             action: 'download',
             subject: 'Document',
             conditions: { isPublic: true, isApproved: true },
           },
+          { action: 'download', subject: 'Document', conditions: { uploaderId: '$user.id' } },
         ],
       },
     ];
@@ -136,7 +127,21 @@ export class RoleService {
       } else {
         // Update existing role with default permissions if needed
         await this.updateRolePermissions(existingRole.id, roleData.permissions);
+        // Ensure role is active
+        if (existingRole.isActive === false) {
+          await this.prisma.role.update({
+            where: { id: existingRole.id },
+            data: { isActive: true },
+          });
+        }
       }
     }
+
+    // Deactivate any roles that are not in the default set
+    const allowedNames = defaultRoles.map((r) => r.role);
+    await this.prisma.role.updateMany({
+      where: { name: { notIn: allowedNames } },
+      data: { isActive: false },
+    });
   }
 }

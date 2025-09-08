@@ -19,7 +19,6 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
@@ -148,8 +147,6 @@ export class DocumentsController {
     }
   }
 
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
   @ApiResponse({
@@ -242,8 +239,6 @@ export class DocumentsController {
     }
   }
 
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Post(':documentId/view')
   @ApiOperation({ summary: 'Track document view' })
   @ApiResponse({
