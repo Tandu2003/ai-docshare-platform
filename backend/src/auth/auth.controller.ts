@@ -116,6 +116,7 @@ export class AuthController {
   }
 
   @Post('verify-email')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async verifyEmail(
@@ -128,6 +129,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
   async resendVerification(
@@ -140,6 +142,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
   async forgotPassword(
