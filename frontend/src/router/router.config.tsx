@@ -13,12 +13,19 @@ import {
   VerifyEmailPage,
 } from '@/pages';
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
+import AdminUsersPage from '@/pages/AdminUsersPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
+import BookmarksPage from '@/pages/BookmarksPage';
 import CategoriesPage from '@/pages/CategoriesPage';
 import DocumentDetailPage from '@/pages/DocumentDetailPage';
 import DocumentsPage from '@/pages/DocumentsPage';
 import MyDocumentsPage from '@/pages/MyDocumentsPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import ProfilePage from '@/pages/ProfilePage';
+import SearchPage from '@/pages/SearchPage';
+import SettingsPage from '@/pages/SettingsPage';
+import TopRatedPage from '@/pages/TopRatedPage';
+import TrendingPage from '@/pages/TrendingPage';
 import { UploadPage } from '@/pages/UploadPage';
 
 export const router = createBrowserRouter([
@@ -139,19 +146,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'search',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">Advanced Search - Coming Soon</p>
-          </div>
-        ),
+        element: <SearchPage />,
       },
       {
         path: 'bookmarks',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">Bookmarks - Coming Soon</p>
-          </div>
-        ),
+        element: <BookmarksPage />,
       },
       {
         path: 'notifications',
@@ -167,35 +166,19 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">Settings Page - Coming Soon</p>
-          </div>
-        ),
+        element: <SettingsPage />,
       },
       {
         path: 'analytics',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">Analytics - Coming Soon</p>
-          </div>
-        ),
+        element: <AnalyticsPage />,
       },
       {
         path: 'trending',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">Trending Documents - Coming Soon</p>
-          </div>
-        ),
+        element: <TrendingPage />,
       },
       {
         path: 'top-rated',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground text-lg">Top Rated Documents - Coming Soon</p>
-          </div>
-        ),
+        element: <TopRatedPage />,
       },
       {
         path: 'admin',
@@ -209,9 +192,7 @@ export const router = createBrowserRouter([
         path: 'admin/users',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground text-lg">User Management - Coming Soon</p>
-            </div>
+            <AdminUsersPage />
           </ProtectedRoute>
         ),
       },
