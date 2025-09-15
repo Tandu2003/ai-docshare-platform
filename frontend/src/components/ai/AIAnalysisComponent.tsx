@@ -1,10 +1,11 @@
-import { AlertCircle, CheckCircle, Loader2, Sparkles } from 'lucide-react'
-import React, { useState } from 'react'
+import { AlertCircle, CheckCircle, Loader2, Sparkles } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { AIService, DocumentAnalysisResult } from '@/services/ai.service'
+import React, { useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { AIService, DocumentAnalysisResult } from '@/services/ai.service';
 
 interface AIAnalysisComponentProps {
   fileIds: string[];

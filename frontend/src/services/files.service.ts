@@ -64,7 +64,8 @@ export interface Document {
     thumbnailUrl?: string;
     order: number;
   }[];
-}export interface PaginatedDocuments {
+}
+export interface PaginatedDocuments {
   documents: Document[];
   total: number;
   page: number;
