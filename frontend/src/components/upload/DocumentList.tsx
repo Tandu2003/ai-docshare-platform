@@ -15,8 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockDocuments } from '@/services/mock-data.service';
-import type { Document } from '@/types';
+import { DocumentsService, type Document } from '@/services/files.service';
 
 interface DocumentListProps {
   refreshTrigger?: number;
@@ -44,26 +43,21 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       setLoading(true);
       setError(null);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Filter mock documents by search term
-      let filteredDocuments = mockDocuments;
+      // Use real API to fetch user's documents
+      const response = await DocumentsService.getUserDocuments(pageNum, limit);
+      
+      // Client-side filtering for search (until backend supports search)
+      let filteredDocuments = response.documents;
       if (search) {
-        filteredDocuments = mockDocuments.filter(
+        filteredDocuments = response.documents.filter(
           (document) =>
             document.title?.toLowerCase().includes(search.toLowerCase()) ||
             document.description?.toLowerCase().includes(search.toLowerCase())
         );
       }
 
-      // Pagination
-      const startIndex = (pageNum - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedDocuments = filteredDocuments.slice(startIndex, endIndex);
-
-      setDocuments(paginatedDocuments);
-      setTotal(filteredDocuments.length);
+      setDocuments(filteredDocuments);
+      setTotal(response.total);
       setPage(pageNum);
     } catch (err) {
       setError('Failed to load documents');
@@ -87,9 +81,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   const handleDownload = async (document: Document) => {
     try {
-      // Simulate download
-      console.log('Downloading document:', document.title);
-      // In real app, this would trigger actual download
+      // Use real API to download document
+      await DocumentsService.downloadDocument(document.id);
     } catch (err) {
       setError('Failed to download document');
       console.error('Error downloading document:', err);
@@ -102,8 +95,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     try {
       setDeletingId(documentId);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Use real API to delete document
+      await DocumentsService.deleteDocument(documentId);
 
       // Remove from local state
       setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
@@ -125,7 +118,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   const getDocumentIcon = (document: Document) => {
     // Return icon based on category or default
-    return document.category?.icon || '📄';
+    return document.category?.name || '📄';
   };
 
   const getTotalFileSize = (_document: Document) => {

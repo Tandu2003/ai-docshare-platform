@@ -1,4 +1,4 @@
-import { ApiResponse } from '@/types';
+import { ApiResponse } from '@/types/api.types';
 import { apiClient } from '@/utils/api-client';
 
 export interface FileUploadResult {
@@ -36,6 +36,8 @@ export interface Document {
   totalRatings: number;
   isPublic: boolean;
   isPremium: boolean;
+  isApproved: boolean;
+  isDraft: boolean;
   tags: string[];
   language: string;
   createdAt: string;
@@ -51,6 +53,7 @@ export interface Document {
     id: string;
     name: string;
     description?: string;
+    icon?: string;
   };
   files: {
     id: string;

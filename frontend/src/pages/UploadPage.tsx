@@ -1,13 +1,37 @@
+import { useState } from 'react';
+
 import { PageHeader } from '@/components/common/page-header';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from '@/components/upload/FileUpload';
 
 export const UploadPage: React.FC = () => {
-  const handleUploadComplete = () => {
-    console.log('Upload completed successfully');
+  const [uploadStatus, setUploadStatus] = useState<{
+    type: 'success' | 'error' | null;
+    message: string;
+  }>({ type: null, message: '' });
+
+  const handleUploadComplete = (document: any) => {
+    setUploadStatus({
+      type: 'success',
+      message: `Document "${document.title}" created successfully!`,
+    });
+    
+    // Clear status after 5 seconds
+    setTimeout(() => {
+      setUploadStatus({ type: null, message: '' });
+    }, 5000);
   };
 
   const handleUploadError = (error: string) => {
-    console.error('Upload error:', error);
+    setUploadStatus({
+      type: 'error',
+      message: error,
+    });
+    
+    // Clear status after 5 seconds
+    setTimeout(() => {
+      setUploadStatus({ type: null, message: '' });
+    }, 5000);
   };
 
   return (
@@ -16,6 +40,12 @@ export const UploadPage: React.FC = () => {
         title="Document Upload"
         description="Upload and share your documents with the community. Support for PDF, Word, Excel, PowerPoint, images, and text files."
       />
+
+      {uploadStatus.type && (
+        <Alert variant={uploadStatus.type === 'error' ? 'destructive' : 'default'}>
+          <AlertDescription>{uploadStatus.message}</AlertDescription>
+        </Alert>
+      )}
 
       <FileUpload
         onUploadComplete={handleUploadComplete}

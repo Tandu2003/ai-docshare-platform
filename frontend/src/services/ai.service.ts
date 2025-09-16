@@ -1,4 +1,3 @@
-import { ApiResponse } from '@/types';
 import { apiClient } from '@/utils/api-client';
 
 export interface DocumentAnalysisResult {

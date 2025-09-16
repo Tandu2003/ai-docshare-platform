@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { Document } from '@/types';
+import type { DocumentView } from '@/services/document.service';
 
 interface DocumentDetailHeaderProps {
-  document: Document;
+  document: DocumentView;
   onDownload: () => void;
   onBookmark: () => void;
   onShare: () => void;

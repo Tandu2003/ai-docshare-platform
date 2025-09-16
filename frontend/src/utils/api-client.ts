@@ -7,7 +7,7 @@ import type {
 } from 'axios';
 
 import { API_CONFIG, HTTP_STATUS } from '@/config';
-import type { ApiResponse } from '@/types';
+import type { ApiResponse } from '@/types/api.types';
 
 // TokenManager is used for callback notifications to Redux store
 // The actual token retrieval is done directly from Redux store for synchronization

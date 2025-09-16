@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Document } from '@/types';
+import type { Document } from '@/services/files.service';
 import { getLanguageName } from '@/utils/language';
 
 interface DocumentGridProps {

@@ -6,12 +6,13 @@ import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateMockAIAnalysis, mockComments, mockDocuments } from '@/services/mock-data.service';
-import type { AIAnalysis, Comment, Document } from '@/types';
+import { generateMockAIAnalysis, mockComments } from '@/services/mock-data.service';
+import { getDocumentById, triggerFileDownload, type DocumentView } from '@/services/document.service';
+import type { AIAnalysis, Comment } from '@/types';
 
 export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
-  const [document, setDocument] = useState<Document | null>(null);
+  const [document, setDocument] = useState<DocumentView | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,15 +25,8 @@ export default function DocumentDetailPage() {
 
       setLoading(true);
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Find document in mock data
-        const foundDocument = mockDocuments.find((doc) => doc.id === documentId);
-        if (!foundDocument) {
-          throw new Error('Document not found');
-        }
-
+        // Use real API to fetch document
+        const foundDocument = await getDocumentById(documentId);
         setDocument(foundDocument);
 
         // Load comments for this document
@@ -58,10 +52,14 @@ export default function DocumentDetailPage() {
     fetchDocumentData();
   }, [documentId]);
 
-  const handleDownload = () => {
-    // Simulate download
-    console.log('Downloading document:', document?.title);
-    // In real app, this would trigger actual download
+  const handleDownload = async () => {
+    if (!documentId) return;
+    
+    try {
+      await triggerFileDownload(documentId, document?.title);
+    } catch (error) {
+      console.error('Failed to download document:', error);
+    }
   };
 
   const handleBookmark = () => {
@@ -124,7 +122,11 @@ export default function DocumentDetailPage() {
           updatedAt: new Date(),
         },
       },
-      document: document!,
+      document: {
+        ...document!,
+        uploaderId: document!.uploader.id,
+        categoryId: document!.category.id,
+      } as any,
     };
 
     if (parentId) {
@@ -312,23 +314,9 @@ export default function DocumentDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockDocuments
-                  .filter((doc) => doc.id !== documentId && doc.categoryId === document.categoryId)
-                  .slice(0, 3)
-                  .map((relatedDoc) => (
-                    <div key={relatedDoc.id} className="space-y-1">
-                      <a
-                        href={`/documents/${relatedDoc.id}`}
-                        className="text-sm font-medium hover:text-primary transition-colors"
-                      >
-                        {relatedDoc.title}
-                      </a>
-                      <p className="text-xs text-muted-foreground">
-                        {relatedDoc.downloadCount} downloads • {relatedDoc.averageRating.toFixed(1)}
-                        ★
-                      </p>
-                    </div>
-                  ))}
+                <p className="text-sm text-muted-foreground">
+                  Related documents will be shown here when the API supports it.
+                </p>
               </div>
             </CardContent>
           </Card>
