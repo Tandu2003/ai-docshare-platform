@@ -8,7 +8,6 @@ import {
   FolderOpen,
   Home,
   LogOut,
-  Search,
   Settings,
   Shield,
   Star,
@@ -95,11 +94,6 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'Categories',
       href: '/categories',
       icon: FolderOpen,
-    },
-    {
-      title: 'Search',
-      href: '/search',
-      icon: Search,
     },
   ];
 

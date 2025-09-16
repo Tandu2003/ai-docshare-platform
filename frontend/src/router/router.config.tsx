@@ -22,7 +22,6 @@ import DocumentsPage from '@/pages/DocumentsPage';
 import MyDocumentsPage from '@/pages/MyDocumentsPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import ProfilePage from '@/pages/ProfilePage';
-import SearchPage from '@/pages/SearchPage';
 import SettingsPage from '@/pages/SettingsPage';
 import TopRatedPage from '@/pages/TopRatedPage';
 import TrendingPage from '@/pages/TrendingPage';
@@ -143,10 +142,6 @@ export const router = createBrowserRouter([
       {
         path: 'categories',
         element: <CategoriesPage />,
-      },
-      {
-        path: 'search',
-        element: <SearchPage />,
       },
       {
         path: 'bookmarks',

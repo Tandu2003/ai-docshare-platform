@@ -13,7 +13,6 @@ export { default as DocumentsPage } from './DocumentsPage';
 export { ForgotPasswordPage } from './forgot-password';
 export { ResendVerificationPage } from './resend-verification';
 export { ResetPasswordPage } from './reset-password';
-export { default as SearchPage } from './SearchPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as TopRatedPage } from './TopRatedPage';
 export { default as TrendingPage } from './TrendingPage';
