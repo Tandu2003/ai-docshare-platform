@@ -155,6 +155,8 @@ export default function DocumentsPage() {
   const handleFiltersChange = (newFilters: SearchFilters) => {
     setFilters(newFilters);
     setPage(1);
+    // Trigger search immediately when filters change
+    fetchDocuments(1, true);
   };
 
   const handleClearFilters = () => {

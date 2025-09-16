@@ -1,6 +1,6 @@
 import { Filter, Search, SortAsc, SortDesc, X } from 'lucide-react';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,13 +38,35 @@ export function DocumentSearch({
   const [searchQuery, setSearchQuery] = useState(filters.query || '');
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleSearch = () => {
-    onFiltersChange({
-      ...filters,
-      query: searchQuery.trim() || undefined,
-    });
-    onSearch();
-  };
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (query: string) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          onFiltersChange({
+            ...filters,
+            query: query.trim() || undefined,
+          });
+          onSearch();
+        }, 300); // 300ms delay
+      };
+    })(),
+    [filters, onFiltersChange, onSearch]
+  );
+
+  // Auto search when typing
+  useEffect(() => {
+    if (searchQuery !== (filters.query || '')) {
+      debouncedSearch(searchQuery);
+    }
+  }, [searchQuery, debouncedSearch, filters.query]);
+
+  // Update local state when filters change externally
+  useEffect(() => {
+    setSearchQuery(filters.query || '');
+  }, [filters.query]);
 
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     const currentCategories = filters.categoryId ? [filters.categoryId] : [];
@@ -110,14 +132,43 @@ export function DocumentSearch({
   ];
   const languageOptions = getLanguageOptions();
 
-  const activeFiltersCount = Object.values(filters).filter(
-    (value) =>
-      value !== undefined && value !== null && (Array.isArray(value) ? value.length > 0 : true)
-  ).length;
+  // Count only meaningful filters (excluding default values)
+  const activeFiltersCount = (() => {
+    let count = 0;
+    
+    // Query filter
+    if (filters.query && filters.query.trim()) count++;
+    
+    // Category filter
+    if (filters.categoryId) count++;
+    
+    // Tags filter
+    if (filters.tags && filters.tags.length > 0) count++;
+    
+    // Language filter
+    if (filters.language) count++;
+    
+    // Visibility filters
+    if (filters.isPublic !== undefined) count++;
+    if (filters.isPremium !== undefined) count++;
+    
+    // Rating filter
+    if (filters.minRating && filters.minRating > 0) count++;
+    
+    // Sort filter (only if not default)
+    if (filters.sortBy && filters.sortBy !== 'relevance') count++;
+    
+    return count;
+  })();
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      // Trigger immediate search on Enter
+      onFiltersChange({
+        ...filters,
+        query: searchQuery.trim() || undefined,
+      });
+      onSearch();
     }
   };
 
@@ -185,7 +236,17 @@ export function DocumentSearch({
                 onKeyPress={handleKeyPress}
                 className="pl-10"
               />
+              {isLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                </div>
+              )}
             </div>
+            {searchQuery && !isLoading && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Auto-searching as you type...
+              </p>
+            )}
           </div>
 
           <div>
@@ -212,16 +273,15 @@ export function DocumentSearch({
           </div>
         </div>
 
-        {/* Search Button */}
-        <Button onClick={handleSearch} disabled={isLoading} className="w-full md:w-auto">
-          <Search className="h-4 w-4 mr-2" />
-          {isLoading ? 'Searching...' : 'Search'}
-        </Button>
-
-        {/* Search Suggestions */}
+        {/* Search Status */}
         {filters.query && (
-          <div className="text-sm text-muted-foreground">
-            Searching for: <span className="font-medium">"{filters.query}"</span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Search className="h-4 w-4" />
+            <span>Searching for:</span>
+            <span className="font-medium text-foreground">"{filters.query}"</span>
+            {isLoading && (
+              <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
+            )}
           </div>
         )}
 
