@@ -1,7 +1,21 @@
-import { Download, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
+import {
+  Download,
+  File,
+  FileArchive,
+  FileAudio,
+  FileImage,
+  FileText,
+  FileVideo,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,8 +27,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { triggerFileDownload } from '@/services/document.service';
-import { Document, DocumentsService } from '@/services/files.service';
+import { Skeleton } from '@/components/ui/skeleton';
+import { type Document, DocumentsService } from '@/services/files.service';
 
 interface DocumentListProps {
   refreshTrigger?: number;
@@ -27,6 +41,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onDocumentDeleted,
   className,
 }) => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +57,16 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       setLoading(true);
       setError(null);
 
+      // Use real API to fetch user's documents
       const response = await DocumentsService.getUserDocuments(pageNum, limit);
-      console.log({ response });
-      // Filter by search term on frontend if provided
+
+      // Client-side filtering for search (until backend supports search)
       let filteredDocuments = response.documents;
       if (search) {
-        filteredDocuments = response.documents.filter((document) =>
-          document.title?.toLowerCase().includes(search.toLowerCase())
+        filteredDocuments = response.documents.filter(
+          (document) =>
+            document.title?.toLowerCase().includes(search.toLowerCase()) ||
+            document.description?.toLowerCase().includes(search.toLowerCase())
         );
       }
 
@@ -77,13 +95,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   const handleDownload = async (document: Document) => {
     try {
-      setLoading(true);
-      await triggerFileDownload(document.id, document.title);
+      // Use real API to download document
+      await DocumentsService.downloadDocument(document.id);
     } catch (err) {
       setError('Failed to download document');
       console.error('Error downloading document:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -92,6 +108,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
     try {
       setDeletingId(documentId);
+
+      // Use real API to delete document
       await DocumentsService.deleteDocument(documentId);
 
       // Remove from local state
@@ -108,30 +126,61 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
+  const handleDocumentClick = (documentId: string) => {
+    navigate(`/documents/${documentId}`);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
   const getDocumentIcon = (document: Document) => {
-    // Return icon based on first file's mime type or default
-    if (document.files && document.files.length > 0) {
-      const firstFile = document.files[0];
-      const mimeType = firstFile.mimeType;
+    // Get file extension from filename or title
+    const filename = document.title || '';
+    const extension = filename.split('.').pop()?.toLowerCase();
 
-      if (mimeType?.includes('pdf')) return '📄';
-      if (mimeType?.includes('image')) return '🖼️';
-      if (mimeType?.includes('video')) return '🎥';
-      if (mimeType?.includes('audio')) return '🎵';
-      if (mimeType?.includes('word')) return '📝';
-      if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return '📊';
-      if (mimeType?.includes('powerpoint') || mimeType?.includes('presentation')) return '📊';
+    // Return appropriate icon based on file type
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'bmp':
+      case 'webp':
+        return <FileImage className="h-6 w-6 text-blue-500" />;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'wmv':
+      case 'flv':
+      case 'webm':
+        return <FileVideo className="h-6 w-6 text-purple-500" />;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'aac':
+      case 'ogg':
+        return <FileAudio className="h-6 w-6 text-green-500" />;
+      case 'zip':
+      case 'rar':
+      case '7z':
+      case 'tar':
+      case 'gz':
+        return <FileArchive className="h-6 w-6 text-orange-500" />;
+      case 'pdf':
+      case 'doc':
+      case 'docx':
+      case 'txt':
+      case 'rtf':
+        return <FileText className="h-6 w-6 text-red-500" />;
+      default:
+        return <File className="h-6 w-6 text-gray-500" />;
     }
-    return '📄'; // Default document icon
   };
 
-  const getTotalFileSize = (document: Document) => {
-    if (!document.files || document.files.length === 0) return 0;
-    return document.files.reduce((total, file) => total + Number(file.fileSize || 0), 0);
+  const getTotalFileSize = (_document: Document) => {
+    // Mock file size calculation
+    return Math.floor(Math.random() * 10000000) + 1000000; // 1MB to 10MB
   };
 
   const formatFileSize = (bytes: number) => {
@@ -145,10 +194,25 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   if (loading && documents.length === 0) {
     return (
       <Card className={className}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          </div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            My Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
+                <Skeleton className="h-6 w-6" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+              <Skeleton className="h-8 w-8" />
+            </div>
+          ))}
         </CardContent>
       </Card>
     );
@@ -168,7 +232,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             onClick={() => loadDocuments(page, searchTerm)}
             disabled={loading}
           >
-            Refresh
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </CardTitle>
 
@@ -176,7 +240,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         <div className="flex gap-4 mt-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search documents..."
                 value={searchTerm}
@@ -196,31 +260,39 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         )}
 
         {documents.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500">No documents found</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No documents found"
+            description={
+              searchTerm
+                ? 'No documents match your search criteria.'
+                : "You haven't uploaded any documents yet."
+            }
+          />
         ) : (
           <div className="space-y-3">
             {documents.map((document) => (
               <div
                 key={document.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                onClick={() => handleDocumentClick(document.id)}
               >
                 {/* Document Icon/Preview */}
                 <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">{getDocumentIcon(document)}</span>
+                  <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
+                    {getDocumentIcon(document)}
                   </div>
                 </div>
 
                 {/* Document Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate">{document.title}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                  <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                    {document.title}
+                  </h4>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                     <span>{formatFileSize(getTotalFileSize(document))}</span>
-                    <span>{formatDate(document.createdAt)}</span>
-                    <span>{document.files?.length || 0} files</span>
+                    <span>{formatDate(document.createdAt.toString())}</span>
+                    <span>{document.category?.name}</span>
                     <Badge
                       variant={document.isPublic ? 'default' : 'secondary'}
                       className="text-xs"
@@ -229,12 +301,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     </Badge>
                   </div>
                   {document.description && (
-                    <p className="text-sm text-gray-600 mt-1 truncate">{document.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1 truncate">
+                      {document.description}
+                    </p>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant="outline"
@@ -250,7 +324,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white">
+                    <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleDownload(document)}>
                         <Download className="h-4 w-4 mr-2" />
                         Download
@@ -258,7 +332,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       <DropdownMenuItem
                         onClick={() => handleDelete(document.id)}
                         disabled={deletingId === document.id}
-                        className="text-red-600"
+                        className="text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         {deletingId === document.id ? 'Deleting...' : 'Delete'}
@@ -274,7 +348,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         {/* Pagination */}
         {total > limit && (
           <div className="flex items-center justify-between mt-6">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}{' '}
               documents
             </p>

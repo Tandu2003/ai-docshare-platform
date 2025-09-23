@@ -1,4 +1,4 @@
-import { ApiResponse } from '@/types';
+import { ApiResponse } from '@/types/api.types';
 import { apiClient } from '@/utils/api-client';
 
 export interface FileUploadResult {
@@ -36,6 +36,8 @@ export interface Document {
   totalRatings: number;
   isPublic: boolean;
   isPremium: boolean;
+  isApproved: boolean;
+  isDraft: boolean;
   tags: string[];
   language: string;
   createdAt: string;
@@ -51,6 +53,7 @@ export interface Document {
     id: string;
     name: string;
     description?: string;
+    icon?: string;
   };
   files: {
     id: string;
@@ -64,7 +67,8 @@ export interface Document {
     thumbnailUrl?: string;
     order: number;
   }[];
-}export interface PaginatedDocuments {
+}
+export interface PaginatedDocuments {
   documents: Document[];
   total: number;
   page: number;
@@ -168,7 +172,14 @@ export class DocumentsService {
    */
   static async deleteDocument(documentId: string): Promise<void> {
     try {
-      await apiClient.delete(`/documents/${documentId}`);
+      const response = await apiClient.delete<{
+        success: boolean;
+        message?: string;
+      }>(`/documents/${documentId}`);
+      
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to delete document');
+      }
     } catch (error) {
       console.error('Failed to delete document:', error);
       throw new Error('Failed to delete document');

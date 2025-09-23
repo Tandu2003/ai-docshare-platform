@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { UploadedFile, UploadService } from '@/services/upload.service';
+import { UploadService, UploadedFile } from '@/services/upload.service';
 
 interface FileListProps {
   refreshTrigger?: number;

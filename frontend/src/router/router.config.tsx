@@ -12,8 +12,19 @@ import {
   UnauthorizedPage,
   VerifyEmailPage,
 } from '@/pages';
+import AdminDashboardPage from '@/pages/AdminDashboardPage';
+import AdminUsersPage from '@/pages/AdminUsersPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
+import BookmarksPage from '@/pages/BookmarksPage';
+import CategoriesPage from '@/pages/CategoriesPage';
 import DocumentDetailPage from '@/pages/DocumentDetailPage';
 import DocumentsPage from '@/pages/DocumentsPage';
+import MyDocumentsPage from '@/pages/MyDocumentsPage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import ProfilePage from '@/pages/ProfilePage';
+import SettingsPage from '@/pages/SettingsPage';
+import TopRatedPage from '@/pages/TopRatedPage';
+import TrendingPage from '@/pages/TrendingPage';
 import { UploadPage } from '@/pages/UploadPage';
 
 export const router = createBrowserRouter([
@@ -129,27 +140,63 @@ export const router = createBrowserRouter([
         element: <UploadPage />,
       },
       {
+        path: 'categories',
+        element: <CategoriesPage />,
+      },
+      {
+        path: 'bookmarks',
+        element: <BookmarksPage />,
+      },
+      {
+        path: 'notifications',
+        element: <NotificationsPage />,
+      },
+      {
+        path: 'my-documents',
+        element: <MyDocumentsPage />,
+      },
+      {
         path: 'profile',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500 text-lg">Profile Page - Coming Soon</p>
-          </div>
-        ),
+        element: <ProfilePage />,
       },
       {
         path: 'settings',
-        element: (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500 text-lg">Settings Page - Coming Soon</p>
-          </div>
-        ),
+        element: <SettingsPage />,
+      },
+      {
+        path: 'analytics',
+        element: <AnalyticsPage />,
+      },
+      {
+        path: 'trending',
+        element: <TrendingPage />,
+      },
+      {
+        path: 'top-rated',
+        element: <TopRatedPage />,
       },
       {
         path: 'admin',
         element: (
           <ProtectedRoute requiredRole="admin">
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/users',
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminUsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/settings',
+        element: (
+          <ProtectedRoute requiredRole="admin">
             <div className="flex items-center justify-center h-64">
-              <p className="text-gray-500 text-lg">Admin Dashboard - Coming Soon</p>
+              <p className="text-muted-foreground text-lg">System Settings - Coming Soon</p>
             </div>
           </ProtectedRoute>
         ),

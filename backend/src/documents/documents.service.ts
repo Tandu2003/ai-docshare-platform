@@ -1,5 +1,4 @@
 import * as archiver from 'archiver';
-import { Readable } from 'stream';
 
 import {
   BadRequestException,
@@ -38,22 +37,22 @@ export class DocumentsService {
         isPublic = false,
         tags = [],
         language = 'en',
+        useAI = false,
+        aiAnalysis,
       } = createDocumentDto;
 
       this.logger.log(`Creating document for user ${userId} with files: ${fileIds.join(', ')}`);
 
       // Validate that all files exist and belong to the user
-      const files = await this.prisma.file.findMany({
-        where: {
-          id: { in: fileIds },
-          uploaderId: userId,
-        },
+      let files = await this.prisma.file.findMany({
+        where: { id: { in: fileIds }, uploaderId: userId },
       });
 
       if (files.length !== fileIds.length) {
         this.logger.error(
           `Files validation failed. Found ${files.length} files, expected ${fileIds.length}`
         );
+
         throw new BadRequestException('Some files not found or do not belong to the user');
       }
 
@@ -116,6 +115,26 @@ export class DocumentsService {
       );
 
       this.logger.log(`Document-file relationships created: ${documentFiles.length} files`);
+
+      // Save AI analysis if provided
+      if (useAI && aiAnalysis && aiAnalysis.confidence && aiAnalysis.confidence > 0) {
+        try {
+          await this.prisma.aIAnalysis.create({
+            data: {
+              documentId: document.id,
+              summary: aiAnalysis.summary,
+              keyPoints: aiAnalysis.keyPoints || [],
+              suggestedTags: aiAnalysis.tags || [],
+              difficulty: aiAnalysis.difficulty || 'beginner',
+              language: aiAnalysis.language || 'en',
+              confidence: aiAnalysis.confidence,
+            },
+          });
+          this.logger.log(`AI analysis saved for document ${document.id}`);
+        } catch (error) {
+          this.logger.warn(`Failed to save AI analysis: ${error.message}`);
+        }
+      }
 
       // Update files to mark them as public if document is public
       if (isPublic) {
@@ -690,6 +709,82 @@ export class DocumentsService {
   }
 
   /**
+   * Delete a document
+   */
+  async deleteDocument(documentId: string, userId: string) {
+    try {
+      this.logger.log(`Deleting document ${documentId} by user ${userId}`);
+
+      // Check if document exists and belongs to user
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      if (document.uploaderId !== userId) {
+        throw new BadRequestException('You do not have permission to delete this document');
+      }
+
+      // Delete document and related records in a transaction
+      await this.prisma.$transaction(async (prisma) => {
+        // Delete document files relationships
+        await prisma.documentFile.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document views
+        await prisma.view.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document downloads
+        await prisma.download.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document ratings
+        await prisma.rating.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document comments
+        await prisma.comment.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete AI analysis if exists
+        await prisma.aIAnalysis.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete the document itself
+        await prisma.document.delete({
+          where: { id: documentId },
+        });
+      });
+
+      this.logger.log(`Document ${documentId} deleted successfully`);
+      return { success: true, message: 'Document deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Error deleting document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete document');
+    }
+  }
+
+  /**
    * Create ZIP file download URL for multiple files
    */
   private async createZipDownload(files: any[], documentId: string): Promise<string> {
@@ -771,8 +866,6 @@ export class DocumentsService {
       this.logger.log(
         `ZIP uploaded, cached, and signed URL generated: ${zipUrl.substring(0, 100)}...`
       );
-
-      return zipUrl;
 
       return zipUrl;
     } catch (error) {

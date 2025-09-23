@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 
+import { CheckPolicy } from '@/common/casl';
 import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Logger,
@@ -19,11 +21,9 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { CheckPolicy } from '@/common/casl';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { FilesService } from '../files/files.service';
 import { DownloadDocumentDto } from './dto/download-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
 
@@ -58,7 +58,10 @@ export class DocumentsController {
     @Req() req: AuthenticatedRequest,
     @Res() res: Response
   ) {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
 
     try {
       const document = await this.documentsService.createDocument(createDocumentDto, userId);
@@ -145,8 +148,6 @@ export class DocumentsController {
     }
   }
 
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
   @ApiResponse({
@@ -239,8 +240,6 @@ export class DocumentsController {
     }
   }
 
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Post(':documentId/view')
   @ApiOperation({ summary: 'Track document view' })
   @ApiResponse({
@@ -322,6 +321,139 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Failed to get allowed file types',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Delete(':documentId')
+  @CheckPolicy({ action: 'delete', subject: 'Document' })
+  @ApiOperation({ summary: 'Delete a document' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document deleted successfully',
+  })
+  async deleteDocument(
+    @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+      }
+
+      await this.documentsService.deleteDocument(documentId, userId);
+
+      return ResponseHelper.success(res, null, 'Document deleted successfully');
+    } catch (error) {
+      this.logger.error(`Error deleting document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Failed to delete document',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('files/:fileId/secure-url')
+  @CheckPolicy({ action: 'read', subject: 'File' })
+  @ApiOperation({ summary: 'Get secure URL for file access' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Secure file URL retrieved successfully',
+  })
+  async getSecureFileUrl(
+    @Param('fileId') fileId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+      }
+
+      const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
+
+      return ResponseHelper.success(
+        res,
+        { secureUrl },
+        'Secure file URL retrieved successfully'
+      );
+    } catch (error) {
+      this.logger.error(`Error getting secure URL for file ${fileId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Failed to get secure file URL',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('upload/view/:fileId')
+  @ApiOperation({ summary: 'Increment file view count' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'View count incremented successfully',
+  })
+  async incrementViewCount(
+    @Param('fileId') fileId: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    try {
+      // Get user ID if authenticated (optional)
+      const userId = (req as any).user?.id || null;
+
+      // Get IP address with multiple fallback methods
+      let ipAddress =
+        req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
+
+      // Handle x-forwarded-for header (can be array)
+      if (!ipAddress || ipAddress === 'unknown') {
+        const forwardedFor = req.headers['x-forwarded-for'];
+        const realIp = req.headers['x-real-ip'];
+
+        if (forwardedFor) {
+          ipAddress = Array.isArray(forwardedFor)
+            ? forwardedFor[0]
+            : forwardedFor.split(',')[0].trim();
+        } else if (realIp) {
+          ipAddress = Array.isArray(realIp) ? realIp[0] : realIp;
+        }
+      }
+
+      const userAgent = req.get('User-Agent') || 'unknown';
+
+      this.logger.log(
+        `Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`
+      );
+
+      await this.filesService.incrementViewCount(fileId, userId, ipAddress, userAgent);
+
+      return ResponseHelper.success(res, null, 'View count incremented successfully');
+    } catch (error) {
+      this.logger.error(`Error incrementing view count for file ${fileId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Failed to increment view count',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

@@ -1,16 +1,18 @@
-import { AuthModule } from '@/auth/auth.module'
-import { DatabaseInitService, GlobalExceptionFilter } from '@/common'
-import { CaslModule } from '@/common/casl'
-import { ConfigModule } from '@/config/config.module'
+import { AuthModule } from '@/auth/auth.module';
+import { DatabaseInitService, GlobalExceptionFilter } from '@/common';
+import { CaslModule } from '@/common/casl';
+import { ConfigModule } from '@/config/config.module';
 // import { DocumentModule } from '@/document/document.module';
-import { DocumentsModule } from '@/documents/documents.module'
-import { FilesModule } from '@/files/files.module'
-import { HealthModule } from '@/health/health.module'
-import { PrismaModule } from '@/prisma/prisma.module'
+import { AIModule } from '@/ai/ai.module';
+import { DocumentsModule } from '@/documents/documents.module';
+import { FilesModule } from '@/files/files.module';
+import { HealthModule } from '@/health/health.module';
+import { PrismaModule } from '@/prisma/prisma.module';
 // import { UploadModule } from '@/upload/upload.module';
-import { Module } from '@nestjs/common'
-import { APP_FILTER, APP_GUARD } from '@nestjs/core'
-import { CaslGuard } from '@/common/casl'
+import { JwtAuthGuard } from '@/auth/guards';
+import { CaslGuard } from '@/common/casl';
+import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -19,6 +21,7 @@ import { CaslGuard } from '@/common/casl'
     HealthModule,
     AuthModule,
     CaslModule,
+    AIModule,
     // UploadModule,
     // DocumentModule,
     FilesModule,
@@ -30,6 +33,11 @@ import { CaslGuard } from '@/common/casl'
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
+    },
+    // Global JWT Guard must run BEFORE CASL so request.user is set
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
     // Global CASL Guard as provider
     {

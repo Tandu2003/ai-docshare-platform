@@ -352,6 +352,68 @@ export class FilesService {
   }
 
   /**
+   * Increment view count for a file
+   */
+  async incrementViewCount(fileId: string, userId?: string, ipAddress?: string, userAgent?: string) {
+    try {
+      this.logger.log(`Incrementing view count for file ${fileId} by user ${userId || 'anonymous'}`);
+
+      // Check if file exists
+      const file = await this.prisma.file.findUnique({
+        where: { id: fileId },
+        include: {
+          uploader: true,
+          documentFiles: {
+            include: {
+              document: true,
+            },
+          },
+        },
+      });
+
+      if (!file) {
+        throw new NotFoundException('File not found');
+      }
+
+      // Check if user has access to the file
+      if (!file.isPublic && file.uploaderId !== userId) {
+        throw new BadRequestException('You do not have access to this file');
+      }
+
+      // Find the document that contains this file
+      const documentFile = file.documentFiles[0];
+      if (!documentFile) {
+        throw new BadRequestException('File is not associated with any document');
+      }
+
+      // Create view record for the document (since View model tracks document views)
+      await this.prisma.view.create({
+        data: {
+          documentId: documentFile.document.id,
+          userId: userId || null,
+          ipAddress,
+          userAgent,
+        },
+      });
+
+      // Increment view count on document
+      await this.prisma.document.update({
+        where: { id: documentFile.document.id },
+        data: { viewCount: { increment: 1 } },
+      });
+
+      this.logger.log(`View count incremented successfully for file ${fileId} via document ${documentFile.document.id}`);
+      return { success: true, message: 'View count incremented successfully' };
+    } catch (error) {
+      this.logger.error(`Error incrementing view count for file ${fileId}:`, error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to increment view count');
+    }
+  }
+
+  /**
    * Generate unique key for file storage
    */
   private generateUniqueKey(prefix: string, originalName: string): string {

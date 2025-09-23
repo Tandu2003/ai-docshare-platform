@@ -1,2 +1,2 @@
-export * from './ability.factory'
-export * from './casl.context'
+export * from './ability.factory';
+export * from './casl.context';

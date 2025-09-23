@@ -1,133 +1,214 @@
-import {
-    ArrowLeft, Calendar, Download, ExternalLink, Eye, FileText, MessageSquare, Star, User
-} from 'lucide-react'
-import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { toast } from 'sonner'
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-    DocumentView, getDocumentById, triggerFileDownload, viewDocument
-} from '@/services/document.service'
+import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
+import { DocumentComments } from '@/components/documents/document-comments';
+import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { generateMockAIAnalysis, mockComments } from '@/services/mock-data.service';
+import { getDocumentById, triggerFileDownload, type DocumentView } from '@/services/document.service';
+import type { AIAnalysis, Comment } from '@/types';
 
-const DocumentDetailPage: React.FC = () => {
+export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
-  const navigate = useNavigate();
   const [document, setDocument] = useState<DocumentView | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
-    if (!documentId) {
-      setError('Document ID not provided');
-      setLoading(false);
-      return;
-    }
+    const fetchDocumentData = async () => {
+      if (!documentId) return;
 
-    fetchDocument();
+      setLoading(true);
+      try {
+        // Use real API to fetch document
+        const foundDocument = await getDocumentById(documentId);
+        setDocument(foundDocument);
+
+        // Load comments for this document
+        const documentComments = mockComments.filter(
+          (comment) => comment.documentId === documentId
+        );
+        setComments(documentComments);
+
+        // Generate AI analysis
+        const analysis = generateMockAIAnalysis(documentId);
+        setAiAnalysis(analysis);
+
+        // Simulate user's rating and bookmark status
+        setUserRating(Math.floor(Math.random() * 5) + 1);
+        setIsBookmarked(Math.random() > 0.5);
+      } catch (error) {
+        console.error('Failed to fetch document:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocumentData();
   }, [documentId]);
 
-  const fetchDocument = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Get document details
-      const documentData = await getDocumentById(documentId!);
-      setDocument(documentData);
-
-      // Track view (non-blocking)
-      await viewDocument(documentId!, {
-        referrer: window.document.referrer || window.location.href,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load document');
-      console.error('Error fetching document:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadDocument = async () => {
-    if (!document) return;
+  const handleDownload = async () => {
+    if (!documentId) return;
     
     try {
-      setIsDownloading(true);
-      await triggerFileDownload(document.id);
-      toast.success('Document downloaded successfully');
-    } catch (err) {
-      console.error('Download error:', err);
-      toast.error('Failed to download document');
-    } finally {
-      setIsDownloading(false);
+      await triggerFileDownload(documentId, document?.title);
+    } catch (error) {
+      console.error('Failed to download document:', error);
     }
   };
 
-  const formatFileSize = (bytes: bigint): string => {
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = Number(bytes);
-    let unitIndex = 0;
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    console.log('Bookmark toggled:', !isBookmarked);
   };
 
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const handleShare = () => {
+    // Simulate share functionality
+    if (navigator.share) {
+      navigator.share({
+        title: document?.title,
+        text: document?.description,
+        url: window.location.href,
+      });
+    } else {
+      // Fallback to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      console.log('Link copied to clipboard');
+    }
+  };
+
+  const handleRate = (rating: number) => {
+    setUserRating(rating);
+    console.log('Rating updated:', rating);
+    // In real app, this would send rating to API
+  };
+
+  const handleAddComment = (content: string, parentId?: string) => {
+    const newComment: Comment = {
+      id: `comment-${Date.now()}`,
+      userId: 'current-user',
+      documentId: documentId!,
+      parentId,
+      content,
+      isEdited: false,
+      isDeleted: false,
+      likesCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: {
+        id: 'current-user',
+        email: 'user@example.com',
+        username: 'currentuser',
+        password: '',
+        firstName: 'Current',
+        lastName: 'User',
+        roleId: 'user',
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        role: {
+          id: 'user',
+          name: 'User',
+          description: 'Regular user',
+          permissions: [],
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      document: {
+        ...document!,
+        uploaderId: document!.uploader.id,
+        categoryId: document!.category.id,
+      } as any,
+    };
+
+    if (parentId) {
+      // Add as reply
+      setComments((prev) =>
+        prev.map((comment) =>
+          comment.id === parentId
+            ? { ...comment, replies: [...(comment.replies || []), newComment] }
+            : comment
+        )
+      );
+    } else {
+      // Add as top-level comment
+      setComments((prev) => [...prev, newComment]);
+    }
+  };
+
+  const handleLikeComment = (commentId: string) => {
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, likesCount: comment.likesCount + 1 } : comment
+      )
+    );
+  };
+
+  const handleEditComment = (commentId: string, content: string) => {
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId
+          ? { ...comment, content, isEdited: true, editedAt: new Date() }
+          : comment
+      )
+    );
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    setComments((prev) =>
+      prev.map((comment) => (comment.id === commentId ? { ...comment, isDeleted: true } : comment))
+    );
   };
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Skeleton className="h-8 w-32" />
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-32" />
           <Card>
-            <CardHeader>
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="space-y-4">
-                <Skeleton className="h-20 w-full" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-6 w-24" />
-                </div>
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-8 w-24" />
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+        {/* Content Skeleton */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-64 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-32 w-full" />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -135,221 +216,112 @@ const DocumentDetailPage: React.FC = () => {
 
   if (!document) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <Alert>
-            <AlertDescription>Document not found</AlertDescription>
-          </Alert>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-muted-foreground mb-2">Document Not Found</h2>
+          <p className="text-muted-foreground">The document you're looking for doesn't exist.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Back Button */}
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+    <div className="space-y-6">
+      {/* Document Header */}
+      <DocumentDetailHeader
+        document={document}
+        onDownload={handleDownload}
+        onBookmark={handleBookmark}
+        onShare={handleShare}
+        onRate={handleRate}
+        userRating={userRating}
+        isBookmarked={isBookmarked}
+      />
 
-        {/* Document Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-2xl font-bold mb-2">{document.title}</CardTitle>
-                {document.description && (
-                  <p className="text-muted-foreground mb-4">{document.description}</p>
-                )}
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {document.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    <span>{document.viewCount} views</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Download className="h-4 w-4" />
-                    <span>{document.downloadCount} downloads</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4" />
-                    <span>
-                      {document.averageRating.toFixed(1)} ({document.totalRatings} ratings)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>{document.stats.commentsCount} comments</span>
-                  </div>
-                </div>
-
-                {/* Download Document Button */}
-                <div className="mt-4">
-                  <Button 
-                    onClick={handleDownloadDocument}
-                    disabled={isDownloading}
-                    className="flex items-center gap-2"
-                  >
-                    {isDownloading ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    ) : (
-                      <Download className="h-4 w-4" />
-                    )}
-                    {isDownloading ? 'Downloading...' : 'Download Document'}
-                  </Button>
+      {/* Main Content */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Document Content */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Document Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                <p className="text-muted-foreground">
+                  This is a preview of the document content. In a real application, this would
+                  display the actual document content based on its file type.
+                </p>
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Document Preview</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {document.description || 'No description available.'}
+                  </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Premium Badge */}
-              {document.isPremium && (
-                <Badge variant="default" className="ml-4">
-                  Premium
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
+          {/* Comments */}
+          <DocumentComments
+            comments={comments}
+            onAddComment={handleAddComment}
+            onLikeComment={handleLikeComment}
+            onEditComment={handleEditComment}
+            onDeleteComment={handleDeleteComment}
+            currentUserId="current-user"
+          />
+        </div>
 
-        {/* Document Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Files */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Files ({document.files.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {document.files.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium truncate">{file.originalName}</h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {formatFileSize(file.fileSize)}
-                        </p>
-                      </div>
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* AI Analysis */}
+          {aiAnalysis && <DocumentAIAnalysis analysis={aiAnalysis} />}
 
-                      <div className="flex items-center gap-2">
-                        {file.secureUrl && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(file.secureUrl, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Document Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Document Statistics</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Downloads</span>
+                <span className="font-medium">{document.downloadCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Views</span>
+                <span className="font-medium">{document.viewCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Average Rating</span>
+                <span className="font-medium">{document.averageRating.toFixed(1)}/5</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Total Ratings</span>
+                <span className="font-medium">{document.totalRatings}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Comments</span>
+                <span className="font-medium">{comments.length}</span>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Uploader Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Uploaded by
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={document.uploader.avatar} />
-                    <AvatarFallback>
-                      {document.uploader.firstName[0]}
-                      {document.uploader.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">
-                      {document.uploader.firstName} {document.uploader.lastName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">@{document.uploader.username}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Document Meta */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Document Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium">Category</p>
-                  <p className="text-sm text-muted-foreground">{document.category.name}</p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-sm font-medium">Language</p>
-                  <p className="text-sm text-muted-foreground">{document.language.toUpperCase()}</p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-sm font-medium flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Published
-                  </p>
-                  <p className="text-sm text-muted-foreground">{formatDate(document.createdAt)}</p>
-                </div>
-
-                {document.updatedAt !== document.createdAt && (
-                  <>
-                    <Separator />
-                    <div>
-                      <p className="text-sm font-medium flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Last updated
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(document.updatedAt)}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {/* Related Documents */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Related Documents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Related documents will be shown here when the API supports it.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default DocumentDetailPage;
+}

@@ -1,21 +1,26 @@
-import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react'
-import React, { useCallback, useRef, useState } from 'react'
+import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
+import React, { useCallback, useRef, useState } from 'react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
-import { DocumentsService, FilesService } from '@/services/files.service'
-import { UploadService } from '@/services/upload.service'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { AIService, type DocumentAnalysisResult } from '@/services/ai.service';
+import { DocumentsService, FileUploadResult, FilesService } from '@/services/files.service';
 
 interface FileUploadProps {
   onUploadComplete?: (document: any) => void;
@@ -31,7 +36,7 @@ interface FileWithMetadata {
   error?: string;
   uploaded?: boolean;
   progress?: number;
-  uploadedFileId?: string; // Store the uploaded file ID from backend
+  fileId?: string; // ID returned from upload API
 }
 
 interface DocumentData {
@@ -40,6 +45,12 @@ interface DocumentData {
   isPublic: boolean;
   language: string;
   tags: string[];
+}
+
+interface AIAnalysisState {
+  isAnalyzing: boolean;
+  analysisResult: DocumentAnalysisResult | null;
+  error: string | null;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -56,98 +67,139 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   });
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [allowedTypes, setAllowedTypes] = useState<string[]>([]);
-  const [allowedTypesLoaded, setAllowedTypesLoaded] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisState>({
+    isAnalyzing: false,
+    analysisResult: null,
+    error: null,
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load allowed types on component mount
-  React.useEffect(() => {
-    UploadService.getAllowedTypes()
-      .then((types) => {
-        setAllowedTypes(types);
-        setAllowedTypesLoaded(true);
-      })
-      .catch((error) => {
-        console.error('Failed to load allowed types:', error);
-        // If API fails, allow all types
-        setAllowedTypes([]);
-        setAllowedTypesLoaded(true);
-      });
-  }, []);
+  // Mock file validation
+  const validateFile = (file: File): string | null => {
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
 
-  // Process files helper function wrapped in useCallback to avoid recreation
+    if (file.size > maxSize) {
+      return 'File size must be less than 100MB';
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'File type not supported';
+    }
+
+    return null;
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Process files helper function
   const handleFiles = useCallback(
     async (newFiles: File[]) => {
-      const processedFiles: FileWithMetadata[] = newFiles.map((file) => ({
-        file,
-        id: Math.random().toString(36).substring(7),
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      }));
+      const processedFiles: FileWithMetadata[] = newFiles.map((file) => {
+        const error = validateFile(file);
+        return {
+          file,
+          id: Math.random().toString(36).substring(7),
+          preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+          error: error || undefined,
+        };
+      });
 
-      // Validate files only if allowed types are loaded
-      if (allowedTypesLoaded) {
-        processedFiles.forEach((fileWithMetadata) => {
-          const error = UploadService.validateFile(fileWithMetadata.file, allowedTypes);
-          if (error) {
-            fileWithMetadata.error = error;
-          }
-        });
-      }
-
-      // Add files to state first
+      // Add files to state
       if (multiple) {
         setFiles((prev) => [...prev, ...processedFiles]);
       } else {
         setFiles(processedFiles.slice(0, 1));
       }
 
-      // Auto-upload valid files
+      // Upload valid files using real API
       const validFiles = processedFiles.filter((f) => !f.error);
       if (validFiles.length > 0) {
-        await uploadFilesToStorage(validFiles);
+        await uploadFilesToAPI(validFiles);
       }
     },
-    [allowedTypes, allowedTypesLoaded, multiple]
+    [multiple]
   );
 
-  // Upload files to storage immediately
-  const uploadFilesToStorage = async (filesToUpload: FileWithMetadata[]) => {
+  // Real file upload using API
+  const uploadFilesToAPI = async (filesToUpload: FileWithMetadata[]) => {
     try {
-      // Set uploading state for these files
+      // Set uploading state
       setFiles((prev) =>
         prev.map((f) => (filesToUpload.find((tf) => tf.id === f.id) ? { ...f, progress: 10 } : f))
       );
 
-      const fileObjects = filesToUpload.map((f) => f.file);
-      const uploadResults = await FilesService.uploadFiles(fileObjects);
-      const uploadData = uploadResults.data;
+      // Extract File objects for upload
+      const files = filesToUpload.map((f) => f.file);
 
-      if (!uploadData || uploadData.length === 0) {
-        throw new Error('No data returned from API');
+      // Upload files using real API
+      const response = await FilesService.uploadFiles(files);
+
+      if (response.success && response.data) {
+        // Update files with uploaded file IDs
+        setFiles((prev) =>
+          prev.map((f) => {
+            const fileToUpload = filesToUpload.find((tf) => tf.id === f.id);
+            if (fileToUpload) {
+              const uploadedFile = response.data?.find(
+                (_uf: FileUploadResult, index: number) => filesToUpload[index].id === f.id
+              );
+              return uploadedFile
+                ? {
+                    ...f,
+                    uploaded: true,
+                    progress: 100,
+                    fileId: uploadedFile.id,
+                  }
+                : f;
+            }
+            return f;
+          })
+        );
+
+        // Trigger AI analysis after successful upload (only for supported file types)
+        const uploadedFileIds = response.data.map((f) => f.id);
+
+        // Create file info mapping for AI analysis
+        const fileInfoMap = new Map();
+        response.data.forEach((uploadedFile, index) => {
+          const originalFile = filesToUpload[index];
+          fileInfoMap.set(uploadedFile.id, {
+            id: uploadedFile.id,
+            name: originalFile.file.name,
+            type: originalFile.file.type,
+          });
+        });
+
+        console.log('File info map:', Array.from(fileInfoMap.entries()));
+        analyzeFilesWithAI(uploadedFileIds, fileInfoMap);
+      } else {
+        throw new Error('Upload failed');
       }
-      console.log({ uploadResults });
-      // Update files with uploaded file IDs
-      setFiles((prev) =>
-        prev.map((f) => {
-          const fileIndex = filesToUpload.findIndex((tf) => tf.id === f.id);
-          console.log({ fileIndex, uploadResults });
-          if (fileIndex !== -1 && uploadData[fileIndex]) {
-            return {
-              ...f,
-              uploaded: true,
-              progress: 100,
-              uploadedFileId: uploadData[fileIndex].id,
-            };
-          }
-          return f;
-        })
-      );
     } catch (error) {
-      console.error('Failed to upload files:', error);
-      alert('Failed to upload files. Please try again.');
-      // Mark files with error
+      console.error('Upload failed:', error);
       setFiles((prev) =>
         prev.map((f) =>
           filesToUpload.find((tf) => tf.id === f.id)
@@ -155,6 +207,91 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             : f
         )
       );
+    }
+  };
+
+  // AI Analysis function
+  const analyzeFilesWithAI = async (
+    fileIds: string[],
+    fileInfoMap?: Map<string, { id: string; name: string; type: string }>
+  ) => {
+    try {
+      setAiAnalysis((prev) => ({ ...prev, isAnalyzing: true, error: null }));
+
+      let supportedFiles: { id: string; name: string; type: string }[] = [];
+
+      if (fileInfoMap) {
+        // Use file info from upload response
+        supportedFiles = fileIds
+          .map((id) => fileInfoMap.get(id))
+          .filter((fileInfo) => fileInfo && AIService.isFileTypeSupported(fileInfo.name)) as {
+          id: string;
+          name: string;
+          type: string;
+        }[];
+      } else {
+        // Fallback to state-based approach
+        const uploadedFiles = files.filter(
+          (f) => f.uploaded && f.fileId && fileIds.includes(f.fileId)
+        );
+        supportedFiles = uploadedFiles
+          .filter((f) => AIService.isFileTypeSupported(f.file.name))
+          .map((f) => ({ id: f.fileId!, name: f.file.name, type: f.file.type }));
+      }
+
+      console.log('File IDs to analyze:', fileIds);
+      console.log('Supported files:', supportedFiles);
+
+      if (supportedFiles.length === 0) {
+        const allFileInfo = fileIds
+          .map((id) => {
+            const fileInfo = fileInfoMap?.get(id);
+            return fileInfo
+              ? `${fileInfo.name} (${fileInfo.name.split('.').pop()?.toLowerCase()})`
+              : 'unknown';
+          })
+          .join(', ');
+
+        setAiAnalysis((prev) => ({
+          ...prev,
+          isAnalyzing: false,
+          error: `No supported file types for AI analysis. Files: ${allFileInfo}. Supported: ${AIService.getSupportedFileTypes().join(', ')}`,
+        }));
+        return;
+      }
+
+      // Use only supported file IDs for analysis
+      const supportedFileIds = supportedFiles.map((f) => f.id);
+      const analysisResponse = await AIService.analyzeDocument({ fileIds: supportedFileIds });
+
+      if (analysisResponse.success && analysisResponse.data) {
+        const analysisResult = analysisResponse.data;
+
+        // Update form with AI suggestions
+        setUploadData((prev) => ({
+          ...prev,
+          title: prev.title || analysisResult.title || '',
+          description: prev.description || analysisResult.description || '',
+          tags: prev.tags.length > 0 ? prev.tags : analysisResult.tags || [],
+          language: prev.language || analysisResult.language || 'en',
+        }));
+
+        setAiAnalysis((prev) => ({
+          ...prev,
+          isAnalyzing: false,
+          analysisResult,
+          error: null,
+        }));
+      } else {
+        throw new Error('AI analysis failed');
+      }
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      setAiAnalysis((prev) => ({
+        ...prev,
+        isAnalyzing: false,
+        error: error instanceof Error ? error.message : 'AI analysis failed',
+      }));
     }
   };
 
@@ -221,7 +358,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const handleCreateDocument = async () => {
-    const uploadedFiles = files.filter((f) => f.uploaded && f.uploadedFileId);
+    const uploadedFiles = files.filter((f) => f.uploaded && f.fileId);
     if (uploadedFiles.length === 0) {
       onUploadError?.('Please upload files first');
       return;
@@ -235,17 +372,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setUploading(true);
 
     try {
+      // Create document using real API
       const documentData = {
         title: uploadData.title,
         description: uploadData.description,
-        fileIds: uploadedFiles.map((f) => f.uploadedFileId!),
+        fileIds: uploadedFiles.map((f) => f.fileId!),
         isPublic: uploadData.isPublic,
         tags: uploadData.tags,
         language: uploadData.language,
       };
 
       const document = await DocumentsService.createDocument(documentData);
-      console.log({ document });
+
       onUploadComplete?.(document);
 
       // Reset form after successful document creation
@@ -260,7 +398,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   return (
-    <Card className={cn('w-full max-w-4xl mx-auto', className)}>
+    <Card className={cn('w-full', className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
@@ -272,8 +410,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Drop Zone */}
         <div
           className={cn(
-            'border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer',
-            dragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400',
+            'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
+            dragActive
+              ? 'border-primary bg-primary/5'
+              : 'border-muted-foreground/25 hover:border-primary/50',
             files.length > 0 && 'mb-4'
           )}
           onDragEnter={handleDrag}
@@ -282,11 +422,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-lg font-medium mb-2">
-            Click here or drop documents to upload
-          </p>
-          <p className="text-sm text-gray-500">
+          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-lg font-medium mb-2">Click here or drop documents to upload</p>
+          <p className="text-sm text-muted-foreground">
             {multiple ? 'Upload multiple documents' : 'Upload a single document'} (max 100MB each)
           </p>
           <input
@@ -295,7 +433,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             multiple={multiple}
             onChange={handleFileInput}
             className="hidden"
-            accept={allowedTypes.join(',')}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp"
           />
         </div>
 
@@ -308,8 +446,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 key={file.id}
                 className={cn(
                   'flex items-center gap-3 p-3 border rounded-lg',
-                  file.error && 'border-red-200 bg-red-50',
-                  file.uploaded && 'border-green-200 bg-green-50'
+                  file.error && 'border-destructive/50 bg-destructive/5',
+                  file.uploaded && 'border-green-500/50 bg-green-500/5'
                 )}
               >
                 <div className="flex-shrink-0">
@@ -320,15 +458,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       className="h-10 w-10 object-cover rounded"
                     />
                   ) : (
-                    <FileText className="h-10 w-10 text-gray-400" />
+                    <FileText className="h-10 w-10 text-muted-foreground" />
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{file.file.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {UploadService.formatFileSize(file.file.size)}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{formatFileSize(file.file.size)}</p>
 
                   {file.error && (
                     <Alert className="mt-2 py-2">
@@ -346,7 +482,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   {file.uploaded ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : file.error ? (
-                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <AlertCircle className="h-5 w-5 text-destructive" />
                   ) : (
                     <Button
                       size="sm"
@@ -363,19 +499,102 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         )}
 
+        {/* AI Analysis Status */}
+        {aiAnalysis.isAnalyzing && (
+          <Alert className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            <span className="text-sm">AI is analyzing your documents...</span>
+          </Alert>
+        )}
+
+        {aiAnalysis.error && (
+          <Alert variant="destructive">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">AI Analysis Error: {aiAnalysis.error}</span>
+            </div>
+          </Alert>
+        )}
+
+        {aiAnalysis.analysisResult && (
+          <Alert className="border-blue-200 bg-blue-50">
+            <CheckCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">AI has analyzed your documents!</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const uploadedFiles = files.filter((f) => f.uploaded && f.fileId);
+                      const supportedFiles = uploadedFiles.filter((f) =>
+                        AIService.isFileTypeSupported(f.file.name)
+                      );
+                      if (supportedFiles.length > 0) {
+                        analyzeFilesWithAI(supportedFiles.map((f) => f.fileId!));
+                      }
+                    }}
+                    disabled={aiAnalysis.isAnalyzing}
+                    className="text-xs"
+                  >
+                    Re-analyze
+                  </Button>
+                </div>
+                {aiAnalysis.analysisResult.summary && (
+                  <p className="text-sm">
+                    <strong>Summary:</strong> {aiAnalysis.analysisResult.summary}
+                  </p>
+                )}
+                {aiAnalysis.analysisResult.keyPoints &&
+                  aiAnalysis.analysisResult.keyPoints.length > 0 && (
+                    <div className="text-sm">
+                      <strong>Key Points:</strong>
+                      <ul className="list-disc list-inside ml-2">
+                        {aiAnalysis.analysisResult.keyPoints.slice(0, 3).map((point, index) => (
+                          <li key={index}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {aiAnalysis.analysisResult.confidence && (
+                  <p className="text-sm">
+                    <strong>Confidence:</strong>{' '}
+                    {Math.round(aiAnalysis.analysisResult.confidence * 100)}%
+                  </p>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Upload Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={uploadData.title || ''}
-              onChange={(e) =>
-                setUploadData((prev: DocumentData) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Document title"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="title"
+                value={uploadData.title || ''}
+                onChange={(e) =>
+                  setUploadData((prev: DocumentData) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Document title"
+                required
+                className={cn(
+                  aiAnalysis.analysisResult?.title &&
+                    !uploadData.title &&
+                    'border-blue-300 bg-blue-50'
+                )}
+              />
+              {aiAnalysis.analysisResult?.title && !uploadData.title && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <Badge variant="secondary" className="text-xs">
+                    AI Suggested
+                  </Badge>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -405,20 +624,51 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
         <div className="space-y-2">
           <Label htmlFor="description">Description (optional)</Label>
-          <Textarea
-            id="description"
-            value={uploadData.description || ''}
-            onChange={(e) =>
-              setUploadData((prev: DocumentData) => ({ ...prev, description: e.target.value }))
-            }
-            placeholder="Brief description of the document"
-            rows={3}
-          />
+          <div className="relative">
+            <Textarea
+              id="description"
+              value={uploadData.description || ''}
+              onChange={(e) =>
+                setUploadData((prev: DocumentData) => ({ ...prev, description: e.target.value }))
+              }
+              placeholder="Brief description of the document"
+              rows={3}
+              className={cn(
+                aiAnalysis.analysisResult?.description &&
+                  !uploadData.description &&
+                  'border-blue-300 bg-blue-50'
+              )}
+            />
+            {aiAnalysis.analysisResult?.description && !uploadData.description && (
+              <div className="absolute right-2 top-2">
+                <Badge variant="secondary" className="text-xs">
+                  AI Suggested
+                </Badge>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Tags */}
         <div className="space-y-2">
-          <Label>Tags</Label>
+          <div className="flex items-center justify-between">
+            <Label>Tags</Label>
+            {aiAnalysis.analysisResult?.tags && aiAnalysis.analysisResult.tags.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setUploadData((prev) => ({
+                    ...prev,
+                    tags: [...(prev.tags || []), ...(aiAnalysis.analysisResult?.tags || [])],
+                  }));
+                }}
+                className="text-xs"
+              >
+                Apply AI Tags
+              </Button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2 mb-2">
             {uploadData.tags?.map((tag: string) => (
               <Badge key={tag} variant="secondary" className="flex items-center gap-1">
@@ -448,9 +698,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               }}
               className="flex-1"
             />
-            <Button 
-              type="button" 
-              size="sm" 
+            <Button
+              type="button"
+              size="sm"
               onClick={addTag}
               disabled={!newTag.trim()}
               className="px-3"

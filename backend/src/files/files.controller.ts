@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 
+import { CheckPolicy } from '@/common/casl';
 import {
   BadRequestException,
-  Body,
   Controller,
   Get,
   HttpStatus,
@@ -17,14 +17,12 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CheckPolicy } from '@/common/casl';
 
+import { PrismaService } from '@/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from './files.service';
-import { Public } from '@/auth/decorators/public.decorator';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -42,7 +40,8 @@ export class FilesController {
 
   constructor(
     private readonly filesService: FilesService,
-    private readonly r2Service: CloudflareR2Service
+    private readonly r2Service: CloudflareR2Service,
+    private readonly prisma: PrismaService
   ) {}
 
   @Post('upload')
@@ -66,6 +65,14 @@ export class FilesController {
     @Res() res: Response
   ) {
     const userId = req.user.id;
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    this.logger.log(`Uploading ${files.length} files for user ${user?.username}`);
 
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
@@ -97,8 +104,6 @@ export class FilesController {
     }
   }
 
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Get(':fileId/secure-url')
   @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({ summary: 'Get secure access URL for a file' })

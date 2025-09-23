@@ -18,6 +18,8 @@ export interface DocumentView {
   language: string;
   isPublic: boolean;
   isPremium: boolean;
+  isApproved: boolean;
+  isDraft: boolean;
   viewCount: number;
   downloadCount: number;
   averageRating: number;
@@ -35,6 +37,7 @@ export interface DocumentView {
     id: string;
     name: string;
     description?: string;
+    icon?: string;
   };
   files: {
     id: string;
@@ -105,7 +108,14 @@ export const viewDocument = async (
 
 export const incrementViewCount = async (fileId: string): Promise<void> => {
   try {
-    await apiClient.post(`/upload/view/${fileId}`);
+    const response = await apiClient.post<{
+      success: boolean;
+      message?: string;
+    }>(`/documents/upload/view/${fileId}`);
+    
+    if (!response.data?.success) {
+      console.warn('View count increment failed:', response.data?.message);
+    }
   } catch (error) {
     console.error('Failed to increment view count', error);
   }
@@ -120,7 +130,7 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
       success: boolean;
       data: { secureUrl: string };
       message?: string;
-    }>(`/files/${fileId}/secure-url`);
+    }>(`/documents/files/${fileId}/secure-url`);
 
     if (response.data?.success) {
       return response.data.data.secureUrl;
@@ -165,7 +175,11 @@ export const downloadDocument = async (
 
     if (response?.success && response?.data) {
       console.log('Download data extracted:', response.data);
-      return response.data;
+      return {
+        downloadUrl: response.data.data.downloadUrl,
+        fileName: response.data.data.fileName,
+        fileCount: response.data.data.fileCount,
+      };
     } else {
       console.error('Invalid response format:', response.data);
       throw new Error(response.data?.message || 'Failed to prepare document download');

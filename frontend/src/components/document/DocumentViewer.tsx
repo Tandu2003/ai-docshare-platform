@@ -1,10 +1,11 @@
-import { Eye, Info } from 'lucide-react'
-import React from 'react'
+import { Eye, Info } from 'lucide-react';
 
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { incrementViewCount } from '@/services/document.service'
-import { UploadedFile, UploadService } from '@/services/upload.service'
+import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { incrementViewCount } from '@/services/document.service';
+import { UploadService, UploadedFile } from '@/services/upload.service';
 
 interface DocumentViewerProps {
   file: UploadedFile;

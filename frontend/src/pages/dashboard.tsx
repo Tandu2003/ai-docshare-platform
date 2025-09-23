@@ -1,171 +1,180 @@
-import { Download, FileText, Upload, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks';
+import { ActivityFeed } from '@/components/dashboard/activity-feed';
+import { PopularCategories } from '@/components/dashboard/popular-categories';
+import { RecentDocuments } from '@/components/dashboard/recent-documents';
+import { DashboardStatsCards } from '@/components/dashboard/stats-cards';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { generateDashboardStats } from '@/services/mock-data.service';
+import type { DashboardStats } from '@/types';
 
 export const DashboardPage: React.FC = () => {
-  const { user, hasPermission, isAdmin, isModerator } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    {
-      title: 'Total Documents',
-      value: '24',
-      icon: FileText,
-      description: 'Documents uploaded',
-    },
-    {
-      title: 'Downloads',
-      value: '1,234',
-      icon: Download,
-      description: 'Total downloads',
-    },
-    {
-      title: 'Users',
-      value: '12',
-      icon: Users,
-      description: 'Active users',
-    },
-    {
-      title: 'Uploads',
-      value: '8',
-      icon: Upload,
-      description: 'This month',
-    },
-  ];
+  useEffect(() => {
+    // Simulate API call
+    const fetchStats = async () => {
+      setLoading(true);
+      try {
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const dashboardStats = generateDashboardStats();
+        setStats(dashboardStats);
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome to your AI DocShare dashboard. Here you can manage your documents and view
+            analytics.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="animate-pulse">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+              </CardHeader>
+              <CardContent className="animate-pulse">
+                <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-full"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Failed to load dashboard data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Welcome back, {user?.firstName}! 👋
-        </h1>
-        <p className="text-gray-600">Here's what's happening with your documents today.</p>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome to your AI DocShare dashboard. Here you can manage your documents and view
+          analytics.
+        </p>
       </div>
 
-      {/* User Info Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Profile</CardTitle>
-            <CardDescription>Account information and role</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Full Name</p>
-              <p className="text-lg">
-                {user?.firstName} {user?.lastName}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
-              <p className="text-lg">{user?.email}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Username</p>
-              <p className="text-lg">@{user?.username}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Role</p>
-              <Badge variant={isAdmin() ? 'destructive' : isModerator() ? 'default' : 'secondary'}>
-                {user?.role.name}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <div className="flex items-center space-x-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${user?.isActive ? 'bg-green-500' : 'bg-red-500'}`}
-                />
-                <span className="text-sm">{user?.isActive ? 'Active' : 'Inactive'}</span>
-                {user?.isVerified && (
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Verified
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Statistics Cards */}
+      <DashboardStatsCards stats={stats} />
 
+      {/* Main Content Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Recent Documents */}
+        <div className="lg:col-span-2">
+          <RecentDocuments documents={stats.recentDocuments} />
+        </div>
+
+        {/* Popular Categories */}
+        <div>
+          <PopularCategories categories={stats.popularCategories} />
+        </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <ActivityFeed activities={stats.userActivity} />
+        </div>
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Permissions</CardTitle>
-            <CardDescription>What you can do on this platform</CardDescription>
+            <CardTitle>Document Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {user?.role.permissions.map((permission, idx) => {
-                const label = `${permission.action} ${permission.subject}`.toLowerCase();
-                return (
-                  <Badge
-                    key={`${permission.action}:${permission.subject}:${idx}`}
-                    variant="outline"
-                    className="text-xs"
-                  >
-                    {label}
-                  </Badge>
-                );
-              })}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Published</span>
+                <span className="text-sm font-medium">
+                  {stats.recentDocuments.filter((doc) => doc.isApproved && !doc.isDraft).length}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Draft</span>
+                <span className="text-sm font-medium">
+                  {stats.recentDocuments.filter((doc) => doc.isDraft).length}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Pending</span>
+                <span className="text-sm font-medium">
+                  {stats.recentDocuments.filter((doc) => !doc.isApproved && !doc.isDraft).length}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Content Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Public</span>
+                <span className="text-sm font-medium">
+                  {stats.recentDocuments.filter((doc) => doc.isPublic).length}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Premium</span>
+                <span className="text-sm font-medium">
+                  {stats.recentDocuments.filter((doc) => doc.isPremium).length}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Private</span>
+                <span className="text-sm font-medium">
+                  {stats.recentDocuments.filter((doc) => !doc.isPublic).length}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Notifications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {stats.recentNotifications.slice(0, 3).map((notification) => (
+                <div key={notification.id} className="text-sm">
+                  <p className="font-medium">{notification.title}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {new Date(notification.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-                  </div>
-                  <Icon className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks you might want to perform</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {hasPermission('upload', 'File') && (
-              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                <Upload className="h-6 w-6 text-blue-600 mb-2" />
-                <h3 className="font-medium">Upload Document</h3>
-                <p className="text-sm text-gray-600">Share a new document</p>
-              </div>
-            )}
-
-            <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <FileText className="h-6 w-6 text-green-600 mb-2" />
-              <h3 className="font-medium">Browse Documents</h3>
-              <p className="text-sm text-gray-600">Find and download documents</p>
-            </div>
-
-            {(isAdmin() || isModerator()) && (
-              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                <Users className="h-6 w-6 text-purple-600 mb-2" />
-                <h3 className="font-medium">Manage Users</h3>
-                <p className="text-sm text-gray-600">Admin and moderation tools</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
