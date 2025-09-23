@@ -88,12 +88,12 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
               <div className="flex items-center space-x-2">
                 <Avatar className="h-6 w-6">
                   <AvatarFallback className="text-xs">
-                    {document.uploader.firstName.charAt(0)}
-                    {document.uploader.lastName.charAt(0)}
+                    {document.uploader?.firstName?.charAt(0) || 'U'}
+                    {document.uploader?.lastName?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">
-                  {document.uploader.firstName} {document.uploader.lastName}
+                  {document.uploader?.firstName || 'Unknown'} {document.uploader?.lastName || 'User'}
                 </span>
               </div>
 
@@ -122,8 +122,8 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
               {/* Category and Tags */}
               <div className="space-y-2">
                 <Badge variant="secondary" className="text-xs">
-                  <span className="mr-1">{document.category.icon}</span>
-                  {document.category.name}
+                  <span className="mr-1">{document.category?.icon || '📄'}</span>
+                  {document.category?.name || 'Uncategorized'}
                 </Badge>
                 {document.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">

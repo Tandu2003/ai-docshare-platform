@@ -1,4 +1,4 @@
-import { Bookmark, FileText, Search, Filter } from 'lucide-react'
+import { Bookmark, Search } from 'lucide-react'
 import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'

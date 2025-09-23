@@ -1,12 +1,10 @@
-import { BarChart3, TrendingUp, Users, Download, Eye, Star, Calendar, FileText } from 'lucide-react'
+import { BarChart3, TrendingUp, Users, Download, Eye, Star, FileText } from 'lucide-react'
 import { useState } from 'react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
 import { getLanguageName } from '@/utils/language'
 
@@ -52,7 +50,6 @@ interface AnalyticsData {
 
 export default function AnalyticsPage() {
 	const [timeRange, setTimeRange] = useState('30d')
-	const [isLoading] = useState(false)
 
 	// Mock analytics data - replace with actual API call
 	const analyticsData: AnalyticsData = {

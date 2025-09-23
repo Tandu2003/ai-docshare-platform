@@ -1,4 +1,4 @@
-import { Users, Search, Filter, MoreHorizontal, Shield, Mail, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Users, Filter, MoreHorizontal, Mail, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
 	DropdownMenu,

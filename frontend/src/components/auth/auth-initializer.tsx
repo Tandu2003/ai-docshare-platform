@@ -22,7 +22,7 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) =>
         apiClient.connectToRedux(
           (token: string) => dispatch(setAccessToken(token)),
           () => dispatch(clearAccessToken()),
-          () => store.getState().auth.accessToken
+          () => store.getState().auth.accessToken || null
         );
 
         // Initialize auth state on app startup

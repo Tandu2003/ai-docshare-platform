@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, Filter, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Filter, Trash2, MessageCircle, Star, Settings, CheckCircle, Users } from 'lucide-react';
 
 import { useEffect, useState } from 'react';
 
@@ -107,17 +107,17 @@ export default function NotificationsPage() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'comment':
-        return '💬';
+        return <MessageCircle className="h-4 w-4" />;
       case 'rating':
-        return '⭐';
+        return <Star className="h-4 w-4" />;
       case 'system':
-        return '🔧';
+        return <Settings className="h-4 w-4" />;
       case 'document_approved':
-        return '✅';
+        return <CheckCircle className="h-4 w-4" />;
       case 'collaboration':
-        return '👥';
+        return <Users className="h-4 w-4" />;
       default:
-        return '🔔';
+        return <Bell className="h-4 w-4" />;
     }
   };
 
@@ -164,7 +164,7 @@ export default function NotificationsPage() {
             <Card key={i}>
               <CardContent className="p-4 animate-pulse">
                 <div className="flex items-start space-x-3">
-                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
@@ -305,8 +305,8 @@ export default function NotificationsPage() {
                         handleSelectNotification(notification.id, checked as boolean)
                       }
                     />
-                    <div className={`p-2 rounded-full ${getNotificationColor(notification.type)}`}>
-                      <span className="text-white text-sm">
+                    <div className={`p-2 rounded-full ${getNotificationColor(notification.type)} flex items-center justify-center`}>
+                      <span className="text-white">
                         {getNotificationIcon(notification.type)}
                       </span>
                     </div>

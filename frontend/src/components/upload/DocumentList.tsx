@@ -1,6 +1,19 @@
-import { Download, FileText, MoreHorizontal, RefreshCw, Search, Trash2 } from 'lucide-react';
+import {
+  Download,
+  File,
+  FileArchive,
+  FileAudio,
+  FileImage,
+  FileText,
+  FileVideo,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DocumentsService, type Document } from '@/services/files.service';
+import { type Document, DocumentsService } from '@/services/files.service';
 
 interface DocumentListProps {
   refreshTrigger?: number;
@@ -28,6 +41,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onDocumentDeleted,
   className,
 }) => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +59,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
       // Use real API to fetch user's documents
       const response = await DocumentsService.getUserDocuments(pageNum, limit);
-      
+
       // Client-side filtering for search (until backend supports search)
       let filteredDocuments = response.documents;
       if (search) {
@@ -112,13 +126,56 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
+  const handleDocumentClick = (documentId: string) => {
+    navigate(`/documents/${documentId}`);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
   const getDocumentIcon = (document: Document) => {
-    // Return icon based on category or default
-    return document.category?.name || '📄';
+    // Get file extension from filename or title
+    const filename = document.title || '';
+    const extension = filename.split('.').pop()?.toLowerCase();
+
+    // Return appropriate icon based on file type
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'bmp':
+      case 'webp':
+        return <FileImage className="h-6 w-6 text-blue-500" />;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'wmv':
+      case 'flv':
+      case 'webm':
+        return <FileVideo className="h-6 w-6 text-purple-500" />;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'aac':
+      case 'ogg':
+        return <FileAudio className="h-6 w-6 text-green-500" />;
+      case 'zip':
+      case 'rar':
+      case '7z':
+      case 'tar':
+      case 'gz':
+        return <FileArchive className="h-6 w-6 text-orange-500" />;
+      case 'pdf':
+      case 'doc':
+      case 'docx':
+      case 'txt':
+      case 'rtf':
+        return <FileText className="h-6 w-6 text-red-500" />;
+      default:
+        return <File className="h-6 w-6 text-gray-500" />;
+    }
   };
 
   const getTotalFileSize = (_document: Document) => {
@@ -146,7 +203,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         <CardContent className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-              <Skeleton className="h-12 w-12 rounded-lg" />
+              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
+                <Skeleton className="h-6 w-6" />
+              </div>
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
@@ -215,18 +274,21 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             {documents.map((document) => (
               <div
                 key={document.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                onClick={() => handleDocumentClick(document.id)}
               >
                 {/* Document Icon/Preview */}
                 <div className="flex-shrink-0">
                   <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">{getDocumentIcon(document)}</span>
+                    {getDocumentIcon(document)}
                   </div>
                 </div>
 
                 {/* Document Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate">{document.title}</h4>
+                  <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                    {document.title}
+                  </h4>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                     <span>{formatFileSize(getTotalFileSize(document))}</span>
                     <span>{formatDate(document.createdAt.toString())}</span>
@@ -246,7 +308,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant="outline"
