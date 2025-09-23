@@ -108,7 +108,14 @@ export const viewDocument = async (
 
 export const incrementViewCount = async (fileId: string): Promise<void> => {
   try {
-    await apiClient.post(`/upload/view/${fileId}`);
+    const response = await apiClient.post<{
+      success: boolean;
+      message?: string;
+    }>(`/documents/upload/view/${fileId}`);
+    
+    if (!response.data?.success) {
+      console.warn('View count increment failed:', response.data?.message);
+    }
   } catch (error) {
     console.error('Failed to increment view count', error);
   }
@@ -123,7 +130,7 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
       success: boolean;
       data: { secureUrl: string };
       message?: string;
-    }>(`/files/${fileId}/secure-url`);
+    }>(`/documents/files/${fileId}/secure-url`);
 
     if (response.data?.success) {
       return response.data.data.secureUrl;

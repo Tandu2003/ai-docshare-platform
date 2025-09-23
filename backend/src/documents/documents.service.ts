@@ -709,6 +709,82 @@ export class DocumentsService {
   }
 
   /**
+   * Delete a document
+   */
+  async deleteDocument(documentId: string, userId: string) {
+    try {
+      this.logger.log(`Deleting document ${documentId} by user ${userId}`);
+
+      // Check if document exists and belongs to user
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      if (document.uploaderId !== userId) {
+        throw new BadRequestException('You do not have permission to delete this document');
+      }
+
+      // Delete document and related records in a transaction
+      await this.prisma.$transaction(async (prisma) => {
+        // Delete document files relationships
+        await prisma.documentFile.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document views
+        await prisma.view.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document downloads
+        await prisma.download.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document ratings
+        await prisma.rating.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document comments
+        await prisma.comment.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete AI analysis if exists
+        await prisma.aIAnalysis.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete the document itself
+        await prisma.document.delete({
+          where: { id: documentId },
+        });
+      });
+
+      this.logger.log(`Document ${documentId} deleted successfully`);
+      return { success: true, message: 'Document deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Error deleting document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete document');
+    }
+  }
+
+  /**
    * Create ZIP file download URL for multiple files
    */
   private async createZipDownload(files: any[], documentId: string): Promise<string> {

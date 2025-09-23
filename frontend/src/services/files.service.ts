@@ -172,7 +172,14 @@ export class DocumentsService {
    */
   static async deleteDocument(documentId: string): Promise<void> {
     try {
-      await apiClient.delete(`/documents/${documentId}`);
+      const response = await apiClient.delete<{
+        success: boolean;
+        message?: string;
+      }>(`/documents/${documentId}`);
+      
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to delete document');
+      }
     } catch (error) {
       console.error('Failed to delete document:', error);
       throw new Error('Failed to delete document');
