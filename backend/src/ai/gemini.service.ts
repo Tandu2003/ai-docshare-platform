@@ -1,8 +1,9 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { FilesService } from '../files/files.service';
-import { ContentExtractorService } from './content-extractor.service';
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
+import { FilesService } from '../files/files.service'
+import { ContentExtractorService } from './content-extractor.service'
 
 export interface DocumentAnalysisResult {
   title?: string;
@@ -40,7 +41,9 @@ export class GeminiService {
     try {
       this.logger.log(`Analyzing ${fileUrls.length} files with Gemini`);
 
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const modelName = this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
+      this.logger.log(`Using Gemini model: ${modelName}`);
+      const model = this.genAI.getGenerativeModel({ model: modelName });
 
       // Extract content from files instead of sending files directly
       const extractedContents = await Promise.all(
@@ -51,25 +54,25 @@ export class GeminiService {
             if (!response.ok) {
               throw new Error(`Failed to fetch file: ${response.statusText}`);
             }
-            
+
             const arrayBuffer = await response.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const mimeType = response.headers.get('content-type') || 'application/octet-stream';
-            
+
             // Extract filename from URL for logging
             const fileName = url.split('/').pop() || 'unknown';
-            
+
             // Extract text content from file
             const extractedContent = await this.contentExtractor.extractContent(
               buffer,
               mimeType,
               fileName
             );
-            
+
             this.logger.log(
               `Extracted ${extractedContent.metadata?.words || 0} words from ${fileName}`
             );
-            
+
             return {
               fileName,
               content: extractedContent.text,
@@ -98,7 +101,7 @@ export class GeminiService {
       const text = response.text();
 
       this.logger.log('Gemini analysis completed successfully');
-      
+
       return this.parseAnalysisResult(text);
     } catch (error) {
       this.logger.error('Error analyzing document with Gemini:', error);
@@ -227,7 +230,7 @@ Please analyze all provided files and provide a consolidated response in valid J
     } catch (error) {
       this.logger.error('Error parsing Gemini response:', error);
       this.logger.debug('Raw response:', text);
-      
+
       // Return fallback result
       return {
         title: 'Document Analysis',
@@ -255,11 +258,13 @@ Please analyze all provided files and provide a consolidated response in valid J
    */
   async testConnection(): Promise<boolean> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const modelName = this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
+      this.logger.log(`Testing connection with Gemini model: ${modelName}`);
+      const model = this.genAI.getGenerativeModel({ model: modelName });
       const result = await model.generateContent('Say "Hello" if you can read this.');
       const response = result.response;
       const text = response.text();
-      
+
       this.logger.log('Gemini connection test successful');
       return text.toLowerCase().includes('hello');
     } catch (error) {
