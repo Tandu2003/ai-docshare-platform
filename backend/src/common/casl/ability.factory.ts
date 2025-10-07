@@ -87,6 +87,7 @@ export class AbilityFactory {
         can('upload', 'File');
         can('read', 'Document', { uploaderId: user.id });
         can('read', 'File', { uploaderId: user.id });
+        can('share', 'Document', { uploaderId: user.id });
         break;
       case 'user':
         can('read', 'Document', { isPublic: true, isApproved: true });
@@ -95,6 +96,7 @@ export class AbilityFactory {
         can('upload', 'File');
         can('update', 'Document', { uploaderId: user.id });
         can('delete', 'Document', { uploaderId: user.id });
+        can('share', 'Document', { uploaderId: user.id });
         can('create', 'Comment');
         can('update', 'Comment', { userId: user.id });
         can('delete', 'Comment', { userId: user.id });

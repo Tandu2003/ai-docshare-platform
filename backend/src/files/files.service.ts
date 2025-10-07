@@ -165,7 +165,11 @@ export class FilesService {
   /**
    * Get secure preview/access URL for a file (with expiration)
    */
-  async getSecureFileUrl(fileId: string, userId?: string): Promise<string> {
+  async getSecureFileUrl(
+    fileId: string,
+    userId?: string,
+    options: { allowSharedAccess?: boolean } = {}
+  ): Promise<string> {
     try {
       const file = await this.prisma.file.findUnique({
         where: { id: fileId },
@@ -179,7 +183,8 @@ export class FilesService {
       }
 
       // Check if user has access to the file
-      if (!file.isPublic && file.uploaderId !== userId) {
+      const allowSharedAccess = options.allowSharedAccess ?? false;
+      if (!file.isPublic && !allowSharedAccess && file.uploaderId !== userId) {
         throw new BadRequestException('You do not have access to this file');
       }
 
@@ -197,12 +202,16 @@ export class FilesService {
   /**
    * Add secure URLs to file objects for API responses
    */
-  async addSecureUrlsToFiles(files: any[], userId?: string): Promise<any[]> {
+  async addSecureUrlsToFiles(
+    files: any[],
+    options: { userId?: string; allowSharedAccess?: boolean } = {}
+  ): Promise<any[]> {
     try {
+      const { userId, allowSharedAccess } = options;
       const filesWithUrls = await Promise.all(
         files.map(async (file) => {
           try {
-            const secureUrl = await this.getSecureFileUrl(file.id, userId);
+            const secureUrl = await this.getSecureFileUrl(file.id, userId, { allowSharedAccess });
             return {
               ...file,
               secureUrl,

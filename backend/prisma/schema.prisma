@@ -62,6 +62,7 @@ model User {
   recommendations RecommendationEngine[]
   CommentLike     CommentLike[]
   ActivityLog     ActivityLog[]
+  shareLinks      DocumentShareLink[] @relation("ShareLinkCreator")
 
   // Indexes
   @@index([email])
@@ -133,6 +134,7 @@ model Document {
   downloads       Download[]
   views           View[]
   recommendations RecommendationEngine[]
+  shareLink       DocumentShareLink?
 
   // Indexes
   @@index([uploaderId])
@@ -165,6 +167,23 @@ model DocumentFile {
   @@index([documentId])
   @@index([fileId])
   @@map("document_files")
+}
+
+model DocumentShareLink {
+  id           String   @id @default(cuid())
+  documentId   String   @unique
+  token        String   @unique
+  expiresAt    DateTime
+  createdById  String
+  isRevoked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("ShareLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("document_share_links")
 }
 
 // ================================

@@ -1,4 +1,5 @@
 import * as archiver from 'archiver';
+import { randomBytes } from 'crypto';
 
 import {
   BadRequestException,
@@ -7,11 +8,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DocumentShareLink } from '@prisma/client';
 
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { ShareDocumentDto } from './dto/share-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -44,7 +47,7 @@ export class DocumentsService {
       this.logger.log(`Creating document for user ${userId} with files: ${fileIds.join(', ')}`);
 
       // Validate that all files exist and belong to the user
-      let files = await this.prisma.file.findMany({
+      const files = await this.prisma.file.findMany({
         where: { id: { in: fileIds }, uploaderId: userId },
       });
 
@@ -286,10 +289,9 @@ export class DocumentsService {
             order: df.order,
           }));
 
-          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
-            filesData,
-            userId
-          );
+          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, {
+            userId,
+          });
 
           return {
             id: document.id,
@@ -378,10 +380,9 @@ export class DocumentsService {
             order: df.order,
           }));
 
-          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
-            filesData,
-            userId
-          );
+          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, {
+            userId,
+          });
 
           return {
             id: document.id,
@@ -491,7 +492,7 @@ export class DocumentsService {
   /**
    * Get document details with files
    */
-  async getDocumentById(documentId: string, userId?: string) {
+  async getDocumentById(documentId: string, userId?: string, shareToken?: string) {
     try {
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -512,11 +513,13 @@ export class DocumentsService {
             },
             orderBy: { order: 'asc' },
           },
+          shareLink: true,
           _count: {
             select: {
               ratings: true,
               comments: true,
               views: true,
+
               downloads: true,
             },
           },
@@ -527,8 +530,17 @@ export class DocumentsService {
         throw new BadRequestException('Document not found');
       }
 
+      const isOwner = document.uploaderId === userId;
+      let shareAccessGranted = false;
+      let activeShareLink: DocumentShareLink | null = null;
+
+      if (shareToken) {
+        activeShareLink = await this.validateShareLink(documentId, shareToken);
+        shareAccessGranted = true;
+      }
+
       // Check access permissions
-      if (!document.isPublic && document.uploaderId !== userId) {
+      if (!document.isPublic && !isOwner && !shareAccessGranted) {
         throw new BadRequestException('Document is not public');
       }
 
@@ -545,9 +557,12 @@ export class DocumentsService {
         })) || [];
 
       // Add secure URLs to files
-      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, userId);
+      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, {
+        userId,
+        allowSharedAccess: isOwner || shareAccessGranted,
+      });
 
-      return {
+      const response: any = {
         id: document.id,
         title: document.title,
         description: document.description,
@@ -571,6 +586,20 @@ export class DocumentsService {
           downloadsCount: (document as any)._count?.downloads || 0,
         },
       };
+
+      if (isOwner && document.shareLink) {
+        response.shareLink = {
+          token: document.shareLink.token,
+          expiresAt: document.shareLink.expiresAt.toISOString(),
+          isRevoked: document.shareLink.isRevoked,
+        };
+      } else if (shareAccessGranted && activeShareLink) {
+        response.shareLink = {
+          expiresAt: activeShareLink.expiresAt.toISOString(),
+        };
+      }
+
+      return response;
     } catch (error) {
       this.logger.error(`Error getting document ${documentId}:`, error);
       if (error instanceof BadRequestException) {
@@ -578,6 +607,159 @@ export class DocumentsService {
       }
       throw new InternalServerErrorException('Failed to get document');
     }
+  }
+
+  /**
+   * Create or update a share link for a document
+   */
+  async createOrUpdateShareLink(
+    documentId: string,
+    userId: string,
+    shareOptions: ShareDocumentDto
+  ) {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      if (document.uploaderId !== userId) {
+        throw new BadRequestException('You do not have permission to share this document');
+      }
+
+      const now = new Date();
+      let expiration: Date;
+
+      if (shareOptions?.expiresAt) {
+        expiration = new Date(shareOptions.expiresAt);
+        if (Number.isNaN(expiration.getTime())) {
+          throw new BadRequestException('Invalid expiration time');
+        }
+      } else {
+        const durationMinutes =
+          shareOptions?.expiresInMinutes && shareOptions.expiresInMinutes > 0
+            ? shareOptions.expiresInMinutes
+            : 60 * 24; // default 24 hours
+        expiration = new Date(now.getTime() + durationMinutes * 60 * 1000);
+      }
+
+      if (expiration <= now) {
+        throw new BadRequestException('Share link expiration must be in the future');
+      }
+
+      const existingShareLink = await this.prisma.documentShareLink.findUnique({
+        where: { documentId },
+      });
+
+      let tokenToUse: string;
+      if (!existingShareLink || shareOptions?.regenerateToken) {
+        tokenToUse = this.generateShareToken();
+      } else {
+        tokenToUse = existingShareLink.token;
+      }
+
+      const shareLink = await this.prisma.documentShareLink.upsert({
+        where: { documentId },
+        update: {
+          token: tokenToUse,
+          expiresAt: expiration,
+          isRevoked: false,
+        },
+        create: {
+          documentId,
+          token: tokenToUse,
+          expiresAt: expiration,
+          createdById: userId,
+        },
+      });
+
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+      const shareUrl = `${frontendUrl}/documents/${documentId}?apiKey=${shareLink.token}`;
+
+      return {
+        token: shareLink.token,
+        expiresAt: shareLink.expiresAt.toISOString(),
+        isRevoked: shareLink.isRevoked,
+        shareUrl,
+      };
+    } catch (error) {
+      this.logger.error(`Error creating/updating share link for document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create share link');
+    }
+  }
+
+  /**
+   * Revoke existing share link
+   */
+  async revokeShareLink(documentId: string, userId: string) {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Document not found');
+      }
+
+      if (document.uploaderId !== userId) {
+        throw new BadRequestException('You do not have permission to revoke this share link');
+      }
+
+      await this.prisma.documentShareLink.updateMany({
+        where: { documentId },
+        data: { isRevoked: true },
+      });
+    } catch (error) {
+      this.logger.error(`Error revoking share link for document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to revoke share link');
+    }
+  }
+
+  /**
+   * Validate share token for a document
+   */
+  async validateShareLink(documentId: string, token: string): Promise<DocumentShareLink> {
+    try {
+      const shareLink = await this.prisma.documentShareLink.findUnique({
+        where: { token },
+      });
+
+      if (!shareLink || shareLink.documentId !== documentId) {
+        throw new BadRequestException('Invalid share link');
+      }
+
+      if (shareLink.isRevoked) {
+        throw new BadRequestException('Share link has been revoked');
+      }
+
+      if (shareLink.expiresAt.getTime() <= Date.now()) {
+        throw new BadRequestException('Share link has expired');
+      }
+
+      return shareLink;
+    } catch (error) {
+      this.logger.error(
+        `Error validating share link for document ${documentId} with token ${token}:`,
+        error
+      );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to validate share link');
+    }
+  }
+
+  private generateShareToken(): string {
+    return randomBytes(24).toString('hex');
   }
 
   /**

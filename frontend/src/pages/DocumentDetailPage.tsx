@@ -1,23 +1,68 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
+import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateMockAIAnalysis, mockComments } from '@/services/mock-data.service';
-import { getDocumentById, triggerFileDownload, type DocumentView } from '@/services/document.service';
+import {
+  getDocumentById,
+  triggerFileDownload,
+  type DocumentShareLink,
+  type DocumentView,
+  type ShareDocumentResponse,
+} from '@/services/document.service';
 import type { AIAnalysis, Comment } from '@/types';
+import { useAuth } from '@/hooks';
 
 export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
+  const location = useLocation();
+  const { user } = useAuth();
   const [document, setDocument] = useState<DocumentView | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  const apiKey = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('apiKey') ?? undefined;
+  }, [location.search]);
+
+  const isOwner = useMemo(() => {
+    if (!document || !user) return false;
+    return document.uploader.id === user.id;
+  }, [document, user]);
+
+  const activeShareLink = document?.shareLink && !document.shareLink.isRevoked ? document.shareLink : undefined;
+
+  const shareLinkUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    if (activeShareLink?.token) {
+      return `${window.location.origin}/documents/${document?.id}?apiKey=${activeShareLink.token}`;
+    }
+    if (apiKey) {
+      return `${window.location.origin}${location.pathname}?apiKey=${apiKey}`;
+    }
+    return window.location.href;
+  }, [activeShareLink?.token, apiKey, document?.id, location.pathname]);
+
+  const shareExpiresAtLabel = useMemo(() => {
+    if (!activeShareLink?.expiresAt) return null;
+    const expiresAtDate = new Date(activeShareLink.expiresAt);
+    if (Number.isNaN(expiresAtDate.getTime())) return null;
+    return expiresAtDate.toLocaleString();
+  }, [activeShareLink?.expiresAt]);
 
   useEffect(() => {
     const fetchDocumentData = async () => {
@@ -26,7 +71,7 @@ export default function DocumentDetailPage() {
       setLoading(true);
       try {
         // Use real API to fetch document
-        const foundDocument = await getDocumentById(documentId);
+        const foundDocument = await getDocumentById(documentId, apiKey);
         setDocument(foundDocument);
 
         // Load comments for this document
@@ -42,15 +87,16 @@ export default function DocumentDetailPage() {
         // Simulate user's rating and bookmark status
         setUserRating(Math.floor(Math.random() * 5) + 1);
         setIsBookmarked(Math.random() > 0.5);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch document:', error);
+        toast.error(error.message || 'Không thể tải thông tin tài liệu.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchDocumentData();
-  }, [documentId]);
+  }, [apiKey, documentId]);
 
   const handleDownload = async () => {
     if (!documentId) return;
@@ -68,17 +114,32 @@ export default function DocumentDetailPage() {
   };
 
   const handleShare = () => {
-    // Simulate share functionality
+    if (isOwner) {
+      setShareDialogOpen(true);
+      return;
+    }
+
+    if (!shareLinkUrl) {
+      toast.error('Không tìm thấy đường dẫn để chia sẻ.');
+      return;
+    }
+
     if (navigator.share) {
-      navigator.share({
-        title: document?.title,
-        text: document?.description,
-        url: window.location.href,
-      });
+      navigator
+        .share({
+          title: document?.title,
+          text: document?.description,
+          url: shareLinkUrl,
+        })
+        .catch((error) => console.warn('Share was cancelled or failed', error));
     } else {
-      // Fallback to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      console.log('Link copied to clipboard');
+      navigator.clipboard
+        .writeText(shareLinkUrl)
+        .then(() => toast.success('Đã sao chép đường dẫn chia sẻ.'))
+        .catch((error) => {
+          console.error('Failed to copy link', error);
+          toast.error('Không thể sao chép đường dẫn.');
+        });
     }
   };
 
@@ -168,6 +229,25 @@ export default function DocumentDetailPage() {
     );
   };
 
+  const handleShareLinkUpdated = (share: ShareDocumentResponse) => {
+    setDocument((prev) =>
+      prev
+        ? {
+            ...prev,
+            shareLink: {
+              token: share.token,
+              expiresAt: share.expiresAt,
+              isRevoked: share.isRevoked,
+            } as DocumentShareLink,
+          }
+        : prev
+    );
+  };
+
+  const handleShareLinkRevoked = () => {
+    setDocument((prev) => (prev ? { ...prev, shareLink: undefined } : prev));
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -227,6 +307,14 @@ export default function DocumentDetailPage() {
 
   return (
     <div className="space-y-6">
+      <DocumentShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        documentId={document.id}
+        shareLink={document.shareLink}
+        onShareLinkUpdated={handleShareLinkUpdated}
+        onShareLinkRevoked={handleShareLinkRevoked}
+      />
       {/* Document Header */}
       <DocumentDetailHeader
         document={document}
@@ -275,6 +363,37 @@ export default function DocumentDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {isOwner && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Chia sẻ tài liệu</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {activeShareLink ? (
+                  <>
+                    <div className="rounded-md border border-dashed bg-muted/40 p-3 text-xs leading-relaxed">
+                      <span className="font-medium text-muted-foreground">Đường dẫn:</span>
+                      <br />
+                      <span className="break-all">{shareLinkUrl}</span>
+                    </div>
+                    {shareExpiresAtLabel && (
+                      <p className="text-xs text-muted-foreground">
+                        Liên kết sẽ hết hạn vào {shareExpiresAtLabel}.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Bạn chưa thiết lập liên kết chia sẻ cho tài liệu này.
+                  </p>
+                )}
+                <Button variant="outline" className="w-full" onClick={() => setShareDialogOpen(true)}>
+                  Quản lý liên kết chia sẻ
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* AI Analysis */}
           {aiAnalysis && <DocumentAIAnalysis analysis={aiAnalysis} />}
 
