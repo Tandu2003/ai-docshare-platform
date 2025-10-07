@@ -20,6 +20,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
@@ -211,6 +212,7 @@ export class DocumentsController {
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':documentId')
   @ApiOperation({ summary: 'Get document details by ID' })
   @ApiResponse({
@@ -312,7 +314,7 @@ export class DocumentsController {
     status: HttpStatus.OK,
     description: 'Allowed file types retrieved successfully',
   })
-  async getAllowedFileTypes(@Res() res: Response) {
+  getAllowedFileTypes(@Res() res: Response) {
     try {
       const allowedTypes = this.filesService.getAllowedTypes();
       return ResponseHelper.success(res, allowedTypes, 'Allowed file types retrieved successfully');
@@ -382,11 +384,7 @@ export class DocumentsController {
 
       const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
 
-      return ResponseHelper.success(
-        res,
-        { secureUrl },
-        'Secure file URL retrieved successfully'
-      );
+      return ResponseHelper.success(res, { secureUrl }, 'Secure file URL retrieved successfully');
     } catch (error) {
       this.logger.error(`Error getting secure URL for file ${fileId}:`, error);
 
@@ -437,9 +435,7 @@ export class DocumentsController {
 
       const userAgent = req.get('User-Agent') || 'unknown';
 
-      this.logger.log(
-        `Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`
-      );
+      this.logger.log(`Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`);
 
       await this.filesService.incrementViewCount(fileId, userId, ipAddress, userAgent);
 
