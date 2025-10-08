@@ -96,14 +96,26 @@ export class BookmarksService {
   async createBookmark(userId: string, payload: CreateBookmarkDto) {
     const { documentId, folderId, notes } = payload;
 
-    const document = await this.prisma.document.findFirst({
+    const document = await this.prisma.document.findUnique({
       where: {
         id: documentId,
-        OR: [{ isPublic: true, isApproved: true }, { uploaderId: userId }],
+      },
+      select: {
+        id: true,
+        uploaderId: true,
+        isPublic: true,
+        isApproved: true,
       },
     });
 
     if (!document) {
+      throw new NotFoundException('Document not found or not accessible');
+    }
+
+    const isOwner = document.uploaderId === userId;
+    const canAccess = isOwner || document.isPublic === true;
+
+    if (!canAccess) {
       throw new NotFoundException('Document not found or not accessible');
     }
 

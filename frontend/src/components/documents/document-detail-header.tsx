@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { DocumentView } from '@/services/document.service';
+import { formatDate } from '@/utils/date';
 
 interface DocumentDetailHeaderProps {
   document: DocumentView;
@@ -130,7 +131,7 @@ export function DocumentDetailHeader({
                 </div>
                 <div className="flex items-center space-x-1">
                   <User className="h-4 w-4" />
-                  <span>{new Date(document.createdAt).toLocaleDateString()}</span>
+                  <span>{formatDate(document.createdAt)}</span>
                 </div>
               </div>
 

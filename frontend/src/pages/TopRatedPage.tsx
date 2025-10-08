@@ -17,6 +17,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getLanguageName } from '@/utils/language';
+import { formatDate } from '@/utils/date';
 
 interface TopRatedDocument {
   id: string;
@@ -390,7 +391,7 @@ export default function TopRatedPage() {
                     {/* Date */}
                     <div className="flex items-center gap-1 text-xs text-muted-foreground ml-11">
                       <Calendar className="h-3 w-3" />
-                      <span>Created {new Date(document.createdAt).toLocaleDateString()}</span>
+                      <span>Created {formatDate(document.createdAt)}</span>
                     </div>
                   </div>
 

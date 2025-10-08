@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Document } from '@/services/files.service';
 import { getLanguageName } from '@/utils/language';
+import { formatDate } from '@/utils/date';
 
 interface DocumentGridProps {
   documents: Document[];
@@ -116,7 +117,7 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                 </div>
                 <div className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
-                  <span>{new Date(document.createdAt).toLocaleDateString()}</span>
+                  <span>{formatDate(document.createdAt)}</span>
                 </div>
               </div>
 

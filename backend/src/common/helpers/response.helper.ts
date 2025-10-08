@@ -12,6 +12,10 @@ export class ResponseHelper {
       return obj;
     }
 
+    if (obj instanceof Date) {
+      return obj.toISOString();
+    }
+
     if (typeof obj === 'bigint') {
       return obj.toString();
     }

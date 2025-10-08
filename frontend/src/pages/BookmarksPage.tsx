@@ -25,6 +25,7 @@ import {
   getUserBookmarks,
 } from '@/services/bookmark.service';
 import { getLanguageName } from '@/utils/language';
+import { formatDate } from '@/utils/date';
 
 export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -306,9 +307,7 @@ export default function BookmarksPage() {
                       {/* Bookmarked Date */}
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        <span>
-                          Bookmarked on {new Date(bookmark.createdAt).toLocaleDateString()}
-                        </span>
+                        <span>Bookmarked on {formatDate(bookmark.createdAt)}</span>
                       </div>
                     </div>
 

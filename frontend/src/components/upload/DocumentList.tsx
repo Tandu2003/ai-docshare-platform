@@ -29,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type Document, DocumentsService } from '@/services/files.service';
+import { formatDate } from '@/utils/date';
 
 interface DocumentListProps {
   refreshTrigger?: number;
@@ -128,10 +129,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   const handleDocumentClick = (documentId: string) => {
     navigate(`/documents/${documentId}`);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   const getDocumentIcon = (document: Document) => {
@@ -291,7 +288,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   </h4>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                     <span>{formatFileSize(getTotalFileSize(document))}</span>
-                    <span>{formatDate(document.createdAt.toString())}</span>
+                    <span>{formatDate(document.createdAt)}</span>
                     <span>{document.category?.name}</span>
                     <Badge
                       variant={document.isPublic ? 'default' : 'secondary'}
