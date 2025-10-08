@@ -1,6 +1,6 @@
 import { Download, Edit, Eye, FolderOpen, Plus, Trash2 } from 'lucide-react';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   AlertDialog,
@@ -16,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -34,16 +35,23 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
-import { mockCategories, mockDocuments } from '@/services/mock-data.service';
-import type { Category } from '@/types';
+import {
+  createCategory as createCategoryApi,
+  deleteCategory as deleteCategoryApi,
+  fetchCategories as fetchCategoriesApi,
+  updateCategory as updateCategoryApi,
+} from '@/services/category.service';
+import type { CategoryWithStats } from '@/types';
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<CategoryWithStats | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -55,39 +63,35 @@ export default function CategoriesPage() {
     sortOrder: 0,
   });
 
+  const sortCategories = useCallback(
+    (items: CategoryWithStats[]) =>
+      [...items].sort((a, b) =>
+        a.sortOrder !== b.sortOrder ? a.sortOrder - b.sortOrder : a.name.localeCompare(b.name)
+      ),
+    []
+  );
+
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchCategoriesApi();
+      setCategories(sortCategories(data));
+    } catch (fetchError) {
+      console.error('Failed to fetch categories:', fetchError);
+      const message =
+        fetchError instanceof Error ? fetchError.message : 'Không thể tải danh mục';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [sortCategories]);
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      setLoading(true);
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setCategories(mockCategories);
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    void loadCategories();
+  }, [loadCategories]);
 
-    fetchCategories();
-  }, []);
-
-  const handleCreateCategory = () => {
-    const newCategory: Category = {
-      id: `category-${Date.now()}`,
-      name: formData.name,
-      description: formData.description,
-      icon: formData.icon,
-      color: formData.color,
-      parentId: formData.parentId || undefined,
-      isActive: true,
-      documentCount: 0,
-      sortOrder: formData.sortOrder,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setCategories((prev) => [...prev, newCategory]);
+  const resetForm = () => {
     setFormData({
       name: '',
       description: '',
@@ -96,38 +100,83 @@ export default function CategoriesPage() {
       parentId: '',
       sortOrder: 0,
     });
-    setIsCreateDialogOpen(false);
   };
 
-  const handleEditCategory = () => {
+  const handleCreateCategory = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const category = await createCategoryApi({
+        name: formData.name,
+        description: formData.description || undefined,
+        icon: formData.icon,
+        color: formData.color,
+        parentId: formData.parentId ? formData.parentId : null,
+        sortOrder: formData.sortOrder,
+        isActive: true,
+      });
+
+      setCategories((prev) => sortCategories([...prev, category]));
+      resetForm();
+      setIsCreateDialogOpen(false);
+    } catch (createError) {
+      console.error('Failed to create category:', createError);
+      const message =
+        createError instanceof Error ? createError.message : 'Không thể tạo danh mục mới';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEditCategory = async () => {
     if (!editingCategory) return;
 
-    const updatedCategory = {
-      ...editingCategory,
-      name: formData.name,
-      description: formData.description,
-      icon: formData.icon,
-      color: formData.color,
-      parentId: formData.parentId || undefined,
-      sortOrder: formData.sortOrder,
-      updatedAt: new Date(),
-    };
+    setSubmitting(true);
+    setError(null);
+    try {
+      const updated = await updateCategoryApi(editingCategory.id, {
+        name: formData.name,
+        description: formData.description || undefined,
+        icon: formData.icon,
+        color: formData.color,
+        parentId: formData.parentId ? formData.parentId : null,
+        sortOrder: formData.sortOrder,
+      });
 
-    setCategories((prev) =>
-      prev.map((cat) => (cat.id === editingCategory.id ? updatedCategory : cat))
-    );
-    setEditingCategory(null);
-    setIsEditDialogOpen(false);
+      setCategories((prev) =>
+        sortCategories(prev.map((cat) => (cat.id === updated.id ? updated : cat)))
+      );
+      setEditingCategory(null);
+      setIsEditDialogOpen(false);
+      resetForm();
+    } catch (updateError) {
+      console.error('Failed to update category:', updateError);
+      const message =
+        updateError instanceof Error ? updateError.message : 'Không thể cập nhật danh mục';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDeleteCategory = () => {
-    if (!deletingCategory) return;
-
-    setCategories((prev) => prev.filter((cat) => cat.id !== deletingCategory.id));
-    setDeletingCategory(null);
+  const handleDeleteCategory = async (categoryId: string) => {
+    setDeletingId(categoryId);
+    setError(null);
+    try {
+      await deleteCategoryApi(categoryId);
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+    } catch (deleteError) {
+      console.error(`Failed to delete category ${categoryId}:`, deleteError);
+      const message =
+        deleteError instanceof Error ? deleteError.message : 'Không thể xóa danh mục';
+      setError(message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  const openEditDialog = (category: Category) => {
+  const openEditDialog = (category: CategoryWithStats) => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
@@ -138,15 +187,6 @@ export default function CategoriesPage() {
       sortOrder: category.sortOrder,
     });
     setIsEditDialogOpen(true);
-  };
-
-  const getCategoryStats = (categoryId: string) => {
-    const documents = mockDocuments.filter((doc) => doc.categoryId === categoryId);
-    return {
-      documentCount: documents.length,
-      totalDownloads: documents.reduce((sum, doc) => sum + doc.downloadCount, 0),
-      totalViews: documents.reduce((sum, doc) => sum + doc.viewCount, 0),
-    };
   };
 
   const getParentCategory = (parentId: string) => {
@@ -194,7 +234,15 @@ export default function CategoriesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
           <p className="text-muted-foreground">Manage document categories and their organization</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog
+          open={isCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              resetForm();
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -269,7 +317,7 @@ export default function CategoriesPage() {
                     <SelectItem value="">No parent</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.icon} {category.name}
+                        {(category.icon ?? '📁')} {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -288,11 +336,21 @@ export default function CategoriesPage() {
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    resetForm();
+                    setIsCreateDialogOpen(false);
+                  }}
+                  disabled={submitting}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleCreateCategory} disabled={!formData.name.trim()}>
-                  Create Category
+                <Button
+                  onClick={() => void handleCreateCategory()}
+                  disabled={!formData.name.trim() || submitting}
+                >
+                  {submitting ? 'Saving...' : 'Create Category'}
                 </Button>
               </div>
             </div>
@@ -300,23 +358,42 @@ export default function CategoriesPage() {
         </Dialog>
       </div>
 
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Đã xảy ra lỗi</AlertTitle>
+          <AlertDescription className="flex flex-col space-y-2">
+            <span>{error}</span>
+            {categories.length === 0 && (
+              <Button
+                variant="secondary"
+                onClick={() => void loadCategories()}
+                disabled={loading}
+              >
+                Thử lại
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Categories Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {categories.map((category) => {
-          const stats = getCategoryStats(category.id);
           const parentCategory = category.parentId ? getParentCategory(category.parentId) : null;
+          const categoryColor = category.color ?? '#3b82f6';
+          const categoryIcon = category.icon ?? '📁';
 
           return (
             <Card key={category.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="text-2xl">{category.icon}</span>
+                    <span className="text-2xl">{categoryIcon}</span>
                     <div>
                       <CardTitle className="text-lg">{category.name}</CardTitle>
                       {parentCategory && (
                         <p className="text-sm text-muted-foreground">
-                          Parent: {parentCategory.icon} {parentCategory.name}
+                          Parent: {(parentCategory.icon ?? '📁')} {parentCategory.name}
                         </p>
                       )}
                     </div>
@@ -340,15 +417,15 @@ export default function CategoriesPage() {
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel disabled={deletingId === category.id}>
+                            Cancel
+                          </AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => {
-                              setDeletingCategory(category);
-                              handleDeleteCategory();
-                            }}
+                            onClick={() => void handleDeleteCategory(category.id)}
                             className="bg-red-600 hover:bg-red-700"
+                            disabled={deletingId === category.id}
                           >
-                            Delete
+                            {deletingId === category.id ? 'Deleting...' : 'Delete'}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -364,22 +441,25 @@ export default function CategoriesPage() {
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <FolderOpen className="h-4 w-4" />
-                    <span>{stats.documentCount} documents</span>
+                    <span>{category.documentCount} documents</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Download className="h-4 w-4" />
-                    <span>{stats.totalDownloads} downloads</span>
+                    <span>{category.totalDownloads} downloads</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Eye className="h-4 w-4" />
-                    <span>{stats.totalViews} views</span>
+                    <span>{category.totalViews} views</span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Badge
                     variant="secondary"
-                    style={{ backgroundColor: category.color + '20', color: category.color }}
+                    style={{
+                      backgroundColor: `${categoryColor}20`,
+                      color: categoryColor,
+                    }}
                   >
                     Sort: {category.sortOrder}
                   </Badge>
@@ -394,7 +474,16 @@ export default function CategoriesPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setEditingCategory(null);
+            resetForm();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
@@ -463,7 +552,7 @@ export default function CategoriesPage() {
                     .filter((cat) => cat.id !== editingCategory?.id)
                     .map((category) => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.icon} {category.name}
+                        {(category.icon ?? '📁')} {category.name}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -482,11 +571,22 @@ export default function CategoriesPage() {
               />
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingCategory(null);
+                  resetForm();
+                }}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleEditCategory} disabled={!formData.name.trim()}>
-                Save Changes
+              <Button
+                onClick={() => void handleEditCategory()}
+                disabled={!formData.name.trim() || submitting}
+              >
+                {submitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>
