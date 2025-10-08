@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common'
-import { AbilityFactory } from './ability.factory'
-import { CaslGuard } from './casl.guard'
+import { Module } from '@nestjs/common';
+import { AbilityFactory } from './ability.factory';
+import { CaslGuard } from './casl.guard';
 
 @Module({
   providers: [AbilityFactory, CaslGuard],

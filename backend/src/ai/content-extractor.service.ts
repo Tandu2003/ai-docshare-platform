@@ -29,21 +29,21 @@ export class ContentExtractorService {
         case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         case 'application/msword':
           return await this.extractWordContent(buffer);
-        
+
         case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         case 'application/vnd.ms-excel':
           return this.extractExcelContent(buffer);
-        
+
         case 'application/pdf':
           return await this.extractPdfContent(buffer);
-        
+
         case 'text/plain':
           return this.extractTextContent(buffer);
-        
+
         case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
         case 'application/vnd.ms-powerpoint':
           return this.extractPowerPointContent(buffer);
-        
+
         default:
           // For unsupported file types, try to extract as text
           this.logger.warn(`Unsupported file type: ${mimeType}. Attempting text extraction.`);
@@ -62,7 +62,7 @@ export class ContentExtractorService {
     try {
       const result = await mammoth.extractRawText({ buffer });
       const text = result.value;
-      
+
       return {
         text: text.trim(),
         metadata: {
@@ -86,9 +86,9 @@ export class ContentExtractorService {
       workbook.SheetNames.forEach((sheetName) => {
         const worksheet = workbook.Sheets[sheetName];
         const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-        
+
         allText += `\n--- Sheet: ${sheetName} ---\n`;
-        
+
         sheetData.forEach((row: any[]) => {
           if (row && row.length > 0) {
             const rowText = row
@@ -119,7 +119,7 @@ export class ContentExtractorService {
   private async extractPdfContent(buffer: Buffer): Promise<ExtractedContent> {
     try {
       const data = await pdfParse(buffer);
-      
+
       return {
         text: data.text.trim(),
         metadata: {
@@ -138,7 +138,7 @@ export class ContentExtractorService {
    */
   private extractTextContent(buffer: Buffer): ExtractedContent {
     const text = buffer.toString('utf-8');
-    
+
     return {
       text: text.trim(),
       metadata: {
@@ -155,7 +155,7 @@ export class ContentExtractorService {
     // For now, we'll return a placeholder since PowerPoint extraction is complex
     // You can enhance this later with libraries like node-pptx or officegen
     this.logger.warn('PowerPoint extraction not fully implemented. Returning placeholder.');
-    
+
     return {
       text: 'PowerPoint file detected. Content extraction for PowerPoint files is not fully supported yet.',
       metadata: {

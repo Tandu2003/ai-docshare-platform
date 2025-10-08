@@ -132,7 +132,7 @@ export class CloudflareR2Service {
   async getSignedDownloadUrl(storageUrl: string, expiresIn: number = 3600): Promise<string> {
     try {
       this.logger.log(`Generating signed URL for: ${storageUrl} (expires in ${expiresIn}s)`);
-      
+
       // Extract key from storage URL
       const key = this.extractKeyFromUrl(storageUrl);
       this.logger.log(`Extracted key: ${key}`);
@@ -144,7 +144,7 @@ export class CloudflareR2Service {
 
       const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
       this.logger.log(`Generated signed URL: ${signedUrl.substring(0, 100)}...`);
-      
+
       return signedUrl;
     } catch (error) {
       this.logger.error('Error generating signed URL:', error);
@@ -184,10 +184,10 @@ export class CloudflareR2Service {
       });
 
       await this.s3Client.send(command);
-      
+
       const storageUrl = `https://${this.bucketName}.${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${key}`;
       this.logger.log(`Buffer uploaded successfully: ${storageUrl}`);
-      
+
       return storageUrl;
     } catch (error) {
       this.logger.error('Error uploading buffer to R2:', error);
@@ -209,7 +209,7 @@ export class CloudflareR2Service {
       });
 
       const response = await this.s3Client.send(command);
-      
+
       if (!response.Body) {
         throw new Error('No file body received');
       }

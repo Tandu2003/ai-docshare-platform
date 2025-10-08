@@ -1,11 +1,15 @@
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
 
 import {
-    BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException
-} from '@nestjs/common'
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { PrismaService } from '../prisma/prisma.service'
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface FileUploadResult {
   id: string;
@@ -132,12 +136,12 @@ export class FilesService {
       this.logger.error('Error uploading file:', error);
       this.logger.error('Error message:', error.message);
       this.logger.error('Error stack:', error.stack);
-      
+
       // Re-throw the original error if it's already a known exception
       if (error instanceof BadRequestException || error instanceof InternalServerErrorException) {
         throw error;
       }
-      
+
       throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
     }
   }
@@ -250,8 +254,10 @@ export class FilesService {
    * Validate uploaded file
    */
   private validateFile(file: Express.Multer.File) {
-    this.logger.log(`Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`);
-    
+    this.logger.log(
+      `Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`
+    );
+
     // Check file size
     if (file.size > this.maxFileSize) {
       throw new BadRequestException(
@@ -263,7 +269,7 @@ export class FilesService {
     const allowedTypes = [
       // PDF files
       'application/pdf',
-      
+
       // Microsoft Office documents
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
       'application/msword', // .doc
@@ -271,13 +277,13 @@ export class FilesService {
       'application/vnd.ms-excel', // .xls
       'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
       'application/vnd.ms-powerpoint', // .ppt
-      
+
       // Text files
       'text/plain', // .txt
       'text/markdown', // .md
       'text/csv', // .csv
       'application/rtf', // .rtf
-      
+
       // Image files
       'image/jpeg', // .jpg, .jpeg
       'image/png', // .png
@@ -285,12 +291,12 @@ export class FilesService {
       'image/bmp', // .bmp
       'image/webp', // .webp
       'image/svg+xml', // .svg
-      
+
       // Archive files
       'application/zip', // .zip
       'application/x-rar-compressed', // .rar
       'application/x-7z-compressed', // .7z
-      
+
       // Other common formats
       'application/json', // .json
       'application/xml', // .xml
@@ -302,10 +308,14 @@ export class FilesService {
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
-      this.logger.error(`File type not supported: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`);
-      throw new BadRequestException(`File type not supported: ${file.mimetype}. Please upload a supported file format.`);
+      this.logger.error(
+        `File type not supported: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`
+      );
+      throw new BadRequestException(
+        `File type not supported: ${file.mimetype}. Please upload a supported file format.`
+      );
     }
-    
+
     this.logger.log(`File validation passed for: ${file.originalname}`);
   }
 
@@ -316,7 +326,7 @@ export class FilesService {
     const allowedTypes = [
       // PDF files
       'application/pdf',
-      
+
       // Microsoft Office documents
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
       'application/msword', // .doc
@@ -324,13 +334,13 @@ export class FilesService {
       'application/vnd.ms-excel', // .xls
       'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
       'application/vnd.ms-powerpoint', // .ppt
-      
+
       // Text files
       'text/plain', // .txt
       'text/markdown', // .md
       'text/csv', // .csv
       'application/rtf', // .rtf
-      
+
       // Image files
       'image/jpeg', // .jpg, .jpeg
       'image/png', // .png
@@ -338,12 +348,12 @@ export class FilesService {
       'image/bmp', // .bmp
       'image/webp', // .webp
       'image/svg+xml', // .svg
-      
+
       // Archive files
       'application/zip', // .zip
       'application/x-rar-compressed', // .rar
       'application/x-7z-compressed', // .7z
-      
+
       // Other common formats
       'application/json', // .json
       'application/xml', // .xml
@@ -356,16 +366,23 @@ export class FilesService {
 
     return {
       types: allowedTypes,
-      description: 'Supported file types for upload'
+      description: 'Supported file types for upload',
     };
   }
 
   /**
    * Increment view count for a file
    */
-  async incrementViewCount(fileId: string, userId?: string, ipAddress?: string, userAgent?: string) {
+  async incrementViewCount(
+    fileId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string
+  ) {
     try {
-      this.logger.log(`Incrementing view count for file ${fileId} by user ${userId || 'anonymous'}`);
+      this.logger.log(
+        `Incrementing view count for file ${fileId} by user ${userId || 'anonymous'}`
+      );
 
       // Check if file exists
       const file = await this.prisma.file.findUnique({
@@ -411,7 +428,9 @@ export class FilesService {
         data: { viewCount: { increment: 1 } },
       });
 
-      this.logger.log(`View count incremented successfully for file ${fileId} via document ${documentFile.document.id}`);
+      this.logger.log(
+        `View count incremented successfully for file ${fileId} via document ${documentFile.document.id}`
+      );
       return { success: true, message: 'View count incremented successfully' };
     } catch (error) {
       this.logger.error(`Error incrementing view count for file ${fileId}:`, error);

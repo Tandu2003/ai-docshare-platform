@@ -1,4 +1,15 @@
-import { Bell, Check, CheckCheck, Filter, Trash2, MessageCircle, Star, Settings, CheckCircle, Users } from 'lucide-react';
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  CheckCircle,
+  Filter,
+  MessageCircle,
+  Settings,
+  Star,
+  Trash2,
+  Users,
+} from 'lucide-react';
 
 import { useEffect, useState } from 'react';
 
@@ -305,10 +316,10 @@ export default function NotificationsPage() {
                         handleSelectNotification(notification.id, checked as boolean)
                       }
                     />
-                    <div className={`p-2 rounded-full ${getNotificationColor(notification.type)} flex items-center justify-center`}>
-                      <span className="text-white">
-                        {getNotificationIcon(notification.type)}
-                      </span>
+                    <div
+                      className={`p-2 rounded-full ${getNotificationColor(notification.type)} flex items-center justify-center`}
+                    >
+                      <span className="text-white">{getNotificationIcon(notification.type)}</span>
                     </div>
                     <div className="flex-1 space-y-2">
                       <div className="flex items-start justify-between">

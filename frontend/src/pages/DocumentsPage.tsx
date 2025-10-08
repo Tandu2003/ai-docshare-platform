@@ -9,7 +9,6 @@ export default function DocumentsPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-
   const fetchDocuments = useCallback(async (pageNum = 1, reset = false) => {
     if (reset) {
       setLoading(true);
@@ -34,11 +33,10 @@ export default function DocumentsPage() {
       if (reset) {
         setDocuments([]);
       }
-      } finally {
-        setLoading(false);
-      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
-
 
   const handleLoadMore = () => {
     const nextPage = page + 1;

@@ -93,7 +93,8 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">
-                  {document.uploader?.firstName || 'Unknown'} {document.uploader?.lastName || 'User'}
+                  {document.uploader?.firstName || 'Unknown'}{' '}
+                  {document.uploader?.lastName || 'User'}
                 </span>
               </div>
 

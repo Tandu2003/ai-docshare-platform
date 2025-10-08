@@ -124,7 +124,7 @@ export const incrementViewCount = async (fileId: string): Promise<void> => {
       success: boolean;
       message?: string;
     }>(`/documents/upload/view/${fileId}`);
-    
+
     if (!response.data?.success) {
       console.warn('View count increment failed:', response.data?.message);
     }

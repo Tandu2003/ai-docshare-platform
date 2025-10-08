@@ -19,15 +19,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks';
-import { mockActivityLogs, mockBookmarks, mockDocuments } from '@/services/mock-data.service';
-import type { ActivityLog, Bookmark, Document } from '@/types';
+import {
+  BOOKMARKS_UPDATED_EVENT,
+  type BookmarkWithDocument,
+  getUserBookmarks,
+} from '@/services/bookmark.service';
+import { mockActivityLogs, mockDocuments } from '@/services/mock-data.service';
+import type { ActivityLog, Document } from '@/types';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [userDocuments, setUserDocuments] = useState<Document[]>([]);
-  const [userBookmarks, setUserBookmarks] = useState<Bookmark[]>([]);
+  const [userBookmarks, setUserBookmarks] = useState<BookmarkWithDocument[]>([]);
   const [userActivity, setUserActivity] = useState<ActivityLog[]>([]);
 
   // Form state
@@ -45,15 +50,12 @@ export default function ProfilePage() {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
         // Get user's documents
         const documents = mockDocuments.filter((doc) => doc.uploaderId === user?.id);
         setUserDocuments(documents);
 
         // Get user's bookmarks
-        const bookmarks = mockBookmarks.filter((bookmark) => bookmark.userId === user?.id);
+        const bookmarks = await getUserBookmarks();
         setUserBookmarks(bookmarks);
 
         // Get user's activity
@@ -67,8 +69,23 @@ export default function ProfilePage() {
     };
 
     if (user) {
-      fetchUserData();
+      void fetchUserData();
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const handleBookmarksUpdated = () => {
+      void getUserBookmarks()
+        .then((bookmarks) => setUserBookmarks(bookmarks))
+        .catch((error) => console.error('Failed to refresh bookmarks', error));
+    };
+
+    window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
+    return () => window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
   }, [user]);
 
   const handleSaveProfile = () => {
@@ -431,42 +448,48 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userBookmarks.map((bookmark) => (
-                    <div
-                      key={bookmark.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="text-2xl">{bookmark.document.category.icon}</div>
-                        <div>
-                          <h4 className="font-medium">{bookmark.document.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {bookmark.document.category.name} •{' '}
-                            {new Date(bookmark.createdAt).toLocaleDateString()}
-                          </p>
-                          {bookmark.notes && (
-                            <p className="text-sm text-muted-foreground mt-1 italic">
-                              "{bookmark.notes}"
+                  {userBookmarks.map((bookmark) => {
+                    const document = bookmark.document;
+                    const ratingValue = Number(document.averageRating ?? 0).toFixed(1);
+                    const categoryIcon = document.category.icon ?? '📄';
+
+                    return (
+                      <div
+                        key={bookmark.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="text-2xl">{categoryIcon}</div>
+                          <div>
+                            <h4 className="font-medium">{document.title}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {document.category.name} •{' '}
+                              {new Date(bookmark.createdAt).toLocaleDateString()}
                             </p>
-                          )}
+                            {bookmark.notes && (
+                              <p className="text-sm text-muted-foreground mt-1 italic">
+                                "{bookmark.notes}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-1">
+                            <Download className="h-4 w-4" />
+                            <span>{document.downloadCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{document.viewCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4" />
+                            <span>{ratingValue}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1">
-                          <Download className="h-4 w-4" />
-                          <span>{bookmark.document.downloadCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{bookmark.document.viewCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4" />
-                          <span>{bookmark.document.averageRating.toFixed(1)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

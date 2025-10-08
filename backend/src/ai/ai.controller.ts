@@ -46,7 +46,7 @@ export class AIController {
     this.logger.log(
       `AI analysis requested by user ${req.user.id} for files: ${dto.fileIds.join(', ')}`
     );
-    
+
     const request: AIAnalysisRequest = {
       fileIds: dto.fileIds,
       userId: req.user.id,
@@ -64,7 +64,7 @@ export class AIController {
   })
   async getAnalysis(@Param('documentId') documentId: string) {
     this.logger.log(`Getting AI analysis for document: ${documentId}`);
-    
+
     return await this.aiService.getAnalysis(documentId);
   }
 
@@ -77,7 +77,7 @@ export class AIController {
   })
   async testConnection() {
     this.logger.log('Testing AI service connections');
-    
+
     return await this.aiService.testConnection();
   }
 }

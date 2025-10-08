@@ -1,24 +1,31 @@
+import { toast } from 'sonner';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { toast } from 'sonner';
 
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
-import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
+import DocumentShareDialog from '@/components/documents/document-share-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateMockAIAnalysis, mockComments } from '@/services/mock-data.service';
+import { useAuth } from '@/hooks';
 import {
-  getDocumentById,
-  triggerFileDownload,
+  type BookmarkWithDocument,
+  createBookmark,
+  deleteBookmark,
+  getUserBookmarks,
+} from '@/services/bookmark.service';
+import {
   type DocumentShareLink,
   type DocumentView,
   type ShareDocumentResponse,
+  getDocumentById,
+  triggerFileDownload,
 } from '@/services/document.service';
+import { generateMockAIAnalysis, mockComments } from '@/services/mock-data.service';
 import type { AIAnalysis, Comment } from '@/types';
-import { useAuth } from '@/hooks';
 
 export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
@@ -30,6 +37,8 @@ export default function DocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkRecord, setBookmarkRecord] = useState<BookmarkWithDocument | null>(null);
+  const [isBookmarkActionLoading, setIsBookmarkActionLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const apiKey = useMemo(() => {
@@ -42,7 +51,8 @@ export default function DocumentDetailPage() {
     return document.uploader.id === user.id;
   }, [document, user]);
 
-  const activeShareLink = document?.shareLink && !document.shareLink.isRevoked ? document.shareLink : undefined;
+  const activeShareLink =
+    document?.shareLink && !document.shareLink.isRevoked ? document.shareLink : undefined;
 
   const shareLinkUrl = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -84,9 +94,8 @@ export default function DocumentDetailPage() {
         const analysis = generateMockAIAnalysis(documentId);
         setAiAnalysis(analysis);
 
-        // Simulate user's rating and bookmark status
+        // Simulate user's rating while API is not ready
         setUserRating(Math.floor(Math.random() * 5) + 1);
-        setIsBookmarked(Math.random() > 0.5);
       } catch (error: any) {
         console.error('Failed to fetch document:', error);
         toast.error(error.message || 'Không thể tải thông tin tài liệu.');
@@ -98,9 +107,29 @@ export default function DocumentDetailPage() {
     fetchDocumentData();
   }, [apiKey, documentId]);
 
+  useEffect(() => {
+    const fetchBookmarkStatus = async () => {
+      if (!documentId || !user) {
+        setBookmarkRecord(null);
+        setIsBookmarked(false);
+        return;
+      }
+
+      try {
+        const [bookmark] = await getUserBookmarks({ documentId });
+        setBookmarkRecord(bookmark ?? null);
+        setIsBookmarked(Boolean(bookmark));
+      } catch (error) {
+        console.error('Failed to load bookmark status', error);
+      }
+    };
+
+    void fetchBookmarkStatus();
+  }, [documentId, user]);
+
   const handleDownload = async () => {
     if (!documentId) return;
-    
+
     try {
       await triggerFileDownload(documentId, document?.title);
     } catch (error) {
@@ -108,9 +137,39 @@ export default function DocumentDetailPage() {
     }
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    console.log('Bookmark toggled:', !isBookmarked);
+  const handleBookmark = async () => {
+    if (!documentId || !document) {
+      return;
+    }
+
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để sử dụng bookmark.');
+      return;
+    }
+
+    if (isBookmarkActionLoading) {
+      return;
+    }
+
+    try {
+      setIsBookmarkActionLoading(true);
+      if (bookmarkRecord) {
+        await deleteBookmark(bookmarkRecord.id);
+        setBookmarkRecord(null);
+        setIsBookmarked(false);
+        toast.success('Đã xóa khỏi bookmark');
+      } else {
+        const created = await createBookmark({ documentId });
+        setBookmarkRecord(created);
+        setIsBookmarked(true);
+        toast.success('Đã lưu vào bookmark');
+      }
+    } catch (error) {
+      console.error('Failed to update bookmark', error);
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật bookmark');
+    } finally {
+      setIsBookmarkActionLoading(false);
+    }
   };
 
   const handleShare = () => {
@@ -319,11 +378,14 @@ export default function DocumentDetailPage() {
       <DocumentDetailHeader
         document={document}
         onDownload={handleDownload}
-        onBookmark={handleBookmark}
+        onBookmark={() => {
+          void handleBookmark();
+        }}
         onShare={handleShare}
         onRate={handleRate}
         userRating={userRating}
         isBookmarked={isBookmarked}
+        isBookmarking={isBookmarkActionLoading}
       />
 
       {/* Main Content */}
@@ -387,7 +449,11 @@ export default function DocumentDetailPage() {
                     Bạn chưa thiết lập liên kết chia sẻ cho tài liệu này.
                   </p>
                 )}
-                <Button variant="outline" className="w-full" onClick={() => setShareDialogOpen(true)}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShareDialogOpen(true)}
+                >
                   Quản lý liên kết chia sẻ
                 </Button>
               </CardContent>

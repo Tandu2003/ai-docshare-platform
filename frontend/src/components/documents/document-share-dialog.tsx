@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-
-import { ClipboardCopy, Link, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { ClipboardCopy, Link, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useEffect, useMemo, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -15,8 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type {
   DocumentShareLink,
   ShareDocumentRequest,
@@ -238,7 +244,10 @@ export function DocumentShareDialog({
               className="mt-1"
             />
             <div>
-              <Label htmlFor="regenerate-token" className="flex items-center gap-2 text-sm font-medium">
+              <Label
+                htmlFor="regenerate-token"
+                className="flex items-center gap-2 text-sm font-medium"
+              >
                 <RefreshCw className="h-4 w-4 text-muted-foreground" />
                 Tạo mã chia sẻ mới
               </Label>
@@ -266,3 +275,5 @@ export function DocumentShareDialog({
     </Dialog>
   );
 }
+
+export default DocumentShareDialog;

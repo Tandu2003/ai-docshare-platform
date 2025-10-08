@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
-import { FilesService } from '../files/files.service'
-import { ContentExtractorService } from './content-extractor.service'
+import { FilesService } from '../files/files.service';
+import { ContentExtractorService } from './content-extractor.service';
 
 export interface DocumentAnalysisResult {
   title?: string;
