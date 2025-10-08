@@ -24,14 +24,15 @@ import {
   type BookmarkWithDocument,
   getUserBookmarks,
 } from '@/services/bookmark.service';
-import { mockActivityLogs, mockDocuments } from '@/services/mock-data.service';
-import type { ActivityLog, Document } from '@/types';
+import { mockActivityLogs } from '@/services/mock-data.service';
+import { DocumentsService, type Document as UserDocument } from '@/services/files.service';
+import type { ActivityLog } from '@/types';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [userDocuments, setUserDocuments] = useState<Document[]>([]);
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
   const [userBookmarks, setUserBookmarks] = useState<BookmarkWithDocument[]>([]);
   const [userActivity, setUserActivity] = useState<ActivityLog[]>([]);
 
@@ -50,9 +51,9 @@ export default function ProfilePage() {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        // Get user's documents
-        const documents = mockDocuments.filter((doc) => doc.uploaderId === user?.id);
-        setUserDocuments(documents);
+        // Get user's documents from API
+        const userDocsResponse = await DocumentsService.getUserDocuments(1, 20);
+        setUserDocuments(userDocsResponse.documents ?? []);
 
         // Get user's bookmarks
         const bookmarks = await getUserBookmarks();
@@ -95,11 +96,12 @@ export default function ProfilePage() {
   };
 
   const getUserStats = () => {
-    const totalDownloads = userDocuments.reduce((sum, doc) => sum + doc.downloadCount, 0);
-    const totalViews = userDocuments.reduce((sum, doc) => sum + doc.viewCount, 0);
+    const totalDownloads = userDocuments.reduce((sum, doc) => sum + (doc.downloadCount ?? 0), 0);
+    const totalViews = userDocuments.reduce((sum, doc) => sum + (doc.viewCount ?? 0), 0);
     const averageRating =
       userDocuments.length > 0
-        ? userDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) / userDocuments.length
+        ? userDocuments.reduce((sum, doc) => sum + (doc.averageRating ?? 0), 0) /
+          userDocuments.length
         : 0;
 
     return {
@@ -389,40 +391,55 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userDocuments.map((document) => (
-                    <div
-                      key={document.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="text-2xl">{document.category.icon}</div>
-                        <div>
-                          <h4 className="font-medium">{document.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {document.category.name} •{' '}
-                            {new Date(document.createdAt).toLocaleDateString()}
-                          </p>
+                  {userDocuments.map((document) => {
+                    const categoryIcon = document.category?.icon ?? '📄';
+                    const categoryName = document.category?.name ?? 'Uncategorized';
+                    const createdAt = document.createdAt
+                      ? new Date(document.createdAt).toLocaleDateString()
+                      : '';
+                    const downloadCount = document.downloadCount ?? 0;
+                    const viewCount = document.viewCount ?? 0;
+                    const averageRatingDisplay =
+                      document.averageRating !== undefined
+                        ? document.averageRating.toFixed(1)
+                        : '0.0';
+                    const isApproved = Boolean(document.isApproved);
+
+                    return (
+                      <div
+                        key={document.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="text-2xl">{categoryIcon}</div>
+                          <div>
+                            <h4 className="font-medium">{document.title}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {categoryName}
+                              {createdAt ? ` • ${createdAt}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-1">
+                            <Download className="h-4 w-4" />
+                            <span>{downloadCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{viewCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4" />
+                            <span>{averageRatingDisplay}</span>
+                          </div>
+                          <Badge variant={isApproved ? 'default' : 'secondary'}>
+                            {isApproved ? 'Approved' : 'Pending'}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1">
-                          <Download className="h-4 w-4" />
-                          <span>{document.downloadCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{document.viewCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4" />
-                          <span>{document.averageRating.toFixed(1)}</span>
-                        </div>
-                        <Badge variant={document.isApproved ? 'default' : 'secondary'}>
-                          {document.isApproved ? 'Approved' : 'Pending'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

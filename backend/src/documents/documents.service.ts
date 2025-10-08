@@ -298,6 +298,9 @@ export class DocumentsService {
             title: document.title,
             description: document.description,
             isPublic: document.isPublic,
+            isApproved: document.isApproved,
+            isPremium: document.isPremium,
+            isDraft: document.isDraft,
             tags: document.tags,
             language: document.language,
             createdAt: document.createdAt,
@@ -305,6 +308,10 @@ export class DocumentsService {
             uploaderId: document.uploaderId,
             categoryId: document.categoryId,
             category: document.category,
+            downloadCount: document.downloadCount,
+            viewCount: document.viewCount,
+            averageRating: document.averageRating,
+            totalRatings: document.totalRatings,
             files: filesWithSecureUrls,
           };
         })
