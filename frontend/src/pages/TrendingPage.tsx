@@ -8,6 +8,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -26,9 +27,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  getTrendingAnalytics,
   type TrendingAnalyticsData,
   type TrendingDocument,
+  getTrendingAnalytics,
 } from '@/services/analytics.service';
 import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
@@ -185,7 +186,11 @@ export default function TrendingPage() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Top Growth</p>
                 <p className="text-2xl font-bold">
-                  {isLoading ? <Skeleton className="h-6 w-20" /> : `${stats.topGrowth >= 0 ? '+' : ''}${stats.topGrowth}%`}
+                  {isLoading ? (
+                    <Skeleton className="h-6 w-20" />
+                  ) : (
+                    `${stats.topGrowth >= 0 ? '+' : ''}${stats.topGrowth}%`
+                  )}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-muted-foreground" />
@@ -278,9 +283,7 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
                     {document.isPremium && (
                       <Badge className="bg-yellow-500 text-white">Premium</Badge>
                     )}
-                    {!document.isPublic && (
-                      <Badge variant="secondary">Private</Badge>
-                    )}
+                    {!document.isPublic && <Badge variant="secondary">Private</Badge>}
                   </div>
                   {document.description && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

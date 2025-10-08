@@ -24,8 +24,8 @@ import {
   type BookmarkWithDocument,
   getUserBookmarks,
 } from '@/services/bookmark.service';
-import { mockActivityLogs } from '@/services/mock-data.service';
 import { DocumentsService, type Document as UserDocument } from '@/services/files.service';
+import { mockActivityLogs } from '@/services/mock-data.service';
 import type { ActivityLog } from '@/types';
 import { formatDate } from '@/utils/date';
 
@@ -213,16 +213,16 @@ export default function ProfilePage() {
                 <p className="text-sm text-muted-foreground">{user.email}</p>
                 {user.bio && <p className="text-sm">{user.bio}</p>}
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>Joined {formatDate(user.createdAt)}</span>
-                </div>
-                {user.lastLoginAt && (
                   <div className="flex items-center space-x-1">
-                    <User className="h-4 w-4" />
-                    <span>Last active {formatDate(user.lastLoginAt)}</span>
+                    <Calendar className="h-4 w-4" />
+                    <span>Joined {formatDate(user.createdAt)}</span>
                   </div>
-                )}
+                  {user.lastLoginAt && (
+                    <div className="flex items-center space-x-1">
+                      <User className="h-4 w-4" />
+                      <span>Last active {formatDate(user.lastLoginAt)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -413,10 +413,10 @@ export default function ProfilePage() {
                           <div className="text-2xl">{categoryIcon}</div>
                           <div>
                             <h4 className="font-medium">{document.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {categoryName}
-                            {createdAt !== '—' ? ` • ${createdAt}` : ''}
-                          </p>
+                            <p className="text-sm text-muted-foreground">
+                              {categoryName}
+                              {createdAt !== '—' ? ` • ${createdAt}` : ''}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-muted-foreground">

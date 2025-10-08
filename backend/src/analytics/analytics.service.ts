@@ -23,7 +23,8 @@ const subtractMonths = (date: Date, months: number) => {
 
 const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
 
-const endOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+const endOfMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
 
 const formatMonthLabel = (date: Date) =>
   date.toLocaleString('en', {
@@ -36,7 +37,10 @@ export class AnalyticsService {
 
   private resolveRange(range: string | undefined) {
     const normalized = range?.toLowerCase();
-    const days = normalized && RANGE_TO_DAYS[normalized] ? RANGE_TO_DAYS[normalized] : RANGE_TO_DAYS[DEFAULT_RANGE];
+    const days =
+      normalized && RANGE_TO_DAYS[normalized]
+        ? RANGE_TO_DAYS[normalized]
+        : RANGE_TO_DAYS[DEFAULT_RANGE];
 
     const endDate = new Date();
     const startDate = subtractDays(endDate, days);
@@ -237,8 +241,13 @@ export class AnalyticsService {
   }
 
   async getAnalytics(range?: string) {
-    const { range: normalizedRange, startDate, endDate, previousStartDate, previousEndDate } =
-      this.resolveRange(range);
+    const {
+      range: normalizedRange,
+      startDate,
+      endDate,
+      previousStartDate,
+      previousEndDate,
+    } = this.resolveRange(range);
 
     const [
       totalDocuments,
@@ -368,9 +377,7 @@ export class AnalyticsService {
       code: lang.language || 'unknown',
       count: lang._count.language,
       percentage:
-        totalDocuments > 0
-          ? Number(((lang._count.language / totalDocuments) * 100).toFixed(1))
-          : 0,
+        totalDocuments > 0 ? Number(((lang._count.language / totalDocuments) * 100).toFixed(1)) : 0,
     }));
 
     const topDocumentsRaw = await this.prisma.document.findMany({
@@ -407,7 +414,8 @@ export class AnalyticsService {
       language: doc.language || 'unknown',
     }));
 
-    const monthlyStats: { month: string; downloads: number; views: number; documents: number }[] = [];
+    const monthlyStats: { month: string; downloads: number; views: number; documents: number }[] =
+      [];
     for (let i = 5; i >= 0; i -= 1) {
       const targetDate = subtractMonths(endDate, i);
       const monthStart = startOfMonth(targetDate);
@@ -647,7 +655,10 @@ export class AnalyticsService {
           isApproved: document.isApproved,
           trendingScore: Number(score.toFixed(2)),
           trendingChange: change,
-          lastUpdated: document.updatedAt?.toISOString() || document.createdAt?.toISOString() || new Date().toISOString(),
+          lastUpdated:
+            document.updatedAt?.toISOString() ||
+            document.createdAt?.toISOString() ||
+            new Date().toISOString(),
         };
       })
       .filter((doc) => doc.downloadCount > 0 || doc.viewCount > 0)
@@ -678,11 +689,7 @@ export class AnalyticsService {
   }
 
   async getTopRatedAnalytics(range?: string, minRatingsParam?: number) {
-    const {
-      range: normalizedRange,
-      startDate,
-      endDate,
-    } = this.resolveRange(range);
+    const { range: normalizedRange, startDate, endDate } = this.resolveRange(range);
 
     const minRatings = Number.isFinite(minRatingsParam)
       ? Math.max(1, Math.floor(minRatingsParam as number))
@@ -785,7 +792,7 @@ export class AnalyticsService {
           return null;
         }
 
-        const averageRating = Number(((group._avg?.rating ?? 0)).toFixed(2));
+        const averageRating = Number((group._avg?.rating ?? 0).toFixed(2));
         const ratingCount = group._count?.rating ?? 0;
 
         return {
@@ -819,10 +826,9 @@ export class AnalyticsService {
     const totalRatings = topDocuments.reduce((sum, doc) => sum + doc.ratingCount, 0);
     const averageRating = totalDocuments
       ? Number(
-          (
-            topDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) /
-            totalDocuments
-          ).toFixed(2)
+          (topDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) / totalDocuments).toFixed(
+            2
+          )
         )
       : 0;
     const perfectCount = topDocuments.filter((doc) => doc.averageRating >= 4.8).length;

@@ -1,4 +1,3 @@
-import { apiClient } from '@/utils/api-client';
 import type {
   DashboardActivity,
   DashboardCategory,
@@ -7,6 +6,7 @@ import type {
   DashboardOverview,
   DashboardUserSummary,
 } from '@/types';
+import { apiClient } from '@/utils/api-client';
 
 interface DashboardOverviewApiResponse {
   totalDocuments: number;

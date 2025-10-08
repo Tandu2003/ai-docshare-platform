@@ -24,8 +24,8 @@ import {
   deleteBookmark,
   getUserBookmarks,
 } from '@/services/bookmark.service';
-import { getLanguageName } from '@/utils/language';
 import { formatDate } from '@/utils/date';
+import { getLanguageName } from '@/utils/language';
 
 export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState('');

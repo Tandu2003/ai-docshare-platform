@@ -52,7 +52,9 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                     <span>
                       {[document.uploader.firstName, document.uploader.lastName]
                         .filter((name): name is string => Boolean(name && name.trim()))
-                        .join(' ') || document.uploader.username || 'Người dùng'}
+                        .join(' ') ||
+                        document.uploader.username ||
+                        'Người dùng'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-1">

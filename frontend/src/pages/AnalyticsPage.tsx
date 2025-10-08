@@ -1,12 +1,5 @@
-import {
-  BarChart3,
-  Download,
-  Eye,
-  FileText,
-  Star,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
+import { BarChart3, Download, Eye, FileText, Star, TrendingUp, Users } from 'lucide-react';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -21,9 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAnalytics, type AnalyticsData } from '@/services/analytics.service';
-import { getLanguageName } from '@/utils/language';
+import { type AnalyticsData, getAnalytics } from '@/services/analytics.service';
 import { formatDate } from '@/utils/date';
+import { getLanguageName } from '@/utils/language';
 
 const DEFAULT_ANALYTICS: AnalyticsData = {
   timeframe: {
@@ -99,9 +92,7 @@ export default function AnalyticsPage() {
     if (!data.userStats.totalUsers) {
       return 0;
     }
-    return clampPercentage(
-      (data.userStats.activeUsers / data.userStats.totalUsers) * 100
-    );
+    return clampPercentage((data.userStats.activeUsers / data.userStats.totalUsers) * 100);
   }, [data.userStats.activeUsers, data.userStats.totalUsers]);
 
   const { downloadsGrowth, viewsGrowth } = useMemo(() => {
@@ -110,7 +101,8 @@ export default function AnalyticsPage() {
     }
 
     const latest = data.monthlyStats[data.monthlyStats.length - 1];
-    const previous = data.monthlyStats.length > 1 ? data.monthlyStats[data.monthlyStats.length - 2] : undefined;
+    const previous =
+      data.monthlyStats.length > 1 ? data.monthlyStats[data.monthlyStats.length - 2] : undefined;
 
     return {
       downloadsGrowth: calculateGrowth(latest?.downloads, previous?.downloads),
@@ -131,9 +123,7 @@ export default function AnalyticsPage() {
             <BarChart3 className="h-8 w-8 text-primary" />
             Analytics Dashboard
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Platform insights and performance metrics
-          </p>
+          <p className="text-muted-foreground mt-1">Platform insights and performance metrics</p>
           <Badge variant="outline" className="mt-2 text-xs font-normal">
             {timeframeLabel}
           </Badge>
@@ -171,7 +161,10 @@ export default function AnalyticsPage() {
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-500">{monthlyGrowthValue >= 0 ? '+' : ''}{monthlyGrowthValue}%</span>
+              <span className="text-sm text-green-500">
+                {monthlyGrowthValue >= 0 ? '+' : ''}
+                {monthlyGrowthValue}%
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -187,7 +180,10 @@ export default function AnalyticsPage() {
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-500">{downloadsGrowth >= 0 ? '+' : ''}{downloadsGrowth}%</span>
+              <span className="text-sm text-green-500">
+                {downloadsGrowth >= 0 ? '+' : ''}
+                {downloadsGrowth}%
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -203,7 +199,10 @@ export default function AnalyticsPage() {
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-500">{viewsGrowth >= 0 ? '+' : ''}{viewsGrowth}%</span>
+              <span className="text-sm text-green-500">
+                {viewsGrowth >= 0 ? '+' : ''}
+                {viewsGrowth}%
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -262,7 +261,10 @@ export default function AnalyticsPage() {
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-500">{data.userStats.userGrowth >= 0 ? '+' : ''}{data.userStats.userGrowth}%</span>
+              <span className="text-sm text-green-500">
+                {data.userStats.userGrowth >= 0 ? '+' : ''}
+                {data.userStats.userGrowth}%
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -272,7 +274,10 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">User Growth</p>
-                <p className="text-2xl font-bold">{data.userStats.userGrowth >= 0 ? '+' : ''}{data.userStats.userGrowth}%</p>
+                <p className="text-2xl font-bold">
+                  {data.userStats.userGrowth >= 0 ? '+' : ''}
+                  {data.userStats.userGrowth}%
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -305,7 +310,10 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{category.percentage}%</p>
-                      <Progress value={clampPercentage(category.percentage)} className="w-20 h-2 mt-1" />
+                      <Progress
+                        value={clampPercentage(category.percentage)}
+                        className="w-20 h-2 mt-1"
+                      />
                     </div>
                   </div>
                 ))}
@@ -337,7 +345,10 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{language.percentage}%</p>
-                      <Progress value={clampPercentage(language.percentage)} className="w-20 h-2 mt-1" />
+                      <Progress
+                        value={clampPercentage(language.percentage)}
+                        className="w-20 h-2 mt-1"
+                      />
                     </div>
                   </div>
                 ))}
@@ -442,4 +453,3 @@ export default function AnalyticsPage() {
     </div>
   );
 }
-

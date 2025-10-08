@@ -4,9 +4,9 @@ import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { PopularCategories } from '@/components/dashboard/popular-categories';
 import { RecentDocuments } from '@/components/dashboard/recent-documents';
 import { DashboardStatsCards } from '@/components/dashboard/stats-cards';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getDashboardOverview } from '@/services/dashboard.service';
 import type { DashboardOverview } from '@/types';
 

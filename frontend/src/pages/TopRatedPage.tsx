@@ -1,12 +1,5 @@
-import {
-  Award,
-  Calendar,
-  Download,
-  Eye,
-  Medal,
-  Star,
-  Trophy,
-} from 'lucide-react';
+import { Award, Calendar, Download, Eye, Medal, Star, Trophy } from 'lucide-react';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -25,9 +18,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  getTopRatedAnalytics,
   type TopRatedAnalyticsData,
   type TopRatedDocument,
+  getTopRatedAnalytics,
 } from '@/services/analytics.service';
 import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
@@ -112,23 +105,20 @@ export default function TopRatedPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTopRated = useCallback(
-    async (rangeValue: string, minRatingsValue: string) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const minRatingsNumber = Number(minRatingsValue) || 10;
-        const response = await getTopRatedAnalytics(rangeValue, minRatingsNumber);
-        setData(response);
-      } catch (err) {
-        console.error('Failed to load top rated data', err);
-        setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu top rated');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+  const loadTopRated = useCallback(async (rangeValue: string, minRatingsValue: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const minRatingsNumber = Number(minRatingsValue) || 10;
+      const response = await getTopRatedAnalytics(rangeValue, minRatingsNumber);
+      setData(response);
+    } catch (err) {
+      console.error('Failed to load top rated data', err);
+      setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu top rated');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void loadTopRated(timeRange, minRatings);
@@ -137,11 +127,14 @@ export default function TopRatedPage() {
   const analytics = data ?? DEFAULT_DATA;
   const documents = analytics.documents;
 
-  const stats = useMemo(() => ({
-    averageRating: analytics.stats.averageRating,
-    totalRatings: analytics.stats.totalRatings,
-    perfectCount: analytics.stats.perfectCount,
-  }), [analytics.stats]);
+  const stats = useMemo(
+    () => ({
+      averageRating: analytics.stats.averageRating,
+      totalRatings: analytics.stats.totalRatings,
+      perfectCount: analytics.stats.perfectCount,
+    }),
+    [analytics.stats]
+  );
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -322,7 +315,9 @@ function TopRatedDocumentCard({ document }: TopRatedDocumentCardProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1">{getRatingStars(document.averageRating)}</div>
+                  <div className="flex items-center gap-1">
+                    {getRatingStars(document.averageRating)}
+                  </div>
                   <span className="text-sm font-medium">{document.averageRating.toFixed(1)}</span>
                   <span className="text-sm text-muted-foreground">
                     ({formatNumber(document.ratingCount)} ratings)
