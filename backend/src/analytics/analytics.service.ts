@@ -288,4 +288,378 @@ export class AnalyticsService {
       },
     };
   }
+
+  async getTrendingAnalytics(range?: string) {
+    const {
+      range: normalizedRange,
+      startDate,
+      endDate,
+      previousStartDate,
+      previousEndDate,
+    } = this.resolveRange(range);
+
+    const [downloadsCurrent, viewsCurrent, downloadsPrevious, viewsPrevious] = await Promise.all([
+      this.prisma.download.groupBy({
+        by: ['documentId'],
+        where: {
+          downloadedAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _count: {
+          documentId: true,
+        },
+      }),
+      this.prisma.view.groupBy({
+        by: ['documentId'],
+        where: {
+          viewedAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _count: {
+          documentId: true,
+        },
+      }),
+      this.prisma.download.groupBy({
+        by: ['documentId'],
+        where: {
+          downloadedAt: {
+            gte: previousStartDate,
+            lt: previousEndDate,
+          },
+        },
+        _count: {
+          documentId: true,
+        },
+      }),
+      this.prisma.view.groupBy({
+        by: ['documentId'],
+        where: {
+          viewedAt: {
+            gte: previousStartDate,
+            lt: previousEndDate,
+          },
+        },
+        _count: {
+          documentId: true,
+        },
+      }),
+    ]);
+
+    const docIdSet = new Set<string>();
+    downloadsCurrent.forEach((item) => docIdSet.add(item.documentId));
+    viewsCurrent.forEach((item) => docIdSet.add(item.documentId));
+
+    if (docIdSet.size === 0) {
+      return {
+        timeframe: {
+          range: normalizedRange,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        },
+        stats: {
+          totalTrending: 0,
+          averageScore: 0,
+          topGrowth: 0,
+        },
+        documents: [],
+      };
+    }
+
+    const downloadsMap = new Map<string, number>();
+    downloadsCurrent.forEach((item) => {
+      downloadsMap.set(item.documentId, Number(item._count.documentId || 0));
+    });
+
+    const viewsMap = new Map<string, number>();
+    viewsCurrent.forEach((item) => {
+      viewsMap.set(item.documentId, Number(item._count.documentId || 0));
+    });
+
+    const downloadsPrevMap = new Map<string, number>();
+    downloadsPrevious.forEach((item) => {
+      downloadsPrevMap.set(item.documentId, Number(item._count.documentId || 0));
+    });
+
+    const viewsPrevMap = new Map<string, number>();
+    viewsPrevious.forEach((item) => {
+      viewsPrevMap.set(item.documentId, Number(item._count.documentId || 0));
+    });
+
+    const documents = await this.prisma.document.findMany({
+      where: {
+        id: { in: Array.from(docIdSet) },
+        isPublic: true,
+        isApproved: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        language: true,
+        tags: true,
+        isPublic: true,
+        isPremium: true,
+        isApproved: true,
+        averageRating: true,
+        createdAt: true,
+        updatedAt: true,
+        uploader: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+          },
+        },
+      },
+    });
+
+    const trendingDocuments = documents
+      .map((document) => {
+        const downloads = downloadsMap.get(document.id) ?? 0;
+        const views = viewsMap.get(document.id) ?? 0;
+        const previousDownloads = downloadsPrevMap.get(document.id) ?? 0;
+        const previousViews = viewsPrevMap.get(document.id) ?? 0;
+        const rating = Number(document.averageRating || 0);
+
+        const score = downloads * 3 + views + rating * 10;
+        const previousScore = previousDownloads * 3 + previousViews + rating * 10;
+
+        let change = 0;
+        if (previousScore > 0) {
+          change = Number((((score - previousScore) / previousScore) * 100).toFixed(1));
+        } else if (score > 0) {
+          change = 100;
+        }
+
+        return {
+          id: document.id,
+          title: document.title,
+          description: document.description,
+          language: document.language || 'unknown',
+          category: document.category
+            ? {
+                id: document.category.id,
+                name: document.category.name,
+                icon: document.category.icon || '📄',
+              }
+            : undefined,
+          tags: document.tags || [],
+          uploader: document.uploader || null,
+          downloadCount: downloads,
+          viewCount: views,
+          averageRating: Number(rating.toFixed(2)),
+          createdAt: document.createdAt?.toISOString() || new Date().toISOString(),
+          isPublic: document.isPublic,
+          isPremium: document.isPremium,
+          isApproved: document.isApproved,
+          trendingScore: Number(score.toFixed(2)),
+          trendingChange: change,
+          lastUpdated: document.updatedAt?.toISOString() || document.createdAt?.toISOString() || new Date().toISOString(),
+        };
+      })
+      .filter((doc) => doc.downloadCount > 0 || doc.viewCount > 0)
+      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .slice(0, 20);
+
+    const totalScore = trendingDocuments.reduce((sum, doc) => sum + doc.trendingScore, 0);
+    const averageScore = trendingDocuments.length
+      ? Number((totalScore / trendingDocuments.length).toFixed(1))
+      : 0;
+    const topGrowth = trendingDocuments.length
+      ? Math.max(...trendingDocuments.map((doc) => doc.trendingChange))
+      : 0;
+
+    return {
+      timeframe: {
+        range: normalizedRange,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      },
+      stats: {
+        totalTrending: trendingDocuments.length,
+        averageScore,
+        topGrowth,
+      },
+      documents: trendingDocuments,
+    };
+  }
+
+  async getTopRatedAnalytics(range?: string, minRatingsParam?: number) {
+    const {
+      range: normalizedRange,
+      startDate,
+      endDate,
+    } = this.resolveRange(range);
+
+    const minRatings = Number.isFinite(minRatingsParam)
+      ? Math.max(1, Math.floor(minRatingsParam as number))
+      : 10;
+
+    const ratingGroupsRaw = await this.prisma.rating.groupBy({
+      by: ['documentId'],
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
+      orderBy: [
+        {
+          _avg: {
+            rating: 'desc',
+          },
+        },
+        {
+          _count: {
+            rating: 'desc',
+          },
+        },
+      ],
+    });
+
+    const ratingGroups = ratingGroupsRaw
+      .filter((group) => (group._count.rating ?? 0) >= minRatings)
+      .slice(0, 50);
+
+    if (ratingGroups.length === 0) {
+      return {
+        timeframe: {
+          range: normalizedRange,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        },
+        filters: {
+          minRatings,
+        },
+        stats: {
+          totalDocuments: 0,
+          averageRating: 0,
+          totalRatings: 0,
+          perfectCount: 0,
+        },
+        documents: [],
+      };
+    }
+
+    const documentIds = ratingGroups.map((group) => group.documentId);
+    const documents = await this.prisma.document.findMany({
+      where: {
+        id: { in: documentIds },
+        isPublic: true,
+        isApproved: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        language: true,
+        tags: true,
+        isPublic: true,
+        isPremium: true,
+        isApproved: true,
+        downloadCount: true,
+        viewCount: true,
+        createdAt: true,
+        updatedAt: true,
+        uploader: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+          },
+        },
+      },
+    });
+
+    const documentMap = new Map(documents.map((doc) => [doc.id, doc]));
+
+    const topDocuments = ratingGroups
+      .map((group, index) => {
+        const document = documentMap.get(group.documentId);
+        if (!document) {
+          return null;
+        }
+
+        const averageRating = Number(((group._avg?.rating ?? 0)).toFixed(2));
+        const ratingCount = group._count?.rating ?? 0;
+
+        return {
+          id: document.id,
+          title: document.title,
+          description: document.description,
+          language: document.language || 'unknown',
+          category: document.category
+            ? {
+                id: document.category.id,
+                name: document.category.name,
+                icon: document.category.icon || '📄',
+              }
+            : undefined,
+          tags: document.tags || [],
+          uploader: document.uploader || null,
+          downloadCount: document.downloadCount || 0,
+          viewCount: document.viewCount || 0,
+          averageRating,
+          ratingCount,
+          createdAt: document.createdAt?.toISOString() || new Date().toISOString(),
+          isPublic: document.isPublic,
+          isPremium: document.isPremium,
+          isApproved: document.isApproved,
+          rank: index + 1,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+    const totalDocuments = topDocuments.length;
+    const totalRatings = topDocuments.reduce((sum, doc) => sum + doc.ratingCount, 0);
+    const averageRating = totalDocuments
+      ? Number(
+          (
+            topDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) /
+            totalDocuments
+          ).toFixed(2)
+        )
+      : 0;
+    const perfectCount = topDocuments.filter((doc) => doc.averageRating >= 4.8).length;
+
+    return {
+      timeframe: {
+        range: normalizedRange,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      },
+      filters: {
+        minRatings,
+      },
+      stats: {
+        totalDocuments,
+        averageRating,
+        totalRatings,
+        perfectCount,
+      },
+      documents: topDocuments,
+    };
+  }
 }
