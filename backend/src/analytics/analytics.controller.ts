@@ -14,6 +14,13 @@ import { AnalyticsService } from './analytics.service';
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Get dashboard overview stats' })
+  async getDashboardOverview(@Req() _req: Request, @Res() res: Response) {
+    const dashboard = await this.analyticsService.getDashboardOverview();
+    return ResponseHelper.success(res, dashboard);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get platform analytics' })
   @ApiQuery({

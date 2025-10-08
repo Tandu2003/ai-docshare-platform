@@ -53,6 +53,189 @@ export class AnalyticsService {
     };
   }
 
+  async getDashboardOverview() {
+    const [
+      totalDocuments,
+      totalUsers,
+      downloadsAggregate,
+      viewsAggregate,
+      recentDocumentsRaw,
+      categoryAggregates,
+      activityLogsRaw,
+      notificationsRaw,
+    ] = await Promise.all([
+      this.prisma.document.count(),
+      this.prisma.user.count(),
+      this.prisma.document.aggregate({
+        _sum: { downloadCount: true },
+      }),
+      this.prisma.document.aggregate({
+        _sum: { viewCount: true },
+      }),
+      this.prisma.document.findMany({
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              username: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              icon: true,
+              color: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      }),
+      this.prisma.document.groupBy({
+        by: ['categoryId'],
+        _count: {
+          categoryId: true,
+        },
+        _sum: {
+          downloadCount: true,
+          viewCount: true,
+        },
+        orderBy: {
+          _sum: {
+            downloadCount: 'desc',
+          },
+        },
+        take: 6,
+      }),
+      this.prisma.activityLog.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 20,
+      }),
+      this.prisma.notification.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      }),
+    ]);
+
+    const categoryIds = categoryAggregates.map((item) => item.categoryId);
+    const categories = categoryIds.length
+      ? await this.prisma.category.findMany({
+          where: {
+            id: {
+              in: categoryIds,
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            icon: true,
+            color: true,
+          },
+        })
+      : [];
+
+    const categoryMap = new Map(categories.map((category) => [category.id, category]));
+
+    const popularCategories = categoryAggregates.map((aggregate) => {
+      const category = categoryMap.get(aggregate.categoryId);
+      return {
+        id: aggregate.categoryId,
+        name: category?.name ?? 'Unknown',
+        description: category?.description ?? null,
+        icon: category?.icon ?? '📄',
+        color: category?.color ?? null,
+        documentCount: aggregate._count.categoryId,
+        totalDownloads: Number(aggregate._sum.downloadCount ?? 0),
+        totalViews: Number(aggregate._sum.viewCount ?? 0),
+      };
+    });
+
+    const userActivity = activityLogsRaw.map((activity) => ({
+      id: activity.id,
+      userId: activity.userId ?? undefined,
+      action: activity.action,
+      resourceType: activity.resourceType ?? undefined,
+      resourceId: activity.resourceId ?? undefined,
+      ipAddress: activity.ipAddress ?? undefined,
+      userAgent: activity.userAgent ?? undefined,
+      metadata: activity.metadata ?? undefined,
+      createdAt: activity.createdAt,
+      user: activity.user
+        ? {
+            id: activity.user.id,
+            firstName: activity.user.firstName,
+            lastName: activity.user.lastName,
+            avatar: activity.user.avatar ?? undefined,
+            username: activity.user.username,
+          }
+        : undefined,
+    }));
+
+    const recentNotifications = notificationsRaw.map((notification) => ({
+      id: notification.id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data ?? undefined,
+      isRead: notification.isRead,
+      readAt: notification.readAt ?? undefined,
+      createdAt: notification.createdAt,
+      user: {
+        id: notification.user.id,
+        firstName: notification.user.firstName,
+        lastName: notification.user.lastName,
+        avatar: notification.user.avatar ?? undefined,
+        username: notification.user.username,
+      },
+    }));
+
+    return {
+      totalDocuments,
+      totalUsers,
+      totalDownloads: Number(downloadsAggregate._sum.downloadCount ?? 0),
+      totalViews: Number(viewsAggregate._sum.viewCount ?? 0),
+      recentDocuments: recentDocumentsRaw,
+      popularCategories,
+      userActivity,
+      recentNotifications,
+    };
+  }
+
   async getAnalytics(range?: string) {
     const { range: normalizedRange, startDate, endDate, previousStartDate, previousEndDate } =
       this.resolveRange(range);

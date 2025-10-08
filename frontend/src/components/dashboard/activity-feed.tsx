@@ -2,10 +2,10 @@ import { Calendar, Download, Eye, MessageSquare, Star, Upload, User } from 'luci
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ActivityLog } from '@/types';
+import type { DashboardActivity } from '@/types';
 
 interface ActivityFeedProps {
-  activities: ActivityLog[];
+  activities: DashboardActivity[];
 }
 
 const getActivityIcon = (action: string) => {
@@ -53,10 +53,18 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.slice(0, 10).map((activity) => {
-            const Icon = getActivityIcon(activity.action);
-            const colorClass = getActivityColor(activity.action);
+        {activities.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {activities.slice(0, 10).map((activity) => {
+              const Icon = getActivityIcon(activity.action);
+              const colorClass = getActivityColor(activity.action);
+              const displayName = activity.user
+                ? [activity.user.firstName, activity.user.lastName]
+                    .filter((name): name is string => Boolean(name && name.trim()))
+                  .join(' ') || activity.user.username || 'Người dùng'
+              : 'Hệ thống';
 
             return (
               <div key={activity.id} className="flex items-start space-x-3">
@@ -65,9 +73,7 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">
-                      {activity.user?.firstName} {activity.user?.lastName}
-                    </span>
+                    <span className="text-sm font-medium">{displayName}</span>
                     <Badge variant="outline" className="text-xs">
                       {activity.action}
                     </Badge>
@@ -91,7 +97,8 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

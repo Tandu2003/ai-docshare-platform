@@ -5,13 +5,26 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Document } from '@/types';
+import type { DashboardDocument } from '@/types';
 
 interface RecentDocumentsProps {
-  documents: Document[];
+  documents: DashboardDocument[];
 }
 
 export function RecentDocuments({ documents }: RecentDocumentsProps) {
+  if (documents.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Documents</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">No documents available yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -37,7 +50,9 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                   <div className="flex items-center space-x-1">
                     <User className="h-3 w-3" />
                     <span>
-                      {document.uploader.firstName} {document.uploader.lastName}
+                      {[document.uploader.firstName, document.uploader.lastName]
+                        .filter((name): name is string => Boolean(name && name.trim()))
+                        .join(' ') || document.uploader.username || 'Người dùng'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-1">
