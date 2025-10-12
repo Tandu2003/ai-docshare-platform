@@ -19,15 +19,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks';
-import { mockActivityLogs, mockBookmarks, mockDocuments } from '@/services/mock-data.service';
-import type { ActivityLog, Bookmark, Document } from '@/types';
+import {
+  BOOKMARKS_UPDATED_EVENT,
+  type BookmarkWithDocument,
+  getUserBookmarks,
+} from '@/services/bookmark.service';
+import { DocumentsService, type Document as UserDocument } from '@/services/files.service';
+import { mockActivityLogs } from '@/services/mock-data.service';
+import type { ActivityLog } from '@/types';
+import { formatDate } from '@/utils/date';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [userDocuments, setUserDocuments] = useState<Document[]>([]);
-  const [userBookmarks, setUserBookmarks] = useState<Bookmark[]>([]);
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
+  const [userBookmarks, setUserBookmarks] = useState<BookmarkWithDocument[]>([]);
   const [userActivity, setUserActivity] = useState<ActivityLog[]>([]);
 
   // Form state
@@ -45,15 +52,12 @@ export default function ProfilePage() {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Get user's documents
-        const documents = mockDocuments.filter((doc) => doc.uploaderId === user?.id);
-        setUserDocuments(documents);
+        // Get user's documents from API
+        const userDocsResponse = await DocumentsService.getUserDocuments(1, 20);
+        setUserDocuments(userDocsResponse.documents ?? []);
 
         // Get user's bookmarks
-        const bookmarks = mockBookmarks.filter((bookmark) => bookmark.userId === user?.id);
+        const bookmarks = await getUserBookmarks();
         setUserBookmarks(bookmarks);
 
         // Get user's activity
@@ -67,8 +71,23 @@ export default function ProfilePage() {
     };
 
     if (user) {
-      fetchUserData();
+      void fetchUserData();
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const handleBookmarksUpdated = () => {
+      void getUserBookmarks()
+        .then((bookmarks) => setUserBookmarks(bookmarks))
+        .catch((error) => console.error('Failed to refresh bookmarks', error));
+    };
+
+    window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
+    return () => window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
   }, [user]);
 
   const handleSaveProfile = () => {
@@ -78,11 +97,12 @@ export default function ProfilePage() {
   };
 
   const getUserStats = () => {
-    const totalDownloads = userDocuments.reduce((sum, doc) => sum + doc.downloadCount, 0);
-    const totalViews = userDocuments.reduce((sum, doc) => sum + doc.viewCount, 0);
+    const totalDownloads = userDocuments.reduce((sum, doc) => sum + (doc.downloadCount ?? 0), 0);
+    const totalViews = userDocuments.reduce((sum, doc) => sum + (doc.viewCount ?? 0), 0);
     const averageRating =
       userDocuments.length > 0
-        ? userDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) / userDocuments.length
+        ? userDocuments.reduce((sum, doc) => sum + (doc.averageRating ?? 0), 0) /
+          userDocuments.length
         : 0;
 
     return {
@@ -195,12 +215,12 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-4 w-4" />
-                    <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                    <span>Joined {formatDate(user.createdAt)}</span>
                   </div>
                   {user.lastLoginAt && (
                     <div className="flex items-center space-x-1">
                       <User className="h-4 w-4" />
-                      <span>Last active {new Date(user.lastLoginAt).toLocaleDateString()}</span>
+                      <span>Last active {formatDate(user.lastLoginAt)}</span>
                     </div>
                   )}
                 </div>
@@ -372,40 +392,53 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userDocuments.map((document) => (
-                    <div
-                      key={document.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="text-2xl">{document.category.icon}</div>
-                        <div>
-                          <h4 className="font-medium">{document.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {document.category.name} •{' '}
-                            {new Date(document.createdAt).toLocaleDateString()}
-                          </p>
+                  {userDocuments.map((document) => {
+                    const categoryIcon = document.category?.icon ?? '📄';
+                    const categoryName = document.category?.name ?? 'Uncategorized';
+                    const createdAt = formatDate(document.createdAt);
+                    const downloadCount = document.downloadCount ?? 0;
+                    const viewCount = document.viewCount ?? 0;
+                    const averageRatingDisplay =
+                      document.averageRating !== undefined
+                        ? document.averageRating.toFixed(1)
+                        : '0.0';
+                    const isApproved = Boolean(document.isApproved);
+
+                    return (
+                      <div
+                        key={document.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="text-2xl">{categoryIcon}</div>
+                          <div>
+                            <h4 className="font-medium">{document.title}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {categoryName}
+                              {createdAt !== '—' ? ` • ${createdAt}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-1">
+                            <Download className="h-4 w-4" />
+                            <span>{downloadCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{viewCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4" />
+                            <span>{averageRatingDisplay}</span>
+                          </div>
+                          <Badge variant={isApproved ? 'default' : 'secondary'}>
+                            {isApproved ? 'Approved' : 'Pending'}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1">
-                          <Download className="h-4 w-4" />
-                          <span>{document.downloadCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{document.viewCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4" />
-                          <span>{document.averageRating.toFixed(1)}</span>
-                        </div>
-                        <Badge variant={document.isApproved ? 'default' : 'secondary'}>
-                          {document.isApproved ? 'Approved' : 'Pending'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -431,42 +464,50 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userBookmarks.map((bookmark) => (
-                    <div
-                      key={bookmark.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="text-2xl">{bookmark.document.category.icon}</div>
-                        <div>
-                          <h4 className="font-medium">{bookmark.document.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {bookmark.document.category.name} •{' '}
-                            {new Date(bookmark.createdAt).toLocaleDateString()}
-                          </p>
-                          {bookmark.notes && (
-                            <p className="text-sm text-muted-foreground mt-1 italic">
-                              "{bookmark.notes}"
+                  {userBookmarks.map((bookmark) => {
+                    const document = bookmark.document;
+                    const ratingValue = Number(document.averageRating ?? 0).toFixed(1);
+                    const categoryIcon = document.category?.icon ?? '📄';
+                    const bookmarkDate = formatDate(bookmark.createdAt);
+                    const categoryName = document.category?.name ?? 'Uncategorized';
+
+                    return (
+                      <div
+                        key={bookmark.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="text-2xl">{categoryIcon}</div>
+                          <div>
+                            <h4 className="font-medium">{document.title}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {categoryName}
+                              {bookmarkDate !== '—' ? ` • ${bookmarkDate}` : ''}
                             </p>
-                          )}
+                            {bookmark.notes && (
+                              <p className="text-sm text-muted-foreground mt-1 italic">
+                                "{bookmark.notes}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-1">
+                            <Download className="h-4 w-4" />
+                            <span>{document.downloadCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{document.viewCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4" />
+                            <span>{ratingValue}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1">
-                          <Download className="h-4 w-4" />
-                          <span>{bookmark.document.downloadCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{bookmark.document.viewCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4" />
-                          <span>{bookmark.document.averageRating.toFixed(1)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

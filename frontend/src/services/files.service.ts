@@ -176,7 +176,7 @@ export class DocumentsService {
         success: boolean;
         message?: string;
       }>(`/documents/${documentId}`);
-      
+
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Failed to delete document');
       }

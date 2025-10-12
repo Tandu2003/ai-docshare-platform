@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Document } from '@/services/files.service';
+import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
 interface DocumentGridProps {
@@ -93,7 +94,8 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">
-                  {document.uploader?.firstName || 'Unknown'} {document.uploader?.lastName || 'User'}
+                  {document.uploader?.firstName || 'Unknown'}{' '}
+                  {document.uploader?.lastName || 'User'}
                 </span>
               </div>
 
@@ -115,7 +117,7 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                 </div>
                 <div className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
-                  <span>{new Date(document.createdAt).toLocaleDateString()}</span>
+                  <span>{formatDate(document.createdAt)}</span>
                 </div>
               </div>
 

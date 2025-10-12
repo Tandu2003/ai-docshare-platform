@@ -1,4 +1,13 @@
-import { ArrowLeft, Bookmark, Download, Eye, Share2, Star, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bookmark,
+  BookmarkCheck,
+  Download,
+  Eye,
+  Share2,
+  Star,
+  User,
+} from 'lucide-react';
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { DocumentView } from '@/services/document.service';
+import { formatDate } from '@/utils/date';
 
 interface DocumentDetailHeaderProps {
   document: DocumentView;
@@ -19,6 +29,7 @@ interface DocumentDetailHeaderProps {
   onRate: (rating: number) => void;
   userRating?: number;
   isBookmarked?: boolean;
+  isBookmarking?: boolean;
 }
 
 export function DocumentDetailHeader({
@@ -29,6 +40,7 @@ export function DocumentDetailHeader({
   onRate,
   userRating = 0,
   isBookmarked = false,
+  isBookmarking = false,
 }: DocumentDetailHeaderProps) {
   const [hoveredRating, setHoveredRating] = useState(0);
 
@@ -119,7 +131,7 @@ export function DocumentDetailHeader({
                 </div>
                 <div className="flex items-center space-x-1">
                   <User className="h-4 w-4" />
-                  <span>{new Date(document.createdAt).toLocaleDateString()}</span>
+                  <span>{formatDate(document.createdAt)}</span>
                 </div>
               </div>
 
@@ -130,11 +142,21 @@ export function DocumentDetailHeader({
                   Download
                 </Button>
                 <Button
-                  variant="outline"
+                  variant={isBookmarked ? 'default' : 'outline'}
                   onClick={onBookmark}
+                  disabled={isBookmarking}
                   className={isBookmarked ? 'bg-primary text-primary-foreground' : ''}
+                  aria-busy={isBookmarking}
+                  aria-pressed={isBookmarked}
                 >
-                  <Bookmark className="h-4 w-4" />
+                  {isBookmarked ? (
+                    <BookmarkCheck className="h-4 w-4" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">
+                    {isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                  </span>
                 </Button>
                 <Button variant="outline" onClick={onShare}>
                   <Share2 className="h-4 w-4" />

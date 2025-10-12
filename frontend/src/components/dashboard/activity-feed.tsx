@@ -2,10 +2,10 @@ import { Calendar, Download, Eye, MessageSquare, Star, Upload, User } from 'luci
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ActivityLog } from '@/types';
+import type { DashboardActivity } from '@/types';
 
 interface ActivityFeedProps {
-  activities: ActivityLog[];
+  activities: DashboardActivity[];
 }
 
 const getActivityIcon = (action: string) => {
@@ -53,45 +53,54 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.slice(0, 10).map((activity) => {
-            const Icon = getActivityIcon(activity.action);
-            const colorClass = getActivityColor(activity.action);
+        {activities.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {activities.slice(0, 10).map((activity) => {
+              const Icon = getActivityIcon(activity.action);
+              const colorClass = getActivityColor(activity.action);
+              const displayName = activity.user
+                ? [activity.user.firstName, activity.user.lastName]
+                    .filter((name): name is string => Boolean(name && name.trim()))
+                    .join(' ') ||
+                  activity.user.username ||
+                  'Người dùng'
+                : 'Hệ thống';
 
-            return (
-              <div key={activity.id} className="flex items-start space-x-3">
-                <div className={`p-2 rounded-full ${colorClass}`}>
-                  <Icon className="h-4 w-4 text-white" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">
-                      {activity.user?.firstName} {activity.user?.lastName}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {activity.action}
-                    </Badge>
+              return (
+                <div key={activity.id} className="flex items-start space-x-3">
+                  <div className={`p-2 rounded-full ${colorClass}`}>
+                    <Icon className="h-4 w-4 text-white" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.action === 'upload' && 'Uploaded a new document'}
-                    {activity.action === 'download' && 'Downloaded a document'}
-                    {activity.action === 'view' && 'Viewed a document'}
-                    {activity.action === 'comment' && 'Commented on a document'}
-                    {activity.action === 'rate' && 'Rated a document'}
-                    {activity.action === 'login' && 'Logged in'}
-                    {!['upload', 'download', 'view', 'comment', 'rate', 'login'].includes(
-                      activity.action
-                    ) && `Performed ${activity.action}`}
-                  </p>
-                  <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{new Date(activity.createdAt).toLocaleString()}</span>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium">{displayName}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {activity.action}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {activity.action === 'upload' && 'Uploaded a new document'}
+                      {activity.action === 'download' && 'Downloaded a document'}
+                      {activity.action === 'view' && 'Viewed a document'}
+                      {activity.action === 'comment' && 'Commented on a document'}
+                      {activity.action === 'rate' && 'Rated a document'}
+                      {activity.action === 'login' && 'Logged in'}
+                      {!['upload', 'download', 'view', 'comment', 'rate', 'login'].includes(
+                        activity.action
+                      ) && `Performed ${activity.action}`}
+                    </p>
+                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(activity.createdAt).toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

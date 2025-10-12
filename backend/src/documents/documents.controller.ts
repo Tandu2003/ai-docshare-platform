@@ -20,11 +20,13 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DownloadDocumentDto } from './dto/download-document.dto';
+import { ShareDocumentDto } from './dto/share-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
 
 interface AuthenticatedRequest extends Request {
@@ -211,6 +213,7 @@ export class DocumentsController {
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':documentId')
   @ApiOperation({ summary: 'Get document details by ID' })
   @ApiResponse({
@@ -219,6 +222,7 @@ export class DocumentsController {
   })
   async getDocumentById(
     @Param('documentId') documentId: string,
+    @Query('apiKey') apiKey: string | undefined,
     @Req() req: Request,
     @Res() res: Response
   ) {
@@ -226,7 +230,7 @@ export class DocumentsController {
       // Get user ID if authenticated
       const userId = (req as any).user?.id;
 
-      const document = await this.documentsService.getDocumentById(documentId, userId);
+      const document = await this.documentsService.getDocumentById(documentId, userId, apiKey);
 
       return ResponseHelper.success(res, document, 'Document retrieved successfully');
     } catch (error) {
@@ -237,6 +241,77 @@ export class DocumentsController {
       }
 
       return ResponseHelper.error(res, 'Failed to get document', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post(':documentId/share-link')
+  @CheckPolicy({ action: 'share', subject: 'Document' })
+  @ApiOperation({ summary: 'Create or update a share link for a document' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Share link configured successfully',
+  })
+  async createShareLink(
+    @Param('documentId') documentId: string,
+    @Body() shareDocumentDto: ShareDocumentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    try {
+      const shareLink = await this.documentsService.createOrUpdateShareLink(
+        documentId,
+        userId,
+        shareDocumentDto
+      );
+      return ResponseHelper.success(res, shareLink, 'Share link configured successfully');
+    } catch (error) {
+      this.logger.error(`Error configuring share link for document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+      return ResponseHelper.error(
+        res,
+        'Failed to configure share link',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Delete(':documentId/share-link')
+  @CheckPolicy({ action: 'share', subject: 'Document' })
+  @ApiOperation({ summary: 'Revoke a document share link' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Share link revoked successfully',
+  })
+  async revokeShareLink(
+    @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    try {
+      await this.documentsService.revokeShareLink(documentId, userId);
+      return ResponseHelper.success(res, null, 'Share link revoked successfully');
+    } catch (error) {
+      this.logger.error(`Error revoking share link for document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+      return ResponseHelper.error(
+        res,
+        'Failed to revoke share link',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
@@ -382,11 +457,7 @@ export class DocumentsController {
 
       const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
 
-      return ResponseHelper.success(
-        res,
-        { secureUrl },
-        'Secure file URL retrieved successfully'
-      );
+      return ResponseHelper.success(res, { secureUrl }, 'Secure file URL retrieved successfully');
     } catch (error) {
       this.logger.error(`Error getting secure URL for file ${fileId}:`, error);
 
@@ -437,9 +508,7 @@ export class DocumentsController {
 
       const userAgent = req.get('User-Agent') || 'unknown';
 
-      this.logger.log(
-        `Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`
-      );
+      this.logger.log(`Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`);
 
       await this.filesService.incrementViewCount(fileId, userId, ipAddress, userAgent);
 

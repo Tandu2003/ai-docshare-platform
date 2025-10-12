@@ -1,5 +1,5 @@
-import { AbilityBuilder, createMongoAbility, PureAbility } from '@casl/ability'
-import { Injectable } from '@nestjs/common'
+import { AbilityBuilder, createMongoAbility, PureAbility } from '@casl/ability';
+import { Injectable } from '@nestjs/common';
 
 export type Actions =
   | 'create'
@@ -87,6 +87,10 @@ export class AbilityFactory {
         can('upload', 'File');
         can('read', 'Document', { uploaderId: user.id });
         can('read', 'File', { uploaderId: user.id });
+        can('share', 'Document', { uploaderId: user.id });
+        can('read', 'Bookmark', { userId: user.id });
+        can('create', 'Bookmark');
+        can('delete', 'Bookmark', { userId: user.id });
         break;
       case 'user':
         can('read', 'Document', { isPublic: true, isApproved: true });
@@ -95,12 +99,14 @@ export class AbilityFactory {
         can('upload', 'File');
         can('update', 'Document', { uploaderId: user.id });
         can('delete', 'Document', { uploaderId: user.id });
+        can('share', 'Document', { uploaderId: user.id });
         can('create', 'Comment');
         can('update', 'Comment', { userId: user.id });
         can('delete', 'Comment', { userId: user.id });
         can('create', 'Rating');
         can('update', 'Rating', { userId: user.id });
         can('create', 'Bookmark');
+        can('read', 'Bookmark', { userId: user.id });
         can('delete', 'Bookmark', { userId: user.id });
         can('download', 'Document', { isPublic: true, isApproved: true });
         can('download', 'Document', { uploaderId: user.id });

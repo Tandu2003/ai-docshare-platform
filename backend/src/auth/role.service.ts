@@ -101,6 +101,7 @@ export class RoleService {
           { action: 'update', subject: 'Rating', conditions: { userId: '$user.id' } },
           // Bookmarks
           { action: 'create', subject: 'Bookmark' },
+          { action: 'read', subject: 'Bookmark', conditions: { userId: '$user.id' } },
           { action: 'delete', subject: 'Bookmark', conditions: { userId: '$user.id' } },
           // Download
           {

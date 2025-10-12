@@ -1,5 +1,4 @@
 // Database types based on Prisma schema
-
 import type { Actions, Subjects } from '@/lib/casl/ability.factory';
 
 export interface Permission {

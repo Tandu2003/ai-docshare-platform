@@ -8,6 +8,9 @@ import { DocumentsModule } from '@/documents/documents.module';
 import { FilesModule } from '@/files/files.module';
 import { HealthModule } from '@/health/health.module';
 import { PrismaModule } from '@/prisma/prisma.module';
+import { BookmarksModule } from '@/bookmarks/bookmarks.module';
+import { AnalyticsModule } from '@/analytics/analytics.module';
+import { CategoriesModule } from '@/categories/categories.module';
 // import { UploadModule } from '@/upload/upload.module';
 import { JwtAuthGuard } from '@/auth/guards';
 import { CaslGuard } from '@/common/casl';
@@ -26,6 +29,9 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
     // DocumentModule,
     FilesModule,
     DocumentsModule,
+    BookmarksModule,
+    CategoriesModule,
+    AnalyticsModule,
   ],
   controllers: [],
   providers: [

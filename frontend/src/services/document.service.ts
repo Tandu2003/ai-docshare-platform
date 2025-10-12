@@ -10,6 +10,12 @@ export interface PaginatedDocuments {
   limit: number;
 }
 
+export interface DocumentShareLink {
+  token?: string;
+  expiresAt: string;
+  isRevoked?: boolean;
+}
+
 export interface DocumentView {
   id: string;
   title: string;
@@ -56,6 +62,7 @@ export interface DocumentView {
     viewsCount: number;
     downloadsCount: number;
   };
+  shareLink?: DocumentShareLink;
 }
 
 export interface ViewDocumentRequest {
@@ -75,8 +82,13 @@ export const getDocuments = async (page = 1, limit = 10): Promise<PaginatedDocum
 /**
  * Get document details by ID
  */
-export const getDocumentById = async (documentId: string): Promise<DocumentView> => {
-  const response = await apiClient.get<DocumentView>(`/documents/${documentId}`);
+export const getDocumentById = async (
+  documentId: string,
+  apiKey?: string
+): Promise<DocumentView> => {
+  const response = await apiClient.get<DocumentView>(`/documents/${documentId}`, {
+    params: apiKey ? { apiKey } : undefined,
+  });
   if (!response.data) {
     throw new Error('No data returned from API');
   }
@@ -112,7 +124,7 @@ export const incrementViewCount = async (fileId: string): Promise<void> => {
       success: boolean;
       message?: string;
     }>(`/documents/upload/view/${fileId}`);
-    
+
     if (!response.data?.success) {
       console.warn('View count increment failed:', response.data?.message);
     }
@@ -197,6 +209,42 @@ export const downloadDocument = async (
 export const testDownloadUrl = (url: string) => {
   console.log('Testing download URL:', url);
   window.open(url, '_blank');
+};
+
+export interface ShareDocumentRequest {
+  expiresInMinutes?: number;
+  expiresAt?: string;
+  regenerateToken?: boolean;
+}
+
+export interface ShareDocumentResponse {
+  token?: string;
+  expiresAt: string;
+  isRevoked: boolean;
+  shareUrl?: string;
+}
+
+export const createDocumentShareLink = async (
+  documentId: string,
+  payload: ShareDocumentRequest
+): Promise<ShareDocumentResponse> => {
+  const response = await apiClient.post<ShareDocumentResponse>(
+    `/documents/${documentId}/share-link`,
+    payload
+  );
+
+  if (!response.data) {
+    throw new Error('No data returned from API');
+  }
+
+  return response.data;
+};
+
+export const revokeDocumentShareLink = async (documentId: string): Promise<void> => {
+  const response = await apiClient.delete<null>(`/documents/${documentId}/share-link`);
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to revoke share link');
+  }
 };
 
 /**

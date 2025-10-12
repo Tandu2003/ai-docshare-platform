@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import {
@@ -44,6 +45,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks';
 import { cn } from '@/lib/utils';
+import {
+  BOOKMARKS_UPDATED_EVENT,
+  type BookmarkStats,
+  getBookmarkStats,
+} from '@/services/bookmark.service';
 
 interface SidebarProps {
   className?: string;
@@ -61,6 +67,34 @@ export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [bookmarkStats, setBookmarkStats] = useState<BookmarkStats | null>(null);
+
+  const loadBookmarkStats = useCallback(async () => {
+    if (!user) {
+      setBookmarkStats(null);
+      return;
+    }
+
+    try {
+      const stats = await getBookmarkStats();
+      setBookmarkStats(stats);
+    } catch (error) {
+      console.error('Failed to load bookmark stats', error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void loadBookmarkStats();
+  }, [loadBookmarkStats]);
+
+  useEffect(() => {
+    const handleUpdated = () => {
+      void loadBookmarkStats();
+    };
+
+    window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
+    return () => window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
+  }, [loadBookmarkStats]);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -102,7 +136,7 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'Bookmarks',
       href: '/bookmarks',
       icon: Bookmark,
-      badge: 12,
+      badge: bookmarkStats?.total,
     },
     {
       title: 'Notifications',
@@ -161,11 +195,11 @@ export function Sidebar({ className }: SidebarProps) {
       <Link to={item.href} className="flex items-center gap-3">
         <item.icon className="h-4 w-4" />
         <span className="flex-1 text-left">{item.title}</span>
-        {item.badge && (
+        {typeof item.badge === 'number' && item.badge > 0 ? (
           <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-xs">
             {item.badge}
           </Badge>
-        )}
+        ) : null}
       </Link>
     </Button>
   );

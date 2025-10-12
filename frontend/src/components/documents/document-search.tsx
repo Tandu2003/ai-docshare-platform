@@ -135,29 +135,29 @@ export function DocumentSearch({
   // Count only meaningful filters (excluding default values)
   const activeFiltersCount = (() => {
     let count = 0;
-    
+
     // Query filter
     if (filters.query && filters.query.trim()) count++;
-    
+
     // Category filter
     if (filters.categoryId) count++;
-    
+
     // Tags filter
     if (filters.tags && filters.tags.length > 0) count++;
-    
+
     // Language filter
     if (filters.language) count++;
-    
+
     // Visibility filters
     if (filters.isPublic !== undefined) count++;
     if (filters.isPremium !== undefined) count++;
-    
+
     // Rating filter
     if (filters.minRating && filters.minRating > 0) count++;
-    
+
     // Sort filter (only if not default)
     if (filters.sortBy && filters.sortBy !== 'relevance') count++;
-    
+
     return count;
   })();
 
@@ -243,9 +243,7 @@ export function DocumentSearch({
               )}
             </div>
             {searchQuery && !isLoading && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Auto-searching as you type...
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Auto-searching as you type...</p>
             )}
           </div>
 

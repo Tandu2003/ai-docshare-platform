@@ -30,7 +30,7 @@ export class AIService {
    */
   async analyzeDocuments(request: AIAnalysisRequest): Promise<AIAnalysisResponse> {
     const startTime = Date.now();
-    
+
     try {
       this.logger.log(`Starting AI analysis for ${request.fileIds.length} files`);
 
@@ -47,7 +47,9 @@ export class AIService {
       }
 
       if (files.length !== request.fileIds.length) {
-        this.logger.warn(`Some files not found or don't belong to user. Expected: ${request.fileIds.length}, Found: ${files.length}`);
+        this.logger.warn(
+          `Some files not found or don't belong to user. Expected: ${request.fileIds.length}, Found: ${files.length}`
+        );
       }
 
       // Get secure URLs for files
@@ -86,7 +88,7 @@ export class AIService {
     } catch (error) {
       const processingTime = Date.now() - startTime;
       this.logger.error('Error in AI analysis:', error);
-      
+
       // Return error with fallback data
       return {
         success: false,
@@ -163,7 +165,7 @@ export class AIService {
   async testConnection(): Promise<{ gemini: boolean }> {
     try {
       const geminiStatus = await this.geminiService.testConnection();
-      
+
       return {
         gemini: geminiStatus,
       };

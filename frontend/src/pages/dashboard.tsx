@@ -4,31 +4,35 @@ import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { PopularCategories } from '@/components/dashboard/popular-categories';
 import { RecentDocuments } from '@/components/dashboard/recent-documents';
 import { DashboardStatsCards } from '@/components/dashboard/stats-cards';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateDashboardStats } from '@/services/mock-data.service';
-import type { DashboardStats } from '@/types';
+import { getDashboardOverview } from '@/services/dashboard.service';
+import type { DashboardOverview } from '@/types';
 
 export const DashboardPage: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const dashboardData = await getDashboardOverview();
+      setStats(dashboardData);
+    } catch (fetchError) {
+      console.error('Failed to fetch dashboard stats:', fetchError);
+      const message =
+        fetchError instanceof Error ? fetchError.message : 'Không thể tải dữ liệu dashboard';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate API call
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        // Simulate network delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const dashboardStats = generateDashboardStats();
-        setStats(dashboardStats);
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   if (loading) {
@@ -54,6 +58,29 @@ export const DashboardPage: React.FC = () => {
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome to your AI DocShare dashboard. Here you can manage your documents and view
+            analytics.
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertTitle>Không thể tải dữ liệu</AlertTitle>
+          <AlertDescription className="flex flex-col space-y-4">
+            <span>{error}</span>
+            <Button variant="secondary" onClick={fetchDashboardData}>
+              Thử lại
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

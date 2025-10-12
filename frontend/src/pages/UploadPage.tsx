@@ -15,7 +15,7 @@ export const UploadPage: React.FC = () => {
       type: 'success',
       message: `Document "${document.title}" created successfully!`,
     });
-    
+
     // Clear status after 5 seconds
     setTimeout(() => {
       setUploadStatus({ type: null, message: '' });
@@ -27,7 +27,7 @@ export const UploadPage: React.FC = () => {
       type: 'error',
       message: error,
     });
-    
+
     // Clear status after 5 seconds
     setTimeout(() => {
       setUploadStatus({ type: null, message: '' });
