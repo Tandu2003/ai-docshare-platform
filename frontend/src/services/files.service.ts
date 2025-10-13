@@ -99,13 +99,13 @@ export class FilesService {
       );
 
       if (!response.data) {
-        throw new Error('No data returned from API');
+        throw new Error('Không có dữ liệu trả về từ API');
       }
 
       return response.data;
     } catch (error) {
       console.error('Failed to upload files:', error);
-      throw new Error('Failed to upload files');
+      throw new Error('Không thể tải lên tệp');
     }
   }
 }
@@ -120,7 +120,7 @@ export class DocumentsService {
       return response.data;
     } catch (error) {
       console.error('Failed to create document:', error);
-      throw new Error('Failed to create document');
+      throw new Error('Không thể tạo tài liệu');
     }
   }
 
@@ -134,13 +134,13 @@ export class DocumentsService {
       );
 
       if (!response.data) {
-        throw new Error('No data returned from API');
+        throw new Error('Không có dữ liệu trả về từ API');
       }
 
       return response.data;
     } catch (error) {
       console.error('Failed to get user documents:', error);
-      throw new Error('Failed to get user documents');
+      throw new Error('Không thể lấy tài liệu của người dùng');
     }
   }
 
@@ -157,13 +157,13 @@ export class DocumentsService {
       );
 
       if (!response.data) {
-        throw new Error('No data returned from API');
+        throw new Error('Không có dữ liệu trả về từ API');
       }
 
       return response.data;
     } catch (error) {
       console.error('Failed to get public documents:', error);
-      throw new Error('Failed to get public documents');
+      throw new Error('Không thể lấy tài liệu công khai');
     }
   }
 
@@ -178,11 +178,11 @@ export class DocumentsService {
       }>(`/documents/${documentId}`);
 
       if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Failed to delete document');
+        throw new Error(response.data?.message || 'Không thể xóa tài liệu');
       }
     } catch (error) {
       console.error('Failed to delete document:', error);
-      throw new Error('Failed to delete document');
+      throw new Error('Không thể xóa tài liệu');
     }
   }
 
@@ -196,14 +196,14 @@ export class DocumentsService {
       );
 
       if (!response.data?.downloadUrl) {
-        throw new Error('Download URL not provided');
+        throw new Error('Không được cung cấp URL tải xuống');
       }
 
       // Use the existing download method
       await this.downloadFileFromUrl(response.data.downloadUrl, response.data.title);
     } catch (error) {
       console.error('Failed to download document', error);
-      throw new Error('Could not download document.');
+      throw new Error('Không thể tải xuống tài liệu.');
     }
   }
 
@@ -215,7 +215,7 @@ export class DocumentsService {
       // Fetch the file as a blob
       const response = await fetch(downloadUrl);
       if (!response.ok) {
-        throw new Error('Failed to fetch file');
+        throw new Error('Không thể tìm nạp tệp');
       }
 
       const blob = await response.blob();
@@ -237,7 +237,7 @@ export class DocumentsService {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Failed to download file from URL', error);
-      throw new Error('Could not download file.');
+      throw new Error('Không thể tải xuống tệp.');
     }
   }
 }

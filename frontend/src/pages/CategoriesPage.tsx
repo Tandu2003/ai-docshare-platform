@@ -200,8 +200,8 @@ export default function CategoriesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-            <p className="text-muted-foreground">Manage document categories</p>
+            <h1 className="text-3xl font-bold tracking-tight">Danh mục</h1>
+            <p className="text-muted-foreground">Quản lý danh mục tài liệu</p>
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
@@ -231,8 +231,8 @@ export default function CategoriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-          <p className="text-muted-foreground">Manage document categories and their organization</p>
+          <h1 className="text-3xl font-bold tracking-tight">Danh mục</h1>
+          <p className="text-muted-foreground">Quản lý danh mục tài liệu và tổ chức của chúng</p>
         </div>
         <Dialog
           open={isCreateDialogOpen}
@@ -246,38 +246,38 @@ export default function CategoriesPage() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create Category
+              Tạo danh mục
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Category</DialogTitle>
+              <DialogTitle>Tạo danh mục mới</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">Tên</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Category name"
+                  placeholder="Tên danh mục"
                 />
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Mô tả</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, description: e.target.value }))
                   }
-                  placeholder="Category description"
+                  placeholder="Mô tả danh mục"
                   rows={3}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="icon">Icon</Label>
+                  <Label htmlFor="icon">Biểu tượng</Label>
                   <Select
                     value={formData.icon}
                     onValueChange={(value) => setFormData((prev) => ({ ...prev, icon: value }))}
@@ -295,7 +295,7 @@ export default function CategoriesPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="color">Color</Label>
+                  <Label htmlFor="color">Màu sắc</Label>
                   <Input
                     id="color"
                     type="color"
@@ -305,16 +305,16 @@ export default function CategoriesPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="parent">Parent Category</Label>
+                <Label htmlFor="parent">Danh mục cha</Label>
                 <Select
                   value={formData.parentId}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, parentId: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select parent category" />
+                    <SelectValue placeholder="Chọn danh mục cha" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No parent</SelectItem>
+                    <SelectItem value="">Không có danh mục cha</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {(category.icon ?? '📁')} {category.name}
@@ -324,7 +324,7 @@ export default function CategoriesPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="sortOrder">Sort Order</Label>
+                <Label htmlFor="sortOrder">Thứ tự sắp xếp</Label>
                 <Input
                   id="sortOrder"
                   type="number"
@@ -344,13 +344,13 @@ export default function CategoriesPage() {
                   }}
                   disabled={submitting}
                 >
-                  Cancel
+                  Hủy
                 </Button>
                 <Button
                   onClick={() => void handleCreateCategory()}
                   disabled={!formData.name.trim() || submitting}
                 >
-                  {submitting ? 'Saving...' : 'Create Category'}
+                  {submitting ? 'Đang lưu...' : 'Tạo danh mục'}
                 </Button>
               </div>
             </div>
@@ -393,7 +393,7 @@ export default function CategoriesPage() {
                       <CardTitle className="text-lg">{category.name}</CardTitle>
                       {parentCategory && (
                         <p className="text-sm text-muted-foreground">
-                          Parent: {(parentCategory.icon ?? '📁')} {parentCategory.name}
+                          Cha: {(parentCategory.icon ?? '📁')} {parentCategory.name}
                         </p>
                       )}
                     </div>
@@ -410,22 +410,21 @@ export default function CategoriesPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                          <AlertDialogTitle>Xóa danh mục</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete "{category.name}"? This action cannot be
-                            undone.
+                            Bạn có chắc chắn muốn xóa "{category.name}"? Hành động này không thể hoàn tác.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel disabled={deletingId === category.id}>
-                            Cancel
+                            Hủy
                           </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => void handleDeleteCategory(category.id)}
                             className="bg-red-600 hover:bg-red-700"
                             disabled={deletingId === category.id}
                           >
-                            {deletingId === category.id ? 'Deleting...' : 'Delete'}
+                            {deletingId === category.id ? 'Đang xóa...' : 'Xóa'}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -441,15 +440,15 @@ export default function CategoriesPage() {
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <FolderOpen className="h-4 w-4" />
-                    <span>{category.documentCount} documents</span>
+                    <span>{category.documentCount} tài liệu</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Download className="h-4 w-4" />
-                    <span>{category.totalDownloads} downloads</span>
+                    <span>{category.totalDownloads} lượt tải</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Eye className="h-4 w-4" />
-                    <span>{category.totalViews} views</span>
+                    <span>{category.totalViews} lượt xem</span>
                   </div>
                 </div>
 
@@ -461,10 +460,10 @@ export default function CategoriesPage() {
                       color: categoryColor,
                     }}
                   >
-                    Sort: {category.sortOrder}
+                    Sắp xếp: {category.sortOrder}
                   </Badge>
                   <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                    {category.isActive ? 'Active' : 'Inactive'}
+                    {category.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
                   </Badge>
                 </div>
               </CardContent>
@@ -486,31 +485,31 @@ export default function CategoriesPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
+            <DialogTitle>Chỉnh sửa danh mục</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-name">Name</Label>
+              <Label htmlFor="edit-name">Tên</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Category name"
+                placeholder="Tên danh mục"
               />
             </div>
             <div>
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">Mô tả</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Category description"
+                placeholder="Mô tả danh mục"
                 rows={3}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-icon">Icon</Label>
+                <Label htmlFor="edit-icon">Biểu tượng</Label>
                 <Select
                   value={formData.icon}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, icon: value }))}
@@ -528,7 +527,7 @@ export default function CategoriesPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit-color">Color</Label>
+                <Label htmlFor="edit-color">Màu sắc</Label>
                 <Input
                   id="edit-color"
                   type="color"
@@ -538,16 +537,16 @@ export default function CategoriesPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="edit-parent">Parent Category</Label>
+              <Label htmlFor="edit-parent">Danh mục cha</Label>
               <Select
                 value={formData.parentId}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, parentId: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select parent category" />
+                  <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No parent</SelectItem>
+                  <SelectItem value="">Không có danh mục cha</SelectItem>
                   {categories
                     .filter((cat) => cat.id !== editingCategory?.id)
                     .map((category) => (
@@ -559,7 +558,7 @@ export default function CategoriesPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-sortOrder">Sort Order</Label>
+              <Label htmlFor="edit-sortOrder">Thứ tự sắp xếp</Label>
               <Input
                 id="edit-sortOrder"
                 type="number"
@@ -580,13 +579,13 @@ export default function CategoriesPage() {
                 }}
                 disabled={submitting}
               >
-                Cancel
+                Hủy
               </Button>
               <Button
                 onClick={() => void handleEditCategory()}
                 disabled={!formData.name.trim() || submitting}
               >
-                {submitting ? 'Saving...' : 'Save Changes'}
+                {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
               </Button>
             </div>
           </div>

@@ -2,40 +2,39 @@ import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, Matches } from 'cl
 import { Transform } from 'class-transformer';
 
 export class RegisterDto {
-  @IsEmail({}, { message: 'Email must be a valid email address' })
+  @IsEmail({}, { message: 'Email phải là địa chỉ email hợp lệ' })
   @Transform(({ value }) => value?.toLowerCase().trim())
   email: string;
 
-  @IsString({ message: 'Username must be a string' })
-  @IsNotEmpty({ message: 'Username is required' })
-  @MinLength(3, { message: 'Username must be at least 3 characters long' })
-  @MaxLength(30, { message: 'Username must not exceed 30 characters' })
+  @IsString({ message: 'Tên người dùng phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Tên người dùng là bắt buộc' })
+  @MinLength(3, { message: 'Tên người dùng phải có ít nhất 3 ký tự' })
+  @MaxLength(30, { message: 'Tên người dùng không được vượt quá 30 ký tự' })
   @Matches(/^[a-zA-Z0-9_]+$/, {
-    message: 'Username can only contain letters, numbers, and underscores',
+    message: 'Tên người dùng chỉ có thể chứa chữ cái, số và dấu gạch dưới',
   })
   @Transform(({ value }) => value?.toLowerCase().trim())
   username: string;
 
-  @IsString({ message: 'Password must be a string' })
-  @IsNotEmpty({ message: 'Password is required' })
-  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @IsString({ message: 'Mật khẩu phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Mật khẩu là bắt buộc' })
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+    message: 'Mật khẩu phải chứa ít nhất một chữ hoa, một chữ thường, một số và một ký tự đặc biệt',
   })
   password: string;
 
-  @IsString({ message: 'First name must be a string' })
-  @IsNotEmpty({ message: 'First name is required' })
-  @MinLength(2, { message: 'First name must be at least 2 characters long' })
-  @MaxLength(50, { message: 'First name must not exceed 50 characters' })
+  @IsString({ message: 'Tên phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Tên là bắt buộc' })
+  @MinLength(2, { message: 'Tên phải có ít nhất 2 ký tự' })
+  @MaxLength(50, { message: 'Tên không được vượt quá 50 ký tự' })
   @Transform(({ value }) => value?.trim())
   firstName: string;
 
-  @IsString({ message: 'Last name must be a string' })
-  @IsNotEmpty({ message: 'Last name is required' })
-  @MinLength(2, { message: 'Last name must be at least 2 characters long' })
-  @MaxLength(50, { message: 'Last name must not exceed 50 characters' })
+  @IsString({ message: 'Họ phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Họ là bắt buộc' })
+  @MinLength(2, { message: 'Họ phải có ít nhất 2 ký tự' })
+  @MaxLength(50, { message: 'Họ không được vượt quá 50 ký tự' })
   @Transform(({ value }) => value?.trim())
   lastName: string;
 }

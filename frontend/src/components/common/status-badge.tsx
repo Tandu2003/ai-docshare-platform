@@ -10,19 +10,19 @@ export function StatusBadge({ status, variant, className }: StatusBadgeProps) {
   const getStatusConfig = () => {
     switch (status) {
       case 'active':
-        return { label: 'Active', variant: 'default' as const };
+        return { label: 'Đang hoạt động', variant: 'default' as const };
       case 'inactive':
-        return { label: 'Inactive', variant: 'destructive' as const };
+        return { label: 'Không hoạt động', variant: 'destructive' as const };
       case 'pending':
-        return { label: 'Pending', variant: 'secondary' as const };
+        return { label: 'Đang chờ', variant: 'secondary' as const };
       case 'approved':
-        return { label: 'Approved', variant: 'default' as const };
+        return { label: 'Đã duyệt', variant: 'default' as const };
       case 'rejected':
-        return { label: 'Rejected', variant: 'destructive' as const };
+        return { label: 'Đã từ chối', variant: 'destructive' as const };
       case 'draft':
-        return { label: 'Draft', variant: 'outline' as const };
+        return { label: 'Bản nháp', variant: 'outline' as const };
       case 'published':
-        return { label: 'Published', variant: 'default' as const };
+        return { label: 'Đã xuất bản', variant: 'default' as const };
       default:
         return { label: status, variant: 'secondary' as const };
     }

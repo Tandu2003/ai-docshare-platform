@@ -9,8 +9,8 @@ export default function MyDocumentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My Documents"
-        description="Manage and organize your uploaded documents. View, download, and delete your documents."
+        title="Tài liệu của tôi"
+        description="Quản lý và tổ chức các tài liệu đã tải lên. Xem, tải xuống và xóa tài liệu của bạn."
       />
 
       <DocumentList onDocumentDeleted={handleFileDeleted} />

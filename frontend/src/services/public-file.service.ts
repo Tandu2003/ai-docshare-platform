@@ -14,7 +14,7 @@ export const getPublicFiles = async (page = 1, limit = 10): Promise<PaginatedPub
     `/upload/public?page=${page}&limit=${limit}`
   );
   if (!response.data) {
-    throw new Error('No data returned from API');
+    throw new Error('Không có dữ liệu trả về từ API');
   }
   return response.data;
 };

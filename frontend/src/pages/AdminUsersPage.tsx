@@ -171,13 +171,13 @@ export default function AdminUsersPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500 text-white">Active</Badge>;
+        return <Badge className="bg-green-500 text-white">Đang hoạt động</Badge>;
       case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">Không hoạt động</Badge>;
       case 'suspended':
-        return <Badge className="bg-red-500 text-white">Suspended</Badge>;
+        return <Badge className="bg-red-500 text-white">Đã tạm ngưng</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-500 text-white">Pending</Badge>;
+        return <Badge className="bg-yellow-500 text-white">Đang chờ</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -186,11 +186,11 @@ export default function AdminUsersPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge className="bg-purple-500 text-white">Admin</Badge>;
+        return <Badge className="bg-purple-500 text-white">Quản trị viên</Badge>;
       case 'moderator':
-        return <Badge className="bg-blue-500 text-white">Moderator</Badge>;
+        return <Badge className="bg-blue-500 text-white">Điều hành viên</Badge>;
       case 'user':
-        return <Badge variant="outline">User</Badge>;
+        return <Badge variant="outline">Người dùng</Badge>;
       default:
         return <Badge variant="outline">{role}</Badge>;
     }
@@ -223,11 +223,11 @@ export default function AdminUsersPage() {
             <Users className="h-8 w-8 text-primary" />
             User Management
           </h1>
-          <p className="text-muted-foreground mt-1">Manage users, roles, and permissions</p>
+          <p className="text-muted-foreground">            Quản lý người dùng, vai trò và quyền hạn</p>
         </div>
         <Button>
           <Users className="h-4 w-4 mr-2" />
-          Add User
+          Thêm người dùng
         </Button>
       </div>
 
@@ -237,7 +237,7 @@ export default function AdminUsersPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng người dùng</p>
                 <p className="text-2xl font-bold">{users.length}</p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -249,7 +249,7 @@ export default function AdminUsersPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Users</p>
+                <p className="text-sm font-medium text-muted-foreground">Người dùng hoạt động</p>
                 <p className="text-2xl font-bold">
                   {users.filter((u) => u.status === 'active').length}
                 </p>
@@ -263,7 +263,7 @@ export default function AdminUsersPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                <p className="text-sm font-medium text-muted-foreground">Đang chờ</p>
                 <p className="text-2xl font-bold">
                   {users.filter((u) => u.status === 'pending').length}
                 </p>
@@ -277,7 +277,7 @@ export default function AdminUsersPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Suspended</p>
+                <p className="text-sm font-medium text-muted-foreground">Đã tạm ngưng</p>
                 <p className="text-2xl font-bold">
                   {users.filter((u) => u.status === 'suspended').length}
                 </p>
@@ -293,47 +293,47 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filters
+            Bộ lọc
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
             <div className="flex-1">
-              <Label htmlFor="search">Search Users</Label>
+              <Label htmlFor="search">Tìm kiếm người dùng</Label>
               <Input
                 id="search"
-                placeholder="Search by name or email..."
+                placeholder="Tìm kiếm theo tên hoặc email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full"
               />
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>Trạng thái</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="active">Đang hoạt động</SelectItem>
+                  <SelectItem value="inactive">Không hoạt động</SelectItem>
+                  <SelectItem value="suspended">Đã tạm ngưng</SelectItem>
+                  <SelectItem value="pending">Đang chờ</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>Vai trò</Label>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="moderator">Moderator</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="admin">Quản trị viên</SelectItem>
+                  <SelectItem value="moderator">Điều hành viên</SelectItem>
+                  <SelectItem value="user">Người dùng</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users ({filteredUsers.length})</CardTitle>
+          <CardTitle>Người dùng ({filteredUsers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -363,13 +363,13 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Email Verified</TableHead>
-                  <TableHead>Documents</TableHead>
-                  <TableHead>Downloads</TableHead>
-                  <TableHead>Joined</TableHead>
+                  <TableHead>Người dùng</TableHead>
+                  <TableHead>Vai trò</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Email đã xác thực</TableHead>
+                  <TableHead>Tài liệu</TableHead>
+                  <TableHead>Lượt tải</TableHead>
+                  <TableHead>Ngày tham gia</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -429,14 +429,14 @@ export default function AdminUsersPage() {
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleUserAction(user.id, 'view')}>
-                            View Profile
+                            Xem hồ sơ
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleUserAction(user.id, 'edit')}>
-                            Edit User
+                            Chỉnh sửa người dùng
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleUserAction(user.id, 'email')}>
                             <Mail className="mr-2 h-4 w-4" />
-                            Send Email
+                            Gửi email
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {user.status === 'active' ? (
@@ -444,21 +444,21 @@ export default function AdminUsersPage() {
                               onClick={() => handleUserAction(user.id, 'suspend')}
                               className="text-yellow-600"
                             >
-                              Suspend User
+                              Tạm ngưng người dùng
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
                               onClick={() => handleUserAction(user.id, 'activate')}
                               className="text-green-600"
                             >
-                              Activate User
+                              Kích hoạt người dùng
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
                             onClick={() => handleUserAction(user.id, 'delete')}
                             className="text-red-600"
                           >
-                            Delete User
+                            Xóa người dùng
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

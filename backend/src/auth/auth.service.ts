@@ -76,13 +76,13 @@ export class AuthService {
       });
 
       return {
-        message: 'Registration successful! Please check your email to verify your account.',
+        message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
       };
     } catch (error) {
       if (error instanceof ConflictException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new AuthenticationError('Registration failed');
+      throw new AuthenticationError('Đăng ký thất bại');
     }
   }
 
@@ -97,13 +97,13 @@ export class AuthService {
       const user = await this.findUserByEmailOrUsername(emailOrUsername);
 
       if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException('Thông tin đăng nhập không hợp lệ');
       }
 
       // Verify password
       const isPasswordValid = await this.verifyPassword(password, user.password);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException('Thông tin đăng nhập không hợp lệ');
       }
 
       // Check user status
@@ -120,7 +120,7 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new AuthenticationError('Login failed');
+      throw new AuthenticationError('Đăng nhập thất bại');
     }
   }
 
@@ -147,12 +147,12 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        throw new UnauthorizedException('Invalid refresh token');
+        throw new UnauthorizedException('Mã làm mới không hợp lệ');
       }
 
       return this.generateTokens(user);
-    } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+    } catch {
+      throw new UnauthorizedException('Mã làm mới không hợp lệ');
     }
   }
 
@@ -191,10 +191,10 @@ export class AuthService {
 
     if (existingUser) {
       if (existingUser.email === email) {
-        throw new ConflictException('Email already exists');
+        throw new ConflictException('Email đã tồn tại');
       }
       if (existingUser.username === username) {
-        throw new ConflictException('Username already exists');
+        throw new ConflictException('Tên người dùng đã tồn tại');
       }
     }
   }
@@ -205,7 +205,7 @@ export class AuthService {
     });
 
     if (!role) {
-      throw new BadRequestException('Default role not found');
+      throw new BadRequestException('Vai trò mặc định không tìm thấy');
     }
 
     return role;
@@ -238,12 +238,12 @@ export class AuthService {
 
   private validateUserStatus(user: any): void {
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
 
     // Check if email verification is required
     if (!user.isVerified) {
-      throw new UnauthorizedException('Please verify your email address before logging in');
+      throw new UnauthorizedException('Vui lòng xác thực địa chỉ email trước khi đăng nhập');
     }
   }
 
@@ -278,6 +278,7 @@ export class AuthService {
 
   private formatLoginResponse(user: any, tokens: AuthTokens): LoginResponse {
     const { password, ...userWithoutPassword } = user;
+    void password;
 
     return {
       user: {
@@ -311,7 +312,7 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new BadRequestException('Invalid or expired verification token');
+        throw new BadRequestException('Mã xác thực không hợp lệ hoặc đã hết hạn');
       }
 
       // Update user as verified and clear token
@@ -331,13 +332,13 @@ export class AuthService {
       });
 
       return {
-        message: 'Email verified successfully! Welcome to AI DocShare Platform.',
+        message: 'Email đã được xác thực thành công! Chào mừng bạn đến với AI DocShare Platform.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new AuthenticationError('Email verification failed');
+      throw new AuthenticationError('Xác thực email thất bại');
     }
   }
 
@@ -353,11 +354,11 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found, please register first');
+        throw new NotFoundException('Không tìm thấy người dùng, vui lòng đăng ký trước');
       }
 
       if (user.isVerified) {
-        throw new BadRequestException('Email is already verified, please login');
+        throw new BadRequestException('Email đã được xác thực, vui lòng đăng nhập');
       }
 
       // Generate new verification token
@@ -381,13 +382,13 @@ export class AuthService {
       });
 
       return {
-        message: 'Verification email sent successfully! Please check your inbox.',
+        message: 'Email xác thực đã được gửi thành công! Vui lòng kiểm tra hộp thư.',
       };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new AuthenticationError('Failed to resend verification email');
+      throw new AuthenticationError('Gửi lại email xác thực thất bại');
     }
   }
 
@@ -403,11 +404,11 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new BadRequestException('Account not found, please register first');
+        throw new BadRequestException('Không tìm thấy tài khoản, vui lòng đăng ký trước');
       }
 
       if (!user.isVerified) {
-        throw new BadRequestException('Please verify your email address first');
+        throw new BadRequestException('Vui lòng xác thực địa chỉ email trước');
       }
 
       // Generate reset token
@@ -431,13 +432,13 @@ export class AuthService {
       });
 
       return {
-        message: 'Password reset instructions sent! Please check your inbox.',
+        message: 'Hướng dẫn đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new AuthenticationError('Failed to process password reset request');
+      throw new AuthenticationError('Xử lý yêu cầu đặt lại mật khẩu thất bại');
     }
   }
 
@@ -458,7 +459,7 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new BadRequestException('Invalid or expired reset token');
+        throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
       }
 
       // Hash new password
@@ -481,13 +482,13 @@ export class AuthService {
       });
 
       return {
-        message: 'Password reset successfully! You can now login with your new password.',
+        message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new AuthenticationError('Password reset failed');
+      throw new AuthenticationError('Đặt lại mật khẩu thất bại');
     }
   }
 }

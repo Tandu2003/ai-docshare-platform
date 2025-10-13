@@ -121,12 +121,12 @@ export default function BookmarksPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Bookmark className="h-8 w-8 text-primary" />
-            My Bookmarks
+            Đánh dấu của tôi
           </h1>
-          <p className="text-muted-foreground mt-1">Your saved documents and resources</p>
+          <p className="text-muted-foreground mt-1">Các tài liệu và tài nguyên đã lưu của bạn</p>
         </div>
         <Badge variant="secondary" className="text-sm">
-          {bookmarks.length} bookmarks
+          {bookmarks.length} đánh dấu
         </Badge>
       </div>
 
@@ -135,14 +135,14 @@ export default function BookmarksPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
-            Search Bookmarks
+            Tìm kiếm đánh dấu
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
             <div className="flex-1">
               <Input
-                placeholder="Search by title, description, or tags..."
+                placeholder="Tìm kiếm theo tiêu đề, mô tả hoặc thẻ..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 className="w-full"
@@ -150,13 +150,13 @@ export default function BookmarksPage() {
             </div>
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Sắp xếp theo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Recently Bookmarked</SelectItem>
-                <SelectItem value="title">Title A-Z</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="downloads">Most Downloaded</SelectItem>
+                <SelectItem value="recent">Đánh dấu gần đây</SelectItem>
+                <SelectItem value="title">Tiêu đề A-Z</SelectItem>
+                <SelectItem value="rating">Đánh giá cao nhất</SelectItem>
+                <SelectItem value="downloads">Tải nhiều nhất</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -195,16 +195,16 @@ export default function BookmarksPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Bookmark className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              {searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
+              {searchQuery ? 'Không tìm thấy đánh dấu nào' : 'Chưa có đánh dấu nào'}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-md">
               {searchQuery
-                ? 'Try adjusting your search terms or browse documents to bookmark them.'
-                : 'Start bookmarking documents you find useful. Click the bookmark icon on any document to save it here.'}
+                ? 'Hãy thử điều chỉnh từ khóa tìm kiếm hoặc duyệt tài liệu để đánh dấu chúng.'
+                : 'Bắt đầu đánh dấu các tài liệu bạn thấy hữu ích. Nhấp vào biểu tượng đánh dấu trên bất kỳ tài liệu nào để lưu ở đây.'}
             </p>
             {!searchQuery && (
               <Button asChild className="mt-4">
-                <Link to="/documents">Browse Documents</Link>
+                <Link to="/documents">Duyệt tài liệu</Link>
               </Button>
             )}
           </CardContent>
@@ -243,7 +243,7 @@ export default function BookmarksPage() {
                         )}
                         {!document.isPublic && (
                           <Badge variant="secondary" className="text-xs">
-                            Private
+                            Riêng tư
                           </Badge>
                         )}
                       </div>
@@ -307,13 +307,13 @@ export default function BookmarksPage() {
                       {/* Bookmarked Date */}
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        <span>Bookmarked on {formatDate(bookmark.createdAt)}</span>
+                        <span>Đã đánh dấu vào {formatDate(bookmark.createdAt)}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 ml-4">
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/documents/${document.id}`}>View Document</Link>
+                        <Link to={`/documents/${document.id}`}>Xem tài liệu</Link>
                       </Button>
                       <Button
                         variant="ghost"
@@ -324,7 +324,7 @@ export default function BookmarksPage() {
                         aria-pressed={false}
                       >
                         <BookmarkMinus className="h-4 w-4" />
-                        <span className="sr-only">Remove bookmark</span>
+                        <span className="sr-only">Xóa đánh dấu</span>
                       </Button>
                     </div>
                   </div>

@@ -55,23 +55,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Welcome Back</CardTitle>
-        <CardDescription>Sign in to your account to continue</CardDescription>
+        <CardTitle>Chào mừng quay trở lại</CardTitle>
+        <CardDescription>Đăng nhập vào tài khoản của bạn để tiếp tục</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FormField
-            label="Email or Username"
+            label="Email hoặc tên đăng nhập"
             type="text"
-            placeholder="Enter your email or username"
+            placeholder="Nhập email hoặc tên đăng nhập của bạn"
             {...register('emailOrUsername')}
             error={errors.emailOrUsername?.message}
             disabled={isSubmitting}
           />
 
           <FormFieldPassword
-            label="Password"
-            placeholder="Enter your password"
+            label="Mật khẩu"
+            placeholder="Nhập mật khẩu của bạn"
             {...register('password')}
             error={errors.password?.message}
             disabled={isSubmitting}
@@ -82,17 +82,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
               to="/auth/forgot-password"
               className="text-sm text-primary hover:text-primary/80 underline underline-offset-4"
             >
-              Forgot password?
+              Quên mật khẩu?
             </Link>
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </Button>
 
           {onSwitchToRegister && (
             <div className="text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
+              <span className="text-muted-foreground">Chưa có tài khoản? </span>
               <Button
                 type="button"
                 variant="link"
@@ -100,7 +100,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
                 onClick={onSwitchToRegister}
                 disabled={isSubmitting}
               >
-                Sign up
+                Đăng ký
               </Button>
             </div>
           )}

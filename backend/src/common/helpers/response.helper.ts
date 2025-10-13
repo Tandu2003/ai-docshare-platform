@@ -116,7 +116,7 @@ export class ResponseHelper {
    */
   static error(
     res: Response,
-    message: string = 'An error occurred',
+    message: string = 'Đã xảy ra lỗi',
     statusCode: number = 500,
     error?: any
   ): Response<ApiResponse> {

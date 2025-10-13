@@ -53,7 +53,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Create a document from uploaded files' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Document created successfully',
+    description: 'Tài liệu đã được tạo thành công',
   })
   async createDocument(
     @Body() createDocumentDto: CreateDocumentDto,
@@ -62,7 +62,7 @@ export class DocumentsController {
   ) {
     const userId = req.user?.id;
     if (!userId) {
-      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
     }
 
     try {
@@ -71,7 +71,7 @@ export class DocumentsController {
       return ResponseHelper.success(
         res,
         document,
-        'Document created successfully',
+        'Tài liệu đã được tạo thành công',
         HttpStatus.CREATED
       );
     } catch (error) {
@@ -83,7 +83,7 @@ export class DocumentsController {
 
       return ResponseHelper.error(
         res,
-        'An error occurred while creating document',
+        'Đã xảy ra lỗi khi tạo tài liệu',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -95,7 +95,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Download all files of a document' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Document files download prepared',
+    description: 'Tệp tài liệu tải xuống đã được chuẩn bị',
   })
   async downloadDocument(
     @Param('documentId') documentId: string,
@@ -134,7 +134,11 @@ export class DocumentsController {
         referrer
       );
 
-      return ResponseHelper.success(res, downloadResult, 'Document download prepared successfully');
+      return ResponseHelper.success(
+        res,
+        downloadResult,
+        'Tải xuống tài liệu đã được chuẩn bị thành công'
+      );
     } catch (error) {
       this.logger.error(`Error preparing download for document ${documentId}:`, error);
 
@@ -144,7 +148,7 @@ export class DocumentsController {
 
       return ResponseHelper.error(
         res,
-        'Failed to prepare document download',
+        'Không thể chuẩn bị tải xuống tài liệu',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -154,7 +158,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Get public documents with pagination' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Public documents retrieved successfully',
+    description: 'Tài liệu công khai đã được truy xuất thành công',
   })
   async getPublicDocuments(
     @Query('page') page: string = '1',
@@ -171,12 +175,12 @@ export class DocumentsController {
 
       const result = await this.documentsService.getPublicDocuments(pageNum, limitNum, userId);
 
-      return ResponseHelper.success(res, result, 'Public documents retrieved successfully');
+      return ResponseHelper.success(res, result, 'Tài liệu công khai đã được truy xuất thành công');
     } catch (error) {
       this.logger.error('Error getting public documents:', error);
       return ResponseHelper.error(
         res,
-        'An error occurred while retrieving public documents',
+        'Đã xảy ra lỗi khi truy xuất tài liệu công khai',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -186,7 +190,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Get user documents with pagination' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User documents retrieved successfully',
+    description: 'Tài liệu người dùng đã được truy xuất thành công',
   })
   async getUserDocuments(
     @Query('page') page: string = '1',
@@ -201,12 +205,12 @@ export class DocumentsController {
     try {
       const documents = await this.documentsService.getUserDocuments(userId, pageNum, limitNum);
 
-      return ResponseHelper.success(res, documents, 'Documents retrieved successfully');
+      return ResponseHelper.success(res, documents, 'Tài liệu đã được truy xuất thành công');
     } catch (error) {
       this.logger.error('Error getting user documents:', error);
       return ResponseHelper.error(
         res,
-        'Failed to get user documents',
+        'Không thể lấy tài liệu người dùng',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -218,7 +222,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Get document details by ID' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Document details retrieved successfully',
+    description: 'Chi tiết tài liệu đã được truy xuất thành công',
   })
   async getDocumentById(
     @Param('documentId') documentId: string,
@@ -232,7 +236,7 @@ export class DocumentsController {
 
       const document = await this.documentsService.getDocumentById(documentId, userId, apiKey);
 
-      return ResponseHelper.success(res, document, 'Document retrieved successfully');
+      return ResponseHelper.success(res, document, 'Tài liệu đã được truy xuất thành công');
     } catch (error) {
       this.logger.error(`Error getting document ${documentId}:`, error);
 
@@ -240,7 +244,7 @@ export class DocumentsController {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
-      return ResponseHelper.error(res, 'Failed to get document', HttpStatus.INTERNAL_SERVER_ERROR);
+      return ResponseHelper.error(res, 'Không thể lấy tài liệu', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -249,7 +253,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Create or update a share link for a document' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Share link configured successfully',
+    description: 'Liên kết chia sẻ đã được cấu hình thành công',
   })
   async createShareLink(
     @Param('documentId') documentId: string,
@@ -259,7 +263,7 @@ export class DocumentsController {
   ) {
     const userId = req.user?.id;
     if (!userId) {
-      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
     }
 
     try {
@@ -268,7 +272,7 @@ export class DocumentsController {
         userId,
         shareDocumentDto
       );
-      return ResponseHelper.success(res, shareLink, 'Share link configured successfully');
+      return ResponseHelper.success(res, shareLink, 'Liên kết chia sẻ đã được cấu hình thành công');
     } catch (error) {
       this.logger.error(`Error configuring share link for document ${documentId}:`, error);
       if (error instanceof BadRequestException) {
@@ -276,7 +280,7 @@ export class DocumentsController {
       }
       return ResponseHelper.error(
         res,
-        'Failed to configure share link',
+        'Không thể cấu hình liên kết chia sẻ',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -287,7 +291,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Revoke a document share link' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Share link revoked successfully',
+    description: 'Liên kết chia sẻ đã được thu hồi thành công',
   })
   async revokeShareLink(
     @Param('documentId') documentId: string,
@@ -296,12 +300,12 @@ export class DocumentsController {
   ) {
     const userId = req.user?.id;
     if (!userId) {
-      return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
     }
 
     try {
       await this.documentsService.revokeShareLink(documentId, userId);
-      return ResponseHelper.success(res, null, 'Share link revoked successfully');
+      return ResponseHelper.success(res, null, 'Liên kết chia sẻ đã được thu hồi thành công');
     } catch (error) {
       this.logger.error(`Error revoking share link for document ${documentId}:`, error);
       if (error instanceof BadRequestException) {
@@ -309,7 +313,7 @@ export class DocumentsController {
       }
       return ResponseHelper.error(
         res,
-        'Failed to revoke share link',
+        'Không thể thu hồi liên kết chia sẻ',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -319,7 +323,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Track document view' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Document view tracked successfully',
+    description: 'Lượt xem tài liệu đã được theo dõi thành công',
   })
   async viewDocument(
     @Param('documentId') documentId: string,
@@ -364,7 +368,7 @@ export class DocumentsController {
         referrer
       );
 
-      return ResponseHelper.success(res, result, 'Document view tracked successfully');
+      return ResponseHelper.success(res, result, 'Lượt xem tài liệu đã được theo dõi thành công');
     } catch (error) {
       this.logger.error(`Error tracking view for document ${documentId}:`, error);
 
@@ -374,7 +378,7 @@ export class DocumentsController {
 
       return ResponseHelper.error(
         res,
-        'Failed to track document view',
+        'Không thể theo dõi lượt xem tài liệu',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -385,17 +389,21 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Get allowed file types for upload' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Allowed file types retrieved successfully',
+    description: 'Các loại tệp được phép đã được truy xuất thành công',
   })
   async getAllowedFileTypes(@Res() res: Response) {
     try {
       const allowedTypes = this.filesService.getAllowedTypes();
-      return ResponseHelper.success(res, allowedTypes, 'Allowed file types retrieved successfully');
+      return ResponseHelper.success(
+        res,
+        allowedTypes,
+        'Các loại tệp được phép đã được truy xuất thành công'
+      );
     } catch (error) {
       this.logger.error('Error getting allowed file types:', error);
       return ResponseHelper.error(
         res,
-        'Failed to get allowed file types',
+        'Không thể lấy các loại tệp được phép',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -406,7 +414,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Delete a document' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Document deleted successfully',
+    description: 'Tài liệu đã được xóa thành công',
   })
   async deleteDocument(
     @Param('documentId') documentId: string,
@@ -416,12 +424,12 @@ export class DocumentsController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+        return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
       }
 
       await this.documentsService.deleteDocument(documentId, userId);
 
-      return ResponseHelper.success(res, null, 'Document deleted successfully');
+      return ResponseHelper.success(res, null, 'Tài liệu đã được xóa thành công');
     } catch (error) {
       this.logger.error(`Error deleting document ${documentId}:`, error);
 
@@ -429,11 +437,7 @@ export class DocumentsController {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
-      return ResponseHelper.error(
-        res,
-        'Failed to delete document',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      return ResponseHelper.error(res, 'Không thể xóa tài liệu', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -442,7 +446,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Get secure URL for file access' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Secure file URL retrieved successfully',
+    description: 'URL tệp bảo mật đã được truy xuất thành công',
   })
   async getSecureFileUrl(
     @Param('fileId') fileId: string,
@@ -452,12 +456,16 @@ export class DocumentsController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return ResponseHelper.error(res, 'Unauthorized', HttpStatus.UNAUTHORIZED);
+        return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
       }
 
       const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
 
-      return ResponseHelper.success(res, { secureUrl }, 'Secure file URL retrieved successfully');
+      return ResponseHelper.success(
+        res,
+        { secureUrl },
+        'URL tệp bảo mật đã được truy xuất thành công'
+      );
     } catch (error) {
       this.logger.error(`Error getting secure URL for file ${fileId}:`, error);
 
@@ -467,7 +475,7 @@ export class DocumentsController {
 
       return ResponseHelper.error(
         res,
-        'Failed to get secure file URL',
+        'Không thể lấy URL tệp bảo mật',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -477,7 +485,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Increment file view count' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'View count incremented successfully',
+    description: 'Lượt xem đã được tăng thành công',
   })
   async incrementViewCount(
     @Param('fileId') fileId: string,
@@ -512,7 +520,7 @@ export class DocumentsController {
 
       await this.filesService.incrementViewCount(fileId, userId, ipAddress, userAgent);
 
-      return ResponseHelper.success(res, null, 'View count incremented successfully');
+      return ResponseHelper.success(res, null, 'Lượt xem đã được tăng thành công');
     } catch (error) {
       this.logger.error(`Error incrementing view count for file ${fileId}:`, error);
 
@@ -520,11 +528,7 @@ export class DocumentsController {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
-      return ResponseHelper.error(
-        res,
-        'Failed to increment view count',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      return ResponseHelper.error(res, 'Không thể tăng lượt xem', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

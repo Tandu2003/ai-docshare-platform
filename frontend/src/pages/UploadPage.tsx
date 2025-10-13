@@ -13,7 +13,7 @@ export const UploadPage: React.FC = () => {
   const handleUploadComplete = (document: any) => {
     setUploadStatus({
       type: 'success',
-      message: `Document "${document.title}" created successfully!`,
+      message: `Tài liệu "${document.title}" đã được tạo thành công!`,
     });
 
     // Clear status after 5 seconds
@@ -37,8 +37,8 @@ export const UploadPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Document Upload"
-        description="Upload and share your documents with the community. Support for PDF, Word, Excel, PowerPoint, images, and text files."
+        title="Tải lên tài liệu"
+        description="Tải lên và chia sẻ tài liệu của bạn với cộng đồng. Hỗ trợ PDF, Word, Excel, PowerPoint, hình ảnh và tệp văn bản."
       />
 
       {uploadStatus.type && (

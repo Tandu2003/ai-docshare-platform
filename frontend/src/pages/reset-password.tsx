@@ -43,17 +43,17 @@ export function ResetPasswordPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Invalid reset link</p>
+            <p className="text-gray-600">Liên kết đặt lại không hợp lệ</p>
           </div>
 
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Invalid Token</CardTitle>
-              <CardDescription>The password reset link is invalid or has expired.</CardDescription>
+              <CardTitle className="text-2xl">Token không hợp lệ</CardTitle>
+              <CardDescription>Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link to="/forgot-password">Request New Password Reset</Link>
+                <Link to="/forgot-password">Yêu cầu đặt lại mật khẩu mới</Link>
               </Button>
             </CardContent>
           </Card>
@@ -79,7 +79,7 @@ export function ResetPasswordPage() {
       }, 3000);
     } catch (error: any) {
       console.error('Reset password error:', error);
-      toast.error(error.message || 'Failed to reset password');
+      toast.error(error.message || 'Không thể đặt lại mật khẩu');
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +91,7 @@ export function ResetPasswordPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Password reset successful</p>
+            <p className="text-gray-600">Đặt lại mật khẩu thành công</p>
           </div>
 
           <Card>
@@ -99,15 +99,14 @@ export function ResetPasswordPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
                 <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <CardTitle className="text-2xl">Password Reset Successfully!</CardTitle>
+              <CardTitle className="text-2xl">Đặt lại mật khẩu thành công!</CardTitle>
               <CardDescription>
-                Your password has been updated successfully. You will be redirected to the login
-                page shortly.
+                Mật khẩu của bạn đã được cập nhật thành công. Bạn sẽ được chuyển hướng đến trang đăng nhập trong giây lát.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link to="/login">Sign In Now</Link>
+                <Link to="/login">Đăng nhập ngay</Link>
               </Button>
             </CardContent>
           </Card>
@@ -121,13 +120,13 @@ export function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-          <p className="text-gray-600">Create a new password</p>
+          <p className="text-gray-600">Tạo mật khẩu mới</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>New Password</CardTitle>
-            <CardDescription>Please choose a strong password for your account</CardDescription>
+            <CardTitle>Mật khẩu mới</CardTitle>
+            <CardDescription>Vui lòng chọn mật khẩu mạnh cho tài khoản của bạn</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -137,10 +136,10 @@ export function ResetPasswordPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>New Password</FormLabel>
+                      <FormLabel>Mật khẩu mới</FormLabel>
                       <FormControl>
                         <InputPassword
-                          placeholder="Enter new password"
+                          placeholder="Nhập mật khẩu mới"
                           disabled={isLoading}
                           {...field}
                         />
@@ -155,10 +154,10 @@ export function ResetPasswordPage() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
+                      <FormLabel>Xác nhận mật khẩu</FormLabel>
                       <FormControl>
                         <InputPassword
-                          placeholder="Re-enter new password"
+                          placeholder="Nhập lại mật khẩu mới"
                           disabled={isLoading}
                           {...field}
                         />
@@ -175,19 +174,19 @@ export function ResetPasswordPage() {
                       Resetting...
                     </>
                   ) : (
-                    'Reset Password'
+                    'Đặt lại mật khẩu'
                   )}
                 </Button>
               </form>
             </Form>
 
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">Remember password? </span>
+              <span className="text-muted-foreground">Nhớ mật khẩu? </span>
               <Link
                 to="/login"
                 className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
               >
-                Sign in now
+                Đăng nhập ngay
               </Link>
             </div>
           </CardContent>

@@ -16,27 +16,27 @@ export const AuthPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-center mb-6">Welcome, {user.firstName}!</h1>
+          <h1 className="text-2xl font-bold text-center mb-6">Chào mừng, {user.firstName}!</h1>
 
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">User Information</h3>
+              <h3 className="font-semibold mb-2">Thông tin người dùng</h3>
               <p>
                 <strong>Email:</strong> {user.email}
               </p>
               <p>
-                <strong>Username:</strong> {user.username}
+                <strong>Tên đăng nhập:</strong> {user.username}
               </p>
               <p>
-                <strong>Role:</strong> {user.role.name}
+                <strong>Vai trò:</strong> {user.role.name}
               </p>
               <p>
-                <strong>Verified:</strong> {user.isVerified ? 'Yes' : 'No'}
+                <strong>Đã xác thực:</strong> {user.isVerified ? 'Có' : 'Không'}
               </p>
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Permissions</h3>
+              <h3 className="font-semibold mb-2">Quyền hạn</h3>
               <div className="flex flex-wrap gap-2">
                 {user.role.permissions.map((permission, index) => (
                   <span
@@ -50,12 +50,12 @@ export const AuthPage: React.FC = () => {
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Role Description</h3>
+              <h3 className="font-semibold mb-2">Mô tả vai trò</h3>
               <p>{user.role.description}</p>
             </div>
 
             <Button onClick={logout} className="w-full" variant="outline">
-              Logout
+              Đăng xuất
             </Button>
           </div>
         </div>
@@ -67,9 +67,9 @@ export const AuthPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Nền tảng AI DocShare</h1>
           <p className="text-gray-600">
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+            {isLogin ? 'Đăng nhập vào tài khoản của bạn' : 'Tạo tài khoản mới'}
           </p>
         </div>
 

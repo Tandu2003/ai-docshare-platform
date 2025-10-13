@@ -26,7 +26,7 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
 
   const handleAnalyze = async () => {
     if (!fileIds.length) {
-      setError('No files selected for analysis');
+      setError('Chưa chọn tệp nào để phân tích');
       return;
     }
 
@@ -42,7 +42,7 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
       setHasAnalyzed(true);
     } catch (error) {
       console.error('AI analysis error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to analyze document');
+      setError(error instanceof Error ? error.message : 'Không thể phân tích tài liệu');
     } finally {
       setIsAnalyzing(false);
     }
@@ -56,7 +56,7 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
             <div className="flex justify-between items-center gap-4">
               <div className="flex items-center gap-1 justify-center">
                 <Sparkles className="h-4 w-4 text-gray-600" />
-                <h3 className="font-semibold text-lg">AI-Powered Document Analysis</h3>
+                <h3 className="font-semibold text-lg">Phân tích tài liệu bằng AI</h3>
               </div>
               <Button
                 onClick={handleAnalyze}
@@ -83,7 +83,7 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
               <div className="mt-2 p-2 bg-green-50 border border-green-100 rounded-md">
                 <p className="text-sm flex items-center gap-1 text-green-700">
                   <CheckCircle className="h-4 w-4" />
-                  Analysis applied to document
+                  Phân tích đã được áp dụng cho tài liệu
                 </p>
               </div>
             )}

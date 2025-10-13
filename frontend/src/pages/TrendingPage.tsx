@@ -35,10 +35,10 @@ import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
 const RANGE_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: '90d', label: 'Last 90 days' },
-  { value: '1y', label: 'Last year' },
+  { value: '7d', label: '7 ngày qua' },
+  { value: '30d', label: '30 ngày qua' },
+  { value: '90d', label: '90 ngày qua' },
+  { value: '1y', label: 'Năm qua' },
 ];
 
 const formatNumber = (value?: number | null) => {
@@ -50,9 +50,9 @@ const formatNumber = (value?: number | null) => {
 
 const getTrendingBadge = (score: number) => {
   if (score >= 90) return <Badge className="bg-red-500 text-white">🔥 Hot</Badge>;
-  if (score >= 80) return <Badge className="bg-orange-500 text-white">📈 Rising</Badge>;
-  if (score >= 70) return <Badge className="bg-yellow-500 text-white">⭐ Trending</Badge>;
-  return <Badge variant="outline">📊 Popular</Badge>;
+  if (score >= 80) return <Badge className="bg-orange-500 text-white">📈 Đang tăng</Badge>;
+  if (score >= 70) return <Badge className="bg-yellow-500 text-white">⭐ Đang thịnh hành</Badge>;
+  return <Badge variant="outline">📊 Phổ biến</Badge>;
 };
 
 const getTrendingIcon = (change: number) => {
@@ -123,7 +123,7 @@ export default function TrendingPage() {
             Trending Documents
           </h1>
           <p className="text-muted-foreground mt-1">
-            Discover the most popular and fast-growing documents
+            Khám phá những tài liệu phổ biến và phát triển nhanh nhất
           </p>
           {data && (
             <Badge variant="outline" className="mt-2 text-xs font-normal">
@@ -133,7 +133,7 @@ export default function TrendingPage() {
         </div>
         <Select value={timeRange} onValueChange={setTimeRange} disabled={isLoading}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Select range" />
+            <SelectValue placeholder="Chọn khoảng thời gian" />
           </SelectTrigger>
           <SelectContent>
             {RANGE_OPTIONS.map((option) => (
@@ -158,7 +158,7 @@ export default function TrendingPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Trending</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng đang thịnh hành</p>
                 <p className="text-2xl font-bold">
                   {isLoading ? <Skeleton className="h-6 w-16" /> : stats.totalTrending}
                 </p>
@@ -171,7 +171,7 @@ export default function TrendingPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Score</p>
+                <p className="text-sm font-medium text-muted-foreground">Điểm TB</p>
                 <p className="text-2xl font-bold">
                   {isLoading ? <Skeleton className="h-6 w-16" /> : stats.averageScore.toFixed(1)}
                 </p>
@@ -184,7 +184,7 @@ export default function TrendingPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Top Growth</p>
+                <p className="text-sm font-medium text-muted-foreground">Tăng trưởng hàng đầu</p>
                 <p className="text-2xl font-bold">
                   {isLoading ? (
                     <Skeleton className="h-6 w-20" />
@@ -228,10 +228,10 @@ export default function TrendingPage() {
               No trending documents found for this timeframe.
             </p>
             <p className="text-sm text-muted-foreground">
-              Try selecting a different time range or encourage users to engage with more content.
+              Thử chọn khoảng thời gian khác hoặc khuyến khích người dùng tương tác nhiều hơn.
             </p>
             <Button asChild>
-              <Link to="/documents">Browse Documents</Link>
+              <Link to="/documents">Duyệt tài liệu</Link>
             </Button>
           </CardContent>
         </Card>
@@ -283,7 +283,7 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
                     {document.isPremium && (
                       <Badge className="bg-yellow-500 text-white">Premium</Badge>
                     )}
-                    {!document.isPublic && <Badge variant="secondary">Private</Badge>}
+                    {!document.isPublic && <Badge variant="secondary">Riêng tư</Badge>}
                   </div>
                   {document.description && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -312,7 +312,7 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
                     {getInitials(document.uploader?.firstName, document.uploader?.lastName)}
                   </AvatarFallback>
                 </Avatar>
-                <span>{uploaderName || 'Unknown author'}</span>
+                <span>{uploaderName || 'Tác giả không xác định'}</span>
               </div>
             </div>
 
@@ -331,18 +331,18 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
               </div>
               <div className="flex items-center gap-1">
                 <Flame className="h-4 w-4 text-red-500" />
-                <span>Score {document.trendingScore.toFixed(1)}</span>
+                <span>Điểm {document.trendingScore.toFixed(1)}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                <span>Created {createdAt}</span>
+                <span>Tạo {createdAt}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                <span>Updated {lastUpdated}</span>
+                <span>Cập nhật {lastUpdated}</span>
               </div>
             </div>
 
@@ -355,7 +355,7 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
                 ))}
                 {tags.length > 5 && (
                   <Badge variant="outline" className="text-xs">
-                    +{tags.length - 5} more
+                    +{tags.length - 5} thêm
                   </Badge>
                 )}
               </div>
@@ -364,10 +364,10 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
 
           <div className="flex flex-col gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link to={`/documents/${document.id}`}>View Document</Link>
+              <Link to={`/documents/${document.id}`}>Xem tài liệu</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to={`/documents/${document.id}#share`}>Share</Link>
+              <Link to={`/documents/${document.id}#share`}>Chia sẻ</Link>
             </Button>
           </div>
         </div>

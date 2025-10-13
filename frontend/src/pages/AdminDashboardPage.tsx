@@ -127,47 +127,45 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng người dùng</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeUsers} active users</p>
+            <p className="text-xs text-muted-foreground">{stats.activeUsers} người dùng đang hoạt động</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng tài liệu</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDocuments}</div>
-            <p className="text-xs text-muted-foreground">{stats.approvedDocuments} approved</p>
+            <p className="text-xs text-muted-foreground">{stats.approvedDocuments} đã duyệt</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Downloads</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng lượt tải</CardTitle>
             <Download className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDownloads.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.totalViews.toLocaleString()} total views
-            </p>
+            <p className="text-xs text-muted-foreground">{stats.totalViews.toLocaleString()} tổng lượt xem</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+            <CardTitle className="text-sm font-medium">Chờ duyệt</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
-            <p className="text-xs text-muted-foreground">Documents awaiting review</p>
+            <p className="text-xs text-muted-foreground">Tài liệu đang chờ xem xét</p>
           </CardContent>
         </Card>
       </div>
@@ -175,10 +173,10 @@ export default function AdminDashboardPage() {
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+          <TabsTrigger value="users">Người dùng</TabsTrigger>
+          <TabsTrigger value="documents">Tài liệu</TabsTrigger>
+          <TabsTrigger value="activity">Hoạt động</TabsTrigger>
         </TabsList>
 
         {/* Overview */}
@@ -187,7 +185,7 @@ export default function AdminDashboardPage() {
             {/* Recent Users */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Users</CardTitle>
+                <CardTitle>Người dùng gần đây</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -212,13 +210,13 @@ export default function AdminDashboardPage() {
                           variant={user.isVerified ? 'default' : 'secondary'}
                           className="text-xs"
                         >
-                          {user.isVerified ? 'Verified' : 'Unverified'}
+                          {user.isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
                         </Badge>
                         <Badge
                           variant={user.isActive ? 'default' : 'destructive'}
                           className="text-xs"
                         >
-                          {user.isActive ? 'Active' : 'Inactive'}
+                          {user.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
                         </Badge>
                       </div>
                     </div>
@@ -230,7 +228,7 @@ export default function AdminDashboardPage() {
             {/* Recent Documents */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Documents</CardTitle>
+                <CardTitle>Tài liệu gần đây</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -249,13 +247,13 @@ export default function AdminDashboardPage() {
                           variant={document.isApproved ? 'default' : 'secondary'}
                           className="text-xs"
                         >
-                          {document.isApproved ? 'Approved' : 'Pending'}
+                          {document.isApproved ? 'Đã duyệt' : 'Đang chờ'}
                         </Badge>
                         <Badge
                           variant={document.isPublic ? 'default' : 'outline'}
                           className="text-xs"
                         >
-                          {document.isPublic ? 'Public' : 'Private'}
+                          {document.isPublic ? 'Công khai' : 'Riêng tư'}
                         </Badge>
                       </div>
                     </div>
@@ -270,18 +268,18 @@ export default function AdminDashboardPage() {
         <TabsContent value="users" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>All Users</CardTitle>
+              <CardTitle>Tất cả người dùng</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
+                    <TableHead>Người dùng</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Vai trò</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tham gia</TableHead>
+                    <TableHead>Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -313,7 +311,7 @@ export default function AdminDashboardPage() {
                             variant={user.isActive ? 'default' : 'destructive'}
                             className="text-xs"
                           >
-                            {user.isActive ? 'Active' : 'Inactive'}
+                            {user.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
                           </Badge>
                           {user.isVerified && <CheckCircle className="h-4 w-4 text-green-500" />}
                         </div>
@@ -321,7 +319,7 @@ export default function AdminDashboardPage() {
                       <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm">
-                          Manage
+                          Quản lý
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -336,18 +334,18 @@ export default function AdminDashboardPage() {
         <TabsContent value="documents" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>All Documents</CardTitle>
+              <CardTitle>Tất cả tài liệu</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Author</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Stats</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Tài liệu</TableHead>
+                    <TableHead>Tác giả</TableHead>
+                    <TableHead>Danh mục</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Thống kê</TableHead>
+                    <TableHead>Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -381,7 +379,7 @@ export default function AdminDashboardPage() {
                             variant={document.isApproved ? 'default' : 'secondary'}
                             className="text-xs"
                           >
-                            {document.isApproved ? 'Approved' : 'Pending'}
+                            {document.isApproved ? 'Đã duyệt' : 'Đang chờ'}
                           </Badge>
                           {document.isPremium && (
                             <Badge variant="default" className="text-xs bg-yellow-500">
@@ -392,14 +390,14 @@ export default function AdminDashboardPage() {
                       </TableCell>
                       <TableCell>
                         <div className="text-xs text-muted-foreground">
-                          <p>{document.downloadCount} downloads</p>
-                          <p>{document.viewCount} views</p>
+                          <p>{document.downloadCount} lượt tải</p>
+                          <p>{document.viewCount} lượt xem</p>
                           <p>{document.averageRating.toFixed(1)}★</p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm">
-                          Manage
+                          Quản lý
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -414,7 +412,7 @@ export default function AdminDashboardPage() {
         <TabsContent value="activity" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>System Activity</CardTitle>
+              <CardTitle>Hoạt động hệ thống</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -430,15 +428,15 @@ export default function AdminDashboardPage() {
                             <span className="font-medium">
                               {activity.user.firstName} {activity.user.lastName}
                             </span>{' '}
-                            {activity.action === 'upload' && 'uploaded a document'}
-                            {activity.action === 'download' && 'downloaded a document'}
-                            {activity.action === 'view' && 'viewed a document'}
-                            {activity.action === 'login' && 'logged in'}
+                            {activity.action === 'upload' && 'đã tải lên tài liệu'}
+                            {activity.action === 'download' && 'đã tải xuống tài liệu'}
+                            {activity.action === 'view' && 'đã xem tài liệu'}
+                            {activity.action === 'login' && 'đã đăng nhập'}
                             {!['upload', 'download', 'view', 'login'].includes(activity.action) &&
-                              `performed ${activity.action}`}
+                              `đã thực hiện ${activity.action}`}
                           </>
                         ) : (
-                          `System ${activity.action}`
+                          `Hệ thống ${activity.action}`
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground">

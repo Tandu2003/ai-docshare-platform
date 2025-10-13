@@ -89,7 +89,7 @@ export class GeminiService {
       const validContents = extractedContents.filter((content) => content !== null);
 
       if (validContents.length === 0) {
-        throw new BadRequestException('No valid files could be processed');
+        throw new BadRequestException('Không có tệp hợp lệ nào có thể được xử lý');
       }
 
       // Create prompt with extracted content

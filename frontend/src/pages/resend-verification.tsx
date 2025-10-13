@@ -40,7 +40,7 @@ export function ResendVerificationPage() {
       setIsEmailSent(true);
     } catch (error: any) {
       console.error('Resend verification error:', error);
-      toast.error(error.message || 'Failed to send verification email');
+      toast.error(error.message || 'Không thể gửi email xác thực');
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +52,7 @@ export function ResendVerificationPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Verification email sent</p>
+            <p className="text-gray-600">Email xác thực đã được gửi</p>
           </div>
 
           <Card>
@@ -60,21 +60,20 @@ export function ResendVerificationPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
                 <Mail className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <CardTitle className="text-2xl">Verification email sent!</CardTitle>
+              <CardTitle className="text-2xl">Email xác thực đã được gửi!</CardTitle>
               <CardDescription>
-                We've sent a new verification email to your email address. Please check your inbox
-                and follow the instructions.
+                Chúng tôi đã gửi email xác thực mới đến địa chỉ email của bạn. Vui lòng kiểm tra hộp thư và làm theo hướng dẫn.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button asChild className="w-full">
                 <Link to="/login">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Login
+                  Quay lại đăng nhập
                 </Link>
               </Button>
               <Button variant="outline" className="w-full" onClick={() => setIsEmailSent(false)}>
-                Resend Email
+                Gửi lại email
               </Button>
             </CardContent>
           </Card>
@@ -88,13 +87,13 @@ export function ResendVerificationPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-          <p className="text-gray-600">Resend verification email</p>
+          <p className="text-gray-600">Gửi lại email xác thực</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Verification Email</CardTitle>
-            <CardDescription>Enter your registered email address</CardDescription>
+            <CardTitle>Email xác thực</CardTitle>
+            <CardDescription>Nhập địa chỉ email đã đăng ký của bạn</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -108,7 +107,7 @@ export function ResendVerificationPage() {
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="example@email.com"
+                          placeholder="ví dụ@email.com"
                           disabled={isLoading}
                           {...field}
                         />
@@ -127,7 +126,7 @@ export function ResendVerificationPage() {
                   ) : (
                     <>
                       <Mail className="mr-2 h-4 w-4" />
-                      Send Verification Email
+                      Gửi email xác thực
                     </>
                   )}
                 </Button>
@@ -135,12 +134,12 @@ export function ResendVerificationPage() {
             </Form>
 
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">Already verified email? </span>
+              <span className="text-muted-foreground">Đã xác thực email? </span>
               <Link
                 to="/login"
                 className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
               >
-                Sign in now
+                Đăng nhập ngay
               </Link>
             </div>
           </CardContent>

@@ -40,7 +40,7 @@ export function ForgotPasswordPage() {
       setIsEmailSent(true);
     } catch (error: any) {
       console.error('Forgot password error:', error);
-      toast.error(error.message || 'Failed to send password reset email');
+      toast.error(error.message || 'Không thể gửi email đặt lại mật khẩu');
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +52,7 @@ export function ForgotPasswordPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Email sent successfully</p>
+            <p className="text-gray-600">Email đã được gửi thành công</p>
           </div>
 
           <Card>
@@ -60,21 +60,20 @@ export function ForgotPasswordPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
                 <Mail className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <CardTitle className="text-2xl">Email Sent!</CardTitle>
+              <CardTitle className="text-2xl">Email đã được gửi!</CardTitle>
               <CardDescription>
-                We've sent password reset instructions to your email address. Please check your
-                inbox and follow the instructions.
+                Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến địa chỉ email của bạn. Vui lòng kiểm tra hộp thư và làm theo hướng dẫn.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button asChild className="w-full">
                 <Link to="/login">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Login
+                  Quay lại đăng nhập
                 </Link>
               </Button>
               <Button variant="outline" className="w-full" onClick={() => setIsEmailSent(false)}>
-                Resend Email
+                Gửi lại email
               </Button>
             </CardContent>
           </Card>
@@ -88,13 +87,13 @@ export function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-          <p className="text-gray-600">Reset your password</p>
+          <p className="text-gray-600">Đặt lại mật khẩu của bạn</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Reset Password</CardTitle>
-            <CardDescription>Enter your registered email address</CardDescription>
+            <CardTitle>Đặt lại mật khẩu</CardTitle>
+            <CardDescription>Nhập địa chỉ email đã đăng ký của bạn</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -108,7 +107,7 @@ export function ForgotPasswordPage() {
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="example@email.com"
+                          placeholder="ví dụ@email.com"
                           disabled={isLoading}
                           {...field}
                         />
@@ -127,7 +126,7 @@ export function ForgotPasswordPage() {
                   ) : (
                     <>
                       <Mail className="mr-2 h-4 w-4" />
-                      Send Reset Instructions
+                      Gửi hướng dẫn đặt lại
                     </>
                   )}
                 </Button>
@@ -135,12 +134,12 @@ export function ForgotPasswordPage() {
             </Form>
 
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">Remember password? </span>
+              <span className="text-muted-foreground">Nhớ mật khẩu? </span>
               <Link
                 to="/login"
                 className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
               >
-                Sign in now
+                Đăng nhập ngay
               </Link>
             </div>
           </CardContent>

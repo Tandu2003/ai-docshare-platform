@@ -182,15 +182,15 @@ export function DocumentSearch({
   };
 
   const sortOptions = [
-    { value: 'relevance-desc', label: 'Most Relevant' },
-    { value: 'date-desc', label: 'Newest First' },
-    { value: 'date-asc', label: 'Oldest First' },
-    { value: 'rating-desc', label: 'Highest Rated' },
-    { value: 'rating-asc', label: 'Lowest Rated' },
-    { value: 'downloads-desc', label: 'Most Downloaded' },
-    { value: 'downloads-asc', label: 'Least Downloaded' },
-    { value: 'views-desc', label: 'Most Viewed' },
-    { value: 'views-asc', label: 'Least Viewed' },
+    { value: 'relevance-desc', label: 'Liên quan nhất' },
+    { value: 'date-desc', label: 'Mới nhất trước' },
+    { value: 'date-asc', label: 'Cũ nhất trước' },
+    { value: 'rating-desc', label: 'Đánh giá cao nhất' },
+    { value: 'rating-asc', label: 'Đánh giá thấp nhất' },
+    { value: 'downloads-desc', label: 'Tải nhiều nhất' },
+    { value: 'downloads-asc', label: 'Tải ít nhất' },
+    { value: 'views-desc', label: 'Xem nhiều nhất' },
+    { value: 'views-asc', label: 'Xem ít nhất' },
   ];
 
   const currentSortValue = `${filters.sortBy || 'relevance'}-${filters.sortOrder || 'desc'}`;
@@ -212,12 +212,12 @@ export function DocumentSearch({
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={onClearFilters}>
                 <X className="h-4 w-4 mr-1" />
-                Clear
+                Xóa
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
               <Filter className="h-4 w-4 mr-1" />
-              {isExpanded ? 'Hide' : 'Show'} Filters
+              {isExpanded ? 'Ẩn' : 'Hiển thị'} bộ lọc
             </Button>
           </div>
         </div>
@@ -226,11 +226,11 @@ export function DocumentSearch({
         {/* Search Input */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
-            <Label className="text-sm font-medium">Search</Label>
+            <Label className="text-sm font-medium">Tìm kiếm</Label>
             <div className="relative mt-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search documents, tags, or categories..."
+                placeholder="Tìm kiếm tài liệu, thẻ, hoặc danh mục..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -243,15 +243,15 @@ export function DocumentSearch({
               )}
             </div>
             {searchQuery && !isLoading && (
-              <p className="text-xs text-muted-foreground mt-1">Auto-searching as you type...</p>
+              <p className="text-xs text-muted-foreground mt-1">Tự động tìm kiếm khi bạn nhập...</p>
             )}
           </div>
 
           <div>
-            <Label className="text-sm font-medium">Sort by</Label>
+            <Label className="text-sm font-medium">Sắp xếp theo</Label>
             <Select value={currentSortValue} onValueChange={handleSortChange}>
               <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Sắp xếp theo" />
               </SelectTrigger>
               <SelectContent>
                 {sortOptions.map((option) => (
@@ -275,7 +275,7 @@ export function DocumentSearch({
         {filters.query && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Search className="h-4 w-4" />
-            <span>Searching for:</span>
+            <span>Đang tìm kiếm:</span>
             <span className="font-medium text-foreground">"{filters.query}"</span>
             {isLoading && (
               <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
@@ -288,7 +288,7 @@ export function DocumentSearch({
           <div className="space-y-6 border-t pt-6">
             {/* Categories */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Categories</Label>
+              <Label className="text-sm font-medium">Danh mục</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {categories.slice(0, 6).map((category) => (
                   <div key={category.id} className="flex items-center space-x-2">
@@ -313,7 +313,7 @@ export function DocumentSearch({
 
             {/* Tags */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Tags</Label>
+              <Label className="text-sm font-medium">Thẻ</Label>
               <div className="flex flex-wrap gap-2">
                 {popularTags.map((tag) => (
                   <Badge
@@ -331,13 +331,13 @@ export function DocumentSearch({
             {/* Language, Visibility and Rating */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Language</Label>
+                <Label className="text-sm font-medium">Ngôn ngữ</Label>
                 <Select value={filters.language || 'all'} onValueChange={handleLanguageChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
+                    <SelectValue placeholder="Chọn ngôn ngữ" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Languages</SelectItem>
+                    <SelectItem value="all">Tất cả ngôn ngữ</SelectItem>
                     {languageOptions.map((lang) => (
                       <SelectItem key={lang.code} value={lang.code}>
                         {lang.name}
@@ -348,7 +348,7 @@ export function DocumentSearch({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Visibility</Label>
+                <Label className="text-sm font-medium">Hiển thị</Label>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -359,7 +359,7 @@ export function DocumentSearch({
                       }
                     />
                     <Label htmlFor="public" className="text-sm">
-                      Public
+                      Công khai
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -383,14 +383,14 @@ export function DocumentSearch({
                       }
                     />
                     <Label htmlFor="private" className="text-sm">
-                      Private
+                      Riêng tư
                     </Label>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Minimum Rating</Label>
+                <Label className="text-sm font-medium">Đánh giá tối thiểu</Label>
                 <div className="flex items-center space-x-2">
                   {[1, 2, 3, 4, 5].map((rating) => (
                     <button
@@ -406,7 +406,7 @@ export function DocumentSearch({
                     </button>
                   ))}
                   <span className="text-sm text-muted-foreground ml-2">
-                    {filters.minRating || 0} stars
+                    {filters.minRating || 0} sao
                   </span>
                 </div>
               </div>

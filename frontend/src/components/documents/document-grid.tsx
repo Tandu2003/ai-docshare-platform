@@ -49,9 +49,9 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
     return (
       <div className="text-center py-12">
         <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-muted-foreground mb-2">No documents found</h3>
+        <h3 className="text-lg font-medium text-muted-foreground mb-2">Không tìm thấy tài liệu nào</h3>
         <p className="text-sm text-muted-foreground">
-          Try adjusting your search criteria or filters to find more documents.
+          Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc để tìm thêm tài liệu.
         </p>
       </div>
     );
@@ -125,7 +125,7 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
               <div className="space-y-2">
                 <Badge variant="secondary" className="text-xs">
                   <span className="mr-1">{document.category?.icon || '📄'}</span>
-                  {document.category?.name || 'Uncategorized'}
+                  {document.category?.name || 'Chưa phân loại'}
                 </Badge>
                 {document.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -136,7 +136,7 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                     ))}
                     {document.tags.length > 3 && (
                       <Badge variant="outline" className="text-xs">
-                        +{document.tags.length - 3} more
+                        +{document.tags.length - 3} nữa
                       </Badge>
                     )}
                   </div>
@@ -146,17 +146,17 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
               {/* Actions */}
               <div className="flex items-center justify-between pt-2">
                 <Button variant="outline" size="sm" asChild>
-                  <Link to={`/documents/${document.id}`}>View Details</Link>
+                  <Link to={`/documents/${document.id}`}>Xem chi tiết</Link>
                 </Button>
                 <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                   <span>{getLanguageName(document.language)}</span>
                   {document.isApproved ? (
                     <Badge variant="default" className="text-xs">
-                      Approved
+                      Đã duyệt
                     </Badge>
                   ) : (
                     <Badge variant="secondary" className="text-xs">
-                      Pending
+                      Đang chờ
                     </Badge>
                   )}
                 </div>
@@ -170,7 +170,7 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
       {hasMore && onLoadMore && (
         <div className="flex justify-center pt-6">
           <Button variant="outline" onClick={onLoadMore} disabled={isLoading}>
-            {isLoading ? 'Loading...' : 'Load More'}
+            {isLoading ? 'Đang tải...' : 'Tải thêm'}
           </Button>
         </div>
       )}

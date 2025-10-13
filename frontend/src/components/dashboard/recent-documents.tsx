@@ -16,10 +16,10 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Documents</CardTitle>
+          <CardTitle>Tài liệu gần đây</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No documents available yet.</p>
+          <p className="text-sm text-muted-foreground">Chưa có tài liệu nào.</p>
         </CardContent>
       </Card>
     );
@@ -28,7 +28,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Documents</CardTitle>
+        <CardTitle>Tài liệu gần đây</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

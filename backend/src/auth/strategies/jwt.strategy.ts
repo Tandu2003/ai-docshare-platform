@@ -27,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.authService.validateUser(payload);
 
     if (!user) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw new UnauthorizedException('Không tìm thấy người dùng hoặc tài khoản không hoạt động');
     }
 
     return user;

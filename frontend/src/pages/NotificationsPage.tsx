@@ -153,10 +153,10 @@ export default function NotificationsPage() {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 60) return 'Vừa xong';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} phút trước`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} giờ trước`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
     return date.toLocaleDateString();
   };
 
@@ -165,8 +165,8 @@ export default function NotificationsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
-            <p className="text-muted-foreground">Stay updated with your activity</p>
+            <h1 className="text-3xl font-bold tracking-tight">Thông báo</h1>
+            <p className="text-muted-foreground">Cập nhật hoạt động của bạn</p>
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
@@ -197,14 +197,14 @@ export default function NotificationsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
           <p className="text-muted-foreground">
-            {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
+            {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : 'Đã cập nhật tất cả!'};
           </p>
         </div>
         <div className="flex items-center space-x-2">
           {unreadCount > 0 && (
             <Button variant="outline" onClick={handleMarkAllAsRead}>
               <CheckCheck className="h-4 w-4 mr-2" />
-              Mark All Read
+              Đánh dấu tất cả đã đọc
             </Button>
           )}
           {selectedNotifications.length > 0 && (
@@ -212,24 +212,23 @@ export default function NotificationsPage() {
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected
+                  Xóa đã chọn
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Notifications</AlertDialogTitle>
+                  <AlertDialogTitle>Xóa thông báo</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete {selectedNotifications.length} notification
-                    {selectedNotifications.length > 1 ? 's' : ''}? This action cannot be undone.
+                    Bạn có chắc chắn muốn xóa {selectedNotifications.length} thông báo{selectedNotifications.length > 1 ? 's' : ''}? Hành động này không thể hoàn tác.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Hủy</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDeleteSelected}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    Delete
+                    Xóa
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -244,16 +243,16 @@ export default function NotificationsPage() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4" />
-              <span className="text-sm font-medium">Filters:</span>
+              <span className="text-sm font-medium">Bộ lọc:</span>
             </div>
             <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="unread">Unread</SelectItem>
-                <SelectItem value="read">Read</SelectItem>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="unread">Chưa đọc</SelectItem>
+                <SelectItem value="read">Đã đọc</SelectItem>
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -261,12 +260,12 @@ export default function NotificationsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="comment">Comments</SelectItem>
-                <SelectItem value="rating">Ratings</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-                <SelectItem value="document_approved">Approvals</SelectItem>
-                <SelectItem value="collaboration">Collaboration</SelectItem>
+                <SelectItem value="all">Tất cả loại</SelectItem>
+                <SelectItem value="comment">Bình luận</SelectItem>
+                <SelectItem value="rating">Đánh giá</SelectItem>
+                <SelectItem value="system">Hệ thống</SelectItem>
+                <SelectItem value="document_approved">Duyệt</SelectItem>
+                <SelectItem value="collaboration">Cộng tác</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -279,11 +278,11 @@ export default function NotificationsPage() {
           <Card>
             <CardContent className="p-8 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">No notifications</h3>
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">Không có thông báo</h3>
               <p className="text-sm text-muted-foreground">
                 {filter === 'all'
-                  ? "You're all caught up! No notifications to show."
-                  : `No ${filter} notifications found.`}
+                  ? "Bạn đã cập nhật tất cả! Không có thông báo nào để hiển thị."
+                  : `Không tìm thấy thông báo ${filter}.`}
               </p>
             </CardContent>
           </Card>
@@ -299,7 +298,7 @@ export default function NotificationsPage() {
                 onCheckedChange={handleSelectAll}
               />
               <span className="text-sm text-muted-foreground">
-                Select all ({filteredNotifications.length})
+                Chọn tất cả ({filteredNotifications.length})
               </span>
             </div>
 
@@ -330,7 +329,7 @@ export default function NotificationsPage() {
                         <div className="flex items-center space-x-2 ml-4">
                           {!notification.isRead && (
                             <Badge variant="default" className="text-xs">
-                              New
+                              Mới
                             </Badge>
                           )}
                           <Badge variant="outline" className="text-xs capitalize">
@@ -349,7 +348,7 @@ export default function NotificationsPage() {
                             onClick={() => handleMarkAsRead(notification.id)}
                           >
                             <Check className="h-3 w-3 mr-1" />
-                            Mark as read
+                            Đánh dấu đã đọc
                           </Button>
                         )}
                         <AlertDialog>
@@ -360,19 +359,18 @@ export default function NotificationsPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Notification</AlertDialogTitle>
+                              <AlertDialogTitle>Xóa thông báo</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete this notification? This action
-                                cannot be undone.
+                                Bạn có chắc chắn muốn xóa thông báo này? Hành động này không thể hoàn tác.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>Hủy</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDeleteNotification(notification.id)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
-                                Delete
+                                Xóa
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

@@ -60,36 +60,36 @@ export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Total Documents"
+        title="Tổng tài liệu"
         value={stats.totalDocuments.toLocaleString()}
         change={12}
-        changeLabel="last month"
+        changeLabel="tháng trước"
         icon={FileText}
-        description="Documents in the platform"
+        description="Tài liệu trong nền tảng"
       />
       <StatCard
-        title="Total Users"
+        title="Tổng người dùng"
         value={stats.totalUsers.toLocaleString()}
         change={8}
-        changeLabel="last month"
+        changeLabel="tháng trước"
         icon={Users}
-        description="Registered users"
+        description="Người dùng đã đăng ký"
       />
       <StatCard
-        title="Total Downloads"
+        title="Tổng lượt tải"
         value={stats.totalDownloads.toLocaleString()}
         change={-2}
-        changeLabel="last month"
+        changeLabel="tháng trước"
         icon={Download}
-        description="Document downloads"
+        description="Lượt tải tài liệu"
       />
       <StatCard
-        title="Total Views"
+        title="Tổng lượt xem"
         value={stats.totalViews.toLocaleString()}
         change={15}
-        changeLabel="last month"
+        changeLabel="tháng trước"
         icon={Eye}
-        description="Document views"
+        description="Lượt xem tài liệu"
       />
     </div>
   );

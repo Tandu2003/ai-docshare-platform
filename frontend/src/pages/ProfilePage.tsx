@@ -182,7 +182,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Please log in to view your profile</p>
+        <p className="text-muted-foreground">Vui lòng đăng nhập để xem hồ sơ của bạn</p>
       </div>
     );
   }
@@ -206,7 +206,7 @@ export default function ProfilePage() {
                     {user.firstName} {user.lastName}
                   </h1>
                   <Badge variant={user.isVerified ? 'default' : 'secondary'}>
-                    {user.isVerified ? 'Verified' : 'Unverified'}
+                    {user.isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground">@{user.username}</p>
@@ -215,12 +215,12 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-4 w-4" />
-                    <span>Joined {formatDate(user.createdAt)}</span>
+                    <span>Tham gia {formatDate(user.createdAt)}</span>
                   </div>
                   {user.lastLoginAt && (
                     <div className="flex items-center space-x-1">
                       <User className="h-4 w-4" />
-                      <span>Last active {formatDate(user.lastLoginAt)}</span>
+                      <span>Lần cuối hoạt động {formatDate(user.lastLoginAt)}</span>
                     </div>
                   )}
                 </div>
@@ -230,34 +230,32 @@ export default function ProfilePage() {
               <DialogTrigger asChild>
                 <Button variant="outline">
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  Chỉnh sửa hồ sơ
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Edit Profile</DialogTitle>
+                  <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="firstName">Tên</Label>
                       <Input
                         id="firstName"
                         value={formData.firstName}
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, firstName: e.target.value }))
-                        }
-                      />
+                        }/>
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Last Name</Label>
+                      <Label htmlFor="lastName">Họ</Label>
                       <Input
                         id="lastName"
                         value={formData.lastName}
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, lastName: e.target.value }))
-                        }
-                      />
+                        }/>
                     </div>
                   </div>
                   <div>
@@ -270,30 +268,29 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="username">Username</Label>
+                    <Label htmlFor="username">Tên đăng nhập</Label>
                     <Input
                       id="username"
                       value={formData.username}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, username: e.target.value }))
-                      }
-                    />
+                      }/>
                   </div>
                   <div>
-                    <Label htmlFor="bio">Bio</Label>
+                    <Label htmlFor="bio">Tiểu sử</Label>
                     <Textarea
                       id="bio"
                       value={formData.bio}
                       onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
-                      placeholder="Tell us about yourself..."
+                      placeholder="Hãy cho chúng tôi biết về bạn..."
                       rows={3}
                     />
                   </div>
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                      Cancel
+                      Hủy
                     </Button>
-                    <Button onClick={handleSaveProfile}>Save Changes</Button>
+                    <Button onClick={handleSaveProfile}>Lưu thay đổi</Button>
                   </div>
                 </div>
               </DialogContent>
@@ -310,7 +307,7 @@ export default function ProfilePage() {
               <Upload className="h-8 w-8 text-blue-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.documentCount}</p>
-                <p className="text-sm text-muted-foreground">Documents</p>
+                <p className="text-sm text-muted-foreground">Tài liệu</p>
               </div>
             </div>
           </CardContent>
@@ -321,7 +318,7 @@ export default function ProfilePage() {
               <Download className="h-8 w-8 text-green-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalDownloads}</p>
-                <p className="text-sm text-muted-foreground">Downloads</p>
+                <p className="text-sm text-muted-foreground">Lượt tải</p>
               </div>
             </div>
           </CardContent>
@@ -332,7 +329,7 @@ export default function ProfilePage() {
               <Eye className="h-8 w-8 text-purple-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalViews}</p>
-                <p className="text-sm text-muted-foreground">Views</p>
+                <p className="text-sm text-muted-foreground">Lượt xem</p>
               </div>
             </div>
           </CardContent>
@@ -343,7 +340,7 @@ export default function ProfilePage() {
               <Star className="h-8 w-8 text-yellow-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                <p className="text-sm text-muted-foreground">Avg Rating</p>
+                <p className="text-sm text-muted-foreground">Đánh giá TB</p>
               </div>
             </div>
           </CardContent>
@@ -354,7 +351,7 @@ export default function ProfilePage() {
               <Users className="h-8 w-8 text-orange-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.bookmarkCount}</p>
-                <p className="text-sm text-muted-foreground">Bookmarks</p>
+                <p className="text-sm text-muted-foreground">Đánh dấu</p>
               </div>
             </div>
           </CardContent>
@@ -364,30 +361,30 @@ export default function ProfilePage() {
       {/* Tabs */}
       <Tabs defaultValue="documents" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="documents">My Documents</TabsTrigger>
-          <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="documents">Tài liệu của tôi</TabsTrigger>
+          <TabsTrigger value="bookmarks">Đánh dấu</TabsTrigger>
+          <TabsTrigger value="activity">Hoạt động</TabsTrigger>
         </TabsList>
 
         {/* My Documents */}
         <TabsContent value="documents" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>My Documents</CardTitle>
+              <CardTitle>Tài liệu của tôi</CardTitle>
             </CardHeader>
             <CardContent>
               {userDocuments.length === 0 ? (
                 <div className="text-center py-8">
                   <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                    No documents yet
+                    Chưa có tài liệu nào
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Start sharing your knowledge by uploading your first document.
+                    Bắt đầu chia sẻ kiến thức của bạn bằng cách tải lên tài liệu đầu tiên.
                   </p>
                   <Button>
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Document
+                    Tải lên tài liệu
                   </Button>
                 </div>
               ) : (
@@ -433,7 +430,7 @@ export default function ProfilePage() {
                             <span>{averageRatingDisplay}</span>
                           </div>
                           <Badge variant={isApproved ? 'default' : 'secondary'}>
-                            {isApproved ? 'Approved' : 'Pending'}
+                            {isApproved ? 'Đã duyệt' : 'Đang chờ'}
                           </Badge>
                         </div>
                       </div>
@@ -449,17 +446,17 @@ export default function ProfilePage() {
         <TabsContent value="bookmarks" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>My Bookmarks</CardTitle>
+              <CardTitle>Đánh dấu của tôi</CardTitle>
             </CardHeader>
             <CardContent>
               {userBookmarks.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                    No bookmarks yet
+                    Chưa có đánh dấu nào
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Bookmark documents you find interesting to easily access them later.
+                    Đánh dấu các tài liệu bạn thấy thú vị để dễ dàng truy cập chúng sau này.
                   </p>
                 </div>
               ) : (
@@ -518,17 +515,17 @@ export default function ProfilePage() {
         <TabsContent value="activity" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle>Hoạt động gần đây</CardTitle>
             </CardHeader>
             <CardContent>
               {userActivity.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                    No activity yet
+                    Chưa có hoạt động nào
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Your activity will appear here as you use the platform.
+                    Hoạt động của bạn sẽ xuất hiện ở đây khi bạn sử dụng nền tảng.
                   </p>
                 </div>
               ) : (
@@ -544,12 +541,12 @@ export default function ProfilePage() {
                         </div>
                         <div className="flex-1">
                           <p className="text-sm">
-                            {activity.action === 'upload' && 'Uploaded a new document'}
-                            {activity.action === 'download' && 'Downloaded a document'}
-                            {activity.action === 'view' && 'Viewed a document'}
-                            {activity.action === 'login' && 'Logged in'}
+                            {activity.action === 'upload' && 'Đã tải lên tài liệu mới'}
+                            {activity.action === 'download' && 'Đã tải xuống tài liệu'}
+                            {activity.action === 'view' && 'Đã xem tài liệu'}
+                            {activity.action === 'login' && 'Đã đăng nhập'}
                             {!['upload', 'download', 'view', 'login'].includes(activity.action) &&
-                              `Performed ${activity.action}`}
+                              `Thực hiện ${activity.action}`}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(activity.createdAt).toLocaleString()}

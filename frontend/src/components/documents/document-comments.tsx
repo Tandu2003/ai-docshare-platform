@@ -93,7 +93,7 @@ export function DocumentComments({
                 </span>
                 {comment.isEdited && (
                   <Badge variant="outline" className="text-xs">
-                    edited
+                    đã chỉnh sửa
                   </Badge>
                 )}
               </div>
@@ -110,13 +110,13 @@ export function DocumentComments({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => handleEditComment(comment)}>
-                        Edit
+                        Chỉnh sửa
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => onDeleteComment(comment.id)}
                         className="text-red-600"
                       >
-                        Delete
+                        Xóa
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -129,15 +129,15 @@ export function DocumentComments({
                 <Textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  placeholder="Edit your comment..."
+                  placeholder="Chỉnh sửa bình luận của bạn..."
                   rows={3}
                 />
                 <div className="flex items-center space-x-2">
                   <Button size="sm" onClick={handleSaveEdit}>
-                    Save
+                    Lưu
                   </Button>
                   <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                    Cancel
+                    Hủy
                   </Button>
                 </div>
               </div>
@@ -163,7 +163,7 @@ export function DocumentComments({
                   className="flex items-center space-x-1"
                 >
                   <Reply className="h-3 w-3" />
-                  <span>Reply</span>
+                  <span>Trả lời</span>
                 </Button>
               )}
             </div>
@@ -174,13 +174,13 @@ export function DocumentComments({
                 <Textarea
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="Write a reply..."
+                  placeholder="Viết trả lời..."
                   rows={2}
                 />
                 <div className="flex items-center space-x-2">
                   <Button size="sm" onClick={() => handleSubmitReply(comment.id)}>
                     <Send className="h-3 w-3 mr-1" />
-                    Reply
+                    Trả lời
                   </Button>
                   <Button
                     size="sm"
@@ -190,7 +190,7 @@ export function DocumentComments({
                       setReplyContent('');
                     }}
                   >
-                    Cancel
+                    Hủy
                   </Button>
                 </div>
               </div>
@@ -217,7 +217,7 @@ export function DocumentComments({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Comments ({comments.length})
+          Bình luận ({comments.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -226,13 +226,13 @@ export function DocumentComments({
           <Textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Share your thoughts about this document..."
+            placeholder="Chia sẻ suy nghĩ của bạn về tài liệu này..."
             rows={3}
           />
           <div className="flex justify-end">
             <Button onClick={handleSubmitComment} disabled={!newComment.trim()}>
               <Send className="h-4 w-4 mr-2" />
-              Post Comment
+              Đăng bình luận
             </Button>
           </div>
         </div>
@@ -244,7 +244,7 @@ export function DocumentComments({
           {topLevelComments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No comments yet. Be the first to share your thoughts!</p>
+              <p>Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!</p>
             </div>
           ) : (
             topLevelComments.map((comment) => renderComment(comment))

@@ -32,7 +32,7 @@ export function DataTable<T extends Record<string, any>>({
   columns,
   loading = false,
   title,
-  emptyMessage = 'No data available',
+  emptyMessage = 'Không có dữ liệu',
   className,
 }: DataTableProps<T>) {
   if (loading) {

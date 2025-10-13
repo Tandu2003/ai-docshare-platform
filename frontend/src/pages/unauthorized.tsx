@@ -11,17 +11,16 @@ export const UnauthorizedPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="text-center max-w-md mx-auto">
         <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Từ chối truy cập</h1>
         <p className="text-gray-600 mb-6">
-          You don't have permission to access this page. Please contact your administrator if you
-          believe this is an error.
+          Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.
         </p>
         <div className="space-y-2">
           <Button onClick={() => navigate('/dashboard')} className="w-full">
-            Go to Dashboard
+            Về trang chủ
           </Button>
           <Button variant="outline" onClick={() => navigate(-1)} className="w-full">
-            Go Back
+            Quay lại
           </Button>
         </div>
       </div>

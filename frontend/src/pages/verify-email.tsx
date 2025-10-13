@@ -20,7 +20,7 @@ export function VerifyEmailPage() {
   useEffect(() => {
     const verifyEmail = async () => {
       if (!token) {
-        setError('Invalid verification token');
+        setError('Token xác thực không hợp lệ');
         setIsLoading(false);
         return;
       }
@@ -38,8 +38,8 @@ export function VerifyEmailPage() {
         }, 3000);
       } catch (error: any) {
         console.error('Verify email error:', error);
-        setError(error.message || 'Email verification failed');
-        toast.error(error.message || 'Email verification failed');
+        setError(error.message || 'Xác thực email thất bại');
+        toast.error(error.message || 'Xác thực email thất bại');
       } finally {
         setIsLoading(false);
       }
@@ -60,7 +60,7 @@ export function VerifyEmailPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Verifying your email</p>
+            <p className="text-gray-600">Đang xác thực email của bạn</p>
           </div>
 
           <Card>
@@ -68,8 +68,8 @@ export function VerifyEmailPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
               </div>
-              <CardTitle className="text-2xl">Verifying email...</CardTitle>
-              <CardDescription>Please wait while we verify your email address.</CardDescription>
+              <CardTitle className="text-2xl">Đang xác thực email...</CardTitle>
+              <CardDescription>Vui lòng đợi trong khi chúng tôi xác thực địa chỉ email của bạn.</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -83,7 +83,7 @@ export function VerifyEmailPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Email verified successfully</p>
+            <p className="text-gray-600">Xác thực email thành công</p>
           </div>
 
           <Card>
@@ -91,15 +91,14 @@ export function VerifyEmailPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
                 <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <CardTitle className="text-2xl">Email verified!</CardTitle>
+              <CardTitle className="text-2xl">Email đã được xác thực!</CardTitle>
               <CardDescription>
-                Your account has been successfully activated. You will be redirected to the login
-                page shortly.
+                Tài khoản của bạn đã được kích hoạt thành công. Bạn sẽ được chuyển hướng đến trang đăng nhập trong giây lát.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link to="/login">Sign In Now</Link>
+                <Link to="/login">Đăng nhập ngay</Link>
               </Button>
             </CardContent>
           </Card>
@@ -114,7 +113,7 @@ export function VerifyEmailPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">AI DocShare Platform</h1>
-            <p className="text-gray-600">Verification failed</p>
+            <p className="text-gray-600">Xác thực thất bại</p>
           </div>
 
           <Card>
@@ -122,16 +121,16 @@ export function VerifyEmailPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
                 <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
-              <CardTitle className="text-2xl">Verification Failed</CardTitle>
+              <CardTitle className="text-2xl">Xác thực thất bại</CardTitle>
               <CardDescription className="text-red-600 dark:text-red-400">{error}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button onClick={handleResendVerification} className="w-full">
                 <Mail className="mr-2 h-4 w-4" />
-                Resend Verification Email
+                Gửi lại email xác thực
               </Button>
               <Button asChild variant="outline" className="w-full">
-                <Link to="/login">Back to Login</Link>
+                <Link to="/login">Quay lại đăng nhập</Link>
               </Button>
             </CardContent>
           </Card>

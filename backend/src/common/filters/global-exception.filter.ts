@@ -45,7 +45,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else {
       // Handle unknown errors
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'Internal server error';
+      message = 'Lỗi máy chủ nội bộ';
       error = exception;
 
       this.logger.error('Unexpected error:', exception);

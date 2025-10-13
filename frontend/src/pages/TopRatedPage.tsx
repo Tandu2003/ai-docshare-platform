@@ -26,17 +26,17 @@ import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
 const RANGE_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: '90d', label: 'Last 90 days' },
-  { value: '1y', label: 'Last year' },
+  { value: '7d', label: '7 ngày qua' },
+  { value: '30d', label: '30 ngày qua' },
+  { value: '90d', label: '90 ngày qua' },
+  { value: '1y', label: 'Năm qua' },
 ];
 
 const MIN_RATING_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '5', label: '5+ ratings' },
-  { value: '10', label: '10+ ratings' },
-  { value: '25', label: '25+ ratings' },
-  { value: '50', label: '50+ ratings' },
+  { value: '5', label: '5+ đánh giá' },
+  { value: '10', label: '10+ đánh giá' },
+  { value: '25', label: '25+ đánh giá' },
+  { value: '50', label: '50+ đánh giá' },
 ];
 
 const formatNumber = (value?: number | null) => {
@@ -145,7 +145,7 @@ export default function TopRatedPage() {
             Top Rated Documents
           </h1>
           <p className="text-muted-foreground mt-1">
-            The highest-rated documents based on user reviews
+            Các tài liệu được đánh giá cao nhất dựa trên đánh giá của người dùng
           </p>
           <Badge variant="outline" className="mt-2 text-xs font-normal">
             {formatDate(analytics.timeframe.startDate)} → {formatDate(analytics.timeframe.endDate)}
@@ -154,7 +154,7 @@ export default function TopRatedPage() {
         <div className="flex gap-2">
           <Select value={timeRange} onValueChange={setTimeRange} disabled={isLoading}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Select range" />
+              <SelectValue placeholder="Chọn khoảng thời gian" />
             </SelectTrigger>
             <SelectContent>
               {RANGE_OPTIONS.map((option) => (
@@ -166,7 +166,7 @@ export default function TopRatedPage() {
           </Select>
           <Select value={minRatings} onValueChange={setMinRatings} disabled={isLoading}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Min ratings" />
+              <SelectValue placeholder="Số đánh giá tối thiểu" />
             </SelectTrigger>
             <SelectContent>
               {MIN_RATING_OPTIONS.map((option) => (
@@ -192,14 +192,14 @@ export default function TopRatedPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Average Rating</p>
+                <p className="text-sm font-medium text-muted-foreground">Đánh giá trung bình</p>
                 <p className="text-2xl font-bold">
                   {isLoading ? <Skeleton className="h-6 w-20" /> : stats.averageRating.toFixed(1)}
                 </p>
               </div>
               <Star className="h-8 w-8 text-yellow-500" />
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Across all top documents</p>
+            <p className="text-sm text-muted-foreground mt-1">Trên tất cả tài liệu hàng đầu</p>
           </CardContent>
         </Card>
 
@@ -207,14 +207,14 @@ export default function TopRatedPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Ratings</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng đánh giá</p>
                 <p className="text-2xl font-bold">
                   {isLoading ? <Skeleton className="h-6 w-20" /> : formatNumber(stats.totalRatings)}
                 </p>
               </div>
               <Award className="h-8 w-8 text-blue-500" />
             </div>
-            <p className="text-sm text-muted-foreground mt-1">User reviews collected</p>
+            <p className="text-sm text-muted-foreground mt-1">Đánh giá của người dùng</p>
           </CardContent>
         </Card>
 
@@ -222,14 +222,14 @@ export default function TopRatedPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Perfect Scores</p>
+                <p className="text-sm font-medium text-muted-foreground">Điểm tuyệt đối</p>
                 <p className="text-2xl font-bold">
                   {isLoading ? <Skeleton className="h-6 w-12" /> : stats.perfectCount}
                 </p>
               </div>
               <Trophy className="h-8 w-8 text-yellow-500" />
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Documents with 4.8+ rating</p>
+            <p className="text-sm text-muted-foreground mt-1">Tài liệu có đánh giá 4.8+</p>
           </CardContent>
         </Card>
       </div>
@@ -258,10 +258,10 @@ export default function TopRatedPage() {
               No top rated documents found for this timeframe.
             </p>
             <p className="text-sm text-muted-foreground">
-              Try selecting a different range or lowering the minimum ratings requirement.
+              Thử chọn khoảng thời gian khác hoặc giảm yêu cầu đánh giá tối thiểu.
             </p>
             <Button asChild>
-              <Link to="/documents">Browse Documents</Link>
+              <Link to="/documents">Duyệt tài liệu</Link>
             </Button>
           </CardContent>
         </Card>
@@ -320,7 +320,7 @@ function TopRatedDocumentCard({ document }: TopRatedDocumentCardProps) {
                   </div>
                   <span className="text-sm font-medium">{document.averageRating.toFixed(1)}</span>
                   <span className="text-sm text-muted-foreground">
-                    ({formatNumber(document.ratingCount)} ratings)
+                    ({formatNumber(document.ratingCount)} đánh giá)
                   </span>
                 </div>
               </div>
@@ -341,7 +341,7 @@ function TopRatedDocumentCard({ document }: TopRatedDocumentCardProps) {
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">
-                  {uploaderName || 'Unknown author'}
+                  {uploaderName || 'Tác giả không xác định'}
                 </span>
               </div>
               <Separator orientation="vertical" className="h-4" />
@@ -372,20 +372,20 @@ function TopRatedDocumentCard({ document }: TopRatedDocumentCardProps) {
               ))}
               {tags.length > 3 && (
                 <Badge variant="outline" className="text-xs">
-                  +{tags.length - 3} more
+                  +{tags.length - 3} thêm
                 </Badge>
               )}
             </div>
 
             <div className="flex items-center gap-1 text-xs text-muted-foreground ml-11">
               <Calendar className="h-3 w-3" />
-              <span>Created {createdAt}</span>
+              <span>Tạo {createdAt}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link to={`/documents/${document.id}`}>View Document</Link>
+              <Link to={`/documents/${document.id}`}>Xem tài liệu</Link>
             </Button>
           </div>
         </div>

@@ -55,13 +55,13 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Tài liệu</h1>
         <p className="text-muted-foreground">
-          Browse and discover documents shared by the community.
+          Duyệt và khám phá tài liệu được chia sẻ bởi cộng đồng.
         </p>
       </div>
 
-      {/* Documents Grid */}
+      {/* Lưới tài liệu */}
       <DocumentGrid
         documents={documents}
         isLoading={loading}

@@ -50,7 +50,7 @@ export class FilesController {
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Files uploaded successfully',
+    description: 'Tệp đã được tải lên thành công',
   })
   @UseInterceptors(
     FilesInterceptor('files', 10, {
@@ -75,7 +75,7 @@ export class FilesController {
     this.logger.log(`Uploading ${files.length} files for user ${user?.username}`);
 
     if (!files || files.length === 0) {
-      throw new BadRequestException('No files provided');
+      throw new BadRequestException('Không có tệp nào được cung cấp');
     }
 
     try {
@@ -86,7 +86,7 @@ export class FilesController {
       return ResponseHelper.success(
         res,
         uploadResults,
-        'Files uploaded successfully',
+        'Tệp đã được tải lên thành công',
         HttpStatus.CREATED
       );
     } catch (error) {
@@ -98,7 +98,7 @@ export class FilesController {
 
       return ResponseHelper.error(
         res,
-        'An error occurred while uploading files',
+        'Đã xảy ra lỗi khi tải lên tệp',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -109,7 +109,7 @@ export class FilesController {
   @ApiOperation({ summary: 'Get secure access URL for a file' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Secure file URL generated successfully',
+    description: 'URL tệp bảo mật đã được tạo thành công',
   })
   async getSecureFileUrl(
     @Param('fileId') fileId: string,
@@ -122,7 +122,7 @@ export class FilesController {
 
       const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
 
-      return ResponseHelper.success(res, { secureUrl }, 'Secure file URL generated');
+      return ResponseHelper.success(res, { secureUrl }, 'URL tệp bảo mật đã được tạo');
     } catch (error) {
       this.logger.error(`Failed to generate secure URL for file ${fileId}`, error);
 
@@ -132,7 +132,7 @@ export class FilesController {
 
       return ResponseHelper.error(
         res,
-        'Could not generate secure file URL',
+        'Không thể tạo URL tệp bảo mật',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

@@ -140,7 +140,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Không tìm thấy danh mục');
     }
 
     const [categoryWithMetrics] = await this.attachMetrics([category]);
@@ -153,7 +153,7 @@ export class CategoriesService {
     }
 
     if (categoryId && categoryId === parentId) {
-      throw new BadRequestException('Category cannot be its own parent');
+      throw new BadRequestException('Danh mục không thể là danh mục cha của chính nó');
     }
 
     const parentExists = await this.prisma.category.findUnique({
@@ -161,7 +161,7 @@ export class CategoriesService {
     });
 
     if (!parentExists) {
-      throw new BadRequestException('Parent category not found');
+      throw new BadRequestException('Không tìm thấy danh mục cha');
     }
   }
 
@@ -198,7 +198,7 @@ export class CategoriesService {
   async updateCategory(id: string, dto: UpdateCategoryDto) {
     const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Không tìm thấy danh mục');
     }
 
     const parentProvided = dto.parentId !== undefined;
@@ -266,7 +266,7 @@ export class CategoriesService {
   async deleteCategory(id: string) {
     const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Không tìm thấy danh mục');
     }
 
     const childCount = await this.prisma.category.count({
@@ -274,7 +274,7 @@ export class CategoriesService {
     });
 
     if (childCount > 0) {
-      throw new BadRequestException('Cannot delete category with child categories');
+      throw new BadRequestException('Không thể xóa danh mục có danh mục con');
     }
 
     const documentCount = await this.prisma.document.count({
@@ -282,7 +282,7 @@ export class CategoriesService {
     });
 
     if (documentCount > 0) {
-      throw new BadRequestException('Cannot delete category with associated documents');
+      throw new BadRequestException('Không thể xóa danh mục có tài liệu liên kết');
     }
 
     await this.prisma.category.delete({

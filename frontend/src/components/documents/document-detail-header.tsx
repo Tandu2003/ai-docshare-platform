@@ -62,7 +62,7 @@ export function DocumentDetailHeader({
       <Button variant="ghost" asChild>
         <Link to="/documents" className="flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Back to Documents
+          Quay lại tài liệu
         </Link>
       </Button>
 
@@ -117,16 +117,16 @@ export function DocumentDetailHeader({
               <div className="flex items-center space-x-6 text-sm text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Download className="h-4 w-4" />
-                  <span>{document.downloadCount} downloads</span>
+                  <span>{document.downloadCount} lượt tải</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Eye className="h-4 w-4" />
-                  <span>{document.viewCount} views</span>
+                  <span>{document.viewCount} lượt xem</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Star className="h-4 w-4" />
                   <span>
-                    {document.averageRating.toFixed(1)} ({document.totalRatings} ratings)
+                    {document.averageRating.toFixed(1)} ({document.totalRatings} đánh giá)
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
@@ -139,7 +139,7 @@ export function DocumentDetailHeader({
               <div className="flex items-center space-x-2">
                 <Button onClick={onDownload} className="flex items-center gap-2">
                   <Download className="h-4 w-4" />
-                  Download
+                  Tải xuống
                 </Button>
                 <Button
                   variant={isBookmarked ? 'default' : 'outline'}
@@ -155,7 +155,7 @@ export function DocumentDetailHeader({
                     <Bookmark className="h-4 w-4" />
                   )}
                   <span className="sr-only">
-                    {isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
+                    {isBookmarked ? 'Xóa khỏi đánh dấu' : 'Thêm vào đánh dấu'}
                   </span>
                 </Button>
                 <Button variant="outline" onClick={onShare}>
@@ -166,7 +166,7 @@ export function DocumentDetailHeader({
 
             {/* Rating Section */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Rate this document:</p>
+              <p className="text-sm font-medium">Đánh giá tài liệu này:</p>
               <div className="flex items-center space-x-1">
                 {[1, 2, 3, 4, 5].map((rating) => (
                   <TooltipProvider key={rating}>
@@ -189,7 +189,7 @@ export function DocumentDetailHeader({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>
-                          {rating} star{rating > 1 ? 's' : ''}
+                          {rating} sao{rating > 1 ? 's' : ''}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -197,7 +197,7 @@ export function DocumentDetailHeader({
                 ))}
                 {userRating > 0 && (
                   <span className="text-sm text-muted-foreground ml-2">
-                    You rated this {userRating} star{userRating > 1 ? 's' : ''}
+                    Bạn đã đánh giá {userRating} sao{userRating > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -206,7 +206,7 @@ export function DocumentDetailHeader({
             {/* Tags and Category */}
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">Category:</span>
+                <span className="text-sm font-medium">Danh mục:</span>
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>{document.category.icon}</span>
                   {document.category.name}
@@ -214,7 +214,7 @@ export function DocumentDetailHeader({
               </div>
               {document.tags.length > 0 && (
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">Tags:</span>
+                  <span className="text-sm font-medium">Thẻ:</span>
                   <div className="flex flex-wrap gap-1">
                     {document.tags.map((tag) => (
                       <Badge key={tag} variant="outline" className="text-xs">

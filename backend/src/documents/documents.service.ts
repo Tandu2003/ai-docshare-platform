@@ -56,7 +56,7 @@ export class DocumentsService {
           `Files validation failed. Found ${files.length} files, expected ${fileIds.length}`
         );
 
-        throw new BadRequestException('Some files not found or do not belong to the user');
+        throw new BadRequestException('Một số tệp không tìm thấy hoặc không thuộc về người dùng');
       }
 
       this.logger.log(
@@ -70,7 +70,7 @@ export class DocumentsService {
 
       if (!category) {
         this.logger.error(`Category not found: ${categoryId}`);
-        throw new BadRequestException('Category not found');
+        throw new BadRequestException('Không tìm thấy danh mục');
       }
 
       this.logger.log(`Using category: ${category.name} (${category.id})`);
@@ -160,7 +160,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('An error occurred while creating document');
+      throw new InternalServerErrorException('Đã xảy ra lỗi khi tạo tài liệu');
     }
   }
 
@@ -190,7 +190,7 @@ export class DocumentsService {
     });
 
     if (!document) {
-      throw new BadRequestException('Document not found');
+      throw new BadRequestException('Không tìm thấy tài liệu');
     }
 
     // Increment download count
@@ -325,7 +325,7 @@ export class DocumentsService {
       };
     } catch (error) {
       this.logger.error('Error getting user documents:', error);
-      throw new InternalServerErrorException('Failed to get user documents');
+      throw new InternalServerErrorException('Không thể lấy tài liệu người dùng');
     }
   }
 
@@ -427,7 +427,7 @@ export class DocumentsService {
       };
     } catch (error) {
       this.logger.error('Error getting public documents:', error);
-      throw new InternalServerErrorException('Failed to get public documents');
+      throw new InternalServerErrorException('Không thể lấy tài liệu công khai');
     }
   }
 
@@ -456,12 +456,12 @@ export class DocumentsService {
       });
 
       if (!document) {
-        throw new BadRequestException('Document not found');
+        throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
       // Check access permissions
       if (!document.isPublic && document.uploaderId !== userId) {
-        throw new BadRequestException('Document is not public');
+        throw new BadRequestException('Tài liệu không công khai');
       }
 
       // Create view record
@@ -492,7 +492,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to track document view');
+      throw new InternalServerErrorException('Không thể theo dõi lượt xem tài liệu');
     }
   }
 
@@ -534,7 +534,7 @@ export class DocumentsService {
       });
 
       if (!document) {
-        throw new BadRequestException('Document not found');
+        throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
       const isOwner = document.uploaderId === userId;
@@ -548,7 +548,7 @@ export class DocumentsService {
 
       // Check access permissions
       if (!document.isPublic && !isOwner && !shareAccessGranted) {
-        throw new BadRequestException('Document is not public');
+        throw new BadRequestException('Tài liệu không công khai');
       }
 
       // Prepare file data without secure URLs first
@@ -612,7 +612,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to get document');
+      throw new InternalServerErrorException('Không thể lấy tài liệu');
     }
   }
 
@@ -630,11 +630,11 @@ export class DocumentsService {
       });
 
       if (!document) {
-        throw new BadRequestException('Document not found');
+        throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
       if (document.uploaderId !== userId) {
-        throw new BadRequestException('You do not have permission to share this document');
+        throw new BadRequestException('Bạn không có quyền chia sẻ tài liệu này');
       }
 
       const now = new Date();
@@ -643,7 +643,7 @@ export class DocumentsService {
       if (shareOptions?.expiresAt) {
         expiration = new Date(shareOptions.expiresAt);
         if (Number.isNaN(expiration.getTime())) {
-          throw new BadRequestException('Invalid expiration time');
+          throw new BadRequestException('Thời gian hết hạn không hợp lệ');
         }
       } else {
         const durationMinutes =
@@ -654,7 +654,7 @@ export class DocumentsService {
       }
 
       if (expiration <= now) {
-        throw new BadRequestException('Share link expiration must be in the future');
+        throw new BadRequestException('Thời gian hết hạn liên kết chia sẻ phải ở tương lai');
       }
 
       const existingShareLink = await this.prisma.documentShareLink.findUnique({
@@ -697,7 +697,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to create share link');
+      throw new InternalServerErrorException('Không thể tạo liên kết chia sẻ');
     }
   }
 
@@ -711,11 +711,11 @@ export class DocumentsService {
       });
 
       if (!document) {
-        throw new BadRequestException('Document not found');
+        throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
       if (document.uploaderId !== userId) {
-        throw new BadRequestException('You do not have permission to revoke this share link');
+        throw new BadRequestException('Bạn không có quyền thu hồi liên kết chia sẻ này');
       }
 
       await this.prisma.documentShareLink.updateMany({
@@ -727,7 +727,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to revoke share link');
+      throw new InternalServerErrorException('Không thể thu hồi liên kết chia sẻ');
     }
   }
 
@@ -741,15 +741,15 @@ export class DocumentsService {
       });
 
       if (!shareLink || shareLink.documentId !== documentId) {
-        throw new BadRequestException('Invalid share link');
+        throw new BadRequestException('Liên kết chia sẻ không hợp lệ');
       }
 
       if (shareLink.isRevoked) {
-        throw new BadRequestException('Share link has been revoked');
+        throw new BadRequestException('Liên kết chia sẻ đã bị thu hồi');
       }
 
       if (shareLink.expiresAt.getTime() <= Date.now()) {
-        throw new BadRequestException('Share link has expired');
+        throw new BadRequestException('Liên kết chia sẻ đã hết hạn');
       }
 
       return shareLink;
@@ -761,7 +761,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to validate share link');
+      throw new InternalServerErrorException('Không thể xác thực liên kết chia sẻ');
     }
   }
 
@@ -800,21 +800,21 @@ export class DocumentsService {
       });
 
       if (!document) {
-        throw new BadRequestException('Document not found');
+        throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
       // Check access permissions - only check if user is authenticated
       if (!document.isPublic) {
         if (!userId) {
-          throw new BadRequestException('Authentication required to download private documents');
+          throw new BadRequestException('Cần xác thực để tải xuống tài liệu riêng tư');
         }
         if (document.uploaderId !== userId) {
-          throw new BadRequestException('You do not have permission to download this document');
+          throw new BadRequestException('Bạn không có quyền tải xuống tài liệu này');
         }
       }
 
       if (!document.files || document.files.length === 0) {
-        throw new BadRequestException('Document has no files to download');
+        throw new BadRequestException('Tài liệu không có tệp để tải xuống');
       }
 
       // Create download record and increment counter in a transaction
@@ -893,7 +893,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to prepare document download');
+      throw new InternalServerErrorException('Không thể chuẩn bị tải xuống tài liệu');
     }
   }
 
@@ -917,11 +917,11 @@ export class DocumentsService {
       });
 
       if (!document) {
-        throw new BadRequestException('Document not found');
+        throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
       if (document.uploaderId !== userId) {
-        throw new BadRequestException('You do not have permission to delete this document');
+        throw new BadRequestException('Bạn không có quyền xóa tài liệu này');
       }
 
       // Delete document and related records in a transaction
@@ -969,7 +969,7 @@ export class DocumentsService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to delete document');
+      throw new InternalServerErrorException('Không thể xóa tài liệu');
     }
   }
 
@@ -1059,7 +1059,7 @@ export class DocumentsService {
       return zipUrl;
     } catch (error) {
       this.logger.error('Error creating ZIP download:', error);
-      throw new InternalServerErrorException('Failed to create ZIP download');
+      throw new InternalServerErrorException('Không thể tạo tải xuống ZIP');
     }
   }
 }

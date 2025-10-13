@@ -110,22 +110,22 @@ export function Sidebar({ className }: SidebarProps) {
 
   const mainNavItems: NavItem[] = [
     {
-      title: 'Dashboard',
+      title: 'Bảng điều khiển',
       href: '/dashboard',
       icon: Home,
     },
     {
-      title: 'Documents',
+      title: 'Tài liệu',
       href: '/documents',
       icon: FileText,
     },
     {
-      title: 'Upload',
+      title: 'Tải lên',
       href: '/upload',
       icon: Upload,
     },
     {
-      title: 'Categories',
+      title: 'Danh mục',
       href: '/categories',
       icon: FolderOpen,
     },
@@ -133,19 +133,19 @@ export function Sidebar({ className }: SidebarProps) {
 
   const userNavItems: NavItem[] = [
     {
-      title: 'Bookmarks',
+      title: 'Đánh dấu',
       href: '/bookmarks',
       icon: Bookmark,
       badge: bookmarkStats?.total,
     },
     {
-      title: 'Notifications',
+      title: 'Thông báo',
       href: '/notifications',
       icon: Bell,
       badge: 3,
     },
     {
-      title: 'My Documents',
+      title: 'Tài liệu của tôi',
       href: '/my-documents',
       icon: Archive,
     },
@@ -153,17 +153,17 @@ export function Sidebar({ className }: SidebarProps) {
 
   const analyticsNavItems: NavItem[] = [
     {
-      title: 'Analytics',
+      title: 'Phân tích',
       href: '/analytics',
       icon: BarChart3,
     },
     {
-      title: 'Trending',
+      title: 'Xu hướng',
       href: '/trending',
       icon: TrendingUp,
     },
     {
-      title: 'Top Rated',
+      title: 'Được đánh giá cao',
       href: '/top-rated',
       icon: Star,
     },
@@ -171,12 +171,12 @@ export function Sidebar({ className }: SidebarProps) {
 
   const adminNavItems: NavItem[] = [
     {
-      title: 'Admin Dashboard',
+      title: 'Bảng điều khiển quản trị',
       href: '/admin',
       icon: Shield,
     },
     {
-      title: 'User Management',
+      title: 'Quản lý người dùng',
       href: '/admin/users',
       icon: Users,
     },
@@ -226,15 +226,15 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-6">
-          {renderNavSection('Main', mainNavItems)}
+          {renderNavSection('Chính', mainNavItems)}
           <Separator />
-          {renderNavSection('Personal', userNavItems)}
+          {renderNavSection('Cá nhân', userNavItems)}
           <Separator />
-          {renderNavSection('Analytics', analyticsNavItems)}
+          {renderNavSection('Phân tích', analyticsNavItems)}
           {user?.role?.name === 'admin' && (
             <>
               <Separator />
-              {renderNavSection('Administration', adminNavItems)}
+              {renderNavSection('Quản trị', adminNavItems)}
             </>
           )}
         </div>
@@ -275,20 +275,20 @@ export function Sidebar({ className }: SidebarProps) {
             <DropdownMenuItem asChild>
               <Link to="/profile" className="flex items-center">
                 <Users className="mr-2 h-4 w-4" />
-                Profile
+                Hồ sơ
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/settings" className="flex items-center">
                 <Settings className="mr-2 h-4 w-4" />
-                Settings
+                Cài đặt
               </Link>
             </DropdownMenuItem>
             {user?.role?.name === 'admin' && (
               <DropdownMenuItem asChild>
                 <Link to="/admin/settings" className="flex items-center">
                   <Shield className="mr-2 h-4 w-4" />
-                  System Settings
+                  Cài đặt hệ thống
                 </Link>
               </DropdownMenuItem>
             )}
@@ -300,23 +300,23 @@ export function Sidebar({ className }: SidebarProps) {
                   onSelect={(e) => e.preventDefault()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                  Đăng xuất
                 </DropdownMenuItem>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                  <AlertDialogTitle>Xác nhận đăng xuất</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to logout? You will need to sign in again to continue.
+                    Bạn có chắc chắn muốn đăng xuất? Bạn sẽ cần đăng nhập lại để tiếp tục.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Hủy</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleLogout}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
-                    Logout
+                    Đăng xuất
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AbilityFactory } from './ability.factory';
 import { CHECK_POLICIES_KEY, CHECK_POLICY_KEY, RequiredRule } from './casl.decorator';
@@ -10,7 +10,7 @@ export class CaslGuard implements CanActivate {
     private abilityFactory: AbilityFactory
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const policies = this.reflector.getAllAndOverride<RequiredRule[]>(CHECK_POLICIES_KEY, [
       context.getHandler(),
       context.getClass(),

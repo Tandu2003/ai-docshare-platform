@@ -28,13 +28,13 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
   const getDifficultyLabel = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner':
-        return 'Beginner';
+        return 'Người mới bắt đầu';
       case 'intermediate':
-        return 'Intermediate';
+        return 'Trung bình';
       case 'advanced':
-        return 'Advanced';
+        return 'Nâng cao';
       default:
-        return 'Unknown';
+        return 'Không xác định';
     }
   };
 
@@ -53,9 +53,9 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
 
   const getSentimentLabel = (score?: number) => {
     if (!score) return 'Neutral';
-    if (score > 0.1) return 'Positive';
-    if (score < -0.1) return 'Negative';
-    return 'Neutral';
+    if (score > 0.1) return 'Tích cực';
+    if (score < -0.1) return 'Tiêu cực';
+    return 'Trung lập';
   };
 
   return (
@@ -63,14 +63,14 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5" />
-          AI Analysis
+          Phân tích AI
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary */}
         {analysis.summary && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Summary</h4>
+            <h4 className="text-sm font-medium">Tóm tắt</h4>
             <p className="text-sm text-muted-foreground">{analysis.summary}</p>
           </div>
         )}
@@ -80,7 +80,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
           <div className="space-y-3">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <Target className="h-4 w-4" />
-              Key Points
+              Điểm chính
             </h4>
             <ul className="space-y-2">
               {analysis.keyPoints.map((point, index) => (
@@ -99,7 +99,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Difficulty</span>
+              <span className="text-sm font-medium">Độ khó</span>
               <Badge className={`${getDifficultyColor(analysis.difficulty)} text-white`}>
                 {getDifficultyLabel(analysis.difficulty)}
               </Badge>
@@ -108,7 +108,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Reading Time</span>
+              <span className="text-sm font-medium">Thời gian đọc</span>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 <span className="text-sm">{analysis.readingTime} min</span>
@@ -118,7 +118,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Confidence</span>
+              <span className="text-sm font-medium">Độ tin cậy</span>
               <span className={`text-sm font-medium ${getConfidenceColor(analysis.confidence)}`}>
                 {(analysis.confidence * 100).toFixed(0)}%
               </span>
@@ -128,7 +128,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Sentiment</span>
+              <span className="text-sm font-medium">Cảm xúc</span>
               <span className={`text-sm font-medium ${getSentimentColor(analysis.sentimentScore)}`}>
                 {getSentimentLabel(analysis.sentimentScore)}
               </span>
@@ -146,7 +146,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
           <div className="space-y-3">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Suggested Tags
+              Thẻ đề xuất
             </h4>
             <div className="flex flex-wrap gap-2">
               {analysis.suggestedTags.map((tag) => (
@@ -160,11 +160,11 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
 
         {/* Language Detection */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Language</h4>
+          <h4 className="text-sm font-medium">Ngôn ngữ</h4>
           <div className="flex items-center gap-2">
             <Badge variant="secondary">{getLanguageName(analysis.language)}</Badge>
             <span className="text-xs text-muted-foreground">
-              Detected with {(analysis.confidence * 100).toFixed(0)}% confidence
+              Phát hiện với độ tin cậy {(analysis.confidence * 100).toFixed(0)}%
             </span>
           </div>
         </div>
@@ -172,10 +172,10 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
         {/* Processing Info */}
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Processed on {new Date(analysis.processedAt).toLocaleDateString()}</span>
+            <span>Được xử lý vào {new Date(analysis.processedAt).toLocaleDateString()}</span>
             <div className="flex items-center gap-1">
               <Zap className="h-3 w-3" />
-              <span>AI Powered</span>
+              <span>Được hỗ trợ bởi AI</span>
             </div>
           </div>
         </div>

@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
             <BarChart3 className="h-8 w-8 text-primary" />
             Analytics Dashboard
           </h1>
-          <p className="text-muted-foreground mt-1">Platform insights and performance metrics</p>
+          <p className="text-muted-foreground">Thông tin chi tiết và số liệu hiệu suất nền tảng</p>
           <Badge variant="outline" className="mt-2 text-xs font-normal">
             {timeframeLabel}
           </Badge>
@@ -133,10 +133,10 @@ export default function AnalyticsPage() {
             <SelectValue placeholder="Chọn khoảng" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="1y">Last year</SelectItem>
+            <SelectItem value="7d">7 ngày qua</SelectItem>
+            <SelectItem value="30d">30 ngày qua</SelectItem>
+            <SelectItem value="90d">90 ngày qua</SelectItem>
+            <SelectItem value="1y">Năm qua</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -154,7 +154,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Documents</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng tài liệu</p>
                 <p className="text-2xl font-bold">{formatNumber(data.totalDocuments)}</p>
               </div>
               <FileText className="h-8 w-8 text-muted-foreground" />
@@ -173,7 +173,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Downloads</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng lượt tải</p>
                 <p className="text-2xl font-bold">{formatNumber(data.totalDownloads)}</p>
               </div>
               <Download className="h-8 w-8 text-muted-foreground" />
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Views</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng lượt xem</p>
                 <p className="text-2xl font-bold">{formatNumber(data.totalViews)}</p>
               </div>
               <Eye className="h-8 w-8 text-muted-foreground" />
@@ -211,12 +211,12 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Average Rating</p>
+                <p className="text-sm font-medium text-muted-foreground">Đánh giá trung bình</p>
                 <p className="text-2xl font-bold">{ratingValue.toFixed(1)}</p>
               </div>
               <Star className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground mt-2">Platform-wide average rating</p>
+            <p className="text-sm text-muted-foreground mt-2">Đánh giá trung bình toàn nền tảng</p>
           </CardContent>
         </Card>
       </div>
@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-sm font-medium text-muted-foreground">Tổng người dùng</p>
                 <p className="text-2xl font-bold">{formatNumber(data.userStats.totalUsers)}</p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -239,7 +239,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Users</p>
+                <p className="text-sm font-medium text-muted-foreground">Người dùng hoạt động</p>
                 <p className="text-2xl font-bold">{formatNumber(data.userStats.activeUsers)}</p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -254,7 +254,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">New Users</p>
+                <p className="text-sm font-medium text-muted-foreground">Người dùng mới</p>
                 <p className="text-2xl font-bold">{formatNumber(data.userStats.newUsers)}</p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -273,7 +273,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">User Growth</p>
+                <p className="text-sm font-medium text-muted-foreground">Tăng trưởng người dùng</p>
                 <p className="text-2xl font-bold">
                   {data.userStats.userGrowth >= 0 ? '+' : ''}
                   {data.userStats.userGrowth}%
@@ -289,11 +289,11 @@ export default function AnalyticsPage() {
         {/* Top Categories */}
         <Card>
           <CardHeader>
-            <CardTitle>Top Categories</CardTitle>
+            <CardTitle>Danh mục hàng đầu</CardTitle>
           </CardHeader>
           <CardContent>
             {data.topCategories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No category data available yet.</p>
+              <p className="text-sm text-muted-foreground">Chưa có dữ liệu danh mục nào.</p>
             ) : (
               <div className="space-y-4">
                 {data.topCategories.map((category, index) => (
@@ -305,7 +305,7 @@ export default function AnalyticsPage() {
                       <span className="text-lg">{category.icon}</span>
                       <div>
                         <p className="font-medium">{category.name}</p>
-                        <p className="text-sm text-muted-foreground">{category.count} documents</p>
+                        <p className="text-sm text-muted-foreground">{category.count} tài liệu</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -325,11 +325,11 @@ export default function AnalyticsPage() {
         {/* Top Languages */}
         <Card>
           <CardHeader>
-            <CardTitle>Top Languages</CardTitle>
+            <CardTitle>Ngôn ngữ hàng đầu</CardTitle>
           </CardHeader>
           <CardContent>
             {data.topLanguages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No language data available yet.</p>
+              <p className="text-sm text-muted-foreground">Chưa có dữ liệu ngôn ngữ nào.</p>
             ) : (
               <div className="space-y-4">
                 {data.topLanguages.map((language, index) => (
@@ -340,7 +340,7 @@ export default function AnalyticsPage() {
                       </span>
                       <div>
                         <p className="font-medium">{getLanguageName(language.code)}</p>
-                        <p className="text-sm text-muted-foreground">{language.count} documents</p>
+                        <p className="text-sm text-muted-foreground">{language.count} tài liệu</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -361,11 +361,11 @@ export default function AnalyticsPage() {
       {/* Top Documents */}
       <Card>
         <CardHeader>
-          <CardTitle>Top Performing Documents</CardTitle>
+          <CardTitle>Tài liệu hoạt động hàng đầu</CardTitle>
         </CardHeader>
         <CardContent>
           {data.topDocuments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No document performance data yet.</p>
+            <p className="text-sm text-muted-foreground">Chưa có dữ liệu hiệu suất tài liệu.</p>
           ) : (
             <div className="space-y-4">
               {data.topDocuments.map((document, index) => (
@@ -416,11 +416,11 @@ export default function AnalyticsPage() {
       {/* Monthly Trends */}
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Trends</CardTitle>
+          <CardTitle>Xu hướng hàng tháng</CardTitle>
         </CardHeader>
         <CardContent>
           {data.monthlyStats.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No monthly trend data available yet.</p>
+            <p className="text-sm text-muted-foreground">Chưa có dữ liệu xu hướng hàng tháng.</p>
           ) : (
             <div className="space-y-4">
               {data.monthlyStats.map((stat) => (
@@ -431,15 +431,15 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="flex-1 grid grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Downloads</p>
+                        <p className="text-sm text-muted-foreground">Lượt tải</p>
                         <p className="font-medium">{formatNumber(stat.downloads)}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Views</p>
+                        <p className="text-sm text-muted-foreground">Lượt xem</p>
                         <p className="font-medium">{formatNumber(stat.views)}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Documents</p>
+                        <p className="text-sm text-muted-foreground">Tài liệu</p>
                         <p className="font-medium">{stat.documents}</p>
                       </div>
                     </div>

@@ -42,12 +42,12 @@ export class CategoriesController {
       const include =
         includeInactive === undefined ? true : !['false', '0', 'no'].includes(includeInactive);
       const categories = await this.categoriesService.findAll(include);
-      return ResponseHelper.success(res, categories, 'Categories retrieved successfully');
+      return ResponseHelper.success(res, categories, 'Danh mục đã được truy xuất thành công');
     } catch (error) {
       this.logger.error('Error retrieving categories', error);
       return ResponseHelper.error(
         res,
-        'Failed to retrieve categories',
+        'Không thể truy xuất danh mục',
         HttpStatus.INTERNAL_SERVER_ERROR,
         error
       );
@@ -63,14 +63,14 @@ export class CategoriesController {
       return ResponseHelper.success(
         res,
         category,
-        'Category created successfully',
+        'Danh mục đã được tạo thành công',
         HttpStatus.CREATED
       );
     } catch (error) {
       this.logger.error('Error creating category', error);
       const status =
         error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-      const message = error instanceof HttpException ? error.message : 'Failed to create category';
+      const message = error instanceof HttpException ? error.message : 'Không thể tạo danh mục';
       return ResponseHelper.error(res, message, status, error);
     }
   }
@@ -85,12 +85,12 @@ export class CategoriesController {
   ) {
     try {
       const category = await this.categoriesService.updateCategory(id, dto);
-      return ResponseHelper.success(res, category, 'Category updated successfully');
+      return ResponseHelper.success(res, category, 'Danh mục đã được cập nhật thành công');
     } catch (error) {
       this.logger.error(`Error updating category ${id}`, error);
       const status =
         error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-      const message = error instanceof HttpException ? error.message : 'Failed to update category';
+      const message = error instanceof HttpException ? error.message : 'Không thể cập nhật danh mục';
       return ResponseHelper.error(res, message, status, error);
     }
   }
@@ -101,12 +101,12 @@ export class CategoriesController {
   async deleteCategory(@Param('id') id: string, @Res() res: Response) {
     try {
       await this.categoriesService.deleteCategory(id);
-      return ResponseHelper.success(res, null, 'Category deleted successfully');
+      return ResponseHelper.success(res, null, 'Danh mục đã được xóa thành công');
     } catch (error) {
       this.logger.error(`Error deleting category ${id}`, error);
       const status =
         error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-      const message = error instanceof HttpException ? error.message : 'Failed to delete category';
+      const message = error instanceof HttpException ? error.message : 'Không thể xóa danh mục';
       return ResponseHelper.error(res, message, status, error);
     }
   }

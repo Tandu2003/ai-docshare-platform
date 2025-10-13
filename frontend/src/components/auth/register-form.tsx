@@ -58,25 +58,25 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Create Account</CardTitle>
-        <CardDescription>Sign up to get started with our platform</CardDescription>
+        <CardTitle>Tạo tài khoản</CardTitle>
+        <CardDescription>Đăng ký để bắt đầu sử dụng nền tảng của chúng tôi</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <FormField
-              label="First Name"
+              label="Tên"
               type="text"
-              placeholder="John"
+              placeholder="Nguyễn"
               {...register('firstName')}
               error={errors.firstName?.message}
               disabled={isSubmitting}
             />
 
             <FormField
-              label="Last Name"
+              label="Họ"
               type="text"
-              placeholder="Doe"
+              placeholder="Văn"
               {...register('lastName')}
               error={errors.lastName?.message}
               disabled={isSubmitting}
@@ -86,45 +86,45 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           <FormField
             label="Email"
             type="email"
-            placeholder="john.doe@example.com"
+            placeholder="nguyen.van@example.com"
             {...register('email')}
             error={errors.email?.message}
             disabled={isSubmitting}
           />
 
           <FormField
-            label="Username"
+            label="Tên đăng nhập"
             type="text"
-            placeholder="johndoe"
+            placeholder="nguyenvan"
             {...register('username')}
             error={errors.username?.message}
             disabled={isSubmitting}
           />
 
           <FormFieldPassword
-            label="Password"
-            placeholder="Enter your password"
+            label="Mật khẩu"
+            placeholder="Nhập mật khẩu của bạn"
             {...register('password')}
             error={errors.password?.message}
             disabled={isSubmitting}
           />
 
           <FormFieldPassword
-            label="Confirm Password"
-            placeholder="Confirm your password"
+            label="Xác nhận mật khẩu"
+            placeholder="Xác nhận mật khẩu của bạn"
             {...register('confirmPassword')}
             error={errors.confirmPassword?.message}
             disabled={isSubmitting}
           />
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating account...' : 'Create Account'}
+            {isSubmitting ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
           </Button>
 
           {onSwitchToLogin && (
             <div className="text-center text-sm space-y-2">
               <div>
-                <span className="text-muted-foreground">Already have an account? </span>
+                <span className="text-muted-foreground">Đã có tài khoản? </span>
                 <Button
                   type="button"
                   variant="link"
@@ -132,16 +132,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
                   onClick={onSwitchToLogin}
                   disabled={isSubmitting}
                 >
-                  Sign in
+                  Đăng nhập
                 </Button>
               </div>
               <div>
-                <span className="text-muted-foreground">Didn't receive verification email? </span>
+                <span className="text-muted-foreground">Không nhận được email xác thực? </span>
                 <Link
                   to="/auth/resend-verification"
                   className="text-primary hover:text-primary/80 underline underline-offset-4"
                 >
-                  Resend
+                  Gửi lại
                 </Link>
               </div>
             </div>

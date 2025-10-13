@@ -39,9 +39,9 @@ export const DashboardPage: React.FC = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
           <p className="text-muted-foreground">
-            Welcome to your AI DocShare dashboard. Here you can manage your documents and view
+            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích.
             analytics.
           </p>
         </div>
@@ -66,9 +66,9 @@ export const DashboardPage: React.FC = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
           <p className="text-muted-foreground">
-            Welcome to your AI DocShare dashboard. Here you can manage your documents and view
+            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích.
             analytics.
           </p>
         </div>
@@ -88,7 +88,7 @@ export const DashboardPage: React.FC = () => {
   if (!stats) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Failed to load dashboard data</p>
+        <p className="text-muted-foreground">Không thể tải dữ liệu bảng điều khiển</p>
       </div>
     );
   }
@@ -96,17 +96,15 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
         <p className="text-muted-foreground">
-          Welcome to your AI DocShare dashboard. Here you can manage your documents and view
-          analytics.
+          Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích.
         </p>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Thẻ thống kê */}
       <DashboardStatsCards stats={stats} />
 
-      {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Recent Documents */}
         <div className="lg:col-span-2">
@@ -126,28 +124,28 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Additional Stats */}
+      {/* Thống kê bổ sung */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Document Status</CardTitle>
+            <CardTitle>Trạng thái tài liệu</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Published</span>
+                <span className="text-sm text-muted-foreground">Đã xuất bản</span>
                 <span className="text-sm font-medium">
                   {stats.recentDocuments.filter((doc) => doc.isApproved && !doc.isDraft).length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Draft</span>
+                <span className="text-sm text-muted-foreground">Bản nháp</span>
                 <span className="text-sm font-medium">
                   {stats.recentDocuments.filter((doc) => doc.isDraft).length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Pending</span>
+                <span className="text-sm text-muted-foreground">Đang chờ</span>
                 <span className="text-sm font-medium">
                   {stats.recentDocuments.filter((doc) => !doc.isApproved && !doc.isDraft).length}
                 </span>
@@ -158,12 +156,12 @@ export const DashboardPage: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Content Types</CardTitle>
+            <CardTitle>Loại nội dung</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Public</span>
+                <span className="text-sm text-muted-foreground">Công khai</span>
                 <span className="text-sm font-medium">
                   {stats.recentDocuments.filter((doc) => doc.isPublic).length}
                 </span>
@@ -175,7 +173,7 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Private</span>
+                <span className="text-sm text-muted-foreground">Riêng tư</span>
                 <span className="text-sm font-medium">
                   {stats.recentDocuments.filter((doc) => !doc.isPublic).length}
                 </span>
@@ -186,7 +184,7 @@ export const DashboardPage: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Notifications</CardTitle>
+            <CardTitle>Thông báo gần đây</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

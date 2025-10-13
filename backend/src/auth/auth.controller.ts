@@ -40,7 +40,7 @@ export class AuthController {
     ResponseHelper.created(
       response,
       result,
-      'Registration successful! Please check your email to verify your account.'
+      'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.'
     );
   }
 
@@ -61,7 +61,7 @@ export class AuthController {
         user: result.user,
         accessToken: result.tokens.accessToken,
       },
-      'Login successful'
+      'Đăng nhập thành công'
     );
   }
 
@@ -73,7 +73,7 @@ export class AuthController {
     const refreshToken = request.cookies?.refreshToken;
 
     if (!refreshToken) {
-      ResponseHelper.error(response, 'Refresh token not found', HttpStatus.UNAUTHORIZED);
+      ResponseHelper.error(response, 'Không tìm thấy mã làm mới', HttpStatus.UNAUTHORIZED);
       return;
     }
 
@@ -85,14 +85,14 @@ export class AuthController {
     ResponseHelper.success(
       response,
       { accessToken: tokens.accessToken },
-      'Token refreshed successfully'
+      'Mã truy cập đã được làm mới thành công'
     );
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  async logout(@Res() response: Response): Promise<void> {
+  logout(@Res() response: Response): void {
     // Clear refresh token cookie
     response.clearCookie('refreshToken', {
       httpOnly: true,
@@ -101,18 +101,16 @@ export class AuthController {
       path: '/',
     });
 
-    ResponseHelper.success(response, null, 'Logout successful');
+    ResponseHelper.success(response, null, 'Đăng xuất thành công');
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
-  ): Promise<void> {
+  getProfile(@Req() request: Request & { user: AuthUser }, @Res() response: Response): void {
     const { password, ...userWithoutPassword } = request.user as any;
+    void password;
 
-    ResponseHelper.success(response, userWithoutPassword, 'Profile retrieved successfully');
+    ResponseHelper.success(response, userWithoutPassword, 'Lấy thông tin hồ sơ thành công');
   }
 
   @Post('verify-email')
@@ -125,7 +123,7 @@ export class AuthController {
   ): Promise<void> {
     const result = await this.authService.verifyEmail(verifyEmailDto);
 
-    ResponseHelper.success(response, result, 'Email verified successfully');
+    ResponseHelper.success(response, result, 'Email đã được xác thực thành công');
   }
 
   @Post('resend-verification')
@@ -138,7 +136,7 @@ export class AuthController {
   ): Promise<void> {
     const result = await this.authService.resendVerification(resendDto);
 
-    ResponseHelper.success(response, result, 'Verification email sent');
+    ResponseHelper.success(response, result, 'Email xác thực đã được gửi');
   }
 
   @Post('forgot-password')
@@ -151,7 +149,7 @@ export class AuthController {
   ): Promise<void> {
     const result = await this.authService.forgotPassword(forgotPasswordDto);
 
-    ResponseHelper.success(response, result, 'Password reset instructions sent');
+    ResponseHelper.success(response, result, 'Hướng dẫn đặt lại mật khẩu đã được gửi');
   }
 
   @Post('reset-password')
@@ -163,7 +161,7 @@ export class AuthController {
   ): Promise<void> {
     const result = await this.authService.resetPassword(resetPasswordDto);
 
-    ResponseHelper.success(response, result, 'Password reset successfully');
+    ResponseHelper.success(response, result, 'Đặt lại mật khẩu thành công');
   }
 
   // Private helper methods

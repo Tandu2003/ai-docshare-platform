@@ -123,7 +123,7 @@ export function DocumentFilters({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
-            Filters
+            Bộ lọc
             {activeFiltersCount > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {activeFiltersCount}
@@ -134,11 +134,11 @@ export function DocumentFilters({
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={onClearFilters}>
                 <X className="h-4 w-4 mr-1" />
-                Clear
+                Xóa
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? 'Collapse' : 'Expand'}
+              {isExpanded ? 'Thu gọn' : 'Mở rộng'}
             </Button>
           </div>
         </div>
@@ -146,7 +146,7 @@ export function DocumentFilters({
       <CardContent className={isExpanded ? 'space-y-6' : 'space-y-4'}>
         {/* Categories */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium">Categories</Label>
+          <Label className="text-sm font-medium">Danh mục</Label>
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {categories.map((category) => (
               <div key={category.id} className="flex items-center space-x-2">
@@ -171,7 +171,7 @@ export function DocumentFilters({
 
         {/* Tags */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium">Tags</Label>
+          <Label className="text-sm font-medium">Thẻ</Label>
           <div className="flex flex-wrap gap-2">
             {popularTags.map((tag) => (
               <Badge
@@ -188,13 +188,13 @@ export function DocumentFilters({
 
         {/* Language */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium">Language</Label>
+          <Label className="text-sm font-medium">Ngôn ngữ</Label>
           <Select value={filters.language || 'all'} onValueChange={handleLanguageChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Select language" />
+              <SelectValue placeholder="Chọn ngôn ngữ" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Languages</SelectItem>
+              <SelectItem value="all">Tất cả ngôn ngữ</SelectItem>
               {languageOptions.map((lang) => (
                 <SelectItem key={lang.code} value={lang.code}>
                   {lang.name}
@@ -206,7 +206,7 @@ export function DocumentFilters({
 
         {/* Visibility */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium">Visibility</Label>
+          <Label className="text-sm font-medium">Hiển thị</Label>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -215,7 +215,7 @@ export function DocumentFilters({
                 onCheckedChange={(checked) => handleVisibilityChange('public', checked as boolean)}
               />
               <Label htmlFor="public" className="text-sm">
-                Public
+                Công khai
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -235,7 +235,7 @@ export function DocumentFilters({
                 onCheckedChange={(checked) => handleVisibilityChange('private', checked as boolean)}
               />
               <Label htmlFor="private" className="text-sm">
-                Private
+                Riêng tư
               </Label>
             </div>
           </div>
@@ -245,7 +245,7 @@ export function DocumentFilters({
           <>
             {/* Approval Status */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Approval Status</Label>
+              <Label className="text-sm font-medium">Trạng thái duyệt</Label>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -254,7 +254,7 @@ export function DocumentFilters({
                     onCheckedChange={(checked) => handleApprovalChange(true, checked as boolean)}
                   />
                   <Label htmlFor="approved" className="text-sm">
-                    Approved
+                    Đã duyệt
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -264,7 +264,7 @@ export function DocumentFilters({
                     onCheckedChange={(checked) => handleApprovalChange(false, checked as boolean)}
                   />
                   <Label htmlFor="pending" className="text-sm">
-                    Pending
+                    Đang chờ
                   </Label>
                 </div>
               </div>
@@ -272,13 +272,13 @@ export function DocumentFilters({
 
             {/* Difficulty */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Difficulty</Label>
+              <Label className="text-sm font-medium">Độ khó</Label>
               <Select value={filters.difficulty || 'all'} onValueChange={handleDifficultyChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
+                  <SelectValue placeholder="Chọn độ khó" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="all">Tất cả cấp độ</SelectItem>
                   {difficulties.map((difficulty) => (
                     <SelectItem key={difficulty} value={difficulty}>
                       {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
@@ -291,7 +291,7 @@ export function DocumentFilters({
             {/* Minimum Rating */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">
-                Minimum Rating: {filters.minRating || 0} stars
+                Đánh giá tối thiểu: {filters.minRating || 0} sao
               </Label>
               <Slider
                 value={[filters.minRating || 0]}

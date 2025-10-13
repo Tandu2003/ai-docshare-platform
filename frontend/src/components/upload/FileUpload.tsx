@@ -95,11 +95,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     ];
 
     if (file.size > maxSize) {
-      return 'File size must be less than 100MB';
+      return 'Kích thước tệp phải nhỏ hơn 100MB';
     }
 
     if (!allowedTypes.includes(file.type)) {
-      return 'File type not supported';
+      return 'Loại tệp không được hỗ trợ';
     }
 
     return null;
@@ -196,14 +196,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         console.log('File info map:', Array.from(fileInfoMap.entries()));
         analyzeFilesWithAI(uploadedFileIds, fileInfoMap);
       } else {
-        throw new Error('Upload failed');
+        throw new Error('Tải lên thất bại');
       }
     } catch (error) {
       console.error('Upload failed:', error);
       setFiles((prev) =>
         prev.map((f) =>
           filesToUpload.find((tf) => tf.id === f.id)
-            ? { ...f, error: 'Upload failed', progress: undefined }
+            ? { ...f, error: 'Tải lên thất bại', progress: undefined }
             : f
         )
       );
@@ -283,14 +283,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           error: null,
         }));
       } else {
-        throw new Error('AI analysis failed');
+        throw new Error('Phân tích AI thất bại');
       }
     } catch (error) {
       console.error('AI analysis error:', error);
       setAiAnalysis((prev) => ({
         ...prev,
         isAnalyzing: false,
-        error: error instanceof Error ? error.message : 'AI analysis failed',
+        error: error instanceof Error ? error.message : 'Phân tích AI thất bại',
       }));
     }
   };
@@ -360,12 +360,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const handleCreateDocument = async () => {
     const uploadedFiles = files.filter((f) => f.uploaded && f.fileId);
     if (uploadedFiles.length === 0) {
-      onUploadError?.('Please upload files first');
+      onUploadError?.('Vui lòng tải lên tệp trước');
       return;
     }
 
     if (!uploadData.title?.trim()) {
-      onUploadError?.('Please provide a title for the document');
+      onUploadError?.('Vui lòng cung cấp tiêu đề cho tài liệu');
       return;
     }
 
@@ -391,7 +391,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setUploadData({ isPublic: true, language: 'en', tags: [] });
     } catch (error) {
       console.error('Failed to create document:', error);
-      onUploadError?.(error instanceof Error ? error.message : 'Failed to create document');
+      onUploadError?.(error instanceof Error ? error.message : 'Không thể tạo tài liệu');
     } finally {
       setUploading(false);
     }
@@ -402,7 +402,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          Upload Documents
+          Tải lên tài liệu
         </CardTitle>
       </CardHeader>
 
@@ -423,9 +423,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-lg font-medium mb-2">Click here or drop documents to upload</p>
+          <p className="text-lg font-medium mb-2">Nhấn vào đây hoặc kéo thả tài liệu để tải lên</p>
           <p className="text-sm text-muted-foreground">
-            {multiple ? 'Upload multiple documents' : 'Upload a single document'} (max 100MB each)
+            {multiple ? 'Tải lên nhiều tài liệu' : 'Tải lên một tài liệu'} (tối đa 100MB mỗi tệp)
           </p>
           <input
             ref={fileInputRef}
@@ -440,7 +440,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Document List */}
         {files.length > 0 && (
           <div className="space-y-3">
-            <h3 className="font-medium">Selected Documents</h3>
+            <h3 className="font-medium">Tài liệu đã chọn</h3>
             {files.map((file) => (
               <div
                 key={file.id}
@@ -503,7 +503,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {aiAnalysis.isAnalyzing && (
           <Alert className="flex items-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            <span className="text-sm">AI is analyzing your documents...</span>
+            <span className="text-sm">AI đang phân tích tài liệu của bạn...</span>
           </Alert>
         )}
 
@@ -511,7 +511,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <Alert variant="destructive">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">AI Analysis Error: {aiAnalysis.error}</span>
+              <span className="text-sm">Lỗi phân tích AI: {aiAnalysis.error}</span>
             </div>
           </Alert>
         )}
@@ -522,7 +522,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <AlertDescription className="text-blue-800">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="font-medium">AI has analyzed your documents!</p>
+                  <p className="font-medium">AI đã phân tích tài liệu của bạn!</p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -538,18 +538,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     disabled={aiAnalysis.isAnalyzing}
                     className="text-xs"
                   >
-                    Re-analyze
+                    Phân tích lại
                   </Button>
                 </div>
                 {aiAnalysis.analysisResult.summary && (
                   <p className="text-sm">
-                    <strong>Summary:</strong> {aiAnalysis.analysisResult.summary}
+                    <strong>Tóm tắt:</strong> {aiAnalysis.analysisResult.summary}
                   </p>
                 )}
                 {aiAnalysis.analysisResult.keyPoints &&
                   aiAnalysis.analysisResult.keyPoints.length > 0 && (
                     <div className="text-sm">
-                      <strong>Key Points:</strong>
+                      <strong>Điểm chính:</strong>
                       <ul className="list-disc list-inside ml-2">
                         {aiAnalysis.analysisResult.keyPoints.slice(0, 3).map((point, index) => (
                           <li key={index}>{point}</li>
@@ -559,7 +559,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   )}
                 {aiAnalysis.analysisResult.confidence && (
                   <p className="text-sm">
-                    <strong>Confidence:</strong>{' '}
+                    <strong>Độ tin cậy:</strong>{' '}
                     {Math.round(aiAnalysis.analysisResult.confidence * 100)}%
                   </p>
                 )}
@@ -571,7 +571,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Upload Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">Tiêu đề *</Label>
             <div className="relative">
               <Input
                 id="title"
@@ -579,7 +579,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 onChange={(e) =>
                   setUploadData((prev: DocumentData) => ({ ...prev, title: e.target.value }))
                 }
-                placeholder="Document title"
+                placeholder="Tiêu đề tài liệu"
                 required
                 className={cn(
                   aiAnalysis.analysisResult?.title &&
@@ -590,7 +590,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               {aiAnalysis.analysisResult?.title && !uploadData.title && (
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                   <Badge variant="secondary" className="text-xs">
-                    AI Suggested
+                    Được đề xuất bởi AI
                   </Badge>
                 </div>
               )}
@@ -606,24 +606,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select language" />
+                <SelectValue placeholder="Chọn ngôn ngữ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="vi">Vietnamese</SelectItem>
-                <SelectItem value="es">Spanish</SelectItem>
-                <SelectItem value="fr">French</SelectItem>
-                <SelectItem value="de">German</SelectItem>
-                <SelectItem value="zh">Chinese</SelectItem>
-                <SelectItem value="ja">Japanese</SelectItem>
-                <SelectItem value="ko">Korean</SelectItem>
+                <SelectItem value="en">Tiếng Anh</SelectItem>
+                <SelectItem value="vi">Tiếng Việt</SelectItem>
+                <SelectItem value="es">Tiếng Tây Ban Nha</SelectItem>
+                <SelectItem value="fr">Tiếng Pháp</SelectItem>
+                <SelectItem value="de">Tiếng Đức</SelectItem>
+                <SelectItem value="zh">Tiếng Trung</SelectItem>
+                <SelectItem value="ja">Tiếng Nhật</SelectItem>
+                <SelectItem value="ko">Tiếng Hàn</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">Description (optional)</Label>
+          <Label htmlFor="description">Mô tả (tùy chọn)</Label>
           <div className="relative">
             <Textarea
               id="description"
@@ -631,7 +631,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               onChange={(e) =>
                 setUploadData((prev: DocumentData) => ({ ...prev, description: e.target.value }))
               }
-              placeholder="Brief description of the document"
+              placeholder="Mô tả ngắn gọn về tài liệu"
               rows={3}
               className={cn(
                 aiAnalysis.analysisResult?.description &&
@@ -652,7 +652,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Tags */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Tags</Label>
+            <Label>Thẻ</Label>
             {aiAnalysis.analysisResult?.tags && aiAnalysis.analysisResult.tags.length > 0 && (
               <Button
                 size="sm"
@@ -665,7 +665,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 }}
                 className="text-xs"
               >
-                Apply AI Tags
+                Áp dụng thẻ AI
               </Button>
             )}
           </div>
@@ -689,7 +689,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <Input
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Add a tag (e.g., research, tutorial, guide)"
+              placeholder="Thêm thẻ (ví dụ: nghiên cứu, hướng dẫn, tài liệu)"
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -706,12 +706,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               className="px-3"
             >
               <Plus className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">Add</span>
+              <span className="ml-1 hidden sm:inline">Thêm</span>
             </Button>
           </div>
           {uploadData.tags && uploadData.tags.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              {uploadData.tags.length} tag{uploadData.tags.length > 1 ? 's' : ''} added
+              {uploadData.tags.length} thẻ đã được thêm
             </p>
           )}
         </div>
@@ -726,10 +726,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           />
           <div className="flex-1">
             <Label htmlFor="isPublic" className="font-medium cursor-pointer">
-              Make this document public
+              Làm cho tài liệu này công khai
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
-              Public documents can be viewed by anyone without login
+              Tài liệu công khai có thể được xem bởi bất kỳ ai mà không cần đăng nhập
             </p>
           </div>
         </div>
@@ -748,12 +748,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {uploading ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              Creating Document...
+              Đang tạo tài liệu...
             </>
           ) : (
             <>
               <Upload className="h-4 w-4 mr-2" />
-              Create Document
+              Tạo tài liệu
             </>
           )}
         </Button>

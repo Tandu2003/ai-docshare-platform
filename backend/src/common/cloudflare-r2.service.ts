@@ -148,7 +148,7 @@ export class CloudflareR2Service {
       return signedUrl;
     } catch (error) {
       this.logger.error('Error generating signed URL:', error);
-      throw new BadRequestException('Failed to generate download URL');
+      throw new BadRequestException('Không thể tạo URL tải xuống');
     }
   }
 
@@ -165,7 +165,7 @@ export class CloudflareR2Service {
       this.logger.log(`File deleted successfully: ${key}`);
     } catch (error) {
       this.logger.error('Error deleting file from R2:', error);
-      throw new BadRequestException('Failed to delete file');
+      throw new BadRequestException('Không thể xóa tệp');
     }
   }
 
@@ -191,7 +191,7 @@ export class CloudflareR2Service {
       return storageUrl;
     } catch (error) {
       this.logger.error('Error uploading buffer to R2:', error);
-      throw new BadRequestException('Failed to upload buffer to storage');
+      throw new BadRequestException('Không thể tải lên bộ đệm lên lưu trữ');
     }
   }
 
@@ -217,7 +217,7 @@ export class CloudflareR2Service {
       return response.Body as Readable;
     } catch (error) {
       this.logger.error('Error getting file stream:', error);
-      throw new BadRequestException('Failed to get file stream');
+      throw new BadRequestException('Không thể lấy luồng tệp');
     }
   }
 
@@ -233,7 +233,7 @@ export class CloudflareR2Service {
       return url.pathname.substring(1); // Remove leading slash
     } catch (error) {
       this.logger.error('Error extracting key from URL:', error);
-      throw new BadRequestException('Invalid storage URL format');
+      throw new BadRequestException('Định dạng URL lưu trữ không hợp lệ');
     }
   }
 }

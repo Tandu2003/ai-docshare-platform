@@ -56,7 +56,7 @@ export class FilesService {
     } catch (error) {
       this.logger.error('Error uploading files:', error);
       this.logger.error('Error stack:', error.stack);
-      throw new InternalServerErrorException('Failed to upload files');
+      throw new InternalServerErrorException('Không thể tải lên tệp');
     }
   }
 
@@ -156,13 +156,13 @@ export class FilesService {
       });
 
       if (!file) {
-        throw new NotFoundException('File not found');
+        throw new NotFoundException('Không tìm thấy tệp');
       }
 
       return await this.r2Service.getSignedDownloadUrl(file.storageUrl);
     } catch (error) {
       this.logger.error('Error getting download URL:', error);
-      throw new InternalServerErrorException('Failed to get download URL');
+      throw new InternalServerErrorException('Không thể lấy URL tải xuống');
     }
   }
 
@@ -183,13 +183,13 @@ export class FilesService {
       });
 
       if (!file) {
-        throw new NotFoundException('File not found');
+        throw new NotFoundException('Không tìm thấy tệp');
       }
 
       // Check if user has access to the file
       const allowSharedAccess = options.allowSharedAccess ?? false;
       if (!file.isPublic && !allowSharedAccess && file.uploaderId !== userId) {
-        throw new BadRequestException('You do not have access to this file');
+        throw new BadRequestException('Bạn không có quyền truy cập tệp này');
       }
 
       // Generate signed URL with 1 hour expiration
@@ -199,7 +199,7 @@ export class FilesService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to get secure file URL');
+      throw new InternalServerErrorException('Không thể lấy URL tệp bảo mật');
     }
   }
 
@@ -244,7 +244,7 @@ export class FilesService {
     });
 
     if (!file) {
-      throw new NotFoundException('File not found');
+      throw new NotFoundException('Không tìm thấy tệp');
     }
 
     return file;
@@ -398,18 +398,18 @@ export class FilesService {
       });
 
       if (!file) {
-        throw new NotFoundException('File not found');
+        throw new NotFoundException('Không tìm thấy tệp');
       }
 
       // Check if user has access to the file
       if (!file.isPublic && file.uploaderId !== userId) {
-        throw new BadRequestException('You do not have access to this file');
+        throw new BadRequestException('Bạn không có quyền truy cập tệp này');
       }
 
       // Find the document that contains this file
       const documentFile = file.documentFiles[0];
       if (!documentFile) {
-        throw new BadRequestException('File is not associated with any document');
+        throw new BadRequestException('Tệp không được liên kết với tài liệu nào');
       }
 
       // Create view record for the document (since View model tracks document views)
@@ -437,7 +437,7 @@ export class FilesService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to increment view count');
+      throw new InternalServerErrorException('Không thể tăng số lượt xem');
     }
   }
 

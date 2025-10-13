@@ -357,8 +357,8 @@ export default function DocumentDetailPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-muted-foreground mb-2">Document Not Found</h2>
-          <p className="text-muted-foreground">The document you're looking for doesn't exist.</p>
+          <h2 className="text-2xl font-bold text-muted-foreground mb-2">Không tìm thấy tài liệu</h2>
+          <p className="text-muted-foreground">Tài liệu bạn đang tìm kiếm không tồn tại.</p>
         </div>
       </div>
     );
@@ -394,18 +394,17 @@ export default function DocumentDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Document Content</CardTitle>
+              <CardTitle>Nội dung tài liệu</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
                 <p className="text-muted-foreground">
-                  This is a preview of the document content. In a real application, this would
-                  display the actual document content based on its file type.
+                  Đây là bản xem trước nội dung tài liệu. Trong ứng dụng thực tế, phần này sẽ hiển thị nội dung tài liệu thực tế dựa trên loại tệp.
                 </p>
                 <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2">Document Preview</h4>
+                  <h4 className="font-medium mb-2">Xem trước tài liệu</h4>
                   <p className="text-sm text-muted-foreground">
-                    {document.description || 'No description available.'}
+                    {document.description || 'Không có mô tả nào.'}
                   </p>
                 </div>
               </div>
@@ -466,27 +465,27 @@ export default function DocumentDetailPage() {
           {/* Document Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Document Statistics</CardTitle>
+              <CardTitle>Thống kê tài liệu</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Downloads</span>
+                <span className="text-sm text-muted-foreground">Lượt tải</span>
                 <span className="font-medium">{document.downloadCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Views</span>
+                <span className="text-sm text-muted-foreground">Lượt xem</span>
                 <span className="font-medium">{document.viewCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Average Rating</span>
+                <span className="text-sm text-muted-foreground">Đánh giá trung bình</span>
                 <span className="font-medium">{document.averageRating.toFixed(1)}/5</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Total Ratings</span>
+                <span className="text-sm text-muted-foreground">Tổng đánh giá</span>
                 <span className="font-medium">{document.totalRatings}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Comments</span>
+                <span className="text-sm text-muted-foreground">Bình luận</span>
                 <span className="font-medium">{comments.length}</span>
               </div>
             </CardContent>
@@ -495,12 +494,12 @@ export default function DocumentDetailPage() {
           {/* Related Documents */}
           <Card>
             <CardHeader>
-              <CardTitle>Related Documents</CardTitle>
+              <CardTitle>Tài liệu liên quan</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Related documents will be shown here when the API supports it.
+                  Tài liệu liên quan sẽ được hiển thị ở đây khi API hỗ trợ.
                 </p>
               </div>
             </CardContent>

@@ -13,10 +13,10 @@ export function PopularCategories({ categories }: PopularCategoriesProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Popular Categories</CardTitle>
+          <CardTitle>Danh mục phổ biến</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No category data available.</p>
+          <p className="text-sm text-muted-foreground">Không có dữ liệu danh mục.</p>
         </CardContent>
       </Card>
     );
@@ -41,13 +41,13 @@ export function PopularCategories({ categories }: PopularCategoriesProps) {
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <TrendingUp className="h-3 w-3" />
-                  <span>{category.documentCount} documents</span>
+                  <span>{category.documentCount} tài liệu</span>
                 </div>
               </div>
               <Progress value={(category.documentCount / denominator) * 100} className="h-2" />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{category.totalDownloads} downloads</span>
-                <span>{category.totalViews} views</span>
+                <span>{category.totalDownloads} lượt tải</span>
+                <span>{category.totalViews} lượt xem</span>
               </div>
             </div>
           ))}

@@ -40,7 +40,7 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: data.email,
-        subject: 'Verify Your Email - AI DocShare Platform',
+        subject: 'Xác thực Email của bạn - AI DocShare Platform',
         template: './verification',
         context: {
           firstName: data.firstName,
@@ -53,7 +53,7 @@ export class MailService {
       this.logger.log(`Verification email sent to ${data.email}`);
     } catch (error) {
       this.logger.error(`Failed to send verification email to ${data.email}`, error);
-      throw new Error('Failed to send verification email');
+      throw new Error('Không thể gửi email xác thực');
     }
   }
 
@@ -66,7 +66,7 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: data.email,
-        subject: 'Reset Your Password - AI DocShare Platform',
+        subject: 'Đặt lại Mật khẩu của bạn - AI DocShare Platform',
         template: './password-reset',
         context: {
           firstName: data.firstName,
@@ -79,7 +79,7 @@ export class MailService {
       this.logger.log(`Password reset email sent to ${data.email}`);
     } catch (error) {
       this.logger.error(`Failed to send password reset email to ${data.email}`, error);
-      throw new Error('Failed to send password reset email');
+      throw new Error('Không thể gửi email đặt lại mật khẩu');
     }
   }
 
@@ -90,7 +90,7 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: data.email,
-        subject: 'Welcome to AI DocShare Platform!',
+        subject: 'Chào mừng đến với AI DocShare Platform!',
         template: './welcome',
         context: {
           firstName: data.firstName,
@@ -114,7 +114,7 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: data.email,
-        subject: 'Password Reset Successful - AI DocShare Platform',
+        subject: 'Đặt lại Mật khẩu Thành công - AI DocShare Platform',
         template: './password-reset-confirmation',
         context: {
           firstName: data.firstName,

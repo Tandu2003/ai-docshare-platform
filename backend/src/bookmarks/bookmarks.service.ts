@@ -109,14 +109,14 @@ export class BookmarksService {
     });
 
     if (!document) {
-      throw new NotFoundException('Document not found or not accessible');
+      throw new NotFoundException('Không tìm thấy tài liệu hoặc không thể truy cập');
     }
 
     const isOwner = document.uploaderId === userId;
     const canAccess = isOwner || document.isPublic === true;
 
     if (!canAccess) {
-      throw new NotFoundException('Document not found or not accessible');
+      throw new NotFoundException('Không tìm thấy tài liệu hoặc không thể truy cập');
     }
 
     if (folderId) {
@@ -128,7 +128,7 @@ export class BookmarksService {
       });
 
       if (!folder) {
-        throw new BadRequestException('Bookmark folder not found');
+        throw new BadRequestException('Không tìm thấy thư mục đánh dấu');
       }
     }
 
@@ -142,7 +142,7 @@ export class BookmarksService {
     });
 
     if (existingBookmark) {
-      throw new BadRequestException('Document already bookmarked');
+      throw new BadRequestException('Tài liệu đã được đánh dấu');
     }
 
     const created = await this.prisma.bookmark.create({
@@ -169,7 +169,7 @@ export class BookmarksService {
     });
 
     if (!bookmark) {
-      throw new NotFoundException('Bookmark not found');
+      throw new NotFoundException('Không tìm thấy đánh dấu');
     }
 
     await this.prisma.bookmark.delete({

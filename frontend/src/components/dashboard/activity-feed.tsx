@@ -50,11 +50,11 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
+        <CardTitle>Hoạt động gần đây</CardTitle>
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+          <p className="text-sm text-muted-foreground">Chưa có hoạt động nào được ghi nhận.</p>
         ) : (
           <div className="space-y-4">
             {activities.slice(0, 10).map((activity) => {
@@ -81,12 +81,12 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {activity.action === 'upload' && 'Uploaded a new document'}
-                      {activity.action === 'download' && 'Downloaded a document'}
-                      {activity.action === 'view' && 'Viewed a document'}
-                      {activity.action === 'comment' && 'Commented on a document'}
-                      {activity.action === 'rate' && 'Rated a document'}
-                      {activity.action === 'login' && 'Logged in'}
+                      {activity.action === 'upload' && 'Đã tải lên tài liệu mới'}
+                      {activity.action === 'download' && 'Đã tải xuống tài liệu'}
+                      {activity.action === 'view' && 'Đã xem tài liệu'}
+                      {activity.action === 'comment' && 'Đã bình luận về tài liệu'}
+                      {activity.action === 'rate' && 'Đã đánh giá tài liệu'}
+                      {activity.action === 'login' && 'Đã đăng nhập'}
                       {!['upload', 'download', 'view', 'comment', 'rate', 'login'].includes(
                         activity.action
                       ) && `Performed ${activity.action}`}

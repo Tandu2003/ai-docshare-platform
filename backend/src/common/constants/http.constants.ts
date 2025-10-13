@@ -24,18 +24,18 @@ export const HTTP_STATUS = {
 } as const;
 
 export const HTTP_MESSAGES = {
-  SUCCESS: 'Success',
-  CREATED: 'Resource created successfully',
-  UPDATED: 'Resource updated successfully',
-  DELETED: 'Resource deleted successfully',
-  DATA_RETRIEVED: 'Data retrieved successfully',
+  SUCCESS: 'Thành công',
+  CREATED: 'Tài nguyên đã được tạo thành công',
+  UPDATED: 'Tài nguyên đã được cập nhật thành công',
+  DELETED: 'Tài nguyên đã được xóa thành công',
+  DATA_RETRIEVED: 'Dữ liệu đã được truy xuất thành công',
 
-  BAD_REQUEST: 'Bad Request',
-  UNAUTHORIZED: 'Unauthorized',
-  FORBIDDEN: 'Forbidden',
-  NOT_FOUND: 'Resource not found',
-  VALIDATION_FAILED: 'Validation failed',
-  CONFLICT: 'Conflict',
-  TOO_MANY_REQUESTS: 'Too many requests, please try again later',
-  INTERNAL_ERROR: 'Internal Server Error',
+  BAD_REQUEST: 'Yêu cầu không hợp lệ',
+  UNAUTHORIZED: 'Không được ủy quyền',
+  FORBIDDEN: 'Bị cấm',
+  NOT_FOUND: 'Không tìm thấy tài nguyên',
+  VALIDATION_FAILED: 'Xác thực thất bại',
+  CONFLICT: 'Xung đột',
+  TOO_MANY_REQUESTS: 'Quá nhiều yêu cầu, vui lòng thử lại sau',
+  INTERNAL_ERROR: 'Lỗi máy chủ nội bộ',
 } as const;

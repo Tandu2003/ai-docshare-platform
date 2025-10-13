@@ -79,13 +79,13 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Settings className="h-8 w-8 text-primary" />
-            Settings
+            Cài đặt
           </h1>
-          <p className="text-muted-foreground mt-1">Manage your account settings and preferences</p>
+          <p className="text-muted-foreground mt-1">Quản lý cài đặt tài khoản và tùy chọn của bạn</p>
         </div>
         <Button onClick={handleSave} disabled={isLoading}>
           <Save className="h-4 w-4 mr-2" />
-          {isLoading ? 'Saving...' : 'Save Changes'}
+          {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
         </Button>
       </div>
 
@@ -96,7 +96,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Profile Information
+                Thông tin hồ sơ
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -109,17 +109,17 @@ export default function SettingsPage() {
                 </Avatar>
                 <div>
                   <Button variant="outline" size="sm">
-                    Change Avatar
+                    Thay đổi ảnh đại diện
                   </Button>
                   <p className="text-xs text-muted-foreground mt-1">
-                    JPG, PNG or GIF. Max size 2MB.
+                    JPG, PNG hoặc GIF. Kích thước tối đa 2MB.
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">Tên</Label>
                   <Input
                     id="firstName"
                     value={settings.firstName}
@@ -127,7 +127,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">Họ</Label>
                   <Input
                     id="lastName"
                     value={settings.lastName}
@@ -137,7 +137,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Địa chỉ email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -147,10 +147,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">Tiểu sử</Label>
                 <Input
                   id="bio"
-                  placeholder="Tell us about yourself..."
+                  placeholder="Hãy cho chúng tôi biết về bạn..."
                   value={settings.bio}
                   onChange={(e) => handleSettingChange('bio', e.target.value)}
                 />
@@ -161,7 +161,7 @@ export default function SettingsPage() {
                   <Label htmlFor="website">Website</Label>
                   <Input
                     id="website"
-                    placeholder="https://yourwebsite.com"
+                    placeholder="https://websitecuaban.com"
                     value={settings.website}
                     onChange={(e) => handleSettingChange('website', e.target.value)}
                   />
@@ -170,7 +170,7 @@ export default function SettingsPage() {
                   <Label htmlFor="location">Location</Label>
                   <Input
                     id="location"
-                    placeholder="City, Country"
+                    placeholder="Thành phố, Quốc gia"
                     value={settings.location}
                     onChange={(e) => handleSettingChange('location', e.target.value)}
                   />
@@ -183,15 +183,15 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Notifications
+                Thông báo
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
+                  <Label>Thông báo qua email</Label>
                   <p className="text-sm text-muted-foreground">
-                    Receive email notifications for important updates
+                    Nhận thông báo qua email cho các cập nhật quan trọng
                   </p>
                 </div>
                 <Switch
@@ -202,9 +202,9 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Push Notifications</Label>
+                  <Label>Thông báo đẩy</Label>
                   <p className="text-sm text-muted-foreground">
-                    Receive push notifications in your browser
+                    Nhận thông báo đẩy trong trình duyệt
                   </p>
                 </div>
                 <Switch
@@ -215,9 +215,9 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Marketing Emails</Label>
+                  <Label>Email tiếp thị</Label>
                   <p className="text-sm text-muted-foreground">
-                    Receive emails about new features and promotions
+                    Nhận email về các tính năng mới và khuyến mãi
                   </p>
                 </div>
                 <Switch
@@ -232,12 +232,12 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Privacy & Security
+                Quyền riêng tư & Bảo mật
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Profile Visibility</Label>
+                <Label>Hiển thị hồ sơ</Label>
                 <Select
                   value={settings.profileVisibility}
                   onValueChange={(value) => handleSettingChange('profileVisibility', value)}
@@ -246,18 +246,18 @@ export default function SettingsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="public">Public</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
-                    <SelectItem value="friends">Friends Only</SelectItem>
+                    <SelectItem value="public">Công khai</SelectItem>
+                    <SelectItem value="private">Riêng tư</SelectItem>
+                    <SelectItem value="friends">Chỉ bạn bè</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Show Email Address</Label>
+                  <Label>Hiển thị địa chỉ email</Label>
                   <p className="text-sm text-muted-foreground">
-                    Allow others to see your email address
+                    Cho phép người khác xem địa chỉ email của bạn
                   </p>
                 </div>
                 <Switch
@@ -268,8 +268,10 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Show Location</Label>
-                  <p className="text-sm text-muted-foreground">Allow others to see your location</p>
+                  <Label>Hiển thị vị trí</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Cho phép người khác xem vị trí của bạn
+                  </p>
                 </div>
                 <Switch
                   checked={settings.showLocation}
@@ -280,17 +282,17 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="space-y-2">
-                <Label>Change Password</Label>
+                <Label>Đổi mật khẩu</Label>
                 <div className="space-y-2">
-                  <Input type={showPassword ? 'text' : 'password'} placeholder="Current password" />
-                  <Input type={showPassword ? 'text' : 'password'} placeholder="New password" />
+                  <Input type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu hiện tại" />
+                  <Input type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu mới" />
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Confirm new password"
+                    placeholder="Xác nhận mật khẩu mới"
                   />
                   <Button variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    {showPassword ? 'Hide' : 'Show'} passwords
+                    {showPassword ? 'Ẩn' : 'Hiển thị'} mật khẩu
                   </Button>
                 </div>
               </div>
@@ -304,12 +306,12 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Preferences
+                Tùy chọn
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Language</Label>
+                <Label>Ngôn ngữ</Label>
                 <Select
                   value={settings.language}
                   onValueChange={(value) => handleSettingChange('language', value)}
@@ -318,17 +320,17 @@ export default function SettingsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="vi">Vietnamese</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
-                    <SelectItem value="de">German</SelectItem>
+                    <SelectItem value="en">Tiếng Anh</SelectItem>
+                    <SelectItem value="vi">Tiếng Việt</SelectItem>
+                    <SelectItem value="es">Tiếng Tây Ban Nha</SelectItem>
+                    <SelectItem value="fr">Tiếng Pháp</SelectItem>
+                    <SelectItem value="de">Tiếng Đức</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Theme</Label>
+                <Label>Giao diện</Label>
                 <Select
                   value={settings.theme}
                   onValueChange={(value) => handleSettingChange('theme', value)}
@@ -337,15 +339,15 @@ export default function SettingsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="light">Sáng</SelectItem>
+                    <SelectItem value="dark">Tối</SelectItem>
+                    <SelectItem value="system">Hệ thống</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Timezone</Label>
+                <Label>Múi giờ</Label>
                 <Select
                   value={settings.timezone}
                   onValueChange={(value) => handleSettingChange('timezone', value)}
@@ -355,9 +357,9 @@ export default function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                    <SelectItem value="Europe/London">London</SelectItem>
+                    <SelectItem value="America/New_York">Giờ Đông</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Giờ Thái Bình Dương</SelectItem>
+                    <SelectItem value="Europe/London">Luân Đôn</SelectItem>
                     <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
                   </SelectContent>
                 </Select>
@@ -369,20 +371,20 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
-                Account Status
+                Trạng thái tài khoản
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm">Email Verified</span>
-                <Badge variant="default">Verified</Badge>
+                <span className="text-sm">Email đã xác thực</span>
+                <Badge variant="default">Đã xác thực</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">Account Status</span>
-                <Badge variant="default">Active</Badge>
+                <span className="text-sm">Trạng thái tài khoản</span>
+                <Badge variant="default">Đang hoạt động</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">Member Since</span>
+                <span className="text-sm">Thành viên từ</span>
                 <span className="text-sm text-muted-foreground">
                   {new Date().toLocaleDateString()}
                 </span>
@@ -392,14 +394,14 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Danger Zone</CardTitle>
+              <CardTitle>Khu vực nguy hiểm</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button variant="destructive" className="w-full">
-                Delete Account
+                Xóa tài khoản
               </Button>
               <p className="text-xs text-muted-foreground">
-                This action cannot be undone. All your data will be permanently deleted.
+                Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.
               </p>
             </CardContent>
           </Card>

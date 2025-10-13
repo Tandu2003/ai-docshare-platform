@@ -74,7 +74,7 @@ export const getDocuments = async (page = 1, limit = 10): Promise<PaginatedDocum
     `/upload/public?page=${page}&limit=${limit}`
   );
   if (!response.data) {
-    throw new Error('No data returned from API');
+    throw new Error('Không có dữ liệu trả về từ API');
   }
   return response.data;
 };
@@ -90,7 +90,7 @@ export const getDocumentById = async (
     params: apiKey ? { apiKey } : undefined,
   });
   if (!response.data) {
-    throw new Error('No data returned from API');
+    throw new Error('Không có dữ liệu trả về từ API');
   }
   return response.data;
 };
@@ -108,13 +108,13 @@ export const viewDocument = async (
       options || {}
     );
     if (!response.data) {
-      throw new Error('No data returned from API');
+      throw new Error('Không có dữ liệu trả về từ API');
     }
     return response.data;
   } catch (error) {
     console.error('Failed to track document view', error);
     // Don't throw error for view tracking as it's not critical
-    return { success: false, message: 'Failed to track view' };
+    return { success: false, message: 'Không thể theo dõi lượt xem' };
   }
 };
 
@@ -147,11 +147,11 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
     if (response.data?.success) {
       return response.data.data.secureUrl;
     } else {
-      throw new Error(response.data?.message || 'Failed to get secure file URL');
+      throw new Error(response.data?.message || 'Không thể lấy URL tệp bảo mật');
     }
   } catch (error: any) {
     console.error('Failed to get secure file URL', error);
-    throw new Error(error.response?.data?.message || 'Could not get secure file URL.');
+    throw new Error(error.response?.data?.message || 'Không thể lấy URL tệp bảo mật.');
   }
 };
 
@@ -194,12 +194,12 @@ export const downloadDocument = async (
       };
     } else {
       console.error('Invalid response format:', response.data);
-      throw new Error(response.data?.message || 'Failed to prepare document download');
+      throw new Error(response.data?.message || 'Không thể chuẩn bị tải xuống tài liệu');
     }
   } catch (error: any) {
     console.error('API call failed:', error);
     console.error('Error response:', error.response?.data);
-    throw new Error(error.response?.data?.message || 'Could not prepare document download.');
+    throw new Error(error.response?.data?.message || 'Không thể chuẩn bị tải xuống tài liệu.');
   }
 };
 
@@ -234,7 +234,7 @@ export const createDocumentShareLink = async (
   );
 
   if (!response.data) {
-    throw new Error('No data returned from API');
+    throw new Error('Không có dữ liệu trả về từ API');
   }
 
   return response.data;
@@ -269,7 +269,7 @@ export const triggerFileDownload = async (
 
       // Validate URL first
       if (!downloadData.downloadUrl || !downloadData.downloadUrl.startsWith('http')) {
-        throw new Error(`Invalid download URL: ${downloadData.downloadUrl}`);
+        throw new Error(`URL tải xuống không hợp lệ: ${downloadData.downloadUrl}`);
       }
 
       const response = await fetch(downloadData.downloadUrl);
@@ -289,7 +289,7 @@ export const triggerFileDownload = async (
       });
 
       if (blob.size === 0) {
-        throw new Error('Downloaded file is empty');
+        throw new Error('Tệp tải xuống trống');
       }
 
       // Create blob URL and download
@@ -353,7 +353,7 @@ export const triggerFileDownload = async (
       console.log(`Attempted direct download of ${fileName}`);
     }
   } catch (error) {
-    console.error('Failed to download document', error);
+    console.error('Không thể tải xuống tài liệu', error);
     throw error;
   }
 };
