@@ -11,6 +11,7 @@ import { PrismaModule } from '@/prisma/prisma.module';
 import { BookmarksModule } from '@/bookmarks/bookmarks.module';
 import { AnalyticsModule } from '@/analytics/analytics.module';
 import { CategoriesModule } from '@/categories/categories.module';
+import { UsersModule } from '@/users/users.module';
 // import { UploadModule } from '@/upload/upload.module';
 import { JwtAuthGuard } from '@/auth/guards';
 import { CaslGuard } from '@/common/casl';
@@ -32,6 +33,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
     BookmarksModule,
     CategoriesModule,
     AnalyticsModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [
