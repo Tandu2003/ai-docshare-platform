@@ -14,10 +14,9 @@ import {
   TrendingUp,
   Upload,
   Users,
-} from 'lucide-react';
-
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+} from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import {
   AlertDialog,
@@ -29,10 +28,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,16 +39,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/hooks'
+import { cn } from '@/lib/utils'
 import {
   BOOKMARKS_UPDATED_EVENT,
-  type BookmarkStats,
+  BookmarkStats,
   getBookmarkStats,
-} from '@/services/bookmark.service';
+} from '@/services/bookmark.service'
 
 interface SidebarProps {
   className?: string;
@@ -224,7 +223,7 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="space-y-6">
           {renderNavSection('Chính', mainNavItems)}
           <Separator />
