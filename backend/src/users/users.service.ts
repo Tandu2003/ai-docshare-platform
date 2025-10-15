@@ -163,8 +163,16 @@ export class UsersService {
     // Tạo user
     const user = await this.prisma.user.create({
       data: {
-        ...createUserDto,
+        email: createUserDto.email,
+        username: createUserDto.username,
         password: hashedPassword,
+        firstName: createUserDto.firstName,
+        lastName: createUserDto.lastName,
+        avatar: createUserDto.avatar,
+        bio: createUserDto.bio,
+        roleId: createUserDto.roleId,
+        isVerified: false, // Default: not verified
+        isActive: true, // Default: active
       },
       include: {
         role: {
@@ -213,10 +221,23 @@ export class UsersService {
       }
     }
 
+    // Kiểm tra roleId tồn tại nếu có
+    if (updateUserDto.roleId) {
+      const role = await this.prisma.role.findUnique({
+        where: { id: updateUserDto.roleId },
+      });
+      if (!role) {
+        throw new BadRequestException('Vai trò không tồn tại');
+      }
+    }
+
     // Hash password mới nếu có
     const updateData: any = { ...updateUserDto };
-    if (updateUserDto.password) {
+    if (updateUserDto.password && updateUserDto.password.trim().length > 0) {
       updateData.password = await bcrypt.hash(updateUserDto.password, 10);
+    } else {
+      // Bỏ password khỏi updateData nếu không có hoặc empty
+      delete updateData.password;
     }
 
     // Cập nhật user
@@ -380,5 +401,24 @@ export class UsersService {
       commentCount,
       bookmarkCount,
     };
+  }
+
+  async getRoles(_currentUser: AuthUser) {
+    const roles = await this.prisma.role.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        permissions: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return roles;
   }
 }

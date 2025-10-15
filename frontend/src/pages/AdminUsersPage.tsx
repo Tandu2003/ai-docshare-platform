@@ -23,6 +23,7 @@ import { userService } from '@/services/user.service'
 import type {
   CreateUserRequest,
   GetUsersQuery,
+  Role,
   UpdateUserRequest,
   User,
 } from '@/services/user.service';
@@ -34,7 +35,7 @@ export default function AdminUsersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [roles, setRoles] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -82,14 +83,15 @@ export default function AdminUsersPage() {
     }
   }, [filters]);
 
-  // Load roles (mock data for now)
+  // Load roles from API
   const loadRoles = useCallback(async () => {
-    // TODO: Implement actual roles API
-    setRoles([
-      { id: '1', name: 'admin', description: 'Quản trị viên' },
-      { id: '2', name: 'moderator', description: 'Điều hành viên' },
-      { id: '3', name: 'user', description: 'Người dùng' },
-    ]);
+    try {
+      const rolesData = await userService.getRoles();
+      setRoles(rolesData);
+    } catch (error) {
+      console.error('Failed to load roles:', error);
+      toast.error('Không thể tải danh sách vai trò');
+    }
   }, []);
 
   useEffect(() => {
@@ -141,29 +143,6 @@ export default function AdminUsersPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  // Handle view user
-  const handleViewUser = (user: User) => {
-    // TODO: Implement view user details
-    toast.info(`Xem chi tiết người dùng: ${user.firstName} ${user.lastName}`);
-  };
-
-  // Handle view activity
-  const handleViewActivity = (user: User) => {
-    // TODO: Implement view user activity
-    toast.info(`Xem hoạt động người dùng: ${user.firstName} ${user.lastName}`);
-  };
-
-  // Handle update user role
-  const handleUpdateUserRole = (user: User) => {
-    // TODO: Implement update user role
-    toast.info(`Thay đổi vai trò người dùng: ${user.firstName} ${user.lastName}`);
-  };
-
-  // Handle update user status
-  const handleUpdateUserStatus = (user: User) => {
-    // TODO: Implement update user status
-    toast.info(`Thay đổi trạng thái người dùng: ${user.firstName} ${user.lastName}`);
-  };
 
   // Handle form submit
   const handleFormSubmit = async (data: CreateUserRequest | UpdateUserRequest) => {
@@ -250,8 +229,8 @@ export default function AdminUsersPage() {
           )}
           <Button onClick={handleCreateUser} disabled={isLoading}>
             <Plus className="h-4 w-4 mr-2" />
-            Thêm người dùng
-          </Button>
+          Thêm người dùng
+        </Button>
         </div>
       </div>
 
@@ -358,10 +337,6 @@ export default function AdminUsersPage() {
               onSelectAll={handleSelectAll}
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
-              onViewUser={handleViewUser}
-              onViewActivity={handleViewActivity}
-              onUpdateUserRole={handleUpdateUserRole}
-              onUpdateUserStatus={handleUpdateUserStatus}
               isLoading={isLoading}
             />
           )}

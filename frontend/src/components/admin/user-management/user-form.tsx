@@ -27,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -36,14 +35,18 @@ import type { CreateUserRequest, UpdateUserRequest, User } from '@/services/user
 const userFormSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
   username: z.string().min(3, 'Tên đăng nhập phải có ít nhất 3 ký tự'),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự').optional(),
+  password: z
+    .string()
+    .optional()
+    .refine((val) => {
+      // Nếu có giá trị thì phải có ít nhất 6 ký tự, nếu không có thì OK
+      return !val || val.length >= 6;
+    }, 'Mật khẩu phải có ít nhất 6 ký tự'),
   firstName: z.string().min(1, 'Tên không được để trống'),
   lastName: z.string().min(1, 'Họ không được để trống'),
   avatar: z.string().url('URL ảnh đại diện không hợp lệ').optional().or(z.literal('')),
   bio: z.string().max(500, 'Tiểu sử không được quá 500 ký tự').optional(),
   roleId: z.string().min(1, 'Vai trò không được để trống'),
-  isVerified: z.boolean().optional(),
-  isActive: z.boolean().optional(),
 });
 
 type UserFormData = z.infer<typeof userFormSchema>;
@@ -78,8 +81,6 @@ export function UserForm({
       avatar: '',
       bio: '',
       roleId: '',
-      isVerified: false,
-      isActive: true,
     },
   });
 
@@ -94,8 +95,6 @@ export function UserForm({
         avatar: user.avatar || '',
         bio: user.bio || '',
         roleId: user.roleId,
-        isVerified: user.isVerified,
-        isActive: user.isActive,
       });
     } else {
       form.reset({
@@ -107,15 +106,13 @@ export function UserForm({
         avatar: '',
         bio: '',
         roleId: '',
-        isVerified: false,
-        isActive: true,
       });
     }
   }, [user, form]);
 
   const handleSubmit = (data: UserFormData) => {
-    // Remove empty password for edit mode
-    if (isEdit && !data.password) {
+    // Remove empty password for both create and edit mode
+    if (!data.password || data.password.trim() === '') {
       const { password: _password, ...dataWithoutPassword } = data;
       onSubmit(dataWithoutPassword);
     } else {
@@ -283,35 +280,6 @@ export function UserForm({
                   </FormItem>
                 )}
               />
-
-              {/* Status Switches */}
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <FormLabel>Đang hoạt động</FormLabel>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isVerified"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <FormLabel>Đã xác thực</FormLabel>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
             <DialogFooter>

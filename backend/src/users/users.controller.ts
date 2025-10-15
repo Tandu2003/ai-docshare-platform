@@ -146,4 +146,15 @@ export class UsersController {
 
     ResponseHelper.success(response, result, 'Lấy thống kê người dùng thành công');
   }
+
+  @Get('roles/list')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getRoles(
+    @Req() request: Request & { user: AuthUser },
+    @Res() response: Response
+  ): Promise<void> {
+    const result = await this.usersService.getRoles(request.user);
+
+    ResponseHelper.success(response, result, 'Lấy danh sách vai trò thành công');
+  }
 }

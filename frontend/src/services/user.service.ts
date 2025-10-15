@@ -38,8 +38,6 @@ export interface CreateUserRequest {
   avatar?: string;
   bio?: string;
   roleId: string;
-  isVerified?: boolean;
-  isActive?: boolean;
 }
 
 export interface UpdateUserRequest {
@@ -103,6 +101,13 @@ export interface UserStatistics {
   ratingCount: number;
   commentCount: number;
   bookmarkCount: number;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
 }
 
 export interface UserActivityResponse {
@@ -174,6 +179,11 @@ class UserService {
 
   async getUserStatistics(id: string): Promise<UserStatistics> {
     const response = await apiClient.get(`${this.baseUrl}/${id}/statistics`);
+    return response.data;
+  }
+
+  async getRoles(): Promise<Role[]> {
+    const response = await apiClient.get(`${this.baseUrl}/roles/list`);
     return response.data;
   }
 }

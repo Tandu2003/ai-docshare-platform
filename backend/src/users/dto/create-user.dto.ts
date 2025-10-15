@@ -73,19 +73,4 @@ export class CreateUserDto {
   @IsString({ message: 'ID vai trò phải là chuỗi' })
   roleId: string;
 
-  @ApiPropertyOptional({
-    description: 'Trạng thái xác thực email',
-    example: false,
-    default: false,
-  })
-  @IsOptional()
-  isVerified?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Trạng thái hoạt động',
-    example: true,
-    default: true,
-  })
-  @IsOptional()
-  isActive?: boolean;
 }

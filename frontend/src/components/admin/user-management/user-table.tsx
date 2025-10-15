@@ -1,4 +1,4 @@
-import { Activity, Edit, Eye, MoreHorizontal, Shield, Trash2, UserCheck, UserX } from 'lucide-react'
+import { Edit, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -31,10 +31,6 @@ interface UserTableProps {
   onSelectAll: (selected: boolean) => void;
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
-  onViewUser: (user: User) => void;
-  onViewActivity: (user: User) => void;
-  onUpdateUserRole: (user: User) => void;
-  onUpdateUserStatus: (user: User) => void;
   isLoading?: boolean;
 }
 
@@ -45,10 +41,6 @@ export function UserTable({
   onSelectAll,
   onEditUser,
   onDeleteUser,
-  onViewUser,
-  onViewActivity,
-  onUpdateUserRole,
-  onUpdateUserStatus,
   isLoading = false,
 }: UserTableProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -172,30 +164,9 @@ export function UserTable({
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onViewUser(user)}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Xem chi tiết
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onViewActivity(user)}>
-                      <Activity className="mr-2 h-4 w-4" />
-                      Hoạt động
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEditUser(user)}>
                       <Edit className="mr-2 h-4 w-4" />
                       Chỉnh sửa
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onUpdateUserRole(user)}>
-                      <Shield className="mr-2 h-4 w-4" />
-                      Thay đổi vai trò
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateUserStatus(user)}>
-                      {user.isActive ? (
-                        <UserX className="mr-2 h-4 w-4" />
-                      ) : (
-                        <UserCheck className="mr-2 h-4 w-4" />
-                      )}
-                      {user.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
