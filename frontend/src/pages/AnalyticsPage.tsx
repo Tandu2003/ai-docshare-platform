@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingPage } from '@/components/ui/loading-skeleton';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -136,6 +137,46 @@ export default function AnalyticsPage() {
     : 0;
 
   const timeframeLabel = `${formatDate(data.timeframe.startDate)} → ${formatDate(data.timeframe.endDate)}`;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 px-4 py-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-3xl font-bold">
+              <BarChart3 className="text-primary h-8 w-8" />
+              Analytics Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Thông tin chi tiết và số liệu hiệu suất nền tảng
+            </p>
+          </div>
+          <Select
+            value={timeRange}
+            onValueChange={setTimeRange}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Chọn khoảng" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">7 ngày qua</SelectItem>
+              <SelectItem value="30d">30 ngày qua</SelectItem>
+              <SelectItem value="90d">90 ngày qua</SelectItem>
+              <SelectItem value="1y">Năm qua</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <LoadingPage
+          title=""
+          description=""
+          showStats={true}
+          showTable={true}
+          showList={true}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-6">

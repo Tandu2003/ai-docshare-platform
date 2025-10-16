@@ -4,13 +4,49 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/loading-skeleton';
 import type { DashboardDocument } from '@/types';
 
 interface RecentDocumentsProps {
   documents: DashboardDocument[];
+  isLoading?: boolean;
 }
 
-export function RecentDocuments({ documents }: RecentDocumentsProps) {
+export function RecentDocuments({ documents, isLoading = false }: RecentDocumentsProps) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Tài liệu gần đây</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <div className="flex space-x-4">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-8" />
+                  </div>
+                  <div className="flex space-x-2">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-5 w-12" />
+                    <Skeleton className="h-5 w-14" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (documents.length === 0) {
     return (
       <Card>

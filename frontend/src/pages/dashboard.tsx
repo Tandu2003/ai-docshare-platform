@@ -10,6 +10,7 @@ import { UserDashboard } from '@/components/dashboard/user-dashboard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingPage } from '@/components/ui/loading-skeleton';
 import { useAuth } from '@/hooks';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getDashboardOverview, getUserDashboardOverview } from '@/services/dashboard.service';
@@ -57,28 +58,13 @@ export const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
-          <p className="text-muted-foreground">
-            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn
-            có thể quản lý tài liệu và xem phân tích. analytics.
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="animate-pulse">
-                <div className="bg-muted h-4 w-3/4 rounded"></div>
-              </CardHeader>
-              <CardContent className="animate-pulse">
-                <div className="bg-muted mb-2 h-8 w-1/2 rounded"></div>
-                <div className="bg-muted h-3 w-full rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <LoadingPage
+        title="Bảng điều khiển"
+        description="Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích."
+        showStats={true}
+        showTable={false}
+        showList={false}
+      />
     );
   }
 
@@ -143,19 +129,19 @@ export const DashboardPage: React.FC = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Recent Documents - Show for everyone */}
         <div className="lg:col-span-2">
-          <RecentDocuments documents={stats.recentDocuments} />
+          <RecentDocuments documents={stats.recentDocuments} isLoading={loading} />
         </div>
 
         {/* Popular Categories - Show for everyone */}
         <div>
-          <PopularCategories categories={stats.popularCategories} />
+          <PopularCategories categories={stats.popularCategories} isLoading={loading} />
         </div>
       </div>
 
       {/* Activity Feed - Show for everyone */}
       <div className="grid gap-6 md:grid-cols-2">
         <div className="md:col-span-2">
-          <ActivityFeed activities={stats.userActivity} />
+          <ActivityFeed activities={stats.userActivity} isLoading={loading} />
         </div>
       </div>
 

@@ -9,6 +9,7 @@ export const usePermissions = () => {
     if (!can) {
       console.warn('usePermissions: can function not available');
       return {
+        can: () => false,
         canRead: () => false,
         canCreate: () => false,
         canUpdate: () => false,
@@ -248,6 +249,9 @@ export const usePermissions = () => {
   );
 
   return {
+    // Raw CASL can function
+    can,
+
     // Basic permissions
     canRead,
     canCreate,
@@ -283,6 +287,7 @@ export const usePermissions = () => {
   } catch (error) {
     console.error('usePermissions error:', error);
     return {
+      can: () => false,
       canRead: () => false,
       canCreate: () => false,
       canUpdate: () => false,

@@ -1,14 +1,49 @@
 import { TrendingUp } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/loading-skeleton';
 import { Progress } from '@/components/ui/progress';
 import type { DashboardCategory } from '@/types';
 
 interface PopularCategoriesProps {
   categories: DashboardCategory[];
+  isLoading?: boolean;
 }
 
-export function PopularCategories({ categories }: PopularCategoriesProps) {
+export function PopularCategories({ categories, isLoading = false }: PopularCategoriesProps) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Danh mục phổ biến</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Skeleton className="h-5 w-5" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                <Skeleton className="h-2 w-full" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (categories.length === 0) {
     return (
       <Card>

@@ -10,10 +10,12 @@ import {
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/loading-skeleton';
 import type { DashboardActivity } from '@/types';
 
 interface ActivityFeedProps {
   activities: DashboardActivity[];
+  isLoading?: boolean;
 }
 
 const getActivityIcon = (action: string) => {
@@ -54,7 +56,37 @@ const getActivityColor = (action: string) => {
   }
 };
 
-export function ActivityFeed({ activities }: ActivityFeedProps) {
+export function ActivityFeed({ activities, isLoading = false }: ActivityFeedProps) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Hoạt động gần đây</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-start space-x-3">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                  <Skeleton className="h-4 w-32" />
+                  <div className="flex items-center space-x-1">
+                    <Skeleton className="h-3 w-3" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { LoadingPage } from '@/components/ui/loading-skeleton';
 import {
   Select,
   SelectContent,
@@ -154,6 +155,65 @@ export default function TopRatedPage() {
     }),
     [analytics.stats],
   );
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 px-4 py-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-3xl font-bold">
+              <Star className="text-primary h-8 w-8" />
+              Top Rated Documents
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Các tài liệu được đánh giá cao nhất dựa trên đánh giá của người dùng
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Select
+              value={timeRange}
+              onValueChange={setTimeRange}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Chọn khoảng thời gian" />
+              </SelectTrigger>
+              <SelectContent>
+                {RANGE_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={minRatings}
+              onValueChange={setMinRatings}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Số đánh giá tối thiểu" />
+              </SelectTrigger>
+              <SelectContent>
+                {MIN_RATINGS_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <LoadingPage
+          title=""
+          description=""
+          showStats={true}
+          showTable={true}
+          showList={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-6">

@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { LoadingPage } from '@/components/ui/loading-skeleton';
 import {
   Select,
   SelectContent,
@@ -123,6 +124,47 @@ export default function TrendingPage() {
       topGrowth: Number(data.stats.topGrowth || 0),
     };
   }, [data]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 px-4 py-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-3xl font-bold">
+              <TrendingUp className="text-primary h-8 w-8" />
+              Trending Documents
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Khám phá những tài liệu phổ biến và phát triển nhanh nhất
+            </p>
+          </div>
+          <Select
+            value={timeRange}
+            onValueChange={setTimeRange}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Chọn khoảng thời gian" />
+            </SelectTrigger>
+            <SelectContent>
+              {RANGE_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <LoadingPage
+          title=""
+          description=""
+          showStats={true}
+          showTable={true}
+          showList={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-6">
