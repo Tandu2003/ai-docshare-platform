@@ -8,6 +8,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +77,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     language: 'en',
     tags: [],
   });
+  const [userEditedLanguage, setUserEditedLanguage] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -167,39 +169,61 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       );
 
       // Extract File objects for upload
-      const files = filesToUpload.map(f => f.file);
+      const fileObjects = filesToUpload.map(f => f.file);
 
       // Upload files using real API
-      const response = await FilesService.uploadFiles(files);
+      const response = await FilesService.uploadFiles(fileObjects);
 
       if (response.success && response.data) {
-        // Update files with uploaded file IDs
+        toast.success(`Tải lên ${response.data.length} tệp thành công`);
+        // Build a robust mapping from server results to local files
+        const results = response.data;
+        const resultsBuckets = new Map<string, FileUploadResult[]>();
+        results.forEach(r => {
+          const key = `${r.originalName}|${r.mimeType}|${r.fileSize}`;
+          const arr = resultsBuckets.get(key) || [];
+          arr.push(r);
+          resultsBuckets.set(key, arr);
+        });
+
         setFiles(prev =>
           prev.map(f => {
             const fileToUpload = filesToUpload.find(tf => tf.id === f.id);
-            if (fileToUpload) {
-              const uploadedFile = response.data?.find(
-                (_uf: FileUploadResult, index: number) =>
-                  filesToUpload[index].id === f.id,
-              );
-              return uploadedFile
-                ? {
-                    ...f,
-                    uploaded: true,
-                    progress: 100,
-                    fileId: uploadedFile.id,
-                  }
-                : f;
+            if (!fileToUpload) return f;
+
+            // Prefer name+type+size matching; fallback to index order when needed
+            const key = `${fileToUpload.file.name}|${fileToUpload.file.type}|${fileToUpload.file.size}`;
+            let matched: FileUploadResult | undefined;
+
+            const bucket = resultsBuckets.get(key);
+            if (bucket && bucket.length > 0) {
+              matched = bucket.shift();
+            } else {
+              const index = filesToUpload.findIndex(tf => tf.id === f.id);
+              matched = results[index];
             }
-            return f;
+
+            return matched
+              ? {
+                  ...f,
+                  uploaded: true,
+                  progress: 100,
+                  fileId: matched.id,
+                }
+              : f;
           }),
         );
 
-        // Trigger AI analysis after successful upload (only for supported file types)
-        const uploadedFileIds = response.data.map(f => f.id);
+        // Trigger AI analysis after successful upload (consider ALL uploaded files)
+        const newlyUploadedIds = response.data.map(f => f.id);
 
-        // Create file info mapping for AI analysis
-        const fileInfoMap = new Map();
+        // Create a combined file info mapping for AI analysis
+        const fileInfoMap = new Map<
+          string,
+          { id: string; name: string; type: string }
+        >();
+
+        // Add current batch file infos
         response.data.forEach((uploadedFile, index) => {
           const originalFile = filesToUpload[index];
           fileInfoMap.set(uploadedFile.id, {
@@ -209,13 +233,37 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           });
         });
 
-        console.log('File info map:', Array.from(fileInfoMap.entries()));
-        analyzeFilesWithAI(uploadedFileIds, fileInfoMap);
+        // Add previously uploaded file infos from state
+        files
+          .filter(f => f.uploaded && f.fileId)
+          .forEach(f => {
+            if (!fileInfoMap.has(f.fileId!)) {
+              fileInfoMap.set(f.fileId!, {
+                id: f.fileId!,
+                name: f.file.name,
+                type: f.file.type,
+              });
+            }
+          });
+
+        // Build full set of file IDs (existing + new)
+        const allUploadedIdsSet = new Set<string>([
+          ...Array.from(
+            files.filter(f => f.uploaded && f.fileId).map(f => f.fileId!),
+          ),
+          ...newlyUploadedIds,
+        ]);
+        const allUploadedIds = Array.from(allUploadedIdsSet);
+
+        console.log('AI analyze with all uploaded file IDs:', allUploadedIds);
+        analyzeFilesWithAI(allUploadedIds, fileInfoMap);
       } else {
+        toast.error('Tải lên thất bại');
         throw new Error('Tải lên thất bại');
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Tải lên thất bại');
       setFiles(prev =>
         prev.map(f =>
           filesToUpload.find(tf => tf.id === f.id)
@@ -289,13 +337,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         const analysisResult = analysisResponse.data;
 
         // Update form with AI suggestions
-        setUploadData(prev => ({
-          ...prev,
-          title: prev.title || analysisResult.title || '',
-          description: prev.description || analysisResult.description || '',
-          tags: prev.tags.length > 0 ? prev.tags : analysisResult.tags || [],
-          language: prev.language || analysisResult.language || 'en',
-        }));
+        setUploadData(prev => {
+          const resolvedLanguage = userEditedLanguage
+            ? prev.language || 'en'
+            : analysisResult.language || prev.language || 'en';
+
+          return {
+            ...prev,
+            title: prev.title || analysisResult.title || '',
+            description: prev.description || analysisResult.description || '',
+            tags: prev.tags.length > 0 ? prev.tags : analysisResult.tags || [],
+            language: resolvedLanguage,
+          };
+        });
 
         setAiAnalysis(prev => ({
           ...prev,
@@ -406,12 +460,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const document = await DocumentsService.createDocument(documentData);
 
       onUploadComplete?.(document);
+      toast.success('Tạo tài liệu thành công');
 
       // Reset form after successful document creation
       setFiles([]);
       setUploadData({ isPublic: true, language: 'en', tags: [] });
+      setAiAnalysis({ isAnalyzing: false, analysisResult: null, error: null });
+      setUserEditedLanguage(false);
     } catch (error) {
       console.error('Failed to create document:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Không thể tạo tài liệu',
+      );
       onUploadError?.(
         error instanceof Error ? error.message : 'Không thể tạo tài liệu',
       );
@@ -647,12 +707,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <Label htmlFor="language">Language</Label>
             <Select
               value={uploadData.language}
-              onValueChange={value =>
+              onValueChange={value => {
+                setUserEditedLanguage(true);
                 setUploadData((prev: DocumentData) => ({
                   ...prev,
                   language: value,
-                }))
-              }
+                }));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn ngôn ngữ" />
