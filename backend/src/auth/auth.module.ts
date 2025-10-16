@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { RoleController } from './role.controller';
 import { RoleService } from './role.service';
 import { JwtStrategy } from './strategies';
+import { CaslModule } from '@/common/casl/casl.module';
 import { MailModule } from '@/mail/mail.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
@@ -16,7 +17,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_ACCESS_SECRET'),
         signOptions: {
           expiresIn: configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
@@ -26,7 +27,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => [
+      useFactory: () => [
         {
           name: 'short',
           ttl: 1000,
@@ -47,6 +48,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     }),
     PrismaModule,
     MailModule,
+    CaslModule,
   ],
   controllers: [AuthController, RoleController],
   providers: [AuthService, JwtStrategy, RoleService],

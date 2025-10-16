@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 
+import { PermissionGate } from '@/components/common/permission-gate';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -185,18 +186,22 @@ export function UserTable({
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onEditUser(user)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Chỉnh sửa
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => onDeleteUser(user)}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Xóa
-                    </DropdownMenuItem>
+                    <PermissionGate action="update" subject="User">
+                      <DropdownMenuItem onClick={() => onEditUser(user)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Chỉnh sửa
+                      </DropdownMenuItem>
+                    </PermissionGate>
+                    <PermissionGate action="delete" subject="User">
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => onDeleteUser(user)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Xóa
+                      </DropdownMenuItem>
+                    </PermissionGate>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

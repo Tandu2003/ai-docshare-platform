@@ -1,3 +1,4 @@
+import { CaslModule } from '../common/casl/casl.module';
 import { FilesModule } from '../files/files.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AIController } from './ai.controller';
@@ -8,7 +9,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, FilesModule],
+  imports: [ConfigModule, PrismaModule, FilesModule, CaslModule],
   controllers: [AIController],
   providers: [AIService, GeminiService, ContentExtractorService],
   exports: [AIService, GeminiService, ContentExtractorService],

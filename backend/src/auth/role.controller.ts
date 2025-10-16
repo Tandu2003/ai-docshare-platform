@@ -1,10 +1,9 @@
 import { JwtAuthGuard } from './guards';
 import { RoleService } from './role.service';
-import { CheckPolicies, CheckPolicy, Permission } from '@/common/casl';
+import { CheckPolicy, Permission } from '@/common/casl';
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -26,7 +25,7 @@ export class RoleController {
 
   @Get('defaults')
   @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
-  async getDefaultRoles() {
+  getDefaultRoles() {
     return this.roleService.getDefaultRoles();
   }
 

@@ -1,5 +1,6 @@
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminOnly, CaslGuard, CheckPolicy } from '@/common/casl';
 import { ResponseHelper } from '@/common/helpers/response.helper';
 import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import {
@@ -12,19 +13,29 @@ import { Request, Response } from 'express';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CaslGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get dashboard overview stats' })
+  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Get dashboard overview stats (Admin only)' })
   async getDashboardOverview(@Req() _req: Request, @Res() res: Response) {
     const dashboard = await this.analyticsService.getDashboardOverview();
     return ResponseHelper.success(res, dashboard);
   }
 
+  @Get('user-dashboard')
+  @ApiOperation({ summary: 'Get user dashboard overview stats' })
+  async getUserDashboardOverview(@Req() _req: Request, @Res() res: Response) {
+    const dashboard = await this.analyticsService.getUserDashboardOverview();
+    return ResponseHelper.success(res, dashboard);
+  }
+
   @Get()
+  @AdminOnly()
+  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
   @ApiOperation({ summary: 'Get platform analytics' })
   @ApiQuery({
     name: 'range',
@@ -41,6 +52,7 @@ export class AnalyticsController {
   }
 
   @Get('trending')
+  @CheckPolicy({ action: 'read', subject: 'Document' })
   @ApiOperation({ summary: 'Get trending documents' })
   @ApiQuery({
     name: 'range',
@@ -57,6 +69,7 @@ export class AnalyticsController {
   }
 
   @Get('top-rated')
+  @CheckPolicy({ action: 'read', subject: 'Document' })
   @ApiOperation({ summary: 'Get top rated documents' })
   @ApiQuery({
     name: 'range',

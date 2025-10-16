@@ -8,7 +8,7 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { DownloadDocumentDto } from './dto/download-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
-import { CheckPolicy } from '@/common/casl';
+import { CaslGuard, CheckPolicy } from '@/common/casl';
 import {
   BadRequestException,
   Body,
@@ -41,7 +41,7 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('Documents')
 @Controller('documents')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CaslGuard)
 @ApiBearerAuth()
 export class DocumentsController {
   private readonly logger = new Logger(DocumentsController.name);
@@ -465,7 +465,7 @@ export class DocumentsController {
     status: HttpStatus.OK,
     description: 'Các loại tệp được phép đã được truy xuất thành công',
   })
-  async getAllowedFileTypes(@Res() res: Response) {
+  getAllowedFileTypes(@Res() res: Response) {
     try {
       const allowedTypes = this.filesService.getAllowedTypes();
       return ResponseHelper.success(

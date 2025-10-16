@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { DocumentPermissionGate } from '@/components/common/permission-gate';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -149,13 +150,16 @@ export function DocumentDetailHeader({
 
               {/* Actions */}
               <div className="flex items-center space-x-2">
-                <Button
-                  onClick={onDownload}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Tải xuống
-                </Button>
+                <DocumentPermissionGate document={document} action="download">
+                  <Button
+                    onClick={onDownload}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Tải xuống
+                  </Button>
+                </DocumentPermissionGate>
+
                 <Button
                   variant={isBookmarked ? 'default' : 'outline'}
                   onClick={onBookmark}
@@ -175,9 +179,12 @@ export function DocumentDetailHeader({
                     {isBookmarked ? 'Xóa khỏi đánh dấu' : 'Thêm vào đánh dấu'}
                   </span>
                 </Button>
-                <Button variant="outline" onClick={onShare}>
-                  <Share2 className="h-4 w-4" />
-                </Button>
+
+                <DocumentPermissionGate document={document} action="share">
+                  <Button variant="outline" onClick={onShare}>
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </DocumentPermissionGate>
               </div>
             </div>
 

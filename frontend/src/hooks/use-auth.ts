@@ -50,29 +50,30 @@ export const useAuth = () => {
     return result;
   }, [dispatch]);
 
-  // Permission helpers
+  // Permission helpers - now using CASL
   const hasPermission = useCallback(
-    (permissionOrAction: string, subject?: string): boolean => {
+    (action: string, subject: string, conditions?: any): boolean => {
       if (!user?.role?.permissions) return false;
-
-      // Support signature: hasPermission('action:subject') or hasPermission('action', 'Subject')
-      const [actionFromString, subjectFromString] =
-        subject === undefined && permissionOrAction.includes(':')
-          ? permissionOrAction.split(':', 2)
-          : [permissionOrAction, subject];
-
-      const action = actionFromString?.trim();
-      const normalizedSubject = subjectFromString?.trim();
 
       return user.role.permissions.some(p => {
         const matchesAction = p.action === action;
         if (!matchesAction) return false;
-        if (!normalizedSubject) return true;
+
         // Compare case-insensitively; backend subjects are PascalCase
-        return (
+        const matchesSubject =
           typeof p.subject === 'string' &&
-          p.subject.toLowerCase() === normalizedSubject.toLowerCase()
-        );
+          p.subject.toLowerCase() === subject.toLowerCase();
+
+        if (!matchesSubject) return false;
+
+        // Check conditions if provided
+        if (conditions && p.conditions) {
+          return Object.keys(conditions).every(
+            key => p.conditions?.[key] === conditions[key],
+          );
+        }
+
+        return true;
       });
     },
     [user],

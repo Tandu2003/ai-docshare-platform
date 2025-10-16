@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import { AdminOnly, PermissionGate } from '@/components/common/permission-gate';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks';
+import { usePermissions } from '@/hooks/use-permissions';
 import { cn } from '@/lib/utils';
 import {
   BOOKMARKS_UPDATED_EVENT,
@@ -67,6 +69,7 @@ export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { canRead } = usePermissions();
   const [bookmarkStats, setBookmarkStats] = useState<BookmarkStats | null>(
     null,
   );
@@ -207,14 +210,32 @@ export function Sidebar({ className }: SidebarProps) {
     </Button>
   );
 
-  const renderNavSection = (title: string, items: NavItem[]) => (
-    <div className="space-y-1">
-      <h4 className="text-muted-foreground px-3 text-xs font-semibold tracking-wider uppercase">
-        {title}
-      </h4>
-      <div className="space-y-1">{items.map(renderNavItem)}</div>
-    </div>
-  );
+  const renderNavSection = (title: string, items: NavItem[]) => {
+    // Filter items based on permissions
+    const filteredItems = items.filter(item => {
+      // Check if item requires specific permissions
+      if (item.href === '/analytics') {
+        return canRead('SystemSetting');
+      }
+      if (item.href === '/admin' || item.href === '/admin/users') {
+        return user?.role?.name === 'admin';
+      }
+      return true; // Show all other items
+    });
+
+    if (filteredItems.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-1">
+        <h4 className="text-muted-foreground px-3 text-xs font-semibold tracking-wider uppercase">
+          {title}
+        </h4>
+        <div className="space-y-1">{filteredItems.map(renderNavItem)}</div>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -239,12 +260,10 @@ export function Sidebar({ className }: SidebarProps) {
           {renderNavSection('Cá nhân', userNavItems)}
           <Separator />
           {renderNavSection('Phân tích', analyticsNavItems)}
-          {user?.role?.name === 'admin' && (
-            <>
-              <Separator />
-              {renderNavSection('Quản trị', adminNavItems)}
-            </>
-          )}
+          <AdminOnly>
+            <Separator />
+            {renderNavSection('Quản trị', adminNavItems)}
+          </AdminOnly>
         </div>
       </ScrollArea>
 
@@ -296,14 +315,14 @@ export function Sidebar({ className }: SidebarProps) {
                 Cài đặt
               </Link>
             </DropdownMenuItem>
-            {user?.role?.name === 'admin' && (
+            <AdminOnly>
               <DropdownMenuItem asChild>
                 <Link to="/admin/settings" className="flex items-center">
                   <Shield className="mr-2 h-4 w-4" />
                   Cài đặt hệ thống
                 </Link>
               </DropdownMenuItem>
-            )}
+            </AdminOnly>
             <DropdownMenuSeparator />
             <AlertDialog>
               <AlertDialogTrigger asChild>

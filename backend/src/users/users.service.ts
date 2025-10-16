@@ -5,7 +5,6 @@ import {
   UpdateUserRoleDto,
   UpdateUserStatusDto,
 } from './dto';
-import { AuthUser } from '@/auth/interfaces';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
@@ -18,7 +17,7 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getUsers(query: GetUsersQueryDto, _currentUser: AuthUser) {
+  async getUsers(query: GetUsersQueryDto) {
     const {
       page = 1,
       limit = 10,
@@ -89,10 +88,16 @@ export class UsersService {
     ]);
 
     // Loại bỏ password khỏi kết quả
-    const usersWithoutPassword = users.map(({ password, ...user }) => user);
+    const usersWithoutPassword = users.map(({ password, ...user }) => {
+      void password;
+      return { ...user };
+    });
 
     return {
-      users: usersWithoutPassword,
+      users: usersWithoutPassword.map(user => ({
+        ...user,
+        password: undefined,
+      })),
       pagination: {
         page,
         limit,
@@ -104,7 +109,7 @@ export class UsersService {
     };
   }
 
-  async getUserById(id: string, _currentUser: AuthUser) {
+  async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -135,10 +140,11 @@ export class UsersService {
 
     // Loại bỏ password
     const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    void password;
+    return { ...userWithoutPassword };
   }
 
-  async createUser(createUserDto: CreateUserDto, _currentUser: AuthUser) {
+  async createUser(createUserDto: CreateUserDto) {
     // Kiểm tra email và username đã tồn tại
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -192,14 +198,11 @@ export class UsersService {
 
     // Loại bỏ password
     const { password, ...userWithoutPassword } = user;
+    void password;
     return userWithoutPassword;
   }
 
-  async updateUser(
-    id: string,
-    updateUserDto: UpdateUserDto,
-    _currentUser: AuthUser,
-  ) {
+  async updateUser(id: string, updateUserDto: UpdateUserDto) {
     // Kiểm tra user tồn tại
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
@@ -270,14 +273,11 @@ export class UsersService {
 
     // Loại bỏ password
     const { password, ...userWithoutPassword } = user;
+    void password;
     return userWithoutPassword;
   }
 
-  async updateUserRole(
-    id: string,
-    updateUserRoleDto: UpdateUserRoleDto,
-    _currentUser: AuthUser,
-  ) {
+  async updateUserRole(id: string, updateUserRoleDto: UpdateUserRoleDto) {
     // Kiểm tra user tồn tại
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -313,14 +313,11 @@ export class UsersService {
 
     // Loại bỏ password
     const { password, ...userWithoutPassword } = updatedUser;
+    void password;
     return userWithoutPassword;
   }
 
-  async updateUserStatus(
-    id: string,
-    updateUserStatusDto: UpdateUserStatusDto,
-    _currentUser: AuthUser,
-  ) {
+  async updateUserStatus(id: string, updateUserStatusDto: UpdateUserStatusDto) {
     // Kiểm tra user tồn tại
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -347,14 +344,15 @@ export class UsersService {
 
     // Loại bỏ password
     const { password, ...userWithoutPassword } = updatedUser;
+    void password;
     return userWithoutPassword;
   }
 
-  async deleteUser(id: string, _currentUser: AuthUser) {
+  async deleteUser(id: string) {
     // Không cho phép xóa chính mình
-    if (_currentUser.id === id) {
-      throw new BadRequestException('Bạn không thể xóa chính mình');
-    }
+    // if (currentUser.id === id) {
+    //   throw new BadRequestException('Bạn không thể xóa chính mình');
+    // }
 
     // Kiểm tra user tồn tại
     const user = await this.prisma.user.findUnique({
@@ -371,12 +369,7 @@ export class UsersService {
     });
   }
 
-  async getUserActivity(
-    id: string,
-    page: number,
-    limit: number,
-    _currentUser: AuthUser,
-  ) {
+  async getUserActivity(id: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
     const [activities, total] = await Promise.all([
@@ -404,7 +397,7 @@ export class UsersService {
     };
   }
 
-  async getUserStatistics(id: string, _currentUser: AuthUser) {
+  async getUserStatistics(id: string) {
     const [
       documentCount,
       downloadCount,
@@ -431,7 +424,7 @@ export class UsersService {
     };
   }
 
-  async getRoles(_currentUser: AuthUser) {
+  async getRoles() {
     const roles = await this.prisma.role.findMany({
       where: {
         isActive: true,

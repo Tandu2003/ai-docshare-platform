@@ -160,7 +160,8 @@ export class ContentExtractorService {
   /**
    * Extract content from PowerPoint files (basic implementation)
    */
-  private extractPowerPointContent(_buffer: Buffer): ExtractedContent {
+  private extractPowerPointContent(buffer: Buffer): ExtractedContent {
+    void buffer;
     // For now, we'll return a placeholder since PowerPoint extraction is complex
     // You can enhance this later with libraries like node-pptx or officegen
     this.logger.warn(

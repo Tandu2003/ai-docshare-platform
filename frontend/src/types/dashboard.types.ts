@@ -55,6 +55,8 @@ export interface DashboardActivity {
   userAgent?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
+  timestamp: string;
+  description: string;
   user?: DashboardUserSummary;
 }
 
@@ -80,4 +82,12 @@ export interface DashboardOverview {
   popularCategories: DashboardCategory[];
   userActivity: DashboardActivity[];
   recentNotifications: DashboardNotification[];
+  
+  // Admin-specific stats
+  newUsersThisMonth?: number;
+  newDocumentsThisMonth?: number;
+  downloadsThisMonth?: number;
+  viewsThisMonth?: number;
+  unverifiedUsers?: number;
+  pendingReports?: number;
 }

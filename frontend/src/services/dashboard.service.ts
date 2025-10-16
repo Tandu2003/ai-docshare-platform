@@ -17,6 +17,14 @@ interface DashboardOverviewApiResponse {
   popularCategories: DashboardCategoryApiResponse[];
   userActivity: DashboardActivityApiResponse[];
   recentNotifications: DashboardNotificationApiResponse[];
+  
+  // Admin-specific stats
+  newUsersThisMonth?: number;
+  newDocumentsThisMonth?: number;
+  downloadsThisMonth?: number;
+  viewsThisMonth?: number;
+  unverifiedUsers?: number;
+  pendingReports?: number;
 }
 
 interface DashboardDocumentApiResponse {
@@ -76,6 +84,8 @@ interface DashboardActivityApiResponse {
   userAgent?: string | null;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
+  timestamp: string;
+  description: string;
   user?: DashboardUserSummaryApiResponse | null;
 }
 
@@ -157,6 +167,8 @@ const mapActivity = (
   userAgent: activity.userAgent ?? undefined,
   metadata: activity.metadata ?? undefined,
   createdAt: activity.createdAt,
+  timestamp: activity.timestamp,
+  description: activity.description,
   user: activity.user ? mapUserSummary(activity.user) : undefined,
 });
 
@@ -197,5 +209,46 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
     popularCategories: data.popularCategories.map(mapCategory),
     userActivity: data.userActivity.map(mapActivity),
     recentNotifications: data.recentNotifications.map(mapNotification),
+    
+    // Admin-specific stats
+    newUsersThisMonth: data.newUsersThisMonth || 0,
+    newDocumentsThisMonth: data.newDocumentsThisMonth || 0,
+    downloadsThisMonth: data.downloadsThisMonth || 0,
+    viewsThisMonth: data.viewsThisMonth || 0,
+    unverifiedUsers: data.unverifiedUsers || 0,
+    pendingReports: data.pendingReports || 0,
+  };
+};
+
+export const getUserDashboardOverview = async (): Promise<DashboardOverview> => {
+  const response = await apiClient.get<DashboardOverviewApiResponse>(
+    '/analytics/user-dashboard',
+  );
+
+  if (!response.success || !response.data) {
+    throw new Error(
+      response.message || 'Không thể tải dữ liệu tổng quan dashboard',
+    );
+  }
+
+  const data = response.data;
+
+  return {
+    totalDocuments: data.totalDocuments,
+    totalUsers: data.totalUsers,
+    totalDownloads: data.totalDownloads,
+    totalViews: data.totalViews,
+    recentDocuments: data.recentDocuments.map(mapDocument),
+    popularCategories: data.popularCategories.map(mapCategory),
+    userActivity: data.userActivity.map(mapActivity),
+    recentNotifications: data.recentNotifications.map(mapNotification),
+    
+    // Admin-specific stats (not available for user)
+    newUsersThisMonth: 0,
+    newDocumentsThisMonth: 0,
+    downloadsThisMonth: 0,
+    viewsThisMonth: 0,
+    unverifiedUsers: 0,
+    pendingReports: 0,
   };
 };

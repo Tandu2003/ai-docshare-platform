@@ -71,30 +71,27 @@ export class AbilityFactory {
     // Role-specific overrides
     switch (role?.name) {
       case 'admin':
+        // Admin có toàn quyền
         can('manage', 'all');
-        break;
-      case 'moderator':
         can('read', 'all');
-        can('update', 'Document', { isApproved: false });
-        can('approve', 'Document');
-        can('moderate', 'Comment');
-        can('moderate', 'User');
-        break;
-      case 'publisher':
-        can('create', 'Document');
-        can('update', 'Document', { uploaderId: user.id });
-        can('delete', 'Document', { uploaderId: user.id });
-        can('upload', 'File');
-        can('read', 'Document', { uploaderId: user.id });
-        can('read', 'File', { uploaderId: user.id });
-        can('share', 'Document', { uploaderId: user.id });
-        can('read', 'Bookmark', { userId: user.id });
-        can('create', 'Bookmark');
-        can('delete', 'Bookmark', { userId: user.id });
+        can('create', 'all');
+        can('update', 'all');
+        can('delete', 'all');
+        can('approve', 'all');
+        can('moderate', 'all');
+        can('upload', 'all');
+        can('download', 'all');
+        can('comment', 'all');
+        can('rate', 'all');
+        can('bookmark', 'all');
+        can('share', 'all');
         break;
       case 'user':
+        // User permissions - chỉ có thể thao tác với tài liệu của mình hoặc tài liệu public
         can('read', 'Document', { isPublic: true, isApproved: true });
         can('read', 'Document', { uploaderId: user.id });
+        // Allow reading document stats for dashboard
+        can('read', 'Document');
         can('create', 'Document');
         can('upload', 'File');
         can('update', 'Document', { uploaderId: user.id });
@@ -110,6 +107,15 @@ export class AbilityFactory {
         can('delete', 'Bookmark', { userId: user.id });
         can('download', 'Document', { isPublic: true, isApproved: true });
         can('download', 'Document', { uploaderId: user.id });
+        can('read', 'File', { isPublic: true });
+        can('read', 'File', { uploaderId: user.id });
+        can('read', 'Category');
+        can('read', 'Notification', { userId: user.id });
+        can('update', 'Notification', { userId: user.id });
+        can('delete', 'Notification', { userId: user.id });
+        // User có thể xem profile của mình
+        can('read', 'User', { id: user.id });
+        can('update', 'User', { id: user.id });
         break;
     }
 

@@ -1,4 +1,4 @@
-import { internalError, notFound, success } from '@/common';
+import { success } from '@/common';
 import { Controller, Get, Res } from '@nestjs/common';
 import { Response } from 'express';
 

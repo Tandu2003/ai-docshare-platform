@@ -1,12 +1,18 @@
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/hooks';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
-  requiredPermissions?: string[];
+  requiredPermissions?: Array<{
+    action: string;
+    subject: string;
+    conditions?: any;
+  }>;
   requiredRole?: string;
+  fallback?: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -14,8 +20,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAuth = true,
   requiredPermissions,
   requiredRole,
+  fallback,
 }) => {
-  const { isAuthenticated, hasPermission, hasRole } = useAuth();
+  const { isAuthenticated, hasRole } = useAuth();
+  const { can } = usePermissions();
   const location = useLocation();
 
   // If auth is required but user is not authenticated
@@ -31,17 +39,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check required permissions
   if (requiredPermissions && requiredPermissions.length > 0) {
     const hasAllPermissions = requiredPermissions.every(permission =>
-      hasPermission(permission),
+      can(permission.action, permission.subject, permission.conditions),
     );
 
     if (!hasAllPermissions) {
-      return <Navigate to="/unauthorized" replace />;
+      return fallback ? (
+        <>{fallback}</>
+      ) : (
+        <Navigate to="/unauthorized" replace />
+      );
     }
   }
 
   // Check required role
   if (requiredRole && !hasRole(requiredRole)) {
-    return <Navigate to="/unauthorized" replace />;
+    return fallback ? <>{fallback}</> : <Navigate to="/unauthorized" replace />;
   }
 
   return <>{children}</>;

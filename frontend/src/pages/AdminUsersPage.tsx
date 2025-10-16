@@ -9,6 +9,7 @@ import {
   UserTable,
 } from '@/components/admin/user-management';
 import { LoadingSpinner } from '@/components/common';
+import { UnauthorizedMessage } from '@/components/common/unauthorized-message';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   userService,
   type CreateUserRequest,
@@ -34,6 +36,7 @@ import {
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth();
+  const { canRead, canCreate, canUpdate, canDelete } = usePermissions();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,18 +62,17 @@ export default function AdminUsersPage() {
   });
 
   // Kiểm tra quyền truy cập
-  if (currentUser?.role?.name !== 'admin') {
+  if (!canRead('User')) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold text-red-600">
-            Truy cập bị từ chối
-          </h2>
-          <p className="text-muted-foreground">
-            Bạn không có quyền truy cập trang quản lý người dùng. Chỉ quản trị
-            viên mới có thể sử dụng tính năng này.
-          </p>
-        </div>
+      <div className="container mx-auto p-6">
+        <UnauthorizedMessage
+          title="Không có quyền quản lý người dùng"
+          description="Bạn cần có quyền quản trị viên để truy cập trang này."
+          action={{
+            label: 'Quay lại trang chủ',
+            onClick: () => window.history.back(),
+          }}
+        />
       </div>
     );
   }
@@ -232,7 +234,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {selectedUsers.length > 0 && (
+          {selectedUsers.length > 0 && canDelete('User') && (
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
@@ -242,10 +244,12 @@ export default function AdminUsersPage() {
               Xóa ({selectedUsers.length})
             </Button>
           )}
-          <Button onClick={handleCreateUser} disabled={isLoading}>
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm người dùng
-          </Button>
+          {canCreate('User') && (
+            <Button onClick={handleCreateUser} disabled={isLoading}>
+              <Plus className="mr-2 h-4 w-4" />
+              Thêm người dùng
+            </Button>
+          )}
         </div>
       </div>
 

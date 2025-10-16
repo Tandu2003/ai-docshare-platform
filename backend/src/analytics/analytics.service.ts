@@ -36,6 +36,38 @@ const formatMonthLabel = (date: Date) =>
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private getActivityDescription(activity: any): string {
+    const userName = activity.user
+      ? `${activity.user.firstName} ${activity.user.lastName}`.trim() ||
+        activity.user.username
+      : 'Người dùng ẩn danh';
+
+    switch (activity.action) {
+      case 'login':
+        return `${userName} đã đăng nhập`;
+      case 'logout':
+        return `${userName} đã đăng xuất`;
+      case 'upload':
+        return `${userName} đã tải lên tài liệu mới`;
+      case 'download':
+        return `${userName} đã tải xuống tài liệu`;
+      case 'view':
+        return `${userName} đã xem tài liệu`;
+      case 'create':
+        return `${userName} đã tạo ${activity.resourceType || 'tài nguyên'}`;
+      case 'update':
+        return `${userName} đã cập nhật ${activity.resourceType || 'tài nguyên'}`;
+      case 'delete':
+        return `${userName} đã xóa ${activity.resourceType || 'tài nguyên'}`;
+      case 'register':
+        return `${userName} đã đăng ký tài khoản`;
+      case 'verify_email':
+        return `${userName} đã xác thực email`;
+      default:
+        return `${userName} đã thực hiện ${activity.action}`;
+    }
+  }
+
   private resolveRange(range: string | undefined) {
     const normalized = range?.toLowerCase();
     const days =
@@ -60,6 +92,248 @@ export class AnalyticsService {
   }
 
   async getDashboardOverview() {
+    const currentDate = new Date();
+    const startOfCurrentMonth = startOfMonth(currentDate);
+
+    const [
+      totalDocuments,
+      totalUsers,
+      downloadsAggregate,
+      viewsAggregate,
+      recentDocumentsRaw,
+      categoryAggregates,
+      activityLogsRaw,
+      notificationsRaw,
+      // Admin stats
+      newUsersThisMonth,
+      newDocumentsThisMonth,
+      downloadsThisMonth,
+      viewsThisMonth,
+      unverifiedUsers,
+      pendingReports,
+    ] = await Promise.all([
+      this.prisma.document.count(),
+      this.prisma.user.count(),
+      this.prisma.document.aggregate({
+        _sum: { downloadCount: true },
+      }),
+      this.prisma.document.aggregate({
+        _sum: { viewCount: true },
+      }),
+      this.prisma.document.findMany({
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              username: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              icon: true,
+              color: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      }),
+      this.prisma.document.groupBy({
+        by: ['categoryId'],
+        _count: {
+          categoryId: true,
+        },
+        _sum: {
+          downloadCount: true,
+          viewCount: true,
+        },
+        orderBy: {
+          _sum: {
+            downloadCount: 'desc',
+          },
+        },
+        take: 6,
+      }),
+      this.prisma.activityLog.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 20,
+      }),
+      this.prisma.notification.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      }),
+      // Admin stats
+      this.prisma.user.count({
+        where: {
+          createdAt: {
+            gte: startOfCurrentMonth,
+          },
+        },
+      }),
+      this.prisma.document.count({
+        where: {
+          createdAt: {
+            gte: startOfCurrentMonth,
+          },
+        },
+      }),
+      this.prisma.download.aggregate({
+        _count: true,
+        where: {
+          downloadedAt: {
+            gte: startOfCurrentMonth,
+          },
+        },
+      }),
+      this.prisma.view.aggregate({
+        _count: true,
+        where: {
+          viewedAt: {
+            gte: startOfCurrentMonth,
+          },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          isVerified: false,
+        },
+      }),
+      // For now, we don't have a reports table, so we'll use 0
+      Promise.resolve(0),
+    ]);
+
+    const categoryIds = categoryAggregates.map(item => item.categoryId);
+    const categories = categoryIds.length
+      ? await this.prisma.category.findMany({
+          where: {
+            id: {
+              in: categoryIds,
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            icon: true,
+            color: true,
+          },
+        })
+      : [];
+
+    const categoryMap = new Map(
+      categories.map(category => [category.id, category]),
+    );
+
+    const popularCategories = categoryAggregates.map(aggregate => {
+      const category = categoryMap.get(aggregate.categoryId);
+      return {
+        id: aggregate.categoryId,
+        name: category?.name ?? 'Unknown',
+        description: category?.description ?? null,
+        icon: category?.icon ?? '📄',
+        color: category?.color ?? null,
+        documentCount: aggregate._count.categoryId,
+        totalDownloads: Number(aggregate._sum.downloadCount ?? 0),
+        totalViews: Number(aggregate._sum.viewCount ?? 0),
+      };
+    });
+
+    const userActivity = activityLogsRaw.map(activity => ({
+      id: activity.id,
+      userId: activity.userId ?? undefined,
+      action: activity.action,
+      resourceType: activity.resourceType ?? undefined,
+      resourceId: activity.resourceId ?? undefined,
+      ipAddress: activity.ipAddress ?? undefined,
+      userAgent: activity.userAgent ?? undefined,
+      metadata: activity.metadata ?? undefined,
+      createdAt: activity.createdAt,
+      timestamp: activity.createdAt,
+      description: this.getActivityDescription(activity),
+      user: activity.user
+        ? {
+            id: activity.user.id,
+            firstName: activity.user.firstName,
+            lastName: activity.user.lastName,
+            avatar: activity.user.avatar ?? undefined,
+            username: activity.user.username,
+          }
+        : undefined,
+    }));
+
+    const recentNotifications = notificationsRaw.map(notification => ({
+      id: notification.id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data ?? undefined,
+      isRead: notification.isRead,
+      readAt: notification.readAt ?? undefined,
+      createdAt: notification.createdAt,
+      user: {
+        id: notification.user.id,
+        firstName: notification.user.firstName,
+        lastName: notification.user.lastName,
+        avatar: notification.user.avatar ?? undefined,
+        username: notification.user.username,
+      },
+    }));
+
+    return {
+      totalDocuments,
+      totalUsers,
+      totalDownloads: Number(downloadsAggregate._sum.downloadCount ?? 0),
+      totalViews: Number(viewsAggregate._sum.viewCount ?? 0),
+      recentDocuments: recentDocumentsRaw,
+      popularCategories,
+      userActivity,
+      recentNotifications,
+      // Admin stats
+      newUsersThisMonth,
+      newDocumentsThisMonth,
+      downloadsThisMonth: downloadsThisMonth._count,
+      viewsThisMonth: viewsThisMonth._count,
+      unverifiedUsers,
+      pendingReports,
+    };
+  }
+
+  async getUserDashboardOverview() {
     const [
       totalDocuments,
       totalUsers,
@@ -157,38 +431,32 @@ export class AnalyticsService {
     ]);
 
     const categoryIds = categoryAggregates.map(item => item.categoryId);
-    const categories = categoryIds.length
-      ? await this.prisma.category.findMany({
-          where: {
-            id: {
-              in: categoryIds,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            icon: true,
-            color: true,
-          },
-        })
-      : [];
+    const categories = await this.prisma.category.findMany({
+      where: {
+        id: {
+          in: categoryIds,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        icon: true,
+        color: true,
+      },
+    });
 
-    const categoryMap = new Map(
-      categories.map(category => [category.id, category]),
-    );
-
-    const popularCategories = categoryAggregates.map(aggregate => {
-      const category = categoryMap.get(aggregate.categoryId);
+    const popularCategories = categoryAggregates.map(item => {
+      const category = categories.find(cat => cat.id === item.categoryId);
       return {
-        id: aggregate.categoryId,
-        name: category?.name ?? 'Unknown',
-        description: category?.description ?? null,
-        icon: category?.icon ?? '📄',
-        color: category?.color ?? null,
-        documentCount: aggregate._count.categoryId,
-        totalDownloads: Number(aggregate._sum.downloadCount ?? 0),
-        totalViews: Number(aggregate._sum.viewCount ?? 0),
+        id: item.categoryId,
+        name: category?.name || 'Unknown',
+        description: category?.description || null,
+        icon: category?.icon || null,
+        color: category?.color || null,
+        documentCount: item._count.categoryId,
+        totalDownloads: Number(item._sum.downloadCount ?? 0),
+        totalViews: Number(item._sum.viewCount ?? 0),
       };
     });
 
@@ -202,6 +470,8 @@ export class AnalyticsService {
       userAgent: activity.userAgent ?? undefined,
       metadata: activity.metadata ?? undefined,
       createdAt: activity.createdAt,
+      timestamp: activity.createdAt,
+      description: this.getActivityDescription(activity),
       user: activity.user
         ? {
             id: activity.user.id,

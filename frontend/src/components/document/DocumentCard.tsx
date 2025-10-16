@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Download, ExternalLink, Eye, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { DocumentPermissionGate } from '@/components/common/permission-gate';
 import {
   Card,
   CardContent,
@@ -83,22 +84,24 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
             <p>View detail</p>
           </TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="sm" onClick={onDownload} disabled={isDownloading}>
-              <Download
-                className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
-              />
-              {isDownloading && <span className="ml-2">Downloading...</span>}
-            </Button>
-          </TooltipTrigger>
+        <DocumentPermissionGate document={document} action="download">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" onClick={onDownload} disabled={isDownloading}>
+                <Download
+                  className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
+                />
+                {isDownloading && <span className="ml-2">Downloading...</span>}
+              </Button>
+            </TooltipTrigger>
 
-          <TooltipContent>
-            <p>
-              {isDownloading ? 'Preparing download...' : 'Download all files'}
-            </p>
-          </TooltipContent>
-        </Tooltip>
+            <TooltipContent>
+              <p>
+                {isDownloading ? 'Preparing download...' : 'Download all files'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </DocumentPermissionGate>
       </CardFooter>
     </Card>
   );

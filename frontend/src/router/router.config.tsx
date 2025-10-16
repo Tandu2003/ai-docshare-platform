@@ -165,7 +165,13 @@ export const router = createBrowserRouter([
       },
       {
         path: 'analytics',
-        element: <AnalyticsPage />,
+        element: (
+          <ProtectedRoute
+            requiredPermissions={[{ action: 'read', subject: 'SystemSetting' }]}
+          >
+            <AnalyticsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'trending',
@@ -178,7 +184,9 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute
+            requiredPermissions={[{ action: 'read', subject: 'User' }]}
+          >
             <AdminDashboardPage />
           </ProtectedRoute>
         ),
@@ -186,7 +194,9 @@ export const router = createBrowserRouter([
       {
         path: 'admin/users',
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute
+            requiredPermissions={[{ action: 'read', subject: 'User' }]}
+          >
             <AdminUsersPage />
           </ProtectedRoute>
         ),
@@ -194,7 +204,9 @@ export const router = createBrowserRouter([
       {
         path: 'admin/settings',
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute
+            requiredPermissions={[{ action: 'read', subject: 'SystemSetting' }]}
+          >
             <div className="flex h-64 items-center justify-center">
               <p className="text-muted-foreground text-lg">
                 System Settings - Coming Soon
