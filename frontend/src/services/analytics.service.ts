@@ -69,6 +69,70 @@ export const getAnalytics = async (range: string): Promise<AnalyticsData> => {
   return response.data;
 };
 
+export interface DailyActivityDay {
+  date: string;
+  uploads: number;
+  downloads: number;
+  views: number;
+}
+
+export interface DailyActivityData {
+  timeframe: AnalyticsTimeframe;
+  days: DailyActivityDay[];
+}
+
+export const getDailyActivity = async (
+  range: string,
+): Promise<DailyActivityData> => {
+  const response = await apiClient.get<DailyActivityData>(
+    '/analytics/reports/daily',
+    { params: { range } },
+  );
+
+  if (!response.success || !response.data) {
+    throw new Error(response.message || 'Không thể tải báo cáo theo ngày');
+  }
+
+  return response.data;
+};
+
+export interface TopReportDocument {
+  id: string;
+  title: string;
+  count: number;
+  downloads: number;
+  views: number;
+  averageRating: number;
+  category?: { id: string; name: string; icon: string };
+  rank: number;
+}
+
+export interface TopReportData {
+  timeframe: AnalyticsTimeframe;
+  metric: 'downloads' | 'views';
+  stats: { total: number };
+  documents: TopReportDocument[];
+}
+
+export const getTopReport = async (
+  metric: 'downloads' | 'views',
+  range: string,
+  limit = 10,
+): Promise<TopReportData> => {
+  const response = await apiClient.get<TopReportData>(
+    '/analytics/reports/top',
+    {
+      params: { metric, range, limit },
+    },
+  );
+
+  if (!response.success || !response.data) {
+    throw new Error(response.message || 'Không thể tải báo cáo top');
+  }
+
+  return response.data;
+};
+
 export interface TrendingStats {
   totalTrending: number;
   averageScore: number;

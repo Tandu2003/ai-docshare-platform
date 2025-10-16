@@ -102,4 +102,43 @@ export class AnalyticsController {
     );
     return ResponseHelper.success(res, topRated);
   }
+
+  @Get('reports/daily')
+  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Daily counts: uploads/downloads/views' })
+  @ApiQuery({ name: 'range', required: false, description: '7d, 30d, 90d, 1y' })
+  async getDailyReport(
+    @Query('range') range: string,
+    @Req() _req: Request,
+    @Res() res: Response,
+  ) {
+    const data = await this.analyticsService.getDailyActivity(range);
+    return ResponseHelper.success(res, data);
+  }
+
+  @Get('reports/top')
+  @CheckPolicy({ action: 'read', subject: 'Document' })
+  @ApiOperation({ summary: 'Top downloads/views' })
+  @ApiQuery({ name: 'metric', required: true, description: 'downloads|views' })
+  @ApiQuery({ name: 'range', required: false, description: '7d, 30d, 90d, 1y' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Max items (default 10)',
+  })
+  async getTopReport(
+    @Query('metric') metric: 'downloads' | 'views',
+    @Query('range') range: string,
+    @Query('limit') limit: string,
+    @Req() _req: Request,
+    @Res() res: Response,
+  ) {
+    const limitNum = typeof limit === 'string' ? Number(limit) : undefined;
+    const data = await this.analyticsService.getTopDocumentsByMetric(
+      metric,
+      range,
+      limitNum,
+    );
+    return ResponseHelper.success(res, data);
+  }
 }

@@ -23,7 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAnalytics, type AnalyticsData } from '@/services/analytics.service';
+import {
+  getAnalytics,
+  getDailyActivity,
+  getTopReport,
+  type AnalyticsData,
+  type DailyActivityData,
+  type TopReportData,
+} from '@/services/analytics.service';
 import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
@@ -78,6 +85,9 @@ export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null,
   );
+  const [dailyData, setDailyData] = useState<DailyActivityData | null>(null);
+  const [topDownloads, setTopDownloads] = useState<TopReportData | null>(null);
+  const [topViews, setTopViews] = useState<TopReportData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,8 +95,16 @@ export default function AnalyticsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getAnalytics(rangeValue);
-      setAnalyticsData(data);
+      const [analytics, daily, topDl, topVw] = await Promise.all([
+        getAnalytics(rangeValue),
+        getDailyActivity(rangeValue),
+        getTopReport('downloads', rangeValue, 10),
+        getTopReport('views', rangeValue, 10),
+      ]);
+      setAnalyticsData(analytics);
+      setDailyData(daily);
+      setTopDownloads(topDl);
+      setTopViews(topVw);
     } catch (err) {
       console.error('Failed to load analytics', err);
       setError(
@@ -531,6 +549,138 @@ export default function AnalyticsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Daily Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Hoạt động theo ngày</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!dailyData || dailyData.days.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              Chưa có dữ liệu hoạt động theo ngày.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {dailyData.days.map(day => (
+                <div
+                  key={day.date}
+                  className="flex items-center justify-between"
+                >
+                  <div className="w-24 text-sm font-medium">{day.date}</div>
+                  <div className="grid flex-1 grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-xs">Tải lên</p>
+                      <p className="font-medium">{formatNumber(day.uploads)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-xs">Tải xuống</p>
+                      <p className="font-medium">
+                        {formatNumber(day.downloads)}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-xs">Lượt xem</p>
+                      <p className="font-medium">{formatNumber(day.views)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Top Downloads / Top Views */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top tải xuống</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!topDownloads || topDownloads.documents.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Chưa có dữ liệu top tải xuống.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {topDownloads.documents.map(doc => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground w-6 text-sm font-medium">
+                        #{doc.rank}
+                      </span>
+                      <Link
+                        to={`/documents/${doc.id}`}
+                        className="hover:text-primary font-medium transition-colors"
+                      >
+                        {doc.title}
+                      </Link>
+                    </div>
+                    <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Download className="h-4 w-4" />
+                        <span>{formatNumber(doc.count)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-4 w-4" />
+                        <span>{formatNumber(doc.views)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top lượt xem</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!topViews || topViews.documents.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Chưa có dữ liệu top lượt xem.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {topViews.documents.map(doc => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground w-6 text-sm font-medium">
+                        #{doc.rank}
+                      </span>
+                      <Link
+                        to={`/documents/${doc.id}`}
+                        className="hover:text-primary font-medium transition-colors"
+                      >
+                        {doc.title}
+                      </Link>
+                    </div>
+                    <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-4 w-4" />
+                        <span>{formatNumber(doc.count)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="h-4 w-4" />
+                        <span>{formatNumber(doc.downloads)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Monthly Trends */}
       <Card>
