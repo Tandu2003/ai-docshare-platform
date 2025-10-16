@@ -38,7 +38,7 @@ export function VerifyEmailPage() {
         setError(null); // Clear any previous errors
         setIsSuccess(false); // Clear any previous success state
         setHasCompleted(false); // Reset completion state
-        
+
         const result = await authService.verifyEmail({ token });
 
         // Only update success state after API call completes successfully

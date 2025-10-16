@@ -17,7 +17,7 @@ interface DashboardOverviewApiResponse {
   popularCategories: DashboardCategoryApiResponse[];
   userActivity: DashboardActivityApiResponse[];
   recentNotifications: DashboardNotificationApiResponse[];
-  
+
   // Admin-specific stats
   newUsersThisMonth?: number;
   newDocumentsThisMonth?: number;
@@ -133,7 +133,8 @@ const mapDocument = (
   isPremium: document.isPremium,
   isApproved: document.isApproved,
   isDraft: document.isDraft,
-  moderationStatus: document.moderationStatus ?? (document.isApproved ? 'APPROVED' : 'PENDING'),
+  moderationStatus:
+    document.moderationStatus ?? (document.isApproved ? 'APPROVED' : 'PENDING'),
   moderatedById: document.moderatedById ?? null,
   moderatedAt: document.moderatedAt ?? null,
   moderationNotes: document.moderationNotes ?? null,
@@ -219,7 +220,7 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
     popularCategories: data.popularCategories.map(mapCategory),
     userActivity: data.userActivity.map(mapActivity),
     recentNotifications: data.recentNotifications.map(mapNotification),
-    
+
     // Admin-specific stats
     newUsersThisMonth: data.newUsersThisMonth || 0,
     newDocumentsThisMonth: data.newDocumentsThisMonth || 0,
@@ -230,35 +231,36 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
   };
 };
 
-export const getUserDashboardOverview = async (): Promise<DashboardOverview> => {
-  const response = await apiClient.get<DashboardOverviewApiResponse>(
-    '/analytics/user-dashboard',
-  );
-
-  if (!response.success || !response.data) {
-    throw new Error(
-      response.message || 'Không thể tải dữ liệu tổng quan dashboard',
+export const getUserDashboardOverview =
+  async (): Promise<DashboardOverview> => {
+    const response = await apiClient.get<DashboardOverviewApiResponse>(
+      '/analytics/user-dashboard',
     );
-  }
 
-  const data = response.data;
+    if (!response.success || !response.data) {
+      throw new Error(
+        response.message || 'Không thể tải dữ liệu tổng quan dashboard',
+      );
+    }
 
-  return {
-    totalDocuments: data.totalDocuments,
-    totalUsers: data.totalUsers,
-    totalDownloads: data.totalDownloads,
-    totalViews: data.totalViews,
-    recentDocuments: data.recentDocuments.map(mapDocument),
-    popularCategories: data.popularCategories.map(mapCategory),
-    userActivity: data.userActivity.map(mapActivity),
-    recentNotifications: data.recentNotifications.map(mapNotification),
-    
-    // Admin-specific stats (not available for user)
-    newUsersThisMonth: 0,
-    newDocumentsThisMonth: 0,
-    downloadsThisMonth: 0,
-    viewsThisMonth: 0,
-    unverifiedUsers: 0,
-    pendingReports: 0,
+    const data = response.data;
+
+    return {
+      totalDocuments: data.totalDocuments,
+      totalUsers: data.totalUsers,
+      totalDownloads: data.totalDownloads,
+      totalViews: data.totalViews,
+      recentDocuments: data.recentDocuments.map(mapDocument),
+      popularCategories: data.popularCategories.map(mapCategory),
+      userActivity: data.userActivity.map(mapActivity),
+      recentNotifications: data.recentNotifications.map(mapNotification),
+
+      // Admin-specific stats (not available for user)
+      newUsersThisMonth: 0,
+      newDocumentsThisMonth: 0,
+      downloadsThisMonth: 0,
+      viewsThisMonth: 0,
+      unverifiedUsers: 0,
+      pendingReports: 0,
+    };
   };
-};

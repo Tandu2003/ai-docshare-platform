@@ -10,7 +10,10 @@ interface PopularCategoriesProps {
   isLoading?: boolean;
 }
 
-export function PopularCategories({ categories, isLoading = false }: PopularCategoriesProps) {
+export function PopularCategories({
+  categories,
+  isLoading = false,
+}: PopularCategoriesProps) {
   if (isLoading) {
     return (
       <Card>

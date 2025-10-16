@@ -1,18 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  FileText, 
-  Upload, 
-  Bookmark, 
-  Eye,
-  Download,
-  Star,
-  Clock,
+import {
+  AlertCircle,
+  Bookmark,
   CheckCircle,
-  AlertCircle
+  Clock,
+  Download,
+  Eye,
+  FileText,
+  Star,
+  Upload,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DashboardOverview } from '@/types';
 
 interface UserDashboardProps {
@@ -25,13 +26,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
     if (doc.isDraft) {
       return 'DRAFT' as const;
     }
-    return doc.moderationStatus ?? (doc.isApproved ? 'APPROVED' as const : 'PENDING' as const);
+    return (
+      doc.moderationStatus ??
+      (doc.isApproved ? ('APPROVED' as const) : ('PENDING' as const))
+    );
   };
   const getStatusDisplay = (doc: (typeof userDocuments)[number]) => {
     if (doc.isDraft) {
       return { label: 'Bản nháp', variant: 'outline' as const };
     }
-    const status = doc.moderationStatus ?? (doc.isApproved ? 'APPROVED' : 'PENDING');
+    const status =
+      doc.moderationStatus ?? (doc.isApproved ? 'APPROVED' : 'PENDING');
     switch (status) {
       case 'APPROVED':
         return { label: 'Đã xuất bản', variant: 'default' as const };
@@ -53,11 +58,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
     rejectedDocuments: userDocuments.filter(
       doc => resolveStatus(doc) === 'REJECTED',
     ).length,
-    totalViews: userDocuments.reduce((sum, doc) => sum + (doc.viewCount || 0), 0),
-    totalDownloads: userDocuments.reduce((sum, doc) => sum + (doc.downloadCount || 0), 0),
-    averageRating: userDocuments.length > 0 
-      ? userDocuments.reduce((sum, doc) => sum + (doc.averageRating || 0), 0) / userDocuments.length 
-      : 0,
+    totalViews: userDocuments.reduce(
+      (sum, doc) => sum + (doc.viewCount || 0),
+      0,
+    ),
+    totalDownloads: userDocuments.reduce(
+      (sum, doc) => sum + (doc.downloadCount || 0),
+      0,
+    ),
+    averageRating:
+      userDocuments.length > 0
+        ? userDocuments.reduce(
+            (sum, doc) => sum + (doc.averageRating || 0),
+            0,
+          ) / userDocuments.length
+        : 0,
   };
 
   return (
@@ -79,19 +94,28 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/my-documents" className="flex flex-col items-center gap-2">
+              <Link
+                to="/my-documents"
+                className="flex flex-col items-center gap-2"
+              >
                 <FileText className="h-6 w-6" />
                 <span className="text-sm font-medium">Tài liệu của tôi</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/bookmarks" className="flex flex-col items-center gap-2">
+              <Link
+                to="/bookmarks"
+                className="flex flex-col items-center gap-2"
+              >
                 <Bookmark className="h-6 w-6" />
                 <span className="text-sm font-medium">Đánh dấu</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/documents" className="flex flex-col items-center gap-2">
+              <Link
+                to="/documents"
+                className="flex flex-col items-center gap-2"
+              >
                 <Eye className="h-6 w-6" />
                 <span className="text-sm font-medium">Khám phá</span>
               </Link>
@@ -104,12 +128,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tài liệu của tôi</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Tài liệu của tôi
+            </CardTitle>
+            <FileText className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{userStats.totalDocuments}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {userStats.publishedDocuments} đã xuất bản
             </p>
           </CardContent>
@@ -118,39 +144,37 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng lượt xem</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
+            <Eye className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{userStats.totalViews}</div>
-            <p className="text-xs text-muted-foreground">
-              Từ tất cả tài liệu
-            </p>
+            <p className="text-muted-foreground text-xs">Từ tất cả tài liệu</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng lượt tải</CardTitle>
-            <Download className="h-4 w-4 text-muted-foreground" />
+            <Download className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{userStats.totalDownloads}</div>
-            <p className="text-xs text-muted-foreground">
-              Từ tất cả tài liệu
-            </p>
+            <p className="text-muted-foreground text-xs">Từ tất cả tài liệu</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đánh giá trung bình</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Đánh giá trung bình
+            </CardTitle>
+            <Star className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {userStats.averageRating.toFixed(1)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Từ {userDocuments.length} tài liệu
             </p>
           </CardContent>
@@ -170,21 +194,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Đã xuất bản</span>
-                <Badge variant="default">
-                  {userStats.publishedDocuments}
-                </Badge>
+                <Badge variant="default">{userStats.publishedDocuments}</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Bản nháp</span>
-                <Badge variant="outline">
-                  {userStats.draftDocuments}
-                </Badge>
+                <Badge variant="outline">{userStats.draftDocuments}</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Chờ duyệt</span>
-                <Badge variant="secondary">
-                  {userStats.pendingDocuments}
-                </Badge>
+                <Badge variant="secondary">{userStats.pendingDocuments}</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Bị từ chối</span>
@@ -208,25 +226,31 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
               {userStats.pendingDocuments > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <AlertCircle className="h-4 w-4 text-yellow-500" />
-                  <span>{userStats.pendingDocuments} tài liệu đang chờ duyệt</span>
+                  <span>
+                    {userStats.pendingDocuments} tài liệu đang chờ duyệt
+                  </span>
                 </div>
               )}
               {userStats.rejectedDocuments > 0 && (
                 <div className="flex items-center gap-2 text-sm">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <AlertCircle className="text-destructive h-4 w-4" />
                   <span>{userStats.rejectedDocuments} tài liệu bị từ chối</span>
                 </div>
               )}
               {userStats.draftDocuments > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-blue-500" />
-                  <span>{userStats.draftDocuments} bản nháp chưa hoàn thành</span>
+                  <span>
+                    {userStats.draftDocuments} bản nháp chưa hoàn thành
+                  </span>
                 </div>
               )}
               {userStats.publishedDocuments > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>{userStats.publishedDocuments} tài liệu đã xuất bản</span>
+                  <span>
+                    {userStats.publishedDocuments} tài liệu đã xuất bản
+                  </span>
                 </div>
               )}
             </div>
@@ -251,19 +275,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
                   >
                     <div className="flex-1">
                       <h4 className="font-medium">{document.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {statusInfo.label} • {document.viewCount || 0} lượt xem •{' '}
-                        {document.downloadCount || 0} lượt tải
+                      <p className="text-muted-foreground text-sm">
+                        {statusInfo.label} • {document.viewCount || 0} lượt xem
+                        • {document.downloadCount || 0} lượt tải
                       </p>
                       {document.moderationStatus === 'REJECTED' &&
                         document.rejectionReason && (
-                          <p className="text-sm text-destructive mt-1">
+                          <p className="text-destructive mt-1 text-sm">
                             Lý do: {document.rejectionReason}
                           </p>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                      <Badge variant={statusInfo.variant}>
+                        {statusInfo.label}
+                      </Badge>
                       <Button asChild size="sm" variant="outline">
                         <Link to={`/documents/${document.id}`}>Xem</Link>
                       </Button>
@@ -272,7 +298,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
                 );
               })}
               {userDocuments.length > 5 && (
-                <div className="text-center pt-4">
+                <div className="pt-4 text-center">
                   <Button asChild variant="outline">
                     <Link to="/my-documents">Xem tất cả tài liệu</Link>
                   </Button>
@@ -280,9 +306,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
               )}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Chưa có tài liệu nào</h3>
+            <div className="py-8 text-center">
+              <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <h3 className="mb-2 text-lg font-medium">Chưa có tài liệu nào</h3>
               <p className="text-muted-foreground mb-4">
                 Bắt đầu bằng cách tải lên tài liệu đầu tiên của bạn
               </p>

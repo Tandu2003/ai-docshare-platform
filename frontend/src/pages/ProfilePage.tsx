@@ -504,9 +504,7 @@ export default function ProfilePage() {
                             <Star className="h-4 w-4" />
                             <span>{averageRatingDisplay}</span>
                           </div>
-                          <Badge variant={statusVariant}>
-                            {statusLabel}
-                          </Badge>
+                          <Badge variant={statusVariant}>{statusLabel}</Badge>
                         </div>
                         {moderationStatus === 'REJECTED' &&
                           document.rejectionReason && (

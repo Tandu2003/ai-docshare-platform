@@ -12,12 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
+import { AIService } from '@/services/ai.service';
 import {
   createBookmark,
   deleteBookmark,
   getUserBookmarks,
   type BookmarkWithDocument,
 } from '@/services/bookmark.service';
+import { CommentsService } from '@/services/comments.service';
 import {
   getDocumentById,
   triggerFileDownload,
@@ -25,10 +27,7 @@ import {
   type DocumentView,
   type ShareDocumentResponse,
 } from '@/services/document.service';
-import {
-  generateMockAIAnalysis,
-  mockComments,
-} from '@/services/mock-data.service';
+import { RatingService } from '@/services/rating.service';
 import type { AIAnalysis, Comment } from '@/types';
 
 export default function DocumentDetailPage() {
@@ -92,17 +91,19 @@ export default function DocumentDetailPage() {
         setDocument(foundDocument);
 
         // Load comments for this document
-        const documentComments = mockComments.filter(
-          comment => comment.documentId === documentId,
-        );
+        const documentComments = await CommentsService.getComments(documentId);
         setComments(documentComments);
 
-        // Generate AI analysis
-        const analysis = generateMockAIAnalysis(documentId);
-        setAiAnalysis(analysis);
+        // Load AI analysis from document (already included by API)
+        setAiAnalysis(foundDocument.aiAnalysis ?? null);
 
-        // Simulate user's rating while API is not ready
-        setUserRating(Math.floor(Math.random() * 5) + 1);
+        // Load user's rating
+        try {
+          const rating = await RatingService.getUserRating(documentId);
+          setUserRating(rating);
+        } catch (ratingError) {
+          console.warn('Could not load user rating', ratingError);
+        }
       } catch (error: any) {
         console.error('Failed to fetch document:', error);
         toast.error(error.message || 'Không thể tải thông tin tài liệu.');
@@ -227,67 +228,41 @@ export default function DocumentDetailPage() {
 
   const handleRate = (rating: number) => {
     setUserRating(rating);
-    console.log('Rating updated:', rating);
-    // In real app, this would send rating to API
+    if (!documentId) return;
+    // Persist to API (fire-and-forget)
+    RatingService.setUserRating(documentId, rating).catch(err => {
+      console.error('Failed to set rating', err);
+      toast.error('Không thể cập nhật đánh giá');
+    });
   };
 
   const handleAddComment = (content: string, parentId?: string) => {
-    const newComment: Comment = {
-      id: `comment-${Date.now()}`,
-      userId: 'current-user',
-      documentId: documentId!,
-      parentId,
-      content,
-      isEdited: false,
-      isDeleted: false,
-      likesCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      user: {
-        id: 'current-user',
-        email: 'user@example.com',
-        username: 'currentuser',
-        password: '',
-        firstName: 'Current',
-        lastName: 'User',
-        roleId: 'user',
-        isVerified: true,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        role: {
-          id: 'user',
-          name: 'User',
-          description: 'Regular user',
-          permissions: [],
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
-      document: {
-        ...document!,
-        uploaderId: document!.uploader.id,
-        categoryId: document!.category.id,
-      } as any,
-    };
-
-    if (parentId) {
-      // Add as reply
-      setComments(prev =>
-        prev.map(comment =>
-          comment.id === parentId
-            ? { ...comment, replies: [...(comment.replies || []), newComment] }
-            : comment,
-        ),
-      );
-    } else {
-      // Add as top-level comment
-      setComments(prev => [...prev, newComment]);
-    }
+    if (!documentId) return;
+    CommentsService.addComment(documentId, { content, parentId })
+      .then(created => {
+        if (parentId) {
+          setComments(prev =>
+            prev.map(comment =>
+              comment.id === parentId
+                ? {
+                    ...comment,
+                    replies: [...(comment.replies || []), created],
+                  }
+                : comment,
+            ),
+          );
+        } else {
+          setComments(prev => [...prev, created]);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to add comment', err);
+        toast.error('Không thể thêm bình luận');
+      });
   };
 
   const handleLikeComment = (commentId: string) => {
+    if (!documentId) return;
     setComments(prev =>
       prev.map(comment =>
         comment.id === commentId
@@ -295,9 +270,13 @@ export default function DocumentDetailPage() {
           : comment,
       ),
     );
+    CommentsService.likeComment(documentId, commentId).catch(err => {
+      console.error('Failed to like comment', err);
+    });
   };
 
   const handleEditComment = (commentId: string, content: string) => {
+    if (!documentId) return;
     setComments(prev =>
       prev.map(comment =>
         comment.id === commentId
@@ -305,14 +284,23 @@ export default function DocumentDetailPage() {
           : comment,
       ),
     );
+    CommentsService.editComment(documentId, commentId, content).catch(err => {
+      console.error('Failed to edit comment', err);
+      toast.error('Không thể sửa bình luận');
+    });
   };
 
   const handleDeleteComment = (commentId: string) => {
+    if (!documentId) return;
     setComments(prev =>
       prev.map(comment =>
         comment.id === commentId ? { ...comment, isDeleted: true } : comment,
       ),
     );
+    CommentsService.deleteComment(documentId, commentId).catch(err => {
+      console.error('Failed to delete comment', err);
+      toast.error('Không thể xóa bình luận');
+    });
   };
 
   const handleShareLinkUpdated = (share: ShareDocumentResponse) => {

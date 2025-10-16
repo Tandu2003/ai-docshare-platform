@@ -56,7 +56,10 @@ const getActivityColor = (action: string) => {
   }
 };
 
-export function ActivityFeed({ activities, isLoading = false }: ActivityFeedProps) {
+export function ActivityFeed({
+  activities,
+  isLoading = false,
+}: ActivityFeedProps) {
   if (isLoading) {
     return (
       <Card>

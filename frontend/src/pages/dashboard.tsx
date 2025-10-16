@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 
 import { AdminOnly, PermissionGate } from '@/components/common/permission-gate';
 import { ActivityFeed } from '@/components/dashboard/activity-feed';
+import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
 import { PopularCategories } from '@/components/dashboard/popular-categories';
 import { RecentDocuments } from '@/components/dashboard/recent-documents';
 import { DashboardStatsCards } from '@/components/dashboard/stats-cards';
-import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
 import { UserDashboard } from '@/components/dashboard/user-dashboard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingPage } from '@/components/ui/loading-skeleton';
 import { useAuth } from '@/hooks';
 import { usePermissions } from '@/hooks/use-permissions';
-import { getDashboardOverview, getUserDashboardOverview } from '@/services/dashboard.service';
+import {
+  getDashboardOverview,
+  getUserDashboardOverview,
+} from '@/services/dashboard.service';
 import type { DashboardOverview } from '@/types';
 
 export const DashboardPage: React.FC = () => {
@@ -21,7 +24,7 @@ export const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Safe permissions check
   let isAdmin = false;
   try {
@@ -36,7 +39,7 @@ export const DashboardPage: React.FC = () => {
     setError(null);
     try {
       // Use different endpoints based on user role
-      const dashboardData = isAdmin 
+      const dashboardData = isAdmin
         ? await getDashboardOverview()
         : await getUserDashboardOverview();
       setStats(dashboardData);
@@ -108,10 +111,9 @@ export const DashboardPage: React.FC = () => {
           {isAdmin ? 'Bảng điều khiển quản trị' : 'Bảng điều khiển'}
         </h1>
         <p className="text-muted-foreground">
-          {isAdmin 
+          {isAdmin
             ? 'Chào mừng đến với bảng điều khiển quản trị AI DocShare. Tại đây bạn có thể quản lý toàn bộ hệ thống, người dùng và xem thống kê chi tiết.'
-            : 'Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem thông tin cá nhân.'
-          }
+            : 'Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem thông tin cá nhân.'}
         </p>
       </div>
 
@@ -121,20 +123,24 @@ export const DashboardPage: React.FC = () => {
       </AdminOnly>
 
       {/* User Dashboard */}
-      {!isAdmin && (
-        <UserDashboard stats={stats} />
-      )}
+      {!isAdmin && <UserDashboard stats={stats} />}
 
       {/* Common sections for both admin and user */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Recent Documents - Show for everyone */}
         <div className="lg:col-span-2">
-          <RecentDocuments documents={stats.recentDocuments} isLoading={loading} />
+          <RecentDocuments
+            documents={stats.recentDocuments}
+            isLoading={loading}
+          />
         </div>
 
         {/* Popular Categories - Show for everyone */}
         <div>
-          <PopularCategories categories={stats.popularCategories} isLoading={loading} />
+          <PopularCategories
+            categories={stats.popularCategories}
+            isLoading={loading}
+          />
         </div>
       </div>
 
@@ -167,13 +173,17 @@ export const DashboardPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Bản nháp</span>
+                  <span className="text-muted-foreground text-sm">
+                    Bản nháp
+                  </span>
                   <span className="text-sm font-medium">
                     {stats.recentDocuments.filter(doc => doc.isDraft).length}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Đang chờ</span>
+                  <span className="text-muted-foreground text-sm">
+                    Đang chờ
+                  </span>
                   <span className="text-sm font-medium">
                     {
                       stats.recentDocuments.filter(
@@ -193,7 +203,9 @@ export const DashboardPage: React.FC = () => {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Công khai</span>
+                  <span className="text-muted-foreground text-sm">
+                    Công khai
+                  </span>
                   <span className="text-sm font-medium">
                     {stats.recentDocuments.filter(doc => doc.isPublic).length}
                   </span>
@@ -205,7 +217,9 @@ export const DashboardPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Riêng tư</span>
+                  <span className="text-muted-foreground text-sm">
+                    Riêng tư
+                  </span>
                   <span className="text-sm font-medium">
                     {stats.recentDocuments.filter(doc => !doc.isPublic).length}
                   </span>

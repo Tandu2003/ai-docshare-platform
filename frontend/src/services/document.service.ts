@@ -154,8 +154,7 @@ export const getModerationQueue = async (
   const queryString = searchParams.toString();
   const endpoint = `/admin/documents/pending${queryString ? `?${queryString}` : ''}`;
 
-  const response =
-    await apiClient.get<ModerationQueueResponse>(endpoint);
+  const response = await apiClient.get<ModerationQueueResponse>(endpoint);
 
   if (!response.success || !response.data) {
     throw new Error(

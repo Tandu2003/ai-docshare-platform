@@ -5,7 +5,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-muted', className)}
+      className={cn('bg-muted animate-pulse rounded-md', className)}
       {...props}
     />
   );
@@ -17,13 +17,13 @@ interface LoadingCardProps {
   className?: string;
 }
 
-export function LoadingCard({ 
-  showIcon = true, 
-  showDescription = true, 
-  className 
+export function LoadingCard({
+  showIcon = true,
+  showDescription = true,
+  className,
 }: LoadingCardProps) {
   return (
-    <div className={cn('rounded-lg border bg-card p-6', className)}>
+    <div className={cn('bg-card rounded-lg border p-6', className)}>
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-4 w-24" />
@@ -41,7 +41,10 @@ interface LoadingStatsGridProps {
   className?: string;
 }
 
-export function LoadingStatsGrid({ count = 4, className }: LoadingStatsGridProps) {
+export function LoadingStatsGrid({
+  count = 4,
+  className,
+}: LoadingStatsGridProps) {
   return (
     <div className={cn('grid gap-4 md:grid-cols-2 lg:grid-cols-4', className)}>
       {Array.from({ length: count }).map((_, i) => (
@@ -57,11 +60,18 @@ interface LoadingTableProps {
   className?: string;
 }
 
-export function LoadingTable({ rows = 5, columns = 4, className }: LoadingTableProps) {
+export function LoadingTable({
+  rows = 5,
+  columns = 4,
+  className,
+}: LoadingTableProps) {
   return (
     <div className={cn('space-y-4', className)}>
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex items-center justify-between rounded-lg border p-4">
+        <div
+          key={rowIndex}
+          className="flex items-center justify-between rounded-lg border p-4"
+        >
           <div className="flex items-center gap-4">
             <Skeleton className="h-6 w-6 rounded" />
             <div className="space-y-2">
@@ -122,13 +132,13 @@ interface LoadingPageProps {
   className?: string;
 }
 
-export function LoadingPage({ 
-  title = "Đang tải...",
-  description = "Vui lòng chờ trong giây lát",
+export function LoadingPage({
+  title = 'Đang tải...',
+  description = 'Vui lòng chờ trong giây lát',
   showStats = true,
   showTable = false,
   showList = false,
-  className 
+  className,
 }: LoadingPageProps) {
   return (
     <div className={cn('space-y-6', className)}>
@@ -136,11 +146,11 @@ export function LoadingPage({
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
         <p className="text-muted-foreground">{description}</p>
       </div>
-      
+
       {showStats && <LoadingStatsGrid />}
-      
+
       {showTable && <LoadingTable />}
-      
+
       {showList && <LoadingList />}
     </div>
   );
@@ -151,7 +161,10 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  size = 'md',
+  className,
+}: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-8 w-8',
@@ -162,7 +175,7 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
     <div className={cn('flex items-center justify-center', className)}>
       <div
         className={cn(
-          'animate-spin rounded-full border-4 border-t-transparent border-primary',
+          'border-primary animate-spin rounded-full border-4 border-t-transparent',
           sizeClasses[size],
         )}
       />
@@ -176,13 +189,17 @@ interface LoadingOverlayProps {
   className?: string;
 }
 
-export function LoadingOverlay({ isLoading, children, className }: LoadingOverlayProps) {
+export function LoadingOverlay({
+  isLoading,
+  children,
+  className,
+}: LoadingOverlayProps) {
   if (!isLoading) return <>{children}</>;
 
   return (
     <div className={cn('relative', className)}>
       {children}
-      <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="bg-background/80 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
         <LoadingSpinner size="lg" />
       </div>
     </div>

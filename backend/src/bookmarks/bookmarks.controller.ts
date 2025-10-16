@@ -96,14 +96,15 @@ export class BookmarksController {
     }
 
     // Check if request is from API key share
-    const isFromApiKey = req.headers['x-api-key'] !== undefined || 
-                        (req.query && req.query.apiKey !== undefined && req.query.apiKey !== '');
+    const isFromApiKey =
+      req.headers['x-api-key'] !== undefined ||
+      (req.query && req.query.apiKey !== undefined && req.query.apiKey !== '');
 
     try {
-      const bookmark = await this.bookmarksService.createBookmark(
-        userId,
-        { ...payload, isFromApiKey },
-      );
+      const bookmark = await this.bookmarksService.createBookmark(userId, {
+        ...payload,
+        isFromApiKey,
+      });
       return ResponseHelper.success(
         res,
         bookmark,

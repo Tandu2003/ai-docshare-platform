@@ -1,3 +1,5 @@
+import type { DocumentModerationStatus } from './database.types';
+
 export interface DashboardUserSummary {
   id: string;
   username?: string;
@@ -16,8 +18,6 @@ export interface DashboardCategory {
   description?: string | null;
   color?: string | null;
 }
-
-import type { DocumentModerationStatus } from './database.types';
 
 export interface DashboardDocument {
   id: string;
@@ -89,7 +89,7 @@ export interface DashboardOverview {
   popularCategories: DashboardCategory[];
   userActivity: DashboardActivity[];
   recentNotifications: DashboardNotification[];
-  
+
   // Admin-specific stats
   newUsersThisMonth?: number;
   newDocumentsThisMonth?: number;

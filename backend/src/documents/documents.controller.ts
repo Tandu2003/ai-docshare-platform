@@ -4,9 +4,12 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from '../files/files.service';
 import { DocumentsService } from './documents.service';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DownloadDocumentDto } from './dto/download-document.dto';
+import { SetRatingDto } from './dto/set-rating.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
 import { CaslGuard, CheckPolicy } from '@/common/casl';
 import {
@@ -292,6 +295,251 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể lấy tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Comments endpoints
+   */
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get(':documentId/comments')
+  @ApiOperation({ summary: 'Get comments for a document' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Danh sách bình luận' })
+  async getComments(
+    @Param('documentId') documentId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const comments = await this.documentsService.getComments(documentId);
+      return ResponseHelper.success(res, comments, 'Lấy bình luận thành công');
+    } catch (error) {
+      this.logger.error(
+        `Error getting comments for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy bình luận',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':documentId/comments')
+  @CheckPolicy({ action: 'create', subject: 'Comment' })
+  @ApiOperation({ summary: 'Add a comment to a document' })
+  async addComment(
+    @Param('documentId') documentId: string,
+    @Body() dto: CreateCommentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      const comment = await this.documentsService.addComment(
+        documentId,
+        userId,
+        dto,
+      );
+      return ResponseHelper.success(res, comment, 'Đã thêm bình luận');
+    } catch (error) {
+      this.logger.error(
+        `Error adding comment for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể thêm bình luận',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':documentId/comments/:commentId/like')
+  @CheckPolicy({ action: 'create', subject: 'Comment' })
+  @ApiOperation({ summary: 'Like a comment' })
+  async likeComment(
+    @Param('documentId') documentId: string,
+    @Param('commentId') commentId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      const updated = await this.documentsService.likeComment(
+        documentId,
+        commentId,
+        userId,
+      );
+      return ResponseHelper.success(res, updated, 'Đã thích bình luận');
+    } catch (error) {
+      this.logger.error(
+        `Error liking comment ${commentId} for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể thích bình luận',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':documentId/comments/:commentId')
+  @CheckPolicy({ action: 'update', subject: 'Comment' })
+  @ApiOperation({ summary: 'Edit a comment' })
+  async editComment(
+    @Param('documentId') documentId: string,
+    @Param('commentId') commentId: string,
+    @Body() dto: UpdateCommentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      const updated = await this.documentsService.editComment(
+        documentId,
+        commentId,
+        userId,
+        dto,
+      );
+      return ResponseHelper.success(res, updated, 'Đã sửa bình luận');
+    } catch (error) {
+      this.logger.error(
+        `Error editing comment ${commentId} for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể sửa bình luận',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete(':documentId/comments/:commentId')
+  @CheckPolicy({ action: 'delete', subject: 'Comment' })
+  @ApiOperation({ summary: 'Delete a comment' })
+  async deleteComment(
+    @Param('documentId') documentId: string,
+    @Param('commentId') commentId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      await this.documentsService.deleteComment(documentId, commentId, userId);
+      return ResponseHelper.success(res, null, 'Đã xóa bình luận');
+    } catch (error) {
+      this.logger.error(
+        `Error deleting comment ${commentId} for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể xóa bình luận',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Ratings endpoints
+   */
+  @Get(':documentId/rating')
+  @CheckPolicy({ action: 'read', subject: 'Rating' })
+  @ApiOperation({ summary: 'Get current user rating for a document' })
+  async getUserRating(
+    @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.success(res, { rating: 0 }, 'Chưa đánh giá');
+      }
+      const rating = await this.documentsService.getUserRating(
+        documentId,
+        userId,
+      );
+      return ResponseHelper.success(res, rating, 'Lấy đánh giá thành công');
+    } catch (error) {
+      this.logger.error(
+        `Error getting rating for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy đánh giá',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':documentId/rating')
+  @CheckPolicy({ action: 'create', subject: 'Rating' })
+  @ApiOperation({ summary: 'Set current user rating for a document' })
+  async setUserRating(
+    @Param('documentId') documentId: string,
+    @Body() dto: SetRatingDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      const rating = await this.documentsService.setUserRating(
+        documentId,
+        userId,
+        dto.rating,
+      );
+      return ResponseHelper.success(res, rating, 'Đã cập nhật đánh giá');
+    } catch (error) {
+      this.logger.error(
+        `Error setting rating for document ${documentId}:`,
+        error,
+      );
+      return ResponseHelper.error(
+        res,
+        'Không thể cập nhật đánh giá',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

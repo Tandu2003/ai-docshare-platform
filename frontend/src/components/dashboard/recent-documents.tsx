@@ -12,7 +12,10 @@ interface RecentDocumentsProps {
   isLoading?: boolean;
 }
 
-export function RecentDocuments({ documents, isLoading = false }: RecentDocumentsProps) {
+export function RecentDocuments({
+  documents,
+  isLoading = false,
+}: RecentDocumentsProps) {
   if (isLoading) {
     return (
       <Card>

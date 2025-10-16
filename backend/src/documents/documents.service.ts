@@ -206,6 +206,252 @@ export class DocumentsService {
   }
 
   /**
+   * Comments: list for a document
+   */
+  async getComments(documentId: string) {
+    try {
+      const comments = await this.prisma.comment.findMany({
+        where: { documentId, isDeleted: false },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+          replies: {
+            where: { isDeleted: false },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      return comments;
+    } catch (error) {
+      this.logger.error(
+        `Error getting comments for document ${documentId}:`,
+        error,
+      );
+      throw new InternalServerErrorException('Không thể lấy bình luận');
+    }
+  }
+
+  /**
+   * Comments: add
+   */
+  async addComment(
+    documentId: string,
+    userId: string,
+    dto: { content: string; parentId?: string },
+  ) {
+    try {
+      // ensure document exists
+      const exists = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        select: { id: true },
+      });
+      if (!exists) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const comment = await this.prisma.comment.create({
+        data: {
+          documentId,
+          userId,
+          parentId: dto.parentId || null,
+          content: dto.content,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+        },
+      });
+
+      return comment;
+    } catch (error) {
+      this.logger.error(
+        `Error adding comment for document ${documentId}:`,
+        error,
+      );
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('Không thể thêm bình luận');
+    }
+  }
+
+  /**
+   * Comments: like
+   */
+  async likeComment(documentId: string, commentId: string, userId: string) {
+    try {
+      const comment = await this.prisma.comment.findFirst({
+        where: { id: commentId, documentId },
+      });
+      if (!comment) throw new BadRequestException('Không tìm thấy bình luận');
+
+      // upsert like
+      await this.prisma.commentLike.upsert({
+        where: { userId_commentId: { userId, commentId } },
+        update: {},
+        create: { userId, commentId },
+      });
+
+      const updated = await this.prisma.comment.update({
+        where: { id: commentId },
+        data: { likesCount: { increment: 1 } },
+      });
+      return updated;
+    } catch (error) {
+      this.logger.error(`Error liking comment ${commentId}:`, error);
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('Không thể thích bình luận');
+    }
+  }
+
+  /**
+   * Comments: edit
+   */
+  async editComment(
+    documentId: string,
+    commentId: string,
+    userId: string,
+    dto: { content: string },
+  ) {
+    try {
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: commentId },
+      });
+      if (!comment || comment.documentId !== documentId) {
+        throw new BadRequestException('Không tìm thấy bình luận');
+      }
+      if (comment.userId !== userId) {
+        throw new BadRequestException('Bạn không có quyền sửa bình luận này');
+      }
+
+      const updated = await this.prisma.comment.update({
+        where: { id: commentId },
+        data: { content: dto.content, isEdited: true, editedAt: new Date() },
+      });
+      return updated;
+    } catch (error) {
+      this.logger.error(`Error editing comment ${commentId}:`, error);
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('Không thể sửa bình luận');
+    }
+  }
+
+  /**
+   * Comments: delete (soft)
+   */
+  async deleteComment(documentId: string, commentId: string, userId: string) {
+    try {
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: commentId },
+      });
+      if (!comment || comment.documentId !== documentId) {
+        throw new BadRequestException('Không tìm thấy bình luận');
+      }
+      if (comment.userId !== userId) {
+        throw new BadRequestException('Bạn không có quyền xóa bình luận này');
+      }
+
+      await this.prisma.comment.update({
+        where: { id: commentId },
+        data: { isDeleted: true },
+      });
+    } catch (error) {
+      this.logger.error(`Error deleting comment ${commentId}:`, error);
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('Không thể xóa bình luận');
+    }
+  }
+
+  /**
+   * Ratings: get current user's rating
+   */
+  async getUserRating(documentId: string, userId: string) {
+    try {
+      const rating = await this.prisma.rating.findUnique({
+        where: { userId_documentId: { userId, documentId } },
+        select: { rating: true },
+      });
+      return { rating: rating?.rating || 0 };
+    } catch (error) {
+      this.logger.error(
+        `Error getting user rating for document ${documentId}:`,
+        error,
+      );
+      throw new InternalServerErrorException('Không thể lấy đánh giá');
+    }
+  }
+
+  /**
+   * Ratings: set current user's rating and update document aggregates
+   */
+  async setUserRating(documentId: string, userId: string, ratingValue: number) {
+    try {
+      // upsert rating
+      const existing = await this.prisma.rating.findUnique({
+        where: { userId_documentId: { userId, documentId } },
+      });
+
+      if (existing) {
+        await this.prisma.rating.update({
+          where: { userId_documentId: { userId, documentId } },
+          data: { rating: ratingValue },
+        });
+      } else {
+        await this.prisma.rating.create({
+          data: { userId, documentId, rating: ratingValue },
+        });
+      }
+
+      // recompute aggregates
+      const agg = await this.prisma.rating.aggregate({
+        where: { documentId },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+
+      await this.prisma.document.update({
+        where: { id: documentId },
+        data: {
+          averageRating: agg._avg.rating || 0,
+          totalRatings: agg._count.rating || 0,
+        },
+      });
+
+      return { rating: ratingValue };
+    } catch (error) {
+      this.logger.error(
+        `Error setting rating for document ${documentId}:`,
+        error,
+      );
+      throw new InternalServerErrorException('Không thể cập nhật đánh giá');
+    }
+  }
+
+  /**
    * Prepare document download with all its files
    */
   async prepareDocumentDownload(documentId: string) {
