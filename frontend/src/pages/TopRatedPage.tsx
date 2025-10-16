@@ -166,7 +166,8 @@ export default function TopRatedPage() {
               Top Rated Documents
             </h1>
             <p className="text-muted-foreground mt-1">
-              Các tài liệu được đánh giá cao nhất dựa trên đánh giá của người dùng
+              Các tài liệu được đánh giá cao nhất dựa trên đánh giá của người
+              dùng
             </p>
           </div>
           <div className="flex gap-2">
@@ -195,7 +196,7 @@ export default function TopRatedPage() {
                 <SelectValue placeholder="Số đánh giá tối thiểu" />
               </SelectTrigger>
               <SelectContent>
-                {MIN_RATINGS_OPTIONS.map(option => (
+                {MIN_RATING_OPTIONS.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
