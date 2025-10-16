@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -70,7 +71,7 @@ export default function CategoriesPage() {
     description: '',
     icon: '📁',
     color: '#3b82f6',
-    parentId: '',
+    parentId: 'none',
     sortOrder: 0,
   });
 
@@ -115,7 +116,7 @@ export default function CategoriesPage() {
       description: '',
       icon: '📁',
       color: '#3b82f6',
-      parentId: '',
+      parentId: 'none',
       sortOrder: 0,
     });
   };
@@ -129,7 +130,10 @@ export default function CategoriesPage() {
         description: formData.description || undefined,
         icon: formData.icon,
         color: formData.color,
-        parentId: formData.parentId ? formData.parentId : null,
+        parentId:
+          formData.parentId && formData.parentId !== 'none'
+            ? formData.parentId
+            : null,
         sortOrder: formData.sortOrder,
         isActive: true,
       });
@@ -160,7 +164,10 @@ export default function CategoriesPage() {
         description: formData.description || undefined,
         icon: formData.icon,
         color: formData.color,
-        parentId: formData.parentId ? formData.parentId : null,
+        parentId:
+          formData.parentId && formData.parentId !== 'none'
+            ? formData.parentId
+            : null,
         sortOrder: formData.sortOrder,
       });
 
@@ -209,7 +216,7 @@ export default function CategoriesPage() {
       description: category.description || '',
       icon: category.icon || '📁',
       color: category.color || '#3b82f6',
-      parentId: category.parentId || '',
+      parentId: category.parentId || 'none',
       sortOrder: category.sortOrder,
     });
     setIsEditDialogOpen(true);
@@ -294,6 +301,9 @@ export default function CategoriesPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Tạo danh mục mới</DialogTitle>
+                <DialogDescription>
+                  Tạo một danh mục mới để tổ chức tài liệu của bạn
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -337,7 +347,7 @@ export default function CategoriesPage() {
                       <SelectContent>
                         {iconOptions.map(icon => (
                           <SelectItem key={icon} value={icon}>
-                            {icon} {icon}
+                            {icon}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -370,7 +380,9 @@ export default function CategoriesPage() {
                       <SelectValue placeholder="Chọn danh mục cha" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Không có danh mục cha</SelectItem>
+                      <SelectItem value="none">
+                        Không có danh mục cha
+                      </SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.icon ?? '📁'} {category.name}
@@ -567,6 +579,9 @@ export default function CategoriesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Chỉnh sửa danh mục</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin danh mục đã chọn
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -610,7 +625,7 @@ export default function CategoriesPage() {
                     <SelectContent>
                       {iconOptions.map(icon => (
                         <SelectItem key={icon} value={icon}>
-                          {icon} {icon}
+                          {icon}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -640,7 +655,7 @@ export default function CategoriesPage() {
                     <SelectValue placeholder="Chọn danh mục cha" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Không có danh mục cha</SelectItem>
+                    <SelectItem value="none">Không có danh mục cha</SelectItem>
                     {categories
                       .filter(cat => cat.id !== editingCategory?.id)
                       .map(category => (

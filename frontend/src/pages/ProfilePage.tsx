@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -268,6 +269,9 @@ export default function ProfilePage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+                  <DialogDescription>
+                    Cập nhật thông tin cá nhân của bạn
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">

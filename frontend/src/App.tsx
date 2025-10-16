@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 import { AuthInitializer } from '@/components/auth';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 import '@/index.css';
 
@@ -15,12 +16,14 @@ setStore(store);
 
 function App() {
   return (
-    <Provider store={store}>
-      <AuthInitializer>
-        <RouterProvider router={router} />
-        <Toaster position="top-right" richColors />
-      </AuthInitializer>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <AuthInitializer>
+          <RouterProvider router={router} />
+          <Toaster position="top-right" richColors />
+        </AuthInitializer>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 
