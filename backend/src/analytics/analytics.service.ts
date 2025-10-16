@@ -121,6 +121,9 @@ export class AnalyticsService {
         _sum: { viewCount: true },
       }),
       this.prisma.document.findMany({
+        where: {
+          isPublic: true,
+        },
         include: {
           uploader: {
             select: {
@@ -353,6 +356,9 @@ export class AnalyticsService {
         _sum: { viewCount: true },
       }),
       this.prisma.document.findMany({
+        where: {
+          isPublic: true,
+        },
         include: {
           uploader: {
             select: {

@@ -59,6 +59,7 @@ export interface CreateBookmarkPayload {
   documentId: string;
   folderId?: string;
   notes?: string;
+  isFromApiKey?: boolean;
 }
 
 export interface BookmarkStats {
@@ -93,10 +94,14 @@ export const getUserBookmarks = async (
 
 export const createBookmark = async (
   payload: CreateBookmarkPayload,
+  apiKey?: string,
 ): Promise<BookmarkWithDocument> => {
   const response = await apiClient.post<BookmarkWithDocument>(
     '/bookmarks',
     payload,
+    {
+      params: apiKey ? { apiKey } : undefined,
+    },
   );
 
   if (!response.success || !response.data) {

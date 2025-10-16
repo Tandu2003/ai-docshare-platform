@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateBookmarkDto {
   @IsString()
@@ -11,4 +11,8 @@ export class CreateBookmarkDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isFromApiKey?: boolean;
 }

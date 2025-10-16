@@ -184,13 +184,15 @@ export class DocumentsController {
       const pageNum = Math.max(1, Number(page) || 1);
       const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
 
-      // Get user ID if authenticated
+      // Get user ID and role if authenticated
       const userId = (req as any).user?.id;
+      const userRole = (req as any).user?.role?.name;
 
       const result = await this.documentsService.getPublicDocuments(
         pageNum,
         limitNum,
         userId,
+        userRole,
       );
 
       return ResponseHelper.success(
@@ -267,6 +269,7 @@ export class DocumentsController {
       const document = await this.documentsService.getDocumentById(
         documentId,
         userId,
+        undefined, // shareToken
         apiKey,
       );
 

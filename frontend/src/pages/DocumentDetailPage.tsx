@@ -157,6 +157,12 @@ export default function DocumentDetailPage() {
       return;
     }
 
+    // Kiểm tra nếu document là private và đang truy cập qua API key
+    if (apiKey && !document.isPublic) {
+      toast.error('Tài liệu riêng tư không thể đánh dấu khi chia sẻ qua API key');
+      return;
+    }
+
     try {
       setIsBookmarkActionLoading(true);
       if (bookmarkRecord) {
@@ -165,7 +171,10 @@ export default function DocumentDetailPage() {
         setIsBookmarked(false);
         toast.success('Đã xóa khỏi bookmark');
       } else {
-        const created = await createBookmark({ documentId });
+        const created = await createBookmark({ 
+          documentId,
+          isFromApiKey: !!apiKey
+        }, apiKey);
         setBookmarkRecord(created);
         setIsBookmarked(true);
         toast.success('Đã lưu vào bookmark');

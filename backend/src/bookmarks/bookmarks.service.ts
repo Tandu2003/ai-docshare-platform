@@ -99,7 +99,7 @@ export class BookmarksService {
   }
 
   async createBookmark(userId: string, payload: CreateBookmarkDto) {
-    const { documentId, folderId, notes } = payload;
+    const { documentId, folderId, notes, isFromApiKey } = payload;
 
     const document = await this.prisma.document.findUnique({
       where: {
@@ -121,6 +121,13 @@ export class BookmarksService {
 
     const isOwner = document.uploaderId === userId;
     const canAccess = isOwner || document.isPublic === true;
+
+    // Nếu request từ API key share và document là private, không cho phép đánh dấu
+    if (isFromApiKey && !document.isPublic) {
+      throw new BadRequestException(
+        'Tài liệu riêng tư không thể đánh dấu khi chia sẻ qua API key',
+      );
+    }
 
     if (!canAccess) {
       throw new NotFoundException(

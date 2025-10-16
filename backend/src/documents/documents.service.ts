@@ -352,17 +352,19 @@ export class DocumentsService {
     page: number = 1,
     limit: number = 10,
     userId?: string,
+    userRole?: string,
   ) {
     try {
       const skip = (page - 1) * limit;
 
       this.logger.log(`Getting public documents, page ${page}, limit ${limit}`);
 
+      // Admin can see all documents, regular users only see public documents
+      const whereCondition = userRole === 'admin' ? {} : { isPublic: true };
+
       const [documents, total] = await Promise.all([
         this.prisma.document.findMany({
-          where: {
-            isPublic: true,
-          },
+          where: whereCondition,
           include: {
             files: {
               include: {
@@ -389,9 +391,7 @@ export class DocumentsService {
           take: limit,
         }),
         this.prisma.document.count({
-          where: {
-            isPublic: true,
-          },
+          where: whereCondition,
         }),
       ]);
 
@@ -533,6 +533,7 @@ export class DocumentsService {
     documentId: string,
     userId?: string,
     shareToken?: string,
+    apiKey?: string,
   ) {
     try {
       const document = await this.prisma.document.findUnique({
@@ -574,14 +575,23 @@ export class DocumentsService {
       const isOwner = document.uploaderId === userId;
       let shareAccessGranted = false;
       let activeShareLink: DocumentShareLink | null = null;
+      let isApiKeyAccess = false;
 
       if (shareToken) {
         activeShareLink = await this.validateShareLink(documentId, shareToken);
         shareAccessGranted = true;
       }
 
+      if (apiKey) {
+        // API key access - only allow if document is public
+        if (!document.isPublic) {
+          throw new BadRequestException('Tài liệu riêng tư không thể truy cập qua API key');
+        }
+        isApiKeyAccess = true;
+      }
+
       // Check access permissions
-      if (!document.isPublic && !isOwner && !shareAccessGranted) {
+      if (!document.isPublic && !isOwner && !shareAccessGranted && !isApiKeyAccess) {
         throw new BadRequestException('Tài liệu không công khai');
       }
 
