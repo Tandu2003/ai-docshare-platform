@@ -1,5 +1,5 @@
-import { IsArray, IsNotEmpty, ArrayMinSize } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { ArrayMinSize, IsArray, IsNotEmpty } from 'class-validator';
 
 export class AnalyzeDocumentDto {
   @ApiProperty({

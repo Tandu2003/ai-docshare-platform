@@ -1,6 +1,6 @@
-import { Filter, Search, SortAsc, SortDesc, X } from 'lucide-react';
-
 import { useCallback, useEffect, useState } from 'react';
+
+import { Filter, Search, SortAsc, SortDesc, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ export function DocumentSearch({
         }, 300); // 300ms delay
       };
     })(),
-    [filters, onFiltersChange, onSearch]
+    [filters, onFiltersChange, onSearch],
   );
 
   // Auto search when typing
@@ -72,7 +72,7 @@ export function DocumentSearch({
     const currentCategories = filters.categoryId ? [filters.categoryId] : [];
     const newCategories = checked
       ? [...currentCategories, categoryId]
-      : currentCategories.filter((id) => id !== categoryId);
+      : currentCategories.filter(id => id !== categoryId);
 
     onFiltersChange({
       ...filters,
@@ -83,7 +83,7 @@ export function DocumentSearch({
   const handleTagToggle = (tag: string) => {
     const currentTags = filters.tags || [];
     const newTags = currentTags.includes(tag)
-      ? currentTags.filter((t) => t !== tag)
+      ? currentTags.filter(t => t !== tag)
       : [...currentTags, tag];
 
     onFiltersChange({
@@ -99,7 +99,10 @@ export function DocumentSearch({
     });
   };
 
-  const handleVisibilityChange = (type: 'public' | 'premium' | 'private', checked: boolean) => {
+  const handleVisibilityChange = (
+    type: 'public' | 'premium' | 'private',
+    checked: boolean,
+  ) => {
     const newFilters = { ...filters };
 
     if (type === 'public') {
@@ -211,12 +214,16 @@ export function DocumentSearch({
           <div className="flex items-center gap-2">
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={onClearFilters}>
-                <X className="h-4 w-4 mr-1" />
+                <X className="mr-1 h-4 w-4" />
                 Xóa
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
-              <Filter className="h-4 w-4 mr-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <Filter className="mr-1 h-4 w-4" />
               {isExpanded ? 'Ẩn' : 'Hiển thị'} bộ lọc
             </Button>
           </div>
@@ -224,26 +231,28 @@ export function DocumentSearch({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Search Input */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="md:col-span-2">
             <Label className="text-sm font-medium">Tìm kiếm</Label>
             <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="Tìm kiếm tài liệu, thẻ, hoặc danh mục..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="pl-10"
               />
               {isLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
+                  <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
                 </div>
               )}
             </div>
             {searchQuery && !isLoading && (
-              <p className="text-xs text-muted-foreground mt-1">Tự động tìm kiếm khi bạn nhập...</p>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Tự động tìm kiếm khi bạn nhập...
+              </p>
             )}
           </div>
 
@@ -254,7 +263,7 @@ export function DocumentSearch({
                 <SelectValue placeholder="Sắp xếp theo" />
               </SelectTrigger>
               <SelectContent>
-                {sortOptions.map((option) => (
+                {sortOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     <div className="flex items-center gap-2">
                       {filters.sortOrder === 'asc' ? (
@@ -273,12 +282,14 @@ export function DocumentSearch({
 
         {/* Search Status */}
         {filters.query && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Search className="h-4 w-4" />
             <span>Đang tìm kiếm:</span>
-            <span className="font-medium text-foreground">"{filters.query}"</span>
+            <span className="text-foreground font-medium">
+              "{filters.query}"
+            </span>
             {isLoading && (
-              <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
+              <div className="border-primary h-3 w-3 animate-spin rounded-full border-2 border-t-transparent"></div>
             )}
           </div>
         )}
@@ -289,19 +300,22 @@ export function DocumentSearch({
             {/* Categories */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Danh mục</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {categories.slice(0, 6).map((category) => (
-                  <div key={category.id} className="flex items-center space-x-2">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                {categories.slice(0, 6).map(category => (
+                  <div
+                    key={category.id}
+                    className="flex items-center space-x-2"
+                  >
                     <Checkbox
                       id={`category-${category.id}`}
                       checked={filters.categoryId === category.id}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         handleCategoryChange(category.id, checked as boolean)
                       }
                     />
                     <Label
                       htmlFor={`category-${category.id}`}
-                      className="text-sm flex items-center gap-1"
+                      className="flex items-center gap-1 text-sm"
                     >
                       <span>{category.icon}</span>
                       {category.name}
@@ -315,11 +329,13 @@ export function DocumentSearch({
             <div className="space-y-3">
               <Label className="text-sm font-medium">Thẻ</Label>
               <div className="flex flex-wrap gap-2">
-                {popularTags.map((tag) => (
+                {popularTags.map(tag => (
                   <Badge
                     key={tag}
-                    variant={filters.tags?.includes(tag) ? 'default' : 'outline'}
-                    className="cursor-pointer hover:bg-primary/10"
+                    variant={
+                      filters.tags?.includes(tag) ? 'default' : 'outline'
+                    }
+                    className="hover:bg-primary/10 cursor-pointer"
                     onClick={() => handleTagToggle(tag)}
                   >
                     {tag}
@@ -329,16 +345,19 @@ export function DocumentSearch({
             </div>
 
             {/* Language, Visibility and Rating */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Ngôn ngữ</Label>
-                <Select value={filters.language || 'all'} onValueChange={handleLanguageChange}>
+                <Select
+                  value={filters.language || 'all'}
+                  onValueChange={handleLanguageChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn ngôn ngữ" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả ngôn ngữ</SelectItem>
-                    {languageOptions.map((lang) => (
+                    {languageOptions.map(lang => (
                       <SelectItem key={lang.code} value={lang.code}>
                         {lang.name}
                       </SelectItem>
@@ -354,7 +373,7 @@ export function DocumentSearch({
                     <Checkbox
                       id="public"
                       checked={filters.isPublic === true}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         handleVisibilityChange('public', checked as boolean)
                       }
                     />
@@ -366,7 +385,7 @@ export function DocumentSearch({
                     <Checkbox
                       id="premium"
                       checked={filters.isPremium === true}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         handleVisibilityChange('premium', checked as boolean)
                       }
                     />
@@ -378,7 +397,7 @@ export function DocumentSearch({
                     <Checkbox
                       id="private"
                       checked={filters.isPublic === false}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         handleVisibilityChange('private', checked as boolean)
                       }
                     />
@@ -390,9 +409,11 @@ export function DocumentSearch({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Đánh giá tối thiểu</Label>
+                <Label className="text-sm font-medium">
+                  Đánh giá tối thiểu
+                </Label>
                 <div className="flex items-center space-x-2">
-                  {[1, 2, 3, 4, 5].map((rating) => (
+                  {[1, 2, 3, 4, 5].map(rating => (
                     <button
                       key={rating}
                       onClick={() => handleMinRatingChange([rating])}
@@ -405,7 +426,7 @@ export function DocumentSearch({
                       ★
                     </button>
                   ))}
-                  <span className="text-sm text-muted-foreground ml-2">
+                  <span className="text-muted-foreground ml-2 text-sm">
                     {filters.minRating || 0} sao
                   </span>
                 </div>

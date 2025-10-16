@@ -1,7 +1,10 @@
-import { Response } from 'express';
-
 import { HTTP_MESSAGES, HTTP_STATUS } from '../constants/http.constants';
-import { ApiResponse, BaseMeta, PaginationMeta } from '../interfaces/api-response.interface';
+import {
+  ApiResponse,
+  BaseMeta,
+  PaginationMeta,
+} from '../interfaces/api-response.interface';
+import { Response } from 'express';
 
 export class ResponseHelper {
   /**
@@ -21,7 +24,7 @@ export class ResponseHelper {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map((item) => this.convertBigIntsToString(item));
+      return obj.map(item => this.convertBigIntsToString(item));
     }
 
     if (typeof obj === 'object') {
@@ -44,7 +47,7 @@ export class ResponseHelper {
     res: Response,
     data?: T,
     message: string = HTTP_MESSAGES.SUCCESS,
-    statusCode: number = HTTP_STATUS.OK
+    statusCode: number = HTTP_STATUS.OK,
   ): Response<ApiResponse<T>> {
     // Convert BigInt values to strings to make them JSON-serializable
     const safeData = this.convertBigIntsToString(data);
@@ -65,7 +68,7 @@ export class ResponseHelper {
   static created<T>(
     res: Response,
     data?: T,
-    message: string = HTTP_MESSAGES.CREATED
+    message: string = HTTP_MESSAGES.CREATED,
   ): Response<ApiResponse<T>> {
     return this.success(res, data, message, HTTP_STATUS.CREATED);
   }
@@ -76,7 +79,7 @@ export class ResponseHelper {
   static updated<T>(
     res: Response,
     data?: T,
-    message: string = HTTP_MESSAGES.UPDATED
+    message: string = HTTP_MESSAGES.UPDATED,
   ): Response<ApiResponse<T>> {
     return this.success(res, data, message, HTTP_STATUS.OK);
   }
@@ -84,7 +87,10 @@ export class ResponseHelper {
   /**
    * Deleted response
    */
-  static deleted(res: Response, message: string = HTTP_MESSAGES.DELETED): Response<ApiResponse> {
+  static deleted(
+    res: Response,
+    message: string = HTTP_MESSAGES.DELETED,
+  ): Response<ApiResponse> {
     return this.success(res, null, message, HTTP_STATUS.OK);
   }
 
@@ -97,7 +103,7 @@ export class ResponseHelper {
     page: number,
     limit: number,
     total: number,
-    message: string = HTTP_MESSAGES.DATA_RETRIEVED
+    message: string = HTTP_MESSAGES.DATA_RETRIEVED,
   ): Response<ApiResponse<T[]>> {
     const totalPages = Math.ceil(total / limit);
 
@@ -118,7 +124,7 @@ export class ResponseHelper {
     res: Response,
     message: string = 'Đã xảy ra lỗi',
     statusCode: number = 500,
-    error?: any
+    error?: any,
   ): Response<ApiResponse> {
     const response: ApiResponse = {
       success: false,
@@ -141,7 +147,7 @@ export class ResponseHelper {
     page: number,
     limit: number,
     total: number,
-    totalPages: number
+    totalPages: number,
   ): PaginationMeta {
     return {
       timestamp: new Date().toISOString(),

@@ -28,7 +28,10 @@ export class AIService {
    */
   static async analyzeDocument(request: AIAnalysisRequest): Promise<any> {
     try {
-      const response = await apiClient.post<AIAnalysisResponse>('/ai/analyze-document', request);
+      const response = await apiClient.post<AIAnalysisResponse>(
+        '/ai/analyze-document',
+        request,
+      );
 
       if (response.success && response.data) {
         return response;
@@ -37,14 +40,18 @@ export class AIService {
       throw new Error(response.message || 'Failed to analyze document');
     } catch (error) {
       console.error('Error analyzing document:', error);
-      throw error instanceof Error ? error : new Error('Failed to analyze document');
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to analyze document');
     }
   }
 
   /**
    * Get AI analysis for a document
    */
-  static async getDocumentAnalysis(documentId: string): Promise<DocumentAnalysisResult | null> {
+  static async getDocumentAnalysis(
+    documentId: string,
+  ): Promise<DocumentAnalysisResult | null> {
     try {
       const response = await apiClient.get(`/ai/analysis/${documentId}`);
 
@@ -64,7 +71,9 @@ export class AIService {
    */
   static async testConnection(): Promise<{ gemini: boolean }> {
     try {
-      const response = await apiClient.get<{ gemini: boolean }>('/ai/test-connection');
+      const response = await apiClient.get<{ gemini: boolean }>(
+        '/ai/test-connection',
+      );
 
       if (response.success && response.data) {
         return response.data;
@@ -98,7 +107,9 @@ export class AIService {
       keyPoints: analysis.keyPoints || [],
       difficulty: analysis.difficulty || 'beginner',
       language: analysis.language || 'en',
-      confidence: analysis.confidence ? `${Math.round(analysis.confidence * 100)}%` : '0%',
+      confidence: analysis.confidence
+        ? `${Math.round(analysis.confidence * 100)}%`
+        : '0%',
     };
   }
 
@@ -112,7 +123,7 @@ export class AIService {
       tags?: string[];
       language?: string;
     },
-    aiSuggestions: DocumentAnalysisResult
+    aiSuggestions: DocumentAnalysisResult,
   ): {
     title: string;
     description: string;
@@ -122,7 +133,10 @@ export class AIService {
     return {
       title: userInput.title || aiSuggestions.title || 'Untitled Document',
       description: userInput.description || aiSuggestions.description || '',
-      tags: userInput.tags && userInput.tags.length > 0 ? userInput.tags : aiSuggestions.tags || [],
+      tags:
+        userInput.tags && userInput.tags.length > 0
+          ? userInput.tags
+          : aiSuggestions.tags || [],
       language: userInput.language || aiSuggestions.language || 'en',
     };
   }
@@ -132,7 +146,7 @@ export class AIService {
    */
   static isHighConfidenceAnalysis(
     analysis: DocumentAnalysisResult,
-    threshold: number = 0.7
+    threshold: number = 0.7,
   ): boolean {
     return (analysis.confidence || 0) >= threshold;
   }

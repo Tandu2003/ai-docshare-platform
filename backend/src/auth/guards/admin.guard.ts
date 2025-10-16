@@ -1,6 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common'
-
-import { AuthUser } from '../interfaces'
+import { AuthUser } from '../interfaces';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -14,7 +18,7 @@ export class AdminGuard implements CanActivate {
 
     if (user.role.name !== 'admin') {
       throw new ForbiddenException(
-        'Bạn không có quyền truy cập tính năng này. Chỉ quản trị viên mới có thể thực hiện thao tác này.'
+        'Bạn không có quyền truy cập tính năng này. Chỉ quản trị viên mới có thể thực hiện thao tác này.',
       );
     }
 

@@ -1,6 +1,12 @@
-import { ExternalLink, FileText, MoreHorizontal, Search, Trash2 } from 'lucide-react';
-
 import React, { useEffect, useState } from 'react';
+
+import {
+  ExternalLink,
+  FileText,
+  MoreHorizontal,
+  Search,
+  Trash2,
+} from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -12,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { UploadService, UploadedFile } from '@/services/upload.service';
+import { UploadedFile, UploadService } from '@/services/upload.service';
 
 interface FileListProps {
   refreshTrigger?: number;
@@ -20,7 +26,11 @@ interface FileListProps {
   className?: string;
 }
 
-export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDeleted, className }) => {
+export const FileList: React.FC<FileListProps> = ({
+  refreshTrigger,
+  onFileDeleted,
+  className,
+}) => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,18 +42,26 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
 
   const limit = 20;
 
-  const loadFiles = async (pageNum: number = 1, search: string = '', mimeType: string = '') => {
+  const loadFiles = async (
+    pageNum: number = 1,
+    search: string = '',
+    mimeType: string = '',
+  ) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await UploadService.getUserFiles(pageNum, limit, mimeType || undefined);
+      const response = await UploadService.getUserFiles(
+        pageNum,
+        limit,
+        mimeType || undefined,
+      );
 
       // Filter by search term on frontend (could be moved to backend)
       let filteredFiles = response.files;
       if (search) {
-        filteredFiles = response.files.filter((file) =>
-          file.originalName?.toLowerCase().includes(search.toLowerCase())
+        filteredFiles = response.files.filter(file =>
+          file.originalName?.toLowerCase().includes(search.toLowerCase()),
         );
       }
 
@@ -67,7 +85,7 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
     try {
       setDeletingId(fileId);
       await UploadService.deleteFile(fileId);
-      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+      setFiles(prev => prev.filter(f => f.id !== fileId));
       onFileDeleted?.(fileId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete file');
@@ -99,8 +117,8 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
     return (
       <Card className={className}>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="flex h-32 items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
           </div>
         </CardContent>
       </Card>
@@ -126,24 +144,24 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
         </CardTitle>
 
         {/* Search and Filter */}
-        <div className="flex gap-4 mt-4">
+        <div className="mt-4 flex gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 placeholder="Search documents..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
           <select
             value={mimeTypeFilter}
-            onChange={(e) => setMimeTypeFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={e => setMimeTypeFilter(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            {mimeTypeOptions.map((option) => (
+            {mimeTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -160,28 +178,30 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
         )}
 
         {files.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <div className="py-8 text-center">
+            <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
             <p className="text-gray-500">No documents found</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {files.map((file) => (
+            {files.map(file => (
               <div
                 key={file.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-gray-50"
               >
                 {/* File Icon/Preview */}
                 <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">{UploadService.getFileIcon(file.mimeType)}</span>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                    <span className="text-2xl">
+                      {UploadService.getFileIcon(file.mimeType)}
+                    </span>
                   </div>
                 </div>
 
                 {/* Document Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate">{file.originalName}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                <div className="min-w-0 flex-1">
+                  <h4 className="truncate font-medium">{file.originalName}</h4>
+                  <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
                     <span>{UploadService.formatFileSize(file.fileSize)}</span>
                     <span>{formatDate(file.createdAt)}</span>
                   </div>
@@ -197,8 +217,10 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white">
                       {file.secureUrl && (
-                        <DropdownMenuItem onClick={() => window.open(file.secureUrl, '_blank')}>
-                          <ExternalLink className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem
+                          onClick={() => window.open(file.secureUrl, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
                           View Document
                         </DropdownMenuItem>
                       )}
@@ -207,7 +229,7 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
                         disabled={deletingId === file.id}
                         className="text-red-600"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="mr-2 h-4 w-4" />
                         {deletingId === file.id ? 'Deleting...' : 'Delete'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -220,10 +242,10 @@ export const FileList: React.FC<FileListProps> = ({ refreshTrigger, onFileDelete
 
         {/* Pagination */}
         {total > limit && (
-          <div className="flex items-center justify-between mt-6">
+          <div className="mt-6 flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}{' '}
-              documents
+              Showing {(page - 1) * limit + 1} to{' '}
+              {Math.min(page * limit, total)} of {total} documents
             </p>
             <div className="flex gap-2">
               <Button

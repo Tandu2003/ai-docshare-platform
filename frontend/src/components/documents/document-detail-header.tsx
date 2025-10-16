@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import {
   ArrowLeft,
   Bookmark,
@@ -8,8 +10,6 @@ import {
   Star,
   User,
 } from 'lucide-react';
-
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,7 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { DocumentView } from '@/services/document.service';
 import { formatDate } from '@/utils/date';
 
@@ -73,12 +78,16 @@ export function DocumentDetailHeader({
             {/* Title and Status */}
             <div className="flex items-start justify-between">
               <div className="flex-1 space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">{document.title}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {document.title}
+                </h1>
                 {document.description && (
-                  <p className="text-lg text-muted-foreground">{document.description}</p>
+                  <p className="text-muted-foreground text-lg">
+                    {document.description}
+                  </p>
                 )}
               </div>
-              <div className="flex items-center gap-2 ml-4">
+              <div className="ml-4 flex items-center gap-2">
                 {document.isPremium && (
                   <Badge variant="default" className="bg-yellow-500">
                     Premium
@@ -105,16 +114,18 @@ export function DocumentDetailHeader({
                 <p className="font-medium">
                   {document.uploader.firstName} {document.uploader.lastName}
                 </p>
-                <p className="text-sm text-muted-foreground">@{document.uploader.username}</p>
+                <p className="text-muted-foreground text-sm">
+                  @{document.uploader.username}
+                </p>
               </div>
             </div>
 
             <Separator />
 
             {/* Stats and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               {/* Stats */}
-              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center space-x-6 text-sm">
                 <div className="flex items-center space-x-1">
                   <Download className="h-4 w-4" />
                   <span>{document.downloadCount} lượt tải</span>
@@ -126,7 +137,8 @@ export function DocumentDetailHeader({
                 <div className="flex items-center space-x-1">
                   <Star className="h-4 w-4" />
                   <span>
-                    {document.averageRating.toFixed(1)} ({document.totalRatings} đánh giá)
+                    {document.averageRating.toFixed(1)} ({document.totalRatings}{' '}
+                    đánh giá)
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
@@ -137,7 +149,10 @@ export function DocumentDetailHeader({
 
               {/* Actions */}
               <div className="flex items-center space-x-2">
-                <Button onClick={onDownload} className="flex items-center gap-2">
+                <Button
+                  onClick={onDownload}
+                  className="flex items-center gap-2"
+                >
                   <Download className="h-4 w-4" />
                   Tải xuống
                 </Button>
@@ -145,7 +160,9 @@ export function DocumentDetailHeader({
                   variant={isBookmarked ? 'default' : 'outline'}
                   onClick={onBookmark}
                   disabled={isBookmarking}
-                  className={isBookmarked ? 'bg-primary text-primary-foreground' : ''}
+                  className={
+                    isBookmarked ? 'bg-primary text-primary-foreground' : ''
+                  }
                   aria-busy={isBookmarking}
                   aria-pressed={isBookmarked}
                 >
@@ -168,7 +185,7 @@ export function DocumentDetailHeader({
             <div className="space-y-2">
               <p className="text-sm font-medium">Đánh giá tài liệu này:</p>
               <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map((rating) => (
+                {[1, 2, 3, 4, 5].map(rating => (
                   <TooltipProvider key={rating}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -181,7 +198,7 @@ export function DocumentDetailHeader({
                           <Star
                             className={`h-6 w-6 transition-colors ${
                               rating <= (hoveredRating || userRating)
-                                ? 'text-yellow-400 fill-current'
+                                ? 'fill-current text-yellow-400'
                                 : 'text-muted-foreground'
                             }`}
                           />
@@ -196,7 +213,7 @@ export function DocumentDetailHeader({
                   </TooltipProvider>
                 ))}
                 {userRating > 0 && (
-                  <span className="text-sm text-muted-foreground ml-2">
+                  <span className="text-muted-foreground ml-2 text-sm">
                     Bạn đã đánh giá {userRating} sao{userRating > 1 ? 's' : ''}
                   </span>
                 )}
@@ -216,7 +233,7 @@ export function DocumentDetailHeader({
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">Thẻ:</span>
                   <div className="flex flex-wrap gap-1">
-                    {document.tags.map((tag) => (
+                    {document.tags.map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>

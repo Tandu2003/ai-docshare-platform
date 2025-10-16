@@ -1,10 +1,11 @@
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState } from 'react';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -20,10 +21,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { formatDate } from '@/utils/date'
-
+} from '@/components/ui/table';
 import type { User } from '@/services/user.service';
+import { formatDate } from '@/utils/date';
+
 interface UserTableProps {
   users: User[];
   selectedUsers: string[];
@@ -96,7 +97,7 @@ export function UserTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user) => (
+          {users.map(user => (
             <TableRow
               key={user.id}
               className={`cursor-pointer transition-colors ${
@@ -108,7 +109,9 @@ export function UserTable({
               <TableCell>
                 <Checkbox
                   checked={selectedUsers.includes(user.id)}
-                  onCheckedChange={(checked) => onSelectUser(user.id, checked as boolean)}
+                  onCheckedChange={checked =>
+                    onSelectUser(user.id, checked as boolean)
+                  }
                   aria-label={`Chọn ${user.firstName} ${user.lastName}`}
                 />
               </TableCell>
@@ -116,7 +119,10 @@ export function UserTable({
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
                     {user.avatar ? (
-                      <img src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                      <img
+                        src={user.avatar}
+                        alt={`${user.firstName} ${user.lastName}`}
+                      />
                     ) : (
                       <AvatarFallback className="text-xs">
                         {getInitials(user.firstName, user.lastName)}
@@ -127,32 +133,47 @@ export function UserTable({
                     <div className="font-medium">
                       {user.firstName} {user.lastName}
                     </div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                    <div className="text-xs text-muted-foreground">@{user.username}</div>
+                    <div className="text-muted-foreground text-sm">
+                      {user.email}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      @{user.username}
+                    </div>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={getRoleBadgeVariant(user.role.name)}>{user.role.name}</Badge>
+                <Badge variant={getRoleBadgeVariant(user.role.name)}>
+                  {user.role.name}
+                </Badge>
               </TableCell>
               <TableCell>
-                <Badge variant={getStatusBadgeVariant(user.isActive, user.isVerified)}>
+                <Badge
+                  variant={getStatusBadgeVariant(
+                    user.isActive,
+                    user.isVerified,
+                  )}
+                >
                   {getStatusText(user.isActive, user.isVerified)}
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   <div>{user._count?.documents || 0} tài liệu</div>
                   <div>{user._count?.downloads || 0} lượt tải</div>
                 </div>
               </TableCell>
               <TableCell>
-                <div className="text-sm text-muted-foreground">
-                  {user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Chưa đăng nhập'}
+                <div className="text-muted-foreground text-sm">
+                  {user.lastLoginAt
+                    ? formatDate(user.lastLoginAt)
+                    : 'Chưa đăng nhập'}
                 </div>
               </TableCell>
               <TableCell>
-                <div className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</div>
+                <div className="text-muted-foreground text-sm">
+                  {formatDate(user.createdAt)}
+                </div>
               </TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -184,7 +205,7 @@ export function UserTable({
         </TableBody>
       </Table>
       {users.length === 0 && !isLoading && (
-        <div className="flex items-center justify-center py-8 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center justify-center py-8">
           Không có người dùng nào
         </div>
       )}

@@ -1,9 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 type CategoryWithParent = Prisma.CategoryGetPayload<{
   include: {
@@ -28,12 +31,14 @@ interface CategoryWithMetrics extends CategoryWithParent {
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async attachMetrics(categories: CategoryWithParent[]): Promise<CategoryWithMetrics[]> {
+  private async attachMetrics(
+    categories: CategoryWithParent[],
+  ): Promise<CategoryWithMetrics[]> {
     if (categories.length === 0) {
       return [];
     }
 
-    const categoryIds = categories.map((category) => category.id);
+    const categoryIds = categories.map(category => category.id);
 
     const aggregates = await this.prisma.document.groupBy({
       by: ['categoryId'],
@@ -55,7 +60,7 @@ export class CategoriesService {
       string,
       { documentCount: number; totalDownloads: number; totalViews: number }
     >();
-    aggregates.forEach((aggregate) => {
+    aggregates.forEach(aggregate => {
       metricsMap.set(aggregate.categoryId, {
         documentCount: aggregate._count?.categoryId ?? 0,
         totalDownloads: Number(aggregate._sum?.downloadCount ?? 0),
@@ -63,7 +68,7 @@ export class CategoriesService {
       });
     });
 
-    return categories.map((category) => {
+    return categories.map(category => {
       const metrics = metricsMap.get(category.id);
       return {
         ...category,
@@ -121,7 +126,9 @@ export class CategoriesService {
     });
 
     const categoriesWithMetrics = await this.attachMetrics(categories);
-    return categoriesWithMetrics.map((category) => this.mapCategoryResponse(category));
+    return categoriesWithMetrics.map(category =>
+      this.mapCategoryResponse(category),
+    );
   }
 
   async findById(id: string) {
@@ -147,13 +154,18 @@ export class CategoriesService {
     return this.mapCategoryResponse(categoryWithMetrics);
   }
 
-  private async validateParent(categoryId: string | undefined, parentId?: string) {
+  private async validateParent(
+    categoryId: string | undefined,
+    parentId?: string,
+  ) {
     if (!parentId) {
       return;
     }
 
     if (categoryId && categoryId === parentId) {
-      throw new BadRequestException('Danh mục không thể là danh mục cha của chính nó');
+      throw new BadRequestException(
+        'Danh mục không thể là danh mục cha của chính nó',
+      );
     }
 
     const parentExists = await this.prisma.category.findUnique({
@@ -203,7 +215,9 @@ export class CategoriesService {
 
     const parentProvided = dto.parentId !== undefined;
     const trimmedParentId =
-      parentProvided && typeof dto.parentId === 'string' ? dto.parentId.trim() : dto.parentId;
+      parentProvided && typeof dto.parentId === 'string'
+        ? dto.parentId.trim()
+        : dto.parentId;
     const normalizedParentId =
       typeof trimmedParentId === 'string' && trimmedParentId.length > 0
         ? trimmedParentId
@@ -282,7 +296,9 @@ export class CategoriesService {
     });
 
     if (documentCount > 0) {
-      throw new BadRequestException('Không thể xóa danh mục có tài liệu liên kết');
+      throw new BadRequestException(
+        'Không thể xóa danh mục có tài liệu liên kết',
+      );
     }
 
     await this.prisma.category.delete({

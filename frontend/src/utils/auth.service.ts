@@ -28,7 +28,7 @@ class AuthService {
   async register(registerData: RegisterDto): Promise<LoginResponse> {
     const response = await apiClient.post<{ user: any; accessToken: string }>(
       API_ENDPOINTS.AUTH.REGISTER,
-      registerData
+      registerData,
     );
 
     if (response.success && response.data) {
@@ -55,7 +55,7 @@ class AuthService {
   async login(loginData: LoginDto): Promise<LoginResponse> {
     const response = await apiClient.post<{ user: any; accessToken: string }>(
       API_ENDPOINTS.AUTH.LOGIN,
-      loginData
+      loginData,
     );
 
     if (response.success && response.data) {
@@ -101,7 +101,7 @@ class AuthService {
         const currentToken = this.getAccessToken();
         console.log(
           '[AuthService] getCurrentUser - Current token from store:',
-          currentToken ? currentToken.substring(0, 20) + '...' : 'null'
+          currentToken ? currentToken.substring(0, 20) + '...' : 'null',
         );
       }
 
@@ -127,7 +127,9 @@ class AuthService {
    */
   async refreshToken(): Promise<string> {
     try {
-      const response = await apiClient.post<{ accessToken: string }>(API_ENDPOINTS.AUTH.REFRESH);
+      const response = await apiClient.post<{ accessToken: string }>(
+        API_ENDPOINTS.AUTH.REFRESH,
+      );
 
       if (response.success && response.data?.accessToken) {
         // Set token in API client which will trigger Redux update
@@ -136,7 +138,7 @@ class AuthService {
         if (import.meta.env.DEV) {
           console.log(
             '[AuthService] refreshToken - Set new token:',
-            response.data.accessToken.substring(0, 20) + '...'
+            response.data.accessToken.substring(0, 20) + '...',
           );
         }
 
@@ -162,13 +164,13 @@ class AuthService {
       if (import.meta.env.DEV) {
         console.log(
           '[AuthService] Refresh token result:',
-          newToken ? newToken.substring(0, 20) + '...' : 'null'
+          newToken ? newToken.substring(0, 20) + '...' : 'null',
         );
       }
 
       if (newToken) {
         // Small delay to ensure token is properly set in Redux store and synced to ApiClient
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // If refresh successful, get current user data
         const user = await this.getCurrentUser();
@@ -227,7 +229,7 @@ class AuthService {
     const user = this.getUserData();
     if (!user?.role?.permissions) return false;
 
-    return user.role.permissions.some((p) => p.action === permission);
+    return user.role.permissions.some(p => p.action === permission);
   }
 
   /**
@@ -241,15 +243,24 @@ class AuthService {
   /**
    * Forgot password - Send reset password email
    */
-  async forgotPassword(forgotPasswordData: ForgotPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordData: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, forgotPasswordData);
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+        forgotPasswordData,
+      );
 
       if (response.success) {
-        return { message: response.message || 'Password reset instructions sent' };
+        return {
+          message: response.message || 'Password reset instructions sent',
+        };
       }
 
-      throw new Error(response.message || 'Failed to send password reset email');
+      throw new Error(
+        response.message || 'Failed to send password reset email',
+      );
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -258,9 +269,14 @@ class AuthService {
   /**
    * Reset password with token
    */
-  async resetPassword(resetPasswordData: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordData: ResetPasswordDto,
+  ): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, resetPasswordData);
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.RESET_PASSWORD,
+        resetPasswordData,
+      );
 
       if (response.success) {
         return { message: response.message || 'Password reset successfully' };
@@ -275,9 +291,14 @@ class AuthService {
   /**
    * Verify email with token
    */
-  async verifyEmail(verifyEmailData: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(
+    verifyEmailData: VerifyEmailDto,
+  ): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, verifyEmailData);
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.VERIFY_EMAIL,
+        verifyEmailData,
+      );
 
       if (response.success) {
         return { message: response.message || 'Email verified successfully' };
@@ -292,9 +313,14 @@ class AuthService {
   /**
    * Resend verification email
    */
-  async resendVerification(resendData: ResendVerificationDto): Promise<{ message: string }> {
+  async resendVerification(
+    resendData: ResendVerificationDto,
+  ): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, resendData);
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.RESEND_VERIFICATION,
+        resendData,
+      );
 
       if (response.success) {
         return { message: response.message || 'Verification email sent' };
@@ -331,7 +357,9 @@ class AuthService {
 
     // Extract error message
     const message =
-      error.response?.data?.message || error.message || 'An unexpected error occurred';
+      error.response?.data?.message ||
+      error.message ||
+      'An unexpected error occurred';
 
     return new Error(message);
   }

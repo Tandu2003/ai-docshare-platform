@@ -24,7 +24,9 @@ export const DashboardPage: React.FC = () => {
     } catch (fetchError) {
       console.error('Failed to fetch dashboard stats:', fetchError);
       const message =
-        fetchError instanceof Error ? fetchError.message : 'Không thể tải dữ liệu dashboard';
+        fetchError instanceof Error
+          ? fetchError.message
+          : 'Không thể tải dữ liệu dashboard';
       setError(message);
     } finally {
       setLoading(false);
@@ -41,19 +43,19 @@ export const DashboardPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
           <p className="text-muted-foreground">
-            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích.
-            analytics.
+            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn
+            có thể quản lý tài liệu và xem phân tích. analytics.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="animate-pulse">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="bg-muted h-4 w-3/4 rounded"></div>
               </CardHeader>
               <CardContent className="animate-pulse">
-                <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-full"></div>
+                <div className="bg-muted mb-2 h-8 w-1/2 rounded"></div>
+                <div className="bg-muted h-3 w-full rounded"></div>
               </CardContent>
             </Card>
           ))}
@@ -68,8 +70,8 @@ export const DashboardPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
           <p className="text-muted-foreground">
-            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích.
-            analytics.
+            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn
+            có thể quản lý tài liệu và xem phân tích. analytics.
           </p>
         </div>
         <Alert variant="destructive">
@@ -87,8 +89,10 @@ export const DashboardPage: React.FC = () => {
 
   if (!stats) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Không thể tải dữ liệu bảng điều khiển</p>
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-muted-foreground">
+          Không thể tải dữ liệu bảng điều khiển
+        </p>
       </div>
     );
   }
@@ -98,7 +102,8 @@ export const DashboardPage: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
         <p className="text-muted-foreground">
-          Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích.
+          Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có
+          thể quản lý tài liệu và xem phân tích.
         </p>
       </div>
 
@@ -133,21 +138,31 @@ export const DashboardPage: React.FC = () => {
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Đã xuất bản</span>
+                <span className="text-muted-foreground text-sm">
+                  Đã xuất bản
+                </span>
                 <span className="text-sm font-medium">
-                  {stats.recentDocuments.filter((doc) => doc.isApproved && !doc.isDraft).length}
+                  {
+                    stats.recentDocuments.filter(
+                      doc => doc.isApproved && !doc.isDraft,
+                    ).length
+                  }
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Bản nháp</span>
+                <span className="text-muted-foreground text-sm">Bản nháp</span>
                 <span className="text-sm font-medium">
-                  {stats.recentDocuments.filter((doc) => doc.isDraft).length}
+                  {stats.recentDocuments.filter(doc => doc.isDraft).length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Đang chờ</span>
+                <span className="text-muted-foreground text-sm">Đang chờ</span>
                 <span className="text-sm font-medium">
-                  {stats.recentDocuments.filter((doc) => !doc.isApproved && !doc.isDraft).length}
+                  {
+                    stats.recentDocuments.filter(
+                      doc => !doc.isApproved && !doc.isDraft,
+                    ).length
+                  }
                 </span>
               </div>
             </div>
@@ -161,21 +176,21 @@ export const DashboardPage: React.FC = () => {
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Công khai</span>
+                <span className="text-muted-foreground text-sm">Công khai</span>
                 <span className="text-sm font-medium">
-                  {stats.recentDocuments.filter((doc) => doc.isPublic).length}
+                  {stats.recentDocuments.filter(doc => doc.isPublic).length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Premium</span>
+                <span className="text-muted-foreground text-sm">Premium</span>
                 <span className="text-sm font-medium">
-                  {stats.recentDocuments.filter((doc) => doc.isPremium).length}
+                  {stats.recentDocuments.filter(doc => doc.isPremium).length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Riêng tư</span>
+                <span className="text-muted-foreground text-sm">Riêng tư</span>
                 <span className="text-sm font-medium">
-                  {stats.recentDocuments.filter((doc) => !doc.isPublic).length}
+                  {stats.recentDocuments.filter(doc => !doc.isPublic).length}
                 </span>
               </div>
             </div>
@@ -188,7 +203,7 @@ export const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {stats.recentNotifications.slice(0, 3).map((notification) => (
+              {stats.recentNotifications.slice(0, 3).map(notification => (
                 <div key={notification.id} className="text-sm">
                   <p className="font-medium">{notification.title}</p>
                   <p className="text-muted-foreground text-xs">

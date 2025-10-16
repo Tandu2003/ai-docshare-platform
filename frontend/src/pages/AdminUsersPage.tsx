@@ -1,9 +1,14 @@
-import { Plus, Trash2, Users } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { useCallback, useEffect, useState } from 'react';
 
-import { UserFilters, UserForm, UserTable } from '@/components/admin/user-management'
-import { LoadingSpinner } from '@/components/common'
+import { Plus, Trash2, Users } from 'lucide-react';
+import { toast } from 'sonner';
+
+import {
+  UserFilters,
+  UserForm,
+  UserTable,
+} from '@/components/admin/user-management';
+import { LoadingSpinner } from '@/components/common';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,20 +18,20 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/hooks'
-import { userService } from '@/services/user.service'
-
-import type {
-  CreateUserRequest,
-  GetUsersQuery,
-  Role,
-  UpdateUserRequest,
-  User,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks';
+import {
+  userService,
+  type CreateUserRequest,
+  type GetUsersQuery,
+  type Role,
+  type UpdateUserRequest,
+  type User,
 } from '@/services/user.service';
+
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -56,12 +61,14 @@ export default function AdminUsersPage() {
   // Kiểm tra quyền truy cập
   if (currentUser?.role?.name !== 'admin') {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Truy cập bị từ chối</h2>
+          <h2 className="mb-2 text-2xl font-bold text-red-600">
+            Truy cập bị từ chối
+          </h2>
           <p className="text-muted-foreground">
-            Bạn không có quyền truy cập trang quản lý người dùng. Chỉ quản trị viên mới có thể sử
-            dụng tính năng này.
+            Bạn không có quyền truy cập trang quản lý người dùng. Chỉ quản trị
+            viên mới có thể sử dụng tính năng này.
           </p>
         </div>
       </div>
@@ -112,14 +119,14 @@ export default function AdminUsersPage() {
     if (selected) {
       setSelectedUsers([...selectedUsers, userId]);
     } else {
-      setSelectedUsers(selectedUsers.filter((id) => id !== userId));
+      setSelectedUsers(selectedUsers.filter(id => id !== userId));
     }
   };
 
   // Handle select all
   const handleSelectAll = (selected: boolean) => {
     if (selected) {
-      setSelectedUsers(users.map((user) => user.id));
+      setSelectedUsers(users.map(user => user.id));
     } else {
       setSelectedUsers([]);
     }
@@ -143,13 +150,17 @@ export default function AdminUsersPage() {
     setIsDeleteDialogOpen(true);
   };
 
-
   // Handle form submit
-  const handleFormSubmit = async (data: CreateUserRequest | UpdateUserRequest) => {
+  const handleFormSubmit = async (
+    data: CreateUserRequest | UpdateUserRequest,
+  ) => {
     try {
       if (selectedUser) {
         // Update user
-        await userService.updateUser(selectedUser.id, data as UpdateUserRequest);
+        await userService.updateUser(
+          selectedUser.id,
+          data as UpdateUserRequest,
+        );
         toast.success('Cập nhật người dùng thành công');
       } else {
         // Create user
@@ -186,7 +197,7 @@ export default function AdminUsersPage() {
     if (selectedUsers.length === 0) return;
 
     try {
-      await Promise.all(selectedUsers.map((id) => userService.deleteUser(id)));
+      await Promise.all(selectedUsers.map(id => userService.deleteUser(id)));
       toast.success(`Đã xóa ${selectedUsers.length} người dùng`);
       setSelectedUsers([]);
       await loadUsers();
@@ -208,12 +219,12 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="container mx-auto space-y-6 px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8 text-primary" />
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
+            <Users className="text-primary h-8 w-8" />
             Quản lý người dùng
           </h1>
           <p className="text-muted-foreground">
@@ -222,28 +233,34 @@ export default function AdminUsersPage() {
         </div>
         <div className="flex items-center gap-2">
           {selectedUsers.length > 0 && (
-            <Button variant="destructive" onClick={handleBulkDelete} disabled={isLoading}>
-              <Trash2 className="h-4 w-4 mr-2" />
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={isLoading}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
               Xóa ({selectedUsers.length})
             </Button>
           )}
           <Button onClick={handleCreateUser} disabled={isLoading}>
-            <Plus className="h-4 w-4 mr-2" />
-          Thêm người dùng
-        </Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Thêm người dùng
+          </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng người dùng</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Tổng người dùng
+                </p>
                 <p className="text-2xl font-bold">{pagination.total}</p>
               </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
+              <Users className="text-muted-foreground h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -252,40 +269,59 @@ export default function AdminUsersPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Người dùng hoạt động</p>
-                <p className="text-2xl font-bold">{users.filter((u) => u.isActive).length}</p>
-              </div>
-              <Badge variant="default" className="h-8 w-8 flex items-center justify-center">
-                ✓
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Đã xác thực</p>
-                <p className="text-2xl font-bold">{users.filter((u) => u.isVerified).length}</p>
-              </div>
-              <Badge variant="secondary" className="h-8 w-8 flex items-center justify-center">
-                ✓
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Quản trị viên</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Người dùng hoạt động
+                </p>
                 <p className="text-2xl font-bold">
-                  {users.filter((u) => u.role.name === 'admin').length}
+                  {users.filter(u => u.isActive).length}
                 </p>
               </div>
-              <Badge variant="destructive" className="h-8 w-8 flex items-center justify-center">
+              <Badge
+                variant="default"
+                className="flex h-8 w-8 items-center justify-center"
+              >
+                ✓
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Đã xác thực
+                </p>
+                <p className="text-2xl font-bold">
+                  {users.filter(u => u.isVerified).length}
+                </p>
+              </div>
+              <Badge
+                variant="secondary"
+                className="flex h-8 w-8 items-center justify-center"
+              >
+                ✓
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Quản trị viên
+                </p>
+                <p className="text-2xl font-bold">
+                  {users.filter(u => u.role.name === 'admin').length}
+                </p>
+              </div>
+              <Badge
+                variant="destructive"
+                className="flex h-8 w-8 items-center justify-center"
+              >
                 A
               </Badge>
             </div>
@@ -314,10 +350,14 @@ export default function AdminUsersPage() {
             <CardTitle>Danh sách người dùng ({pagination.total})</CardTitle>
             {selectedUsers.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   Đã chọn {selectedUsers.length} người dùng
                 </span>
-                <Button variant="outline" size="sm" onClick={() => setSelectedUsers([])}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedUsers([])}
+                >
                   Bỏ chọn
                 </Button>
               </div>
@@ -346,16 +386,18 @@ export default function AdminUsersPage() {
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             Hiển thị {(pagination.page - 1) * pagination.limit + 1} -{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} trong tổng số{' '}
-            {pagination.total} người dùng
+            {Math.min(pagination.page * pagination.limit, pagination.total)}{' '}
+            trong tổng số {pagination.total} người dùng
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters({ ...filters, page: pagination.page - 1 })}
+              onClick={() =>
+                setFilters({ ...filters, page: pagination.page - 1 })
+              }
               disabled={!pagination.hasPrev}
             >
               Trước
@@ -366,7 +408,9 @@ export default function AdminUsersPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters({ ...filters, page: pagination.page + 1 })}
+              onClick={() =>
+                setFilters({ ...filters, page: pagination.page + 1 })
+              }
               disabled={!pagination.hasNext}
             >
               Sau
@@ -389,14 +433,17 @@ export default function AdminUsersPage() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa người dùng</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn có chắc chắn muốn xóa người dùng "{selectedUser?.firstName}{' '}
-              {selectedUser?.lastName}"? Hành động này không thể hoàn tác và sẽ xóa tất cả dữ liệu
-              liên quan đến người dùng này.
+              {selectedUser?.lastName}"? Hành động này không thể hoàn tác và sẽ
+              xóa tất cả dữ liệu liên quan đến người dùng này.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

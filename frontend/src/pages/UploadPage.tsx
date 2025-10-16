@@ -42,7 +42,9 @@ export const UploadPage: React.FC = () => {
       />
 
       {uploadStatus.type && (
-        <Alert variant={uploadStatus.type === 'error' ? 'destructive' : 'default'}>
+        <Alert
+          variant={uploadStatus.type === 'error' ? 'destructive' : 'default'}
+        >
           <AlertDescription>{uploadStatus.message}</AlertDescription>
         </Alert>
       )}

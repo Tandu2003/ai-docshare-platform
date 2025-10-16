@@ -1,7 +1,14 @@
 import { Badge } from '@/components/ui/badge';
 
 interface StatusBadgeProps {
-  status: 'active' | 'inactive' | 'pending' | 'approved' | 'rejected' | 'draft' | 'published';
+  status:
+    | 'active'
+    | 'inactive'
+    | 'pending'
+    | 'approved'
+    | 'rejected'
+    | 'draft'
+    | 'published';
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
   className?: string;
 }

@@ -1,7 +1,5 @@
 import * as crypto from 'crypto';
 import { Readable } from 'stream';
-import { v4 as uuidv4 } from 'uuid';
-
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -11,6 +9,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class CloudflareR2Service {
@@ -21,12 +20,18 @@ export class CloudflareR2Service {
   constructor(private configService: ConfigService) {
     try {
       const endpoint = this.configService.get<string>('CLOUDFLARE_R2_ENDPOINT');
-      const accessKeyId = this.configService.get<string>('CLOUDFLARE_R2_ACCESS_KEY_ID');
-      const secretAccessKey = this.configService.get<string>('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
-      this.bucketName = this.configService.get<string>('CLOUDFLARE_R2_BUCKET_NAME') || 'docshare';
+      const accessKeyId = this.configService.get<string>(
+        'CLOUDFLARE_R2_ACCESS_KEY_ID',
+      );
+      const secretAccessKey = this.configService.get<string>(
+        'CLOUDFLARE_R2_SECRET_ACCESS_KEY',
+      );
+      this.bucketName =
+        this.configService.get<string>('CLOUDFLARE_R2_BUCKET_NAME') ||
+        'docshare';
 
       this.logger.log(
-        `R2 Config: endpoint=${endpoint}, accessKeyId=${accessKeyId?.substring(0, 8)}..., bucket=${this.bucketName}`
+        `R2 Config: endpoint=${endpoint}, accessKeyId=${accessKeyId?.substring(0, 8)}..., bucket=${this.bucketName}`,
       );
 
       if (!endpoint || !accessKeyId || !secretAccessKey) {
@@ -56,7 +61,7 @@ export class CloudflareR2Service {
 
   async uploadFile(
     file: Express.Multer.File,
-    userId: string
+    userId: string,
   ): Promise<{
     fileName: string;
     storageUrl: string;
@@ -65,7 +70,9 @@ export class CloudflareR2Service {
     fileHash: string;
   }> {
     try {
-      this.logger.log(`Starting upload for file: ${file.originalname}, size: ${file.size}`);
+      this.logger.log(
+        `Starting upload for file: ${file.originalname}, size: ${file.size}`,
+      );
 
       // Validate inputs
       if (!file || !file.buffer) {
@@ -77,7 +84,10 @@ export class CloudflareR2Service {
       }
 
       // Generate file hash
-      const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+      const fileHash = crypto
+        .createHash('sha256')
+        .update(file.buffer)
+        .digest('hex');
       this.logger.log(`Generated file hash: ${fileHash}`);
 
       // Generate unique filename
@@ -99,16 +109,22 @@ export class CloudflareR2Service {
         },
       });
 
-      this.logger.log(`Sending upload command to R2 bucket: ${this.bucketName}...`);
+      this.logger.log(
+        `Sending upload command to R2 bucket: ${this.bucketName}...`,
+      );
       const result = await this.s3Client.send(command);
       this.logger.log(`Upload to R2 completed successfully:`, result);
 
-      const publicUrl = this.configService.get<string>('CLOUDFLARE_R2_PUBLIC_URL');
+      const publicUrl = this.configService.get<string>(
+        'CLOUDFLARE_R2_PUBLIC_URL',
+      );
       const storageUrl = publicUrl
         ? `${publicUrl}/${key}`
         : `${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${this.bucketName}/${key}`;
 
-      this.logger.log(`File uploaded successfully: ${fileName}, URL: ${storageUrl}`);
+      this.logger.log(
+        `File uploaded successfully: ${fileName}, URL: ${storageUrl}`,
+      );
 
       return {
         fileName,
@@ -129,9 +145,14 @@ export class CloudflareR2Service {
     }
   }
 
-  async getSignedDownloadUrl(storageUrl: string, expiresIn: number = 3600): Promise<string> {
+  async getSignedDownloadUrl(
+    storageUrl: string,
+    expiresIn: number = 3600,
+  ): Promise<string> {
     try {
-      this.logger.log(`Generating signed URL for: ${storageUrl} (expires in ${expiresIn}s)`);
+      this.logger.log(
+        `Generating signed URL for: ${storageUrl} (expires in ${expiresIn}s)`,
+      );
 
       // Extract key from storage URL
       const key = this.extractKeyFromUrl(storageUrl);
@@ -142,8 +163,12 @@ export class CloudflareR2Service {
         Key: key,
       });
 
-      const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
-      this.logger.log(`Generated signed URL: ${signedUrl.substring(0, 100)}...`);
+      const signedUrl = await getSignedUrl(this.s3Client, command, {
+        expiresIn,
+      });
+      this.logger.log(
+        `Generated signed URL: ${signedUrl.substring(0, 100)}...`,
+      );
 
       return signedUrl;
     } catch (error) {
@@ -172,9 +197,15 @@ export class CloudflareR2Service {
   /**
    * Upload buffer to R2
    */
-  async uploadBuffer(buffer: Buffer, key: string, contentType: string): Promise<string> {
+  async uploadBuffer(
+    buffer: Buffer,
+    key: string,
+    contentType: string,
+  ): Promise<string> {
     try {
-      this.logger.log(`Uploading buffer to R2: ${key} (${buffer.length} bytes)`);
+      this.logger.log(
+        `Uploading buffer to R2: ${key} (${buffer.length} bytes)`,
+      );
 
       const command = new PutObjectCommand({
         Bucket: this.bucketName,

@@ -8,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   CreateDocumentData,
   DocumentsService,
-  FileUploadResult,
   FilesService,
+  FileUploadResult,
 } from '@/services/files.service';
 import { UploadService } from '@/services/upload.service';
 
@@ -38,9 +38,9 @@ const FileUploadDemo: React.FC = () => {
       const results = await FilesService.uploadFiles(selectedFiles);
       if (results.data) {
         setUploadedFiles(results.data);
-        setDocumentData((prev) => ({
+        setDocumentData(prev => ({
           ...prev,
-          fileIds: results.data!.map((f) => f.id),
+          fileIds: results.data!.map(f => f.id),
         }));
       }
       alert('Files uploaded successfully!');
@@ -82,7 +82,7 @@ const FileUploadDemo: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <Card>
         <CardHeader>
           <CardTitle>File Upload Demo</CardTitle>
@@ -101,7 +101,9 @@ const FileUploadDemo: React.FC = () => {
 
           {selectedFiles.length > 0 && (
             <div>
-              <p className="text-sm text-gray-600">Selected {selectedFiles.length} file(s):</p>
+              <p className="text-sm text-gray-600">
+                Selected {selectedFiles.length} file(s):
+              </p>
               <ul className="text-sm">
                 {selectedFiles.map((file, index) => (
                   <li key={index}>
@@ -112,7 +114,10 @@ const FileUploadDemo: React.FC = () => {
             </div>
           )}
 
-          <Button onClick={handleUploadFiles} disabled={selectedFiles.length === 0 || isUploading}>
+          <Button
+            onClick={handleUploadFiles}
+            disabled={selectedFiles.length === 0 || isUploading}
+          >
             {isUploading ? 'Uploading...' : 'Upload Files'}
           </Button>
         </CardContent>
@@ -125,8 +130,11 @@ const FileUploadDemo: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {uploadedFiles.map((file) => (
-                <div key={file.id} className="flex justify-between items-center p-2 border rounded">
+              {uploadedFiles.map(file => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between rounded border p-2"
+                >
                   <span>{file.originalName}</span>
                   <span className="text-sm text-gray-500">
                     {UploadService.formatFileSize(file.fileSize)}
@@ -149,7 +157,9 @@ const FileUploadDemo: React.FC = () => {
               <Input
                 id="title"
                 value={documentData.title}
-                onChange={(e) => setDocumentData((prev) => ({ ...prev, title: e.target.value }))}
+                onChange={e =>
+                  setDocumentData(prev => ({ ...prev, title: e.target.value }))
+                }
                 placeholder="Enter document title"
               />
             </div>
@@ -159,8 +169,11 @@ const FileUploadDemo: React.FC = () => {
               <Textarea
                 id="description"
                 value={documentData.description}
-                onChange={(e) =>
-                  setDocumentData((prev) => ({ ...prev, description: e.target.value }))
+                onChange={e =>
+                  setDocumentData(prev => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 placeholder="Enter document description"
               />
@@ -171,8 +184,11 @@ const FileUploadDemo: React.FC = () => {
                 type="checkbox"
                 id="isPublic"
                 checked={documentData.isPublic}
-                onChange={(e) =>
-                  setDocumentData((prev) => ({ ...prev, isPublic: e.target.checked }))
+                onChange={e =>
+                  setDocumentData(prev => ({
+                    ...prev,
+                    isPublic: e.target.checked,
+                  }))
                 }
               />
               <Label htmlFor="isPublic">Make document public</Label>

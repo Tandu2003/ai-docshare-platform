@@ -6,7 +6,11 @@ import { Injectable } from '@nestjs/common';
 export class RoleService {
   constructor(private prisma: PrismaService) {}
 
-  async createRole(name: string, description: string, permissions: Permission[]): Promise<any> {
+  async createRole(
+    name: string,
+    description: string,
+    permissions: Permission[],
+  ): Promise<any> {
     return this.prisma.role.create({
       data: {
         name,
@@ -16,7 +20,10 @@ export class RoleService {
     });
   }
 
-  async updateRolePermissions(roleId: string, permissions: Permission[]): Promise<any> {
+  async updateRolePermissions(
+    roleId: string,
+    permissions: Permission[],
+  ): Promise<any> {
     return this.prisma.role.update({
       where: { id: roleId },
       data: {
@@ -85,31 +92,71 @@ export class RoleService {
         role: 'user',
         permissions: [
           // Documents
-          { action: 'read', subject: 'Document', conditions: { isPublic: true, isApproved: true } },
-          { action: 'read', subject: 'Document', conditions: { uploaderId: '$user.id' } },
+          {
+            action: 'read',
+            subject: 'Document',
+            conditions: { isPublic: true, isApproved: true },
+          },
+          {
+            action: 'read',
+            subject: 'Document',
+            conditions: { uploaderId: '$user.id' },
+          },
           { action: 'create', subject: 'Document' },
-          { action: 'update', subject: 'Document', conditions: { uploaderId: '$user.id' } },
-          { action: 'delete', subject: 'Document', conditions: { uploaderId: '$user.id' } },
+          {
+            action: 'update',
+            subject: 'Document',
+            conditions: { uploaderId: '$user.id' },
+          },
+          {
+            action: 'delete',
+            subject: 'Document',
+            conditions: { uploaderId: '$user.id' },
+          },
           // Files
           { action: 'upload', subject: 'File' },
           // Comments
           { action: 'create', subject: 'Comment' },
-          { action: 'update', subject: 'Comment', conditions: { userId: '$user.id' } },
-          { action: 'delete', subject: 'Comment', conditions: { userId: '$user.id' } },
+          {
+            action: 'update',
+            subject: 'Comment',
+            conditions: { userId: '$user.id' },
+          },
+          {
+            action: 'delete',
+            subject: 'Comment',
+            conditions: { userId: '$user.id' },
+          },
           // Ratings
           { action: 'create', subject: 'Rating' },
-          { action: 'update', subject: 'Rating', conditions: { userId: '$user.id' } },
+          {
+            action: 'update',
+            subject: 'Rating',
+            conditions: { userId: '$user.id' },
+          },
           // Bookmarks
           { action: 'create', subject: 'Bookmark' },
-          { action: 'read', subject: 'Bookmark', conditions: { userId: '$user.id' } },
-          { action: 'delete', subject: 'Bookmark', conditions: { userId: '$user.id' } },
+          {
+            action: 'read',
+            subject: 'Bookmark',
+            conditions: { userId: '$user.id' },
+          },
+          {
+            action: 'delete',
+            subject: 'Bookmark',
+            conditions: { userId: '$user.id' },
+          },
           // Download
           {
             action: 'download',
             subject: 'Document',
             conditions: { isPublic: true, isApproved: true },
           },
-          { action: 'download', subject: 'Document', conditions: { uploaderId: '$user.id' } },
+          {
+            action: 'download',
+            subject: 'Document',
+            conditions: { uploaderId: '$user.id' },
+          },
         ],
       },
     ];
@@ -124,7 +171,11 @@ export class RoleService {
       });
 
       if (!existingRole) {
-        await this.createRole(roleData.role, `Default ${roleData.role} role`, roleData.permissions);
+        await this.createRole(
+          roleData.role,
+          `Default ${roleData.role} role`,
+          roleData.permissions,
+        );
       } else {
         // Update existing role with default permissions if needed
         await this.updateRolePermissions(existingRole.id, roleData.permissions);
@@ -139,7 +190,7 @@ export class RoleService {
     }
 
     // Deactivate any roles that are not in the default set
-    const allowedNames = defaultRoles.map((r) => r.role);
+    const allowedNames = defaultRoles.map(r => r.role);
     await this.prisma.role.updateMany({
       where: { name: { notIn: allowedNames } },
       data: { isActive: false },

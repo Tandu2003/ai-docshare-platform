@@ -1,11 +1,17 @@
-import { Eye, Info } from 'lucide-react';
-
 import React from 'react';
 
+import { Eye, Info } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { incrementViewCount } from '@/services/document.service';
-import { UploadService, UploadedFile } from '@/services/upload.service';
+import { UploadedFile, UploadService } from '@/services/upload.service';
 
 interface DocumentViewerProps {
   file: UploadedFile;
@@ -25,23 +31,25 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
           <Eye className="mr-2 h-4 w-4" /> View
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-[80vw] h-full flex flex-col">
+      <SheetContent className="flex h-full w-full flex-col sm:max-w-[80vw]">
         <SheetHeader>
           <SheetTitle className="truncate">{file.originalName}</SheetTitle>
         </SheetHeader>
         <div className="flex-1">
           <iframe
             src={`https://docs.google.com/gview?url=${encodeURIComponent(
-              file.secureUrl || ''
+              file.secureUrl || '',
             )}&embedded=true`}
-            className="w-full h-full"
+            className="h-full w-full"
             frameBorder="0"
           />
         </div>
-        <div className="p-4 border-t flex justify-between items-center">
+        <div className="flex items-center justify-between border-t p-4">
           <div>
             <p className="text-sm font-medium">{file.originalName}</p>
-            <p className="text-xs text-gray-500">{UploadService.formatFileSize(file.fileSize)}</p>
+            <p className="text-xs text-gray-500">
+              {UploadService.formatFileSize(file.fileSize)}
+            </p>
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm">

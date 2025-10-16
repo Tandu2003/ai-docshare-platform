@@ -1,7 +1,7 @@
-import { toast } from 'sonner';
-
 import { useEffect, useMemo, useState } from 'react';
+
 import { useLocation, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
@@ -12,19 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
 import {
-  type BookmarkWithDocument,
   createBookmark,
   deleteBookmark,
   getUserBookmarks,
+  type BookmarkWithDocument,
 } from '@/services/bookmark.service';
 import {
+  getDocumentById,
+  triggerFileDownload,
   type DocumentShareLink,
   type DocumentView,
   type ShareDocumentResponse,
-  getDocumentById,
-  triggerFileDownload,
 } from '@/services/document.service';
-import { generateMockAIAnalysis, mockComments } from '@/services/mock-data.service';
+import {
+  generateMockAIAnalysis,
+  mockComments,
+} from '@/services/mock-data.service';
 import type { AIAnalysis, Comment } from '@/types';
 
 export default function DocumentDetailPage() {
@@ -37,7 +40,8 @@ export default function DocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [bookmarkRecord, setBookmarkRecord] = useState<BookmarkWithDocument | null>(null);
+  const [bookmarkRecord, setBookmarkRecord] =
+    useState<BookmarkWithDocument | null>(null);
   const [isBookmarkActionLoading, setIsBookmarkActionLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
@@ -52,7 +56,9 @@ export default function DocumentDetailPage() {
   }, [document, user]);
 
   const activeShareLink =
-    document?.shareLink && !document.shareLink.isRevoked ? document.shareLink : undefined;
+    document?.shareLink && !document.shareLink.isRevoked
+      ? document.shareLink
+      : undefined;
 
   const shareLinkUrl = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -86,7 +92,7 @@ export default function DocumentDetailPage() {
 
         // Load comments for this document
         const documentComments = mockComments.filter(
-          (comment) => comment.documentId === documentId
+          comment => comment.documentId === documentId,
         );
         setComments(documentComments);
 
@@ -166,7 +172,9 @@ export default function DocumentDetailPage() {
       }
     } catch (error) {
       console.error('Failed to update bookmark', error);
-      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật bookmark');
+      toast.error(
+        error instanceof Error ? error.message : 'Không thể cập nhật bookmark',
+      );
     } finally {
       setIsBookmarkActionLoading(false);
     }
@@ -190,12 +198,12 @@ export default function DocumentDetailPage() {
           text: document?.description,
           url: shareLinkUrl,
         })
-        .catch((error) => console.warn('Share was cancelled or failed', error));
+        .catch(error => console.warn('Share was cancelled or failed', error));
     } else {
       navigator.clipboard
         .writeText(shareLinkUrl)
         .then(() => toast.success('Đã sao chép đường dẫn chia sẻ.'))
-        .catch((error) => {
+        .catch(error => {
           console.error('Failed to copy link', error);
           toast.error('Không thể sao chép đường dẫn.');
         });
@@ -251,45 +259,49 @@ export default function DocumentDetailPage() {
 
     if (parentId) {
       // Add as reply
-      setComments((prev) =>
-        prev.map((comment) =>
+      setComments(prev =>
+        prev.map(comment =>
           comment.id === parentId
             ? { ...comment, replies: [...(comment.replies || []), newComment] }
-            : comment
-        )
+            : comment,
+        ),
       );
     } else {
       // Add as top-level comment
-      setComments((prev) => [...prev, newComment]);
+      setComments(prev => [...prev, newComment]);
     }
   };
 
   const handleLikeComment = (commentId: string) => {
-    setComments((prev) =>
-      prev.map((comment) =>
-        comment.id === commentId ? { ...comment, likesCount: comment.likesCount + 1 } : comment
-      )
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId
+          ? { ...comment, likesCount: comment.likesCount + 1 }
+          : comment,
+      ),
     );
   };
 
   const handleEditComment = (commentId: string, content: string) => {
-    setComments((prev) =>
-      prev.map((comment) =>
+    setComments(prev =>
+      prev.map(comment =>
         comment.id === commentId
           ? { ...comment, content, isEdited: true, editedAt: new Date() }
-          : comment
-      )
+          : comment,
+      ),
     );
   };
 
   const handleDeleteComment = (commentId: string) => {
-    setComments((prev) =>
-      prev.map((comment) => (comment.id === commentId ? { ...comment, isDeleted: true } : comment))
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId ? { ...comment, isDeleted: true } : comment,
+      ),
     );
   };
 
   const handleShareLinkUpdated = (share: ShareDocumentResponse) => {
-    setDocument((prev) =>
+    setDocument(prev =>
       prev
         ? {
             ...prev,
@@ -299,12 +311,12 @@ export default function DocumentDetailPage() {
               isRevoked: share.isRevoked,
             } as DocumentShareLink,
           }
-        : prev
+        : prev,
     );
   };
 
   const handleShareLinkRevoked = () => {
-    setDocument((prev) => (prev ? { ...prev, shareLink: undefined } : prev));
+    setDocument(prev => (prev ? { ...prev, shareLink: undefined } : prev));
   };
 
   if (loading) {
@@ -328,7 +340,7 @@ export default function DocumentDetailPage() {
 
         {/* Content Skeleton */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
@@ -355,10 +367,14 @@ export default function DocumentDetailPage() {
 
   if (!document) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-muted-foreground mb-2">Không tìm thấy tài liệu</h2>
-          <p className="text-muted-foreground">Tài liệu bạn đang tìm kiếm không tồn tại.</p>
+          <h2 className="text-muted-foreground mb-2 text-2xl font-bold">
+            Không tìm thấy tài liệu
+          </h2>
+          <p className="text-muted-foreground">
+            Tài liệu bạn đang tìm kiếm không tồn tại.
+          </p>
         </div>
       </div>
     );
@@ -391,7 +407,7 @@ export default function DocumentDetailPage() {
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Document Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>Nội dung tài liệu</CardTitle>
@@ -399,11 +415,13 @@ export default function DocumentDetailPage() {
             <CardContent>
               <div className="prose max-w-none">
                 <p className="text-muted-foreground">
-                  Đây là bản xem trước nội dung tài liệu. Trong ứng dụng thực tế, phần này sẽ hiển thị nội dung tài liệu thực tế dựa trên loại tệp.
+                  Đây là bản xem trước nội dung tài liệu. Trong ứng dụng thực
+                  tế, phần này sẽ hiển thị nội dung tài liệu thực tế dựa trên
+                  loại tệp.
                 </p>
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2">Xem trước tài liệu</h4>
-                  <p className="text-sm text-muted-foreground">
+                <div className="bg-muted mt-4 rounded-lg p-4">
+                  <h4 className="mb-2 font-medium">Xem trước tài liệu</h4>
+                  <p className="text-muted-foreground text-sm">
                     {document.description || 'Không có mô tả nào.'}
                   </p>
                 </div>
@@ -432,19 +450,21 @@ export default function DocumentDetailPage() {
               <CardContent className="space-y-3">
                 {activeShareLink ? (
                   <>
-                    <div className="rounded-md border border-dashed bg-muted/40 p-3 text-xs leading-relaxed">
-                      <span className="font-medium text-muted-foreground">Đường dẫn:</span>
+                    <div className="bg-muted/40 rounded-md border border-dashed p-3 text-xs leading-relaxed">
+                      <span className="text-muted-foreground font-medium">
+                        Đường dẫn:
+                      </span>
                       <br />
                       <span className="break-all">{shareLinkUrl}</span>
                     </div>
                     {shareExpiresAtLabel && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         Liên kết sẽ hết hạn vào {shareExpiresAtLabel}.
                       </p>
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Bạn chưa thiết lập liên kết chia sẻ cho tài liệu này.
                   </p>
                 )}
@@ -469,23 +489,29 @@ export default function DocumentDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Lượt tải</span>
+                <span className="text-muted-foreground text-sm">Lượt tải</span>
                 <span className="font-medium">{document.downloadCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Lượt xem</span>
+                <span className="text-muted-foreground text-sm">Lượt xem</span>
                 <span className="font-medium">{document.viewCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Đánh giá trung bình</span>
-                <span className="font-medium">{document.averageRating.toFixed(1)}/5</span>
+                <span className="text-muted-foreground text-sm">
+                  Đánh giá trung bình
+                </span>
+                <span className="font-medium">
+                  {document.averageRating.toFixed(1)}/5
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Tổng đánh giá</span>
+                <span className="text-muted-foreground text-sm">
+                  Tổng đánh giá
+                </span>
                 <span className="font-medium">{document.totalRatings}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Bình luận</span>
+                <span className="text-muted-foreground text-sm">Bình luận</span>
                 <span className="font-medium">{comments.length}</span>
               </div>
             </CardContent>
@@ -498,7 +524,7 @@ export default function DocumentDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Tài liệu liên quan sẽ được hiển thị ở đây khi API hỗ trợ.
                 </p>
               </div>

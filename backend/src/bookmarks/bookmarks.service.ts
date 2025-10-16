@@ -1,7 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 interface GetBookmarksOptions {
   folderId?: string;
@@ -79,7 +82,9 @@ export class BookmarksService {
               document: {
                 OR: [
                   { title: { contains: searchTerm, mode: 'insensitive' } },
-                  { description: { contains: searchTerm, mode: 'insensitive' } },
+                  {
+                    description: { contains: searchTerm, mode: 'insensitive' },
+                  },
                   { tags: { has: searchTerm } },
                 ],
               },
@@ -109,14 +114,18 @@ export class BookmarksService {
     });
 
     if (!document) {
-      throw new NotFoundException('Không tìm thấy tài liệu hoặc không thể truy cập');
+      throw new NotFoundException(
+        'Không tìm thấy tài liệu hoặc không thể truy cập',
+      );
     }
 
     const isOwner = document.uploaderId === userId;
     const canAccess = isOwner || document.isPublic === true;
 
     if (!canAccess) {
-      throw new NotFoundException('Không tìm thấy tài liệu hoặc không thể truy cập');
+      throw new NotFoundException(
+        'Không tìm thấy tài liệu hoặc không thể truy cập',
+      );
     }
 
     if (folderId) {
@@ -203,7 +212,7 @@ export class BookmarksService {
     return {
       total,
       uncategorized,
-      folders: folders.map((folder) => ({
+      folders: folders.map(folder => ({
         id: folder.id,
         name: folder.name,
         count: folder._count.bookmarks,

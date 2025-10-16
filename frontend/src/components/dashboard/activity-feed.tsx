@@ -1,4 +1,12 @@
-import { Calendar, Download, Eye, MessageSquare, Star, Upload, User } from 'lucide-react';
+import {
+  Calendar,
+  Download,
+  Eye,
+  MessageSquare,
+  Star,
+  Upload,
+  User,
+} from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,15 +62,19 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Chưa có hoạt động nào được ghi nhận.</p>
+          <p className="text-muted-foreground text-sm">
+            Chưa có hoạt động nào được ghi nhận.
+          </p>
         ) : (
           <div className="space-y-4">
-            {activities.slice(0, 10).map((activity) => {
+            {activities.slice(0, 10).map(activity => {
               const Icon = getActivityIcon(activity.action);
               const colorClass = getActivityColor(activity.action);
               const displayName = activity.user
                 ? [activity.user.firstName, activity.user.lastName]
-                    .filter((name): name is string => Boolean(name && name.trim()))
+                    .filter((name): name is string =>
+                      Boolean(name && name.trim()),
+                    )
                     .join(' ') ||
                   activity.user.username ||
                   'Người dùng'
@@ -70,7 +82,7 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
 
               return (
                 <div key={activity.id} className="flex items-start space-x-3">
-                  <div className={`p-2 rounded-full ${colorClass}`}>
+                  <div className={`rounded-full p-2 ${colorClass}`}>
                     <Icon className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex-1 space-y-1">
@@ -80,20 +92,31 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                         {activity.action}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.action === 'upload' && 'Đã tải lên tài liệu mới'}
-                      {activity.action === 'download' && 'Đã tải xuống tài liệu'}
+                    <p className="text-muted-foreground text-sm">
+                      {activity.action === 'upload' &&
+                        'Đã tải lên tài liệu mới'}
+                      {activity.action === 'download' &&
+                        'Đã tải xuống tài liệu'}
                       {activity.action === 'view' && 'Đã xem tài liệu'}
-                      {activity.action === 'comment' && 'Đã bình luận về tài liệu'}
+                      {activity.action === 'comment' &&
+                        'Đã bình luận về tài liệu'}
                       {activity.action === 'rate' && 'Đã đánh giá tài liệu'}
                       {activity.action === 'login' && 'Đã đăng nhập'}
-                      {!['upload', 'download', 'view', 'comment', 'rate', 'login'].includes(
-                        activity.action
-                      ) && `Performed ${activity.action}`}
+                      {![
+                        'upload',
+                        'download',
+                        'view',
+                        'comment',
+                        'rate',
+                        'login',
+                      ].includes(activity.action) &&
+                        `Performed ${activity.action}`}
                     </p>
-                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                    <div className="text-muted-foreground flex items-center space-x-1 text-xs">
                       <Calendar className="h-3 w-3" />
-                      <span>{new Date(activity.createdAt).toLocaleString()}</span>
+                      <span>
+                        {new Date(activity.createdAt).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -24,7 +24,7 @@ export class AdminGuard implements CanActivate {
 
     if (user.role.name !== 'admin') {
       throw new ForbiddenException(
-        'Bạn không có quyền truy cập tính năng này. Chỉ quản trị viên mới có thể thực hiện thao tác này.'
+        'Bạn không có quyền truy cập tính năng này. Chỉ quản trị viên mới có thể thực hiện thao tác này.',
       );
     }
 
@@ -145,9 +145,12 @@ if (user?.role?.name !== 'admin') {
 ```typescript
 // user.service.ts
 try {
-  const response = await apiClient.get<ApiResponse<PaginationResponse<User>>>(BASE_URL, {
-    params: query,
-  });
+  const response = await apiClient.get<ApiResponse<PaginationResponse<User>>>(
+    BASE_URL,
+    {
+      params: query,
+    },
+  );
   return response.data.data;
 } catch (error) {
   if (error.response?.status === 403) {

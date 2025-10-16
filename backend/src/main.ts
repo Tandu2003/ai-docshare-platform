@@ -1,9 +1,8 @@
-import * as cookieParser from 'cookie-parser';
-import helmet from 'helmet';
-
 import { AppModule } from '@/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,7 +22,7 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       disableErrorMessages: process.env.NODE_ENV === 'production',
-    })
+    }),
   );
 
   // Enable CORS
@@ -38,7 +37,7 @@ async function bootstrap() {
   await app.listen(port);
 }
 
-bootstrap().catch((error) => {
+bootstrap().catch(error => {
   console.error('Error starting application:', error);
   process.exit(1);
 });

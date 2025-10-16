@@ -1,4 +1,4 @@
-import { AbilityBuilder, PureAbility, createMongoAbility } from '@casl/ability';
+import { AbilityBuilder, createMongoAbility, PureAbility } from '@casl/ability';
 
 export type Actions =
   | 'create'
@@ -70,7 +70,7 @@ export class AbilityFactory {
     }
 
     // Apply role-based permissions
-    permissions.forEach((permission) => {
+    permissions.forEach(permission => {
       if (permission.conditions) {
         can(permission.action, permission.subject, permission.conditions);
       } else {
@@ -122,7 +122,7 @@ export class AbilityFactory {
     user: User | null,
     action: Actions,
     subject: Subjects,
-    conditions?: Record<string, any>
+    conditions?: Record<string, any>,
   ): boolean {
     const ability = this.createForUser(user);
     return ability.can(action, subject, conditions as any);

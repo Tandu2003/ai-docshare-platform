@@ -1,16 +1,18 @@
-import * as bcrypt from 'bcrypt'
-
-import { AuthUser } from '@/auth/interfaces'
-import { PrismaService } from '@/prisma/prisma.service'
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-
 import {
   CreateUserDto,
   GetUsersQueryDto,
   UpdateUserDto,
   UpdateUserRoleDto,
   UpdateUserStatusDto,
-} from './dto'
+} from './dto';
+import { AuthUser } from '@/auth/interfaces';
+import { PrismaService } from '@/prisma/prisma.service';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -140,7 +142,10 @@ export class UsersService {
     // Kiểm tra email và username đã tồn tại
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: createUserDto.email }, { username: createUserDto.username }],
+        OR: [
+          { email: createUserDto.email },
+          { username: createUserDto.username },
+        ],
       },
     });
 
@@ -190,7 +195,11 @@ export class UsersService {
     return userWithoutPassword;
   }
 
-  async updateUser(id: string, updateUserDto: UpdateUserDto, _currentUser: AuthUser) {
+  async updateUser(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    _currentUser: AuthUser,
+  ) {
     // Kiểm tra user tồn tại
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
@@ -208,8 +217,12 @@ export class UsersService {
             { id: { not: id } },
             {
               OR: [
-                ...(updateUserDto.email ? [{ email: updateUserDto.email }] : []),
-                ...(updateUserDto.username ? [{ username: updateUserDto.username }] : []),
+                ...(updateUserDto.email
+                  ? [{ email: updateUserDto.email }]
+                  : []),
+                ...(updateUserDto.username
+                  ? [{ username: updateUserDto.username }]
+                  : []),
               ],
             },
           ],
@@ -260,7 +273,11 @@ export class UsersService {
     return userWithoutPassword;
   }
 
-  async updateUserRole(id: string, updateUserRoleDto: UpdateUserRoleDto, _currentUser: AuthUser) {
+  async updateUserRole(
+    id: string,
+    updateUserRoleDto: UpdateUserRoleDto,
+    _currentUser: AuthUser,
+  ) {
     // Kiểm tra user tồn tại
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -302,7 +319,7 @@ export class UsersService {
   async updateUserStatus(
     id: string,
     updateUserStatusDto: UpdateUserStatusDto,
-    _currentUser: AuthUser
+    _currentUser: AuthUser,
   ) {
     // Kiểm tra user tồn tại
     const user = await this.prisma.user.findUnique({
@@ -354,7 +371,12 @@ export class UsersService {
     });
   }
 
-  async getUserActivity(id: string, page: number, limit: number, _currentUser: AuthUser) {
+  async getUserActivity(
+    id: string,
+    page: number,
+    limit: number,
+    _currentUser: AuthUser,
+  ) {
     const skip = (page - 1) * limit;
 
     const [activities, total] = await Promise.all([
@@ -383,15 +405,21 @@ export class UsersService {
   }
 
   async getUserStatistics(id: string, _currentUser: AuthUser) {
-    const [documentCount, downloadCount, viewCount, ratingCount, commentCount, bookmarkCount] =
-      await Promise.all([
-        this.prisma.document.count({ where: { uploaderId: id } }),
-        this.prisma.download.count({ where: { userId: id } }),
-        this.prisma.view.count({ where: { userId: id } }),
-        this.prisma.rating.count({ where: { userId: id } }),
-        this.prisma.comment.count({ where: { userId: id } }),
-        this.prisma.bookmark.count({ where: { userId: id } }),
-      ]);
+    const [
+      documentCount,
+      downloadCount,
+      viewCount,
+      ratingCount,
+      commentCount,
+      bookmarkCount,
+    ] = await Promise.all([
+      this.prisma.document.count({ where: { uploaderId: id } }),
+      this.prisma.download.count({ where: { userId: id } }),
+      this.prisma.view.count({ where: { userId: id } }),
+      this.prisma.rating.count({ where: { userId: id } }),
+      this.prisma.comment.count({ where: { userId: id } }),
+      this.prisma.bookmark.count({ where: { userId: id } }),
+    ]);
 
     return {
       documentCount,

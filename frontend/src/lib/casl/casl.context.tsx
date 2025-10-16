@@ -1,6 +1,6 @@
-import { Can } from '@casl/react';
+import { createContext, ReactNode, useContext } from 'react';
 
-import { ReactNode, createContext, useContext } from 'react';
+import { Can } from '@casl/react';
 
 import { AbilityFactory, AppAbility, User } from './ability.factory';
 
@@ -58,7 +58,12 @@ export function CanComponent({
   const { ability } = useCasl();
   const finalAction = action ?? I;
   return (
-    <Can ability={ability} do={finalAction as any} on={subject as any} this={conditions}>
+    <Can
+      ability={ability}
+      do={finalAction as any}
+      on={subject as any}
+      this={conditions}
+    >
       {children}
     </Can>
   );

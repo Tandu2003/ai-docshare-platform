@@ -1,6 +1,15 @@
-import { Calendar, Download, Edit, Eye, Star, Upload, User, Users } from 'lucide-react';
-
 import { useEffect, useState } from 'react';
+
+import {
+  Calendar,
+  Download,
+  Edit,
+  Eye,
+  Star,
+  Upload,
+  User,
+  Users,
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +30,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks';
 import {
   BOOKMARKS_UPDATED_EVENT,
-  type BookmarkWithDocument,
   getUserBookmarks,
+  type BookmarkWithDocument,
 } from '@/services/bookmark.service';
-import { DocumentsService, type Document as UserDocument } from '@/services/files.service';
+import {
+  DocumentsService,
+  type Document as UserDocument,
+} from '@/services/files.service';
 import { mockActivityLogs } from '@/services/mock-data.service';
 import type { ActivityLog } from '@/types';
 import { formatDate } from '@/utils/date';
@@ -34,7 +46,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
-  const [userBookmarks, setUserBookmarks] = useState<BookmarkWithDocument[]>([]);
+  const [userBookmarks, setUserBookmarks] = useState<BookmarkWithDocument[]>(
+    [],
+  );
   const [userActivity, setUserActivity] = useState<ActivityLog[]>([]);
 
   // Form state
@@ -61,7 +75,9 @@ export default function ProfilePage() {
         setUserBookmarks(bookmarks);
 
         // Get user's activity
-        const activity = mockActivityLogs.filter((log) => log.userId === user?.id);
+        const activity = mockActivityLogs.filter(
+          log => log.userId === user?.id,
+        );
         setUserActivity(activity);
       } catch (error) {
         console.error('Failed to fetch user data:', error);
@@ -82,12 +98,16 @@ export default function ProfilePage() {
 
     const handleBookmarksUpdated = () => {
       void getUserBookmarks()
-        .then((bookmarks) => setUserBookmarks(bookmarks))
-        .catch((error) => console.error('Failed to refresh bookmarks', error));
+        .then(bookmarks => setUserBookmarks(bookmarks))
+        .catch(error => console.error('Failed to refresh bookmarks', error));
     };
 
     window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
-    return () => window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
+    return () =>
+      window.removeEventListener(
+        BOOKMARKS_UPDATED_EVENT,
+        handleBookmarksUpdated,
+      );
   }, [user]);
 
   const handleSaveProfile = () => {
@@ -97,12 +117,20 @@ export default function ProfilePage() {
   };
 
   const getUserStats = () => {
-    const totalDownloads = userDocuments.reduce((sum, doc) => sum + (doc.downloadCount ?? 0), 0);
-    const totalViews = userDocuments.reduce((sum, doc) => sum + (doc.viewCount ?? 0), 0);
+    const totalDownloads = userDocuments.reduce(
+      (sum, doc) => sum + (doc.downloadCount ?? 0),
+      0,
+    );
+    const totalViews = userDocuments.reduce(
+      (sum, doc) => sum + (doc.viewCount ?? 0),
+      0,
+    );
     const averageRating =
       userDocuments.length > 0
-        ? userDocuments.reduce((sum, doc) => sum + (doc.averageRating ?? 0), 0) /
-          userDocuments.length
+        ? userDocuments.reduce(
+            (sum, doc) => sum + (doc.averageRating ?? 0),
+            0,
+          ) / userDocuments.length
         : 0;
 
     return {
@@ -152,7 +180,7 @@ export default function ProfilePage() {
         {/* Profile Header Skeleton */}
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-start space-x-4 animate-pulse">
+            <div className="flex animate-pulse items-start space-x-4">
               <Skeleton className="h-20 w-20 rounded-full" />
               <div className="flex-1 space-y-3">
                 <Skeleton className="h-6 w-48" />
@@ -167,9 +195,9 @@ export default function ProfilePage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i}>
-              <CardContent className="p-4 animate-pulse">
-                <Skeleton className="h-8 w-8 mb-2" />
-                <Skeleton className="h-4 w-16 mb-1" />
+              <CardContent className="animate-pulse p-4">
+                <Skeleton className="mb-2 h-8 w-8" />
+                <Skeleton className="mb-1 h-4 w-16" />
                 <Skeleton className="h-3 w-12" />
               </CardContent>
             </Card>
@@ -181,8 +209,10 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Vui lòng đăng nhập để xem hồ sơ của bạn</p>
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-muted-foreground">
+          Vui lòng đăng nhập để xem hồ sơ của bạn
+        </p>
       </div>
     );
   }
@@ -195,7 +225,7 @@ export default function ProfilePage() {
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
               <Avatar className="h-20 w-20">
-                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                   {user.firstName.charAt(0)}
                   {user.lastName.charAt(0)}
                 </AvatarFallback>
@@ -210,9 +240,9 @@ export default function ProfilePage() {
                   </Badge>
                 </div>
                 <p className="text-muted-foreground">@{user.username}</p>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <p className="text-muted-foreground text-sm">{user.email}</p>
                 {user.bio && <p className="text-sm">{user.bio}</p>}
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-4 w-4" />
                     <span>Tham gia {formatDate(user.createdAt)}</span>
@@ -220,7 +250,9 @@ export default function ProfilePage() {
                   {user.lastLoginAt && (
                     <div className="flex items-center space-x-1">
                       <User className="h-4 w-4" />
-                      <span>Lần cuối hoạt động {formatDate(user.lastLoginAt)}</span>
+                      <span>
+                        Lần cuối hoạt động {formatDate(user.lastLoginAt)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -229,7 +261,7 @@ export default function ProfilePage() {
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="mr-2 h-4 w-4" />
                   Chỉnh sửa hồ sơ
                 </Button>
               </DialogTrigger>
@@ -244,18 +276,26 @@ export default function ProfilePage() {
                       <Input
                         id="firstName"
                         value={formData.firstName}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, firstName: e.target.value }))
-                        }/>
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            firstName: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                     <div>
                       <Label htmlFor="lastName">Họ</Label>
                       <Input
                         id="lastName"
                         value={formData.lastName}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, lastName: e.target.value }))
-                        }/>
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            lastName: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                   </div>
                   <div>
@@ -264,7 +304,12 @@ export default function ProfilePage() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                   <div>
@@ -272,22 +317,31 @@ export default function ProfilePage() {
                     <Input
                       id="username"
                       value={formData.username}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, username: e.target.value }))
-                      }/>
+                      onChange={e =>
+                        setFormData(prev => ({
+                          ...prev,
+                          username: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
                   <div>
                     <Label htmlFor="bio">Tiểu sử</Label>
                     <Textarea
                       id="bio"
                       value={formData.bio}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, bio: e.target.value }))
+                      }
                       placeholder="Hãy cho chúng tôi biết về bạn..."
                       rows={3}
                     />
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditDialogOpen(false)}
+                    >
                       Hủy
                     </Button>
                     <Button onClick={handleSaveProfile}>Lưu thay đổi</Button>
@@ -307,7 +361,7 @@ export default function ProfilePage() {
               <Upload className="h-8 w-8 text-blue-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.documentCount}</p>
-                <p className="text-sm text-muted-foreground">Tài liệu</p>
+                <p className="text-muted-foreground text-sm">Tài liệu</p>
               </div>
             </div>
           </CardContent>
@@ -318,7 +372,7 @@ export default function ProfilePage() {
               <Download className="h-8 w-8 text-green-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalDownloads}</p>
-                <p className="text-sm text-muted-foreground">Lượt tải</p>
+                <p className="text-muted-foreground text-sm">Lượt tải</p>
               </div>
             </div>
           </CardContent>
@@ -329,7 +383,7 @@ export default function ProfilePage() {
               <Eye className="h-8 w-8 text-purple-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalViews}</p>
-                <p className="text-sm text-muted-foreground">Lượt xem</p>
+                <p className="text-muted-foreground text-sm">Lượt xem</p>
               </div>
             </div>
           </CardContent>
@@ -339,8 +393,10 @@ export default function ProfilePage() {
             <div className="flex items-center space-x-2">
               <Star className="h-8 w-8 text-yellow-500" />
               <div>
-                <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                <p className="text-sm text-muted-foreground">Đánh giá TB</p>
+                <p className="text-2xl font-bold">
+                  {stats.averageRating.toFixed(1)}
+                </p>
+                <p className="text-muted-foreground text-sm">Đánh giá TB</p>
               </div>
             </div>
           </CardContent>
@@ -351,7 +407,7 @@ export default function ProfilePage() {
               <Users className="h-8 w-8 text-orange-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.bookmarkCount}</p>
-                <p className="text-sm text-muted-foreground">Đánh dấu</p>
+                <p className="text-muted-foreground text-sm">Đánh dấu</p>
               </div>
             </div>
           </CardContent>
@@ -374,24 +430,26 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               {userDocuments.length === 0 ? (
-                <div className="text-center py-8">
-                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                <div className="py-8 text-center">
+                  <Upload className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="text-muted-foreground mb-2 text-lg font-medium">
                     Chưa có tài liệu nào
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Bắt đầu chia sẻ kiến thức của bạn bằng cách tải lên tài liệu đầu tiên.
+                  <p className="text-muted-foreground mb-4 text-sm">
+                    Bắt đầu chia sẻ kiến thức của bạn bằng cách tải lên tài liệu
+                    đầu tiên.
                   </p>
                   <Button>
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="mr-2 h-4 w-4" />
                     Tải lên tài liệu
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userDocuments.map((document) => {
+                  {userDocuments.map(document => {
                     const categoryIcon = document.category?.icon ?? '📄';
-                    const categoryName = document.category?.name ?? 'Uncategorized';
+                    const categoryName =
+                      document.category?.name ?? 'Uncategorized';
                     const createdAt = formatDate(document.createdAt);
                     const downloadCount = document.downloadCount ?? 0;
                     const viewCount = document.viewCount ?? 0;
@@ -404,19 +462,19 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={document.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="flex items-center justify-between rounded-lg border p-4"
                       >
                         <div className="flex items-center space-x-4">
                           <div className="text-2xl">{categoryIcon}</div>
                           <div>
                             <h4 className="font-medium">{document.title}</h4>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               {categoryName}
                               {createdAt !== '—' ? ` • ${createdAt}` : ''}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center space-x-4 text-sm">
                           <div className="flex items-center space-x-1">
                             <Download className="h-4 w-4" />
                             <span>{downloadCount}</span>
@@ -450,45 +508,49 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               {userBookmarks.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                <div className="py-8 text-center">
+                  <Users className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="text-muted-foreground mb-2 text-lg font-medium">
                     Chưa có đánh dấu nào
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Đánh dấu các tài liệu bạn thấy thú vị để dễ dàng truy cập chúng sau này.
+                  <p className="text-muted-foreground text-sm">
+                    Đánh dấu các tài liệu bạn thấy thú vị để dễ dàng truy cập
+                    chúng sau này.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userBookmarks.map((bookmark) => {
+                  {userBookmarks.map(bookmark => {
                     const document = bookmark.document;
-                    const ratingValue = Number(document.averageRating ?? 0).toFixed(1);
+                    const ratingValue = Number(
+                      document.averageRating ?? 0,
+                    ).toFixed(1);
                     const categoryIcon = document.category?.icon ?? '📄';
                     const bookmarkDate = formatDate(bookmark.createdAt);
-                    const categoryName = document.category?.name ?? 'Uncategorized';
+                    const categoryName =
+                      document.category?.name ?? 'Uncategorized';
 
                     return (
                       <div
                         key={bookmark.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="flex items-center justify-between rounded-lg border p-4"
                       >
                         <div className="flex items-center space-x-4">
                           <div className="text-2xl">{categoryIcon}</div>
                           <div>
                             <h4 className="font-medium">{document.title}</h4>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               {categoryName}
                               {bookmarkDate !== '—' ? ` • ${bookmarkDate}` : ''}
                             </p>
                             {bookmark.notes && (
-                              <p className="text-sm text-muted-foreground mt-1 italic">
+                              <p className="text-muted-foreground mt-1 text-sm italic">
                                 "{bookmark.notes}"
                               </p>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center space-x-4 text-sm">
                           <div className="flex items-center space-x-1">
                             <Download className="h-4 w-4" />
                             <span>{document.downloadCount}</span>
@@ -519,36 +581,43 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               {userActivity.length === 0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                <div className="py-8 text-center">
+                  <Calendar className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="text-muted-foreground mb-2 text-lg font-medium">
                     Chưa có hoạt động nào
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Hoạt động của bạn sẽ xuất hiện ở đây khi bạn sử dụng nền tảng.
+                  <p className="text-muted-foreground text-sm">
+                    Hoạt động của bạn sẽ xuất hiện ở đây khi bạn sử dụng nền
+                    tảng.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {userActivity.slice(0, 10).map((activity) => {
+                  {userActivity.slice(0, 10).map(activity => {
                     const Icon = getActivityIcon(activity.action);
                     const colorClass = getActivityColor(activity.action);
 
                     return (
-                      <div key={activity.id} className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${colorClass}`}>
+                      <div
+                        key={activity.id}
+                        className="flex items-center space-x-3"
+                      >
+                        <div className={`rounded-full p-2 ${colorClass}`}>
                           <Icon className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm">
-                            {activity.action === 'upload' && 'Đã tải lên tài liệu mới'}
-                            {activity.action === 'download' && 'Đã tải xuống tài liệu'}
+                            {activity.action === 'upload' &&
+                              'Đã tải lên tài liệu mới'}
+                            {activity.action === 'download' &&
+                              'Đã tải xuống tài liệu'}
                             {activity.action === 'view' && 'Đã xem tài liệu'}
                             {activity.action === 'login' && 'Đã đăng nhập'}
-                            {!['upload', 'download', 'view', 'login'].includes(activity.action) &&
-                              `Thực hiện ${activity.action}`}
+                            {!['upload', 'download', 'view', 'login'].includes(
+                              activity.action,
+                            ) && `Thực hiện ${activity.action}`}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground text-xs">
                             {new Date(activity.createdAt).toLocaleString()}
                           </p>
                         </div>

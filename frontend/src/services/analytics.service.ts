@@ -112,10 +112,15 @@ export interface TrendingAnalyticsData {
   documents: TrendingDocument[];
 }
 
-export const getTrendingAnalytics = async (range: string): Promise<TrendingAnalyticsData> => {
-  const response = await apiClient.get<TrendingAnalyticsData>('/analytics/trending', {
-    params: { range },
-  });
+export const getTrendingAnalytics = async (
+  range: string,
+): Promise<TrendingAnalyticsData> => {
+  const response = await apiClient.get<TrendingAnalyticsData>(
+    '/analytics/trending',
+    {
+      params: { range },
+    },
+  );
 
   if (!response.success || !response.data) {
     throw new Error(response.message || 'Không thể tải dữ liệu trending');
@@ -170,11 +175,14 @@ export interface TopRatedAnalyticsData {
 
 export const getTopRatedAnalytics = async (
   range: string,
-  minRatings: number
+  minRatings: number,
 ): Promise<TopRatedAnalyticsData> => {
-  const response = await apiClient.get<TopRatedAnalyticsData>('/analytics/top-rated', {
-    params: { range, minRatings },
-  });
+  const response = await apiClient.get<TopRatedAnalyticsData>(
+    '/analytics/top-rated',
+    {
+      params: { range, minRatings },
+    },
+  );
 
   if (!response.success || !response.data) {
     throw new Error(response.message || 'Không thể tải dữ liệu top rated');

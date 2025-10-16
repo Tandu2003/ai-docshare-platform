@@ -1,8 +1,16 @@
-import { Bookmark, BookmarkMinus, Calendar, Download, Eye, Search, Star } from 'lucide-react';
-import { toast } from 'sonner';
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import {
+  Bookmark,
+  BookmarkMinus,
+  Calendar,
+  Download,
+  Eye,
+  Search,
+  Star,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,16 +28,18 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   BOOKMARKS_UPDATED_EVENT,
-  type BookmarkWithDocument,
   deleteBookmark,
   getUserBookmarks,
+  type BookmarkWithDocument,
 } from '@/services/bookmark.service';
 import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
 export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'title' | 'rating' | 'downloads'>('recent');
+  const [sortBy, setSortBy] = useState<
+    'recent' | 'title' | 'rating' | 'downloads'
+  >('recent');
   const [isLoading, setIsLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<BookmarkWithDocument[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -59,18 +69,21 @@ export default function BookmarksPage() {
     };
 
     window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
-    return () => window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
+    return () =>
+      window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
   }, [loadBookmarks]);
 
   const handleRemove = async (bookmarkId: string) => {
     try {
       setIsRemovingId(bookmarkId);
       await deleteBookmark(bookmarkId);
-      setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== bookmarkId));
+      setBookmarks(prev => prev.filter(bookmark => bookmark.id !== bookmarkId));
       toast.success('Đã xóa bookmark');
     } catch (err) {
       console.error('Failed to delete bookmark', err);
-      toast.error(err instanceof Error ? err.message : 'Không thể xóa bookmark');
+      toast.error(
+        err instanceof Error ? err.message : 'Không thể xóa bookmark',
+      );
     } finally {
       setIsRemovingId(null);
     }
@@ -79,7 +92,7 @@ export default function BookmarksPage() {
   const filteredBookmarks = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return bookmarks.filter((bookmark) => {
+    return bookmarks.filter(bookmark => {
       if (!query) {
         return true;
       }
@@ -89,7 +102,7 @@ export default function BookmarksPage() {
       return (
         document.title.toLowerCase().includes(query) ||
         document.description?.toLowerCase().includes(query) ||
-        document.tags.some((tag) => tag.toLowerCase().includes(query))
+        document.tags.some(tag => tag.toLowerCase().includes(query))
       );
     });
   }, [bookmarks, searchQuery]);
@@ -101,7 +114,9 @@ export default function BookmarksPage() {
 
       switch (sortBy) {
         case 'recent':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case 'title':
           return docA.title.localeCompare(docB.title);
         case 'rating':
@@ -115,15 +130,17 @@ export default function BookmarksPage() {
   }, [filteredBookmarks, sortBy]);
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="container mx-auto space-y-6 px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Bookmark className="h-8 w-8 text-primary" />
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
+            <Bookmark className="text-primary h-8 w-8" />
             Đánh dấu của tôi
           </h1>
-          <p className="text-muted-foreground mt-1">Các tài liệu và tài nguyên đã lưu của bạn</p>
+          <p className="text-muted-foreground mt-1">
+            Các tài liệu và tài nguyên đã lưu của bạn
+          </p>
         </div>
         <Badge variant="secondary" className="text-sm">
           {bookmarks.length} đánh dấu
@@ -144,11 +161,14 @@ export default function BookmarksPage() {
               <Input
                 placeholder="Tìm kiếm theo tiêu đề, mô tả hoặc thẻ..."
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={event => setSearchQuery(event.target.value)}
                 className="w-full"
               />
             </div>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+            <Select
+              value={sortBy}
+              onValueChange={value => setSortBy(value as typeof sortBy)}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Sắp xếp theo" />
               </SelectTrigger>
@@ -193,11 +213,13 @@ export default function BookmarksPage() {
       ) : sortedBookmarks.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Bookmark className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              {searchQuery ? 'Không tìm thấy đánh dấu nào' : 'Chưa có đánh dấu nào'}
+            <Bookmark className="text-muted-foreground mb-4 h-12 w-12" />
+            <h3 className="text-muted-foreground mb-2 text-lg font-medium">
+              {searchQuery
+                ? 'Không tìm thấy đánh dấu nào'
+                : 'Chưa có đánh dấu nào'}
             </h3>
-            <p className="text-sm text-muted-foreground text-center max-w-md">
+            <p className="text-muted-foreground max-w-md text-center text-sm">
               {searchQuery
                 ? 'Hãy thử điều chỉnh từ khóa tìm kiếm hoặc duyệt tài liệu để đánh dấu chúng.'
                 : 'Bắt đầu đánh dấu các tài liệu bạn thấy hữu ích. Nhấp vào biểu tượng đánh dấu trên bất kỳ tài liệu nào để lưu ở đây.'}
@@ -211,7 +233,7 @@ export default function BookmarksPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {sortedBookmarks.map((bookmark) => {
+          {sortedBookmarks.map(bookmark => {
             const document = bookmark.document;
             const ratingValue = Number(document.averageRating ?? 0).toFixed(1);
             const categoryIcon = document.category.icon ?? '📄';
@@ -225,14 +247,17 @@ export default function BookmarksPage() {
               document.uploader.username;
 
             return (
-              <Card key={bookmark.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={bookmark.id}
+                className="transition-shadow hover:shadow-md"
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex items-center gap-2">
                         <Link
                           to={`/documents/${document.id}`}
-                          className="text-lg font-semibold hover:text-primary transition-colors"
+                          className="hover:text-primary text-lg font-semibold transition-colors"
                         >
                           {document.title}
                         </Link>
@@ -249,21 +274,25 @@ export default function BookmarksPage() {
                       </div>
 
                       {document.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">
                           {document.description}
                         </p>
                       )}
 
                       {/* Author and Stats */}
-                      <div className="flex items-center gap-4 mb-3">
+                      <div className="mb-3 flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">{uploaderInitials}</AvatarFallback>
+                            <AvatarFallback className="text-xs">
+                              {uploaderInitials}
+                            </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-muted-foreground">{uploaderName}</span>
+                          <span className="text-muted-foreground text-sm">
+                            {uploaderName}
+                          </span>
                         </div>
                         <Separator orientation="vertical" className="h-4" />
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center gap-4 text-sm">
                           <div className="flex items-center gap-1">
                             <Download className="h-3 w-3" />
                             <span>{document.downloadCount}</span>
@@ -280,7 +309,7 @@ export default function BookmarksPage() {
                       </div>
 
                       {/* Category and Tags */}
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="mb-3 flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">
                           <span className="mr-1">{categoryIcon}</span>
                           {document.category.name}
@@ -288,7 +317,7 @@ export default function BookmarksPage() {
                         <Badge variant="outline" className="text-xs">
                           {getLanguageName(document.language)}
                         </Badge>
-                        {tags.slice(0, 3).map((tag) => (
+                        {tags.slice(0, 3).map(tag => (
                           <Badge
                             key={`${bookmark.id}-${tag}`}
                             variant="outline"
@@ -305,15 +334,19 @@ export default function BookmarksPage() {
                       </div>
 
                       {/* Bookmarked Date */}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <div className="text-muted-foreground flex items-center gap-1 text-xs">
                         <Calendar className="h-3 w-3" />
-                        <span>Đã đánh dấu vào {formatDate(bookmark.createdAt)}</span>
+                        <span>
+                          Đã đánh dấu vào {formatDate(bookmark.createdAt)}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="ml-4 flex items-center gap-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/documents/${document.id}`}>Xem tài liệu</Link>
+                        <Link to={`/documents/${document.id}`}>
+                          Xem tài liệu
+                        </Link>
                       </Button>
                       <Button
                         variant="ghost"

@@ -1,22 +1,31 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-
 import React, { useState } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
 import { FormFieldPassword } from '@/components/ui/form-field-password';
 import { useAuth } from '@/hooks';
-import { type LoginFormData, loginSchema } from '@/schemas';
+import { loginSchema, type LoginFormData } from '@/schemas';
 
 interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({
+  onSuccess,
+  onSwitchToRegister,
+}) => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,10 +62,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <CardTitle>Chào mừng quay trở lại</CardTitle>
-        <CardDescription>Đăng nhập vào tài khoản của bạn để tiếp tục</CardDescription>
+        <CardDescription>
+          Đăng nhập vào tài khoản của bạn để tiếp tục
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -80,7 +91,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
           <div className="flex justify-end">
             <Link
               to="/auth/forgot-password"
-              className="text-sm text-primary hover:text-primary/80 underline underline-offset-4"
+              className="text-primary hover:text-primary/80 text-sm underline underline-offset-4"
             >
               Quên mật khẩu?
             </Link>
@@ -96,7 +107,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
               <Button
                 type="button"
                 variant="link"
-                className="p-0 h-auto"
+                className="h-auto p-0"
                 onClick={onSwitchToRegister}
                 disabled={isSubmitting}
               >

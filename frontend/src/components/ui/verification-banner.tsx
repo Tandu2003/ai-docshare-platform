@@ -1,6 +1,6 @@
-import { CheckCircle, Mail, X } from 'lucide-react';
-
 import { useState } from 'react';
+
+import { CheckCircle, Mail, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,8 +42,8 @@ export function VerificationBanner({
           </p>
           <p className="text-xs text-amber-700 dark:text-amber-300">
             We sent a verification email to{' '}
-            <span className="font-medium">{email || 'your email address'}</span>. Please check your
-            inbox and follow the instructions.
+            <span className="font-medium">{email || 'your email address'}</span>
+            . Please check your inbox and follow the instructions.
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export function VerificationBanner({
               variant="outline"
               size="sm"
               onClick={onResend}
-              className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900"
+              className="h-8 border-amber-200 text-xs text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900"
             >
               Resend
             </Button>
@@ -78,7 +78,10 @@ interface EmailVerifiedBannerProps {
   isVisible?: boolean;
 }
 
-export function EmailVerifiedBanner({ onDismiss, isVisible = true }: EmailVerifiedBannerProps) {
+export function EmailVerifiedBanner({
+  onDismiss,
+  isVisible = true,
+}: EmailVerifiedBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
   if (!isVisible || dismissed) {

@@ -1,6 +1,12 @@
-import { Heart, MessageSquare, MoreHorizontal, Reply, Send } from 'lucide-react';
-
 import { useState } from 'react';
+
+import {
+  Heart,
+  MessageSquare,
+  MoreHorizontal,
+  Reply,
+  Send,
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -98,7 +104,7 @@ export function DocumentComments({
                 )}
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {new Date(comment.createdAt).toLocaleString()}
                 </span>
                 {isOwner && (
@@ -109,7 +115,9 @@ export function DocumentComments({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleEditComment(comment)}>
+                      <DropdownMenuItem
+                        onClick={() => handleEditComment(comment)}
+                      >
                         Chỉnh sửa
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -128,7 +136,7 @@ export function DocumentComments({
               <div className="space-y-2">
                 <Textarea
                   value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
+                  onChange={e => setEditContent(e.target.value)}
                   placeholder="Chỉnh sửa bình luận của bạn..."
                   rows={3}
                 />
@@ -136,7 +144,11 @@ export function DocumentComments({
                   <Button size="sm" onClick={handleSaveEdit}>
                     Lưu
                   </Button>
-                  <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                  >
                     Hủy
                   </Button>
                 </div>
@@ -173,13 +185,16 @@ export function DocumentComments({
               <div className="space-y-2">
                 <Textarea
                   value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
+                  onChange={e => setReplyContent(e.target.value)}
                   placeholder="Viết trả lời..."
                   rows={2}
                 />
                 <div className="flex items-center space-x-2">
-                  <Button size="sm" onClick={() => handleSubmitReply(comment.id)}>
-                    <Send className="h-3 w-3 mr-1" />
+                  <Button
+                    size="sm"
+                    onClick={() => handleSubmitReply(comment.id)}
+                  >
+                    <Send className="mr-1 h-3 w-3" />
                     Trả lời
                   </Button>
                   <Button
@@ -201,7 +216,7 @@ export function DocumentComments({
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && (
           <div className="space-y-3">
-            {comment.replies.map((reply) => renderComment(reply, true))}
+            {comment.replies.map(reply => renderComment(reply, true))}
           </div>
         )}
 
@@ -210,7 +225,7 @@ export function DocumentComments({
     );
   };
 
-  const topLevelComments = comments.filter((comment) => !comment.parentId);
+  const topLevelComments = comments.filter(comment => !comment.parentId);
 
   return (
     <Card>
@@ -225,13 +240,13 @@ export function DocumentComments({
         <div className="space-y-3">
           <Textarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={e => setNewComment(e.target.value)}
             placeholder="Chia sẻ suy nghĩ của bạn về tài liệu này..."
             rows={3}
           />
           <div className="flex justify-end">
             <Button onClick={handleSubmitComment} disabled={!newComment.trim()}>
-              <Send className="h-4 w-4 mr-2" />
+              <Send className="mr-2 h-4 w-4" />
               Đăng bình luận
             </Button>
           </div>
@@ -242,12 +257,15 @@ export function DocumentComments({
         {/* Comments List */}
         <div className="space-y-4">
           {topLevelComments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!</p>
+            <div className="text-muted-foreground py-8 text-center">
+              <MessageSquare className="mx-auto mb-4 h-12 w-12 opacity-50" />
+              <p>
+                Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ
+                của bạn!
+              </p>
             </div>
           ) : (
-            topLevelComments.map((comment) => renderComment(comment))
+            topLevelComments.map(comment => renderComment(comment))
           )}
         </div>
       </CardContent>

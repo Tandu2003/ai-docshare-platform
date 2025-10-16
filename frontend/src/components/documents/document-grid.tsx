@@ -1,5 +1,12 @@
-import { Calendar, Crown, Download, Eye, FileText, Lock, Star } from 'lucide-react';
-
+import {
+  Calendar,
+  Crown,
+  Download,
+  Eye,
+  FileText,
+  Lock,
+  Star,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -18,7 +25,12 @@ interface DocumentGridProps {
   hasMore?: boolean;
 }
 
-export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: DocumentGridProps) {
+export function DocumentGrid({
+  documents,
+  isLoading,
+  onLoadMore,
+  hasMore,
+}: DocumentGridProps) {
   if (isLoading && documents.length === 0) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -47,10 +59,12 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
 
   if (documents.length === 0) {
     return (
-      <div className="text-center py-12">
-        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-muted-foreground mb-2">Không tìm thấy tài liệu nào</h3>
-        <p className="text-sm text-muted-foreground">
+      <div className="py-12 text-center">
+        <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+        <h3 className="text-muted-foreground mb-2 text-lg font-medium">
+          Không tìm thấy tài liệu nào
+        </h3>
+        <p className="text-muted-foreground text-sm">
           Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc để tìm thêm tài liệu.
         </p>
       </div>
@@ -60,26 +74,30 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {documents.map((document) => (
-          <Card key={document.id} className="hover:shadow-md transition-shadow">
+        {documents.map(document => (
+          <Card key={document.id} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <Link
                     to={`/documents/${document.id}`}
-                    className="text-lg font-semibold hover:text-primary transition-colors line-clamp-2"
+                    className="hover:text-primary line-clamp-2 text-lg font-semibold transition-colors"
                   >
                     {document.title}
                   </Link>
                   {document.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
                       {document.description}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center space-x-1 ml-2">
-                  {document.isPremium && <Crown className="h-4 w-4 text-yellow-500" />}
-                  {!document.isPublic && <Lock className="h-4 w-4 text-muted-foreground" />}
+                <div className="ml-2 flex items-center space-x-1">
+                  {document.isPremium && (
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                  )}
+                  {!document.isPublic && (
+                    <Lock className="text-muted-foreground h-4 w-4" />
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -93,14 +111,14 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                     {document.uploader?.lastName?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {document.uploader?.firstName || 'Unknown'}{' '}
                   {document.uploader?.lastName || 'User'}
                 </span>
               </div>
 
               {/* Stats */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center justify-between text-sm">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-1">
                     <Download className="h-3 w-3" />
@@ -124,12 +142,14 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
               {/* Category and Tags */}
               <div className="space-y-2">
                 <Badge variant="secondary" className="text-xs">
-                  <span className="mr-1">{document.category?.icon || '📄'}</span>
+                  <span className="mr-1">
+                    {document.category?.icon || '📄'}
+                  </span>
                   {document.category?.name || 'Chưa phân loại'}
                 </Badge>
                 {document.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {document.tags.slice(0, 3).map((tag) => (
+                    {document.tags.slice(0, 3).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -148,7 +168,7 @@ export function DocumentGrid({ documents, isLoading, onLoadMore, hasMore }: Docu
                 <Button variant="outline" size="sm" asChild>
                   <Link to={`/documents/${document.id}`}>Xem chi tiết</Link>
                 </Button>
-                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                <div className="text-muted-foreground flex items-center space-x-2 text-xs">
                   <span>{getLanguageName(document.language)}</span>
                   {document.isApproved ? (
                     <Badge variant="default" className="text-xs">

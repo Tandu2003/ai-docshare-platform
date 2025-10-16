@@ -1,6 +1,12 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator'
-
-import { ApiPropertyOptional } from '@nestjs/swagger'
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({
@@ -29,7 +35,7 @@ export class UpdateUserDto {
     minLength: 6,
   })
   @IsOptional()
-  @ValidateIf((o) => o.password && o.password.trim().length > 0)
+  @ValidateIf(o => o.password && o.password.trim().length > 0)
   @IsString({ message: 'Mật khẩu phải là chuỗi' })
   @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
   password?: string;

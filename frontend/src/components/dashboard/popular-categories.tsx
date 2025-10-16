@@ -16,13 +16,15 @@ export function PopularCategories({ categories }: PopularCategoriesProps) {
           <CardTitle>Danh mục phổ biến</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Không có dữ liệu danh mục.</p>
+          <p className="text-muted-foreground text-sm">
+            Không có dữ liệu danh mục.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const maxDocuments = Math.max(...categories.map((cat) => cat.documentCount));
+  const maxDocuments = Math.max(...categories.map(cat => cat.documentCount));
   const denominator = maxDocuments > 0 ? maxDocuments : 1;
 
   return (
@@ -32,20 +34,23 @@ export function PopularCategories({ categories }: PopularCategoriesProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {categories.map((category) => (
+          {categories.map(category => (
             <div key={category.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">{category.icon ?? '📄'}</span>
                   <span className="text-sm font-medium">{category.name}</span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center space-x-2 text-sm">
                   <TrendingUp className="h-3 w-3" />
                   <span>{category.documentCount} tài liệu</span>
                 </div>
               </div>
-              <Progress value={(category.documentCount / denominator) * 100} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <Progress
+                value={(category.documentCount / denominator) * 100}
+                className="h-2"
+              />
+              <div className="text-muted-foreground flex justify-between text-xs">
                 <span>{category.totalDownloads} lượt tải</span>
                 <span>{category.totalViews} lượt xem</span>
               </div>

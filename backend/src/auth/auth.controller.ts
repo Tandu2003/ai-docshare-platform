@@ -1,3 +1,14 @@
+import { AuthService } from './auth.service';
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+} from './dto';
+import { JwtAuthGuard } from './guards';
+import { AuthUser } from './interfaces';
 import { Public } from '@/auth/decorators/public.decorator';
 import { ResponseHelper } from '@/common';
 import {
@@ -13,17 +24,6 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import {
-  ForgotPasswordDto,
-  LoginDto,
-  RegisterDto,
-  ResendVerificationDto,
-  ResetPasswordDto,
-  VerifyEmailDto,
-} from './dto';
-import { JwtAuthGuard } from './guards';
-import { AuthUser } from './interfaces';
 
 @Controller('auth')
 export class AuthController {
@@ -33,14 +33,17 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
-  async register(@Body() registerDto: RegisterDto, @Res() response: Response): Promise<void> {
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Res() response: Response,
+  ): Promise<void> {
     const result = await this.authService.register(registerDto);
 
     // Return success message
     ResponseHelper.created(
       response,
       result,
-      'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.'
+      'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
     );
   }
 
@@ -48,7 +51,10 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
-  async login(@Body() loginDto: LoginDto, @Res() response: Response): Promise<void> {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res() response: Response,
+  ): Promise<void> {
     const result = await this.authService.login(loginDto);
 
     // Set refresh token as httpOnly cookie
@@ -61,7 +67,7 @@ export class AuthController {
         user: result.user,
         accessToken: result.tokens.accessToken,
       },
-      'Đăng nhập thành công'
+      'Đăng nhập thành công',
     );
   }
 
@@ -69,11 +75,18 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 requests per minute
-  async refreshToken(@Req() request: Request, @Res() response: Response): Promise<void> {
+  async refreshToken(
+    @Req() request: Request,
+    @Res() response: Response,
+  ): Promise<void> {
     const refreshToken = request.cookies?.refreshToken;
 
     if (!refreshToken) {
-      ResponseHelper.error(response, 'Không tìm thấy mã làm mới', HttpStatus.UNAUTHORIZED);
+      ResponseHelper.error(
+        response,
+        'Không tìm thấy mã làm mới',
+        HttpStatus.UNAUTHORIZED,
+      );
       return;
     }
 
@@ -85,7 +98,7 @@ export class AuthController {
     ResponseHelper.success(
       response,
       { accessToken: tokens.accessToken },
-      'Mã truy cập đã được làm mới thành công'
+      'Mã truy cập đã được làm mới thành công',
     );
   }
 
@@ -106,11 +119,18 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getProfile(@Req() request: Request & { user: AuthUser }, @Res() response: Response): void {
+  getProfile(
+    @Req() request: Request & { user: AuthUser },
+    @Res() response: Response,
+  ): void {
     const { password, ...userWithoutPassword } = request.user as any;
     void password;
 
-    ResponseHelper.success(response, userWithoutPassword, 'Lấy thông tin hồ sơ thành công');
+    ResponseHelper.success(
+      response,
+      userWithoutPassword,
+      'Lấy thông tin hồ sơ thành công',
+    );
   }
 
   @Post('verify-email')
@@ -119,11 +139,15 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async verifyEmail(
     @Body() verifyEmailDto: VerifyEmailDto,
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.authService.verifyEmail(verifyEmailDto);
 
-    ResponseHelper.success(response, result, 'Email đã được xác thực thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Email đã được xác thực thành công',
+    );
   }
 
   @Post('resend-verification')
@@ -132,7 +156,7 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
   async resendVerification(
     @Body() resendDto: ResendVerificationDto,
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.authService.resendVerification(resendDto);
 
@@ -145,11 +169,15 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.authService.forgotPassword(forgotPasswordDto);
 
-    ResponseHelper.success(response, result, 'Hướng dẫn đặt lại mật khẩu đã được gửi');
+    ResponseHelper.success(
+      response,
+      result,
+      'Hướng dẫn đặt lại mật khẩu đã được gửi',
+    );
   }
 
   @Post('reset-password')
@@ -157,7 +185,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.authService.resetPassword(resetPasswordDto);
 
@@ -166,7 +194,10 @@ export class AuthController {
 
   // Private helper methods
 
-  private setRefreshTokenCookie(response: Response, refreshToken: string): void {
+  private setRefreshTokenCookie(
+    response: Response,
+    refreshToken: string,
+  ): void {
     const isProduction = process.env.NODE_ENV === 'production';
 
     response.cookie('refreshToken', refreshToken, {

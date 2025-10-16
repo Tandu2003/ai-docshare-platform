@@ -1,6 +1,6 @@
-import { Filter, X } from 'lucide-react';
-
 import { useState } from 'react';
+
+import { Filter, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export function DocumentFilters({
     const currentCategories = filters.categoryId ? [filters.categoryId] : [];
     const newCategories = checked
       ? [...currentCategories, categoryId]
-      : currentCategories.filter((id) => id !== categoryId);
+      : currentCategories.filter(id => id !== categoryId);
 
     onFiltersChange({
       ...filters,
@@ -48,7 +48,7 @@ export function DocumentFilters({
   const handleTagToggle = (tag: string) => {
     const currentTags = filters.tags || [];
     const newTags = currentTags.includes(tag)
-      ? currentTags.filter((t) => t !== tag)
+      ? currentTags.filter(t => t !== tag)
       : [...currentTags, tag];
 
     onFiltersChange({
@@ -64,7 +64,10 @@ export function DocumentFilters({
     });
   };
 
-  const handleVisibilityChange = (type: 'public' | 'premium' | 'private', checked: boolean) => {
+  const handleVisibilityChange = (
+    type: 'public' | 'premium' | 'private',
+    checked: boolean,
+  ) => {
     const newFilters = { ...filters };
 
     if (type === 'public') {
@@ -113,8 +116,10 @@ export function DocumentFilters({
   const difficulties = ['beginner', 'intermediate', 'advanced'];
 
   const activeFiltersCount = Object.values(filters).filter(
-    (value) =>
-      value !== undefined && value !== null && (Array.isArray(value) ? value.length > 0 : true)
+    value =>
+      value !== undefined &&
+      value !== null &&
+      (Array.isArray(value) ? value.length > 0 : true),
   ).length;
 
   return (
@@ -133,11 +138,15 @@ export function DocumentFilters({
           <div className="flex items-center gap-2">
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={onClearFilters}>
-                <X className="h-4 w-4 mr-1" />
+                <X className="mr-1 h-4 w-4" />
                 Xóa
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
               {isExpanded ? 'Thu gọn' : 'Mở rộng'}
             </Button>
           </div>
@@ -147,19 +156,19 @@ export function DocumentFilters({
         {/* Categories */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Danh mục</Label>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {categories.map((category) => (
+          <div className="max-h-32 space-y-2 overflow-y-auto">
+            {categories.map(category => (
               <div key={category.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`category-${category.id}`}
                   checked={filters.categoryId === category.id}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={checked =>
                     handleCategoryChange(category.id, checked as boolean)
                   }
                 />
                 <Label
                   htmlFor={`category-${category.id}`}
-                  className="text-sm flex items-center gap-2"
+                  className="flex items-center gap-2 text-sm"
                 >
                   <span>{category.icon}</span>
                   {category.name}
@@ -173,11 +182,11 @@ export function DocumentFilters({
         <div className="space-y-3">
           <Label className="text-sm font-medium">Thẻ</Label>
           <div className="flex flex-wrap gap-2">
-            {popularTags.map((tag) => (
+            {popularTags.map(tag => (
               <Badge
                 key={tag}
                 variant={filters.tags?.includes(tag) ? 'default' : 'outline'}
-                className="cursor-pointer hover:bg-primary/10"
+                className="hover:bg-primary/10 cursor-pointer"
                 onClick={() => handleTagToggle(tag)}
               >
                 {tag}
@@ -189,13 +198,16 @@ export function DocumentFilters({
         {/* Language */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Ngôn ngữ</Label>
-          <Select value={filters.language || 'all'} onValueChange={handleLanguageChange}>
+          <Select
+            value={filters.language || 'all'}
+            onValueChange={handleLanguageChange}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Chọn ngôn ngữ" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả ngôn ngữ</SelectItem>
-              {languageOptions.map((lang) => (
+              {languageOptions.map(lang => (
                 <SelectItem key={lang.code} value={lang.code}>
                   {lang.name}
                 </SelectItem>
@@ -212,7 +224,9 @@ export function DocumentFilters({
               <Checkbox
                 id="public"
                 checked={filters.isPublic === true}
-                onCheckedChange={(checked) => handleVisibilityChange('public', checked as boolean)}
+                onCheckedChange={checked =>
+                  handleVisibilityChange('public', checked as boolean)
+                }
               />
               <Label htmlFor="public" className="text-sm">
                 Công khai
@@ -222,7 +236,9 @@ export function DocumentFilters({
               <Checkbox
                 id="premium"
                 checked={filters.isPremium === true}
-                onCheckedChange={(checked) => handleVisibilityChange('premium', checked as boolean)}
+                onCheckedChange={checked =>
+                  handleVisibilityChange('premium', checked as boolean)
+                }
               />
               <Label htmlFor="premium" className="text-sm">
                 Premium
@@ -232,7 +248,9 @@ export function DocumentFilters({
               <Checkbox
                 id="private"
                 checked={filters.isPublic === false}
-                onCheckedChange={(checked) => handleVisibilityChange('private', checked as boolean)}
+                onCheckedChange={checked =>
+                  handleVisibilityChange('private', checked as boolean)
+                }
               />
               <Label htmlFor="private" className="text-sm">
                 Riêng tư
@@ -251,7 +269,9 @@ export function DocumentFilters({
                   <Checkbox
                     id="approved"
                     checked={filters.isApproved === true}
-                    onCheckedChange={(checked) => handleApprovalChange(true, checked as boolean)}
+                    onCheckedChange={checked =>
+                      handleApprovalChange(true, checked as boolean)
+                    }
                   />
                   <Label htmlFor="approved" className="text-sm">
                     Đã duyệt
@@ -261,7 +281,9 @@ export function DocumentFilters({
                   <Checkbox
                     id="pending"
                     checked={filters.isApproved === false}
-                    onCheckedChange={(checked) => handleApprovalChange(false, checked as boolean)}
+                    onCheckedChange={checked =>
+                      handleApprovalChange(false, checked as boolean)
+                    }
                   />
                   <Label htmlFor="pending" className="text-sm">
                     Đang chờ
@@ -273,13 +295,16 @@ export function DocumentFilters({
             {/* Difficulty */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Độ khó</Label>
-              <Select value={filters.difficulty || 'all'} onValueChange={handleDifficultyChange}>
+              <Select
+                value={filters.difficulty || 'all'}
+                onValueChange={handleDifficultyChange}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn độ khó" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả cấp độ</SelectItem>
-                  {difficulties.map((difficulty) => (
+                  {difficulties.map(difficulty => (
                     <SelectItem key={difficulty} value={difficulty}>
                       {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                     </SelectItem>

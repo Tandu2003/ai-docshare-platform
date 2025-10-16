@@ -1,18 +1,22 @@
-import { Filter, Search, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Filter, Search, X } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-
+} from '@/components/ui/select';
 import type { GetUsersQuery } from '@/services/user.service';
 
 interface UserFiltersProps {
@@ -21,7 +25,11 @@ interface UserFiltersProps {
   onReset: () => void;
 }
 
-export function UserFilters({ filters, onFiltersChange, onReset }: UserFiltersProps) {
+export function UserFilters({
+  filters,
+  onFiltersChange,
+  onReset,
+}: UserFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSearchChange = (value: string) => {
@@ -29,7 +37,11 @@ export function UserFilters({ filters, onFiltersChange, onReset }: UserFiltersPr
   };
 
   const handleRoleChange = (value: string) => {
-    onFiltersChange({ ...filters, role: value === 'all' ? undefined : value, page: 1 });
+    onFiltersChange({
+      ...filters,
+      role: value === 'all' ? undefined : value,
+      page: 1,
+    });
   };
 
   const handleStatusChange = (value: string) => {
@@ -82,12 +94,12 @@ export function UserFilters({ filters, onFiltersChange, onReset }: UserFiltersPr
   return (
     <div className="flex items-center gap-2">
       {/* Search Input */}
-      <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative max-w-sm flex-1">
+        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
           placeholder="Tìm kiếm người dùng..."
           value={filters.search || ''}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={e => handleSearchChange(e.target.value)}
           className="pl-9"
         />
       </div>
@@ -121,7 +133,10 @@ export function UserFilters({ filters, onFiltersChange, onReset }: UserFiltersPr
               {/* Role Filter */}
               <div>
                 <label className="text-sm font-medium">Vai trò</label>
-                <Select value={filters.role || 'all'} onValueChange={handleRoleChange}>
+                <Select
+                  value={filters.role || 'all'}
+                  onValueChange={handleRoleChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn vai trò" />
                   </SelectTrigger>
@@ -177,10 +192,18 @@ export function UserFilters({ filters, onFiltersChange, onReset }: UserFiltersPr
                   <SelectContent>
                     <SelectItem value="createdAt-desc">Mới nhất</SelectItem>
                     <SelectItem value="createdAt-asc">Cũ nhất</SelectItem>
-                    <SelectItem value="updatedAt-desc">Cập nhật gần nhất</SelectItem>
-                    <SelectItem value="updatedAt-asc">Cập nhật xa nhất</SelectItem>
-                    <SelectItem value="lastLoginAt-desc">Đăng nhập gần nhất</SelectItem>
-                    <SelectItem value="lastLoginAt-asc">Đăng nhập xa nhất</SelectItem>
+                    <SelectItem value="updatedAt-desc">
+                      Cập nhật gần nhất
+                    </SelectItem>
+                    <SelectItem value="updatedAt-asc">
+                      Cập nhật xa nhất
+                    </SelectItem>
+                    <SelectItem value="lastLoginAt-desc">
+                      Đăng nhập gần nhất
+                    </SelectItem>
+                    <SelectItem value="lastLoginAt-asc">
+                      Đăng nhập xa nhất
+                    </SelectItem>
                     <SelectItem value="firstName-asc">Tên A-Z</SelectItem>
                     <SelectItem value="firstName-desc">Tên Z-A</SelectItem>
                     <SelectItem value="email-asc">Email A-Z</SelectItem>

@@ -1,8 +1,8 @@
 import { faker } from '@faker-js/faker';
 
 import type {
-  AIAnalysis,
   ActivityLog,
+  AIAnalysis,
   Bookmark,
   BookmarkFolder,
   Category,
@@ -61,7 +61,10 @@ export const generateMockCategory = (): Category => ({
   updatedAt: faker.date.recent(),
 });
 
-export const generateMockDocument = (uploader?: User, category?: Category): Document => ({
+export const generateMockDocument = (
+  uploader?: User,
+  category?: Category,
+): Document => ({
   id: faker.string.uuid(),
   title: faker.lorem.sentence(),
   description: faker.lorem.paragraph(),
@@ -86,7 +89,7 @@ export const generateMockDocument = (uploader?: User, category?: Category): Docu
       'machine-learning',
       'data-science',
     ],
-    { min: 1, max: 5 }
+    { min: 1, max: 5 },
   ),
   language: faker.helpers.arrayElement(['en', 'vi', 'fr', 'de', 'es']),
   zipFileUrl: faker.datatype.boolean() ? faker.internet.url() : undefined,
@@ -97,7 +100,10 @@ export const generateMockDocument = (uploader?: User, category?: Category): Docu
   category: category || generateMockCategory(),
 });
 
-export const generateMockComment = (userId?: string, documentId?: string): Comment => ({
+export const generateMockComment = (
+  userId?: string,
+  documentId?: string,
+): Comment => ({
   id: faker.string.uuid(),
   userId: userId || faker.string.uuid(),
   documentId: documentId || faker.string.uuid(),
@@ -113,7 +119,10 @@ export const generateMockComment = (userId?: string, documentId?: string): Comme
   document: generateMockDocument(),
 });
 
-export const generateMockRating = (userId?: string, documentId?: string): Rating => ({
+export const generateMockRating = (
+  userId?: string,
+  documentId?: string,
+): Rating => ({
   id: faker.string.uuid(),
   userId: userId || faker.string.uuid(),
   documentId: documentId || faker.string.uuid(),
@@ -143,7 +152,10 @@ export const generateMockNotification = (userId?: string): Notification => ({
   user: generateMockUser(),
 });
 
-export const generateMockBookmark = (userId?: string, documentId?: string): Bookmark => ({
+export const generateMockBookmark = (
+  userId?: string,
+  documentId?: string,
+): Bookmark => ({
   id: faker.string.uuid(),
   userId: userId || faker.string.uuid(),
   documentId: documentId || faker.string.uuid(),
@@ -154,7 +166,9 @@ export const generateMockBookmark = (userId?: string, documentId?: string): Book
   document: generateMockDocument(),
 });
 
-export const generateMockBookmarkFolder = (userId?: string): BookmarkFolder => ({
+export const generateMockBookmarkFolder = (
+  userId?: string,
+): BookmarkFolder => ({
   id: faker.string.uuid(),
   userId: userId || faker.string.uuid(),
   name: faker.word.noun(),
@@ -199,19 +213,29 @@ export const generateMockSearchHistory = (userId?: string): SearchHistory => ({
   userAgent: faker.internet.userAgent(),
   searchedAt: faker.date.past(),
   user: generateMockUser(),
-  clickedDocument: faker.datatype.boolean() ? generateMockDocument() : undefined,
+  clickedDocument: faker.datatype.boolean()
+    ? generateMockDocument()
+    : undefined,
 });
 
 export const generateMockRecommendation = (
   userId?: string,
-  documentId?: string
+  documentId?: string,
 ): RecommendationEngine => ({
   id: faker.string.uuid(),
   userId: userId || faker.string.uuid(),
   documentId: documentId || faker.string.uuid(),
   score: faker.number.float({ min: 0, max: 1, fractionDigits: 3 }),
-  reason: faker.helpers.arrayElement(['similar_content', 'popular_in_category', 'user_behavior']),
-  algorithm: faker.helpers.arrayElement(['collaborative_filtering', 'content_based', 'hybrid']),
+  reason: faker.helpers.arrayElement([
+    'similar_content',
+    'popular_in_category',
+    'user_behavior',
+  ]),
+  algorithm: faker.helpers.arrayElement([
+    'collaborative_filtering',
+    'content_based',
+    'hybrid',
+  ]),
   metadata: {},
   createdAt: faker.date.past(),
   updatedAt: faker.date.recent(),
@@ -243,7 +267,7 @@ export const generateMockAIAnalysis = (documentId: string): AIAnalysis => ({
       'Best practices and recommendations',
       'Future trends and developments',
     ],
-    { min: 3, max: 6 }
+    { min: 3, max: 6 },
   ),
   suggestedTags: faker.helpers.arrayElements(
     [
@@ -263,9 +287,13 @@ export const generateMockAIAnalysis = (documentId: string): AIAnalysis => ({
       'testing',
       'deployment',
     ],
-    { min: 2, max: 5 }
+    { min: 2, max: 5 },
   ),
-  difficulty: faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced']),
+  difficulty: faker.helpers.arrayElement([
+    'beginner',
+    'intermediate',
+    'advanced',
+  ]),
   readingTime: faker.number.int({ min: 5, max: 60 }),
   language: faker.helpers.arrayElement(['en', 'vi', 'fr', 'de', 'es']),
   confidence: faker.number.float({ min: 0.7, max: 1, fractionDigits: 2 }),
@@ -282,23 +310,35 @@ export const generateMockAIAnalysis = (documentId: string): AIAnalysis => ({
         'Testing Strategies',
         'DevOps Practices',
       ],
-      { min: 2, max: 4 }
+      { min: 2, max: 4 },
     ),
-    weights: faker.helpers.arrayElements([0.3, 0.4, 0.2, 0.1], { min: 2, max: 4 }),
+    weights: faker.helpers.arrayElements([0.3, 0.4, 0.2, 0.1], {
+      min: 2,
+      max: 4,
+    }),
   },
   namedEntities: {
-    persons: faker.helpers.arrayElements(['John Doe', 'Jane Smith', 'Mike Johnson'], {
-      min: 1,
-      max: 3,
-    }),
-    organizations: faker.helpers.arrayElements(['Google', 'Microsoft', 'Amazon', 'Facebook'], {
-      min: 1,
-      max: 3,
-    }),
-    locations: faker.helpers.arrayElements(['San Francisco', 'New York', 'London', 'Tokyo'], {
-      min: 1,
-      max: 2,
-    }),
+    persons: faker.helpers.arrayElements(
+      ['John Doe', 'Jane Smith', 'Mike Johnson'],
+      {
+        min: 1,
+        max: 3,
+      },
+    ),
+    organizations: faker.helpers.arrayElements(
+      ['Google', 'Microsoft', 'Amazon', 'Facebook'],
+      {
+        min: 1,
+        max: 3,
+      },
+    ),
+    locations: faker.helpers.arrayElements(
+      ['San Francisco', 'New York', 'London', 'Tokyo'],
+      {
+        min: 1,
+        max: 2,
+      },
+    ),
   },
   processedAt: faker.date.recent(),
   createdAt: faker.date.past(),
@@ -308,7 +348,10 @@ export const generateMockAIAnalysis = (documentId: string): AIAnalysis => ({
 
 // Mock data collections
 export const mockUsers: User[] = Array.from({ length: 50 }, generateMockUser);
-export const mockCategories: Category[] = Array.from({ length: 20 }, generateMockCategory);
+export const mockCategories: Category[] = Array.from(
+  { length: 20 },
+  generateMockCategory,
+);
 export const mockDocuments: Document[] = Array.from({ length: 100 }, () => {
   const uploader = faker.helpers.arrayElement(mockUsers);
   const category = faker.helpers.arrayElement(mockCategories);
@@ -324,66 +367,95 @@ export const mockRatings: Rating[] = Array.from({ length: 150 }, () => {
   const user = faker.helpers.arrayElement(mockUsers);
   return generateMockRating(user.id, document.id);
 });
-export const mockNotifications: Notification[] = Array.from({ length: 50 }, () => {
-  const user = faker.helpers.arrayElement(mockUsers);
-  return generateMockNotification(user.id);
-});
+export const mockNotifications: Notification[] = Array.from(
+  { length: 50 },
+  () => {
+    const user = faker.helpers.arrayElement(mockUsers);
+    return generateMockNotification(user.id);
+  },
+);
 export const mockBookmarks: Bookmark[] = Array.from({ length: 100 }, () => {
   const user = faker.helpers.arrayElement(mockUsers);
   const document = faker.helpers.arrayElement(mockDocuments);
   return generateMockBookmark(user.id, document.id);
 });
-export const mockBookmarkFolders: BookmarkFolder[] = Array.from({ length: 30 }, () => {
-  const user = faker.helpers.arrayElement(mockUsers);
-  return generateMockBookmarkFolder(user.id);
-});
-export const mockActivityLogs: ActivityLog[] = Array.from({ length: 200 }, () => {
-  const user = faker.helpers.arrayElement(mockUsers);
-  return generateMockActivityLog(user.id);
-});
-export const mockSearchHistory: SearchHistory[] = Array.from({ length: 100 }, () => {
-  const user = faker.helpers.arrayElement(mockUsers);
-  return generateMockSearchHistory(user.id);
-});
-export const mockRecommendations: RecommendationEngine[] = Array.from({ length: 50 }, () => {
-  const user = faker.helpers.arrayElement(mockUsers);
-  const document = faker.helpers.arrayElement(mockDocuments);
-  return generateMockRecommendation(user.id, document.id);
-});
+export const mockBookmarkFolders: BookmarkFolder[] = Array.from(
+  { length: 30 },
+  () => {
+    const user = faker.helpers.arrayElement(mockUsers);
+    return generateMockBookmarkFolder(user.id);
+  },
+);
+export const mockActivityLogs: ActivityLog[] = Array.from(
+  { length: 200 },
+  () => {
+    const user = faker.helpers.arrayElement(mockUsers);
+    return generateMockActivityLog(user.id);
+  },
+);
+export const mockSearchHistory: SearchHistory[] = Array.from(
+  { length: 100 },
+  () => {
+    const user = faker.helpers.arrayElement(mockUsers);
+    return generateMockSearchHistory(user.id);
+  },
+);
+export const mockRecommendations: RecommendationEngine[] = Array.from(
+  { length: 50 },
+  () => {
+    const user = faker.helpers.arrayElement(mockUsers);
+    const document = faker.helpers.arrayElement(mockDocuments);
+    return generateMockRecommendation(user.id, document.id);
+  },
+);
 export const mockSystemSettings: SystemSetting[] = Array.from(
   { length: 20 },
-  generateMockSystemSetting
+  generateMockSystemSetting,
 );
 
 // Dashboard stats generator
 export const generateDashboardStats = (userId?: string): DashboardStats => {
-  const userNotifications = mockNotifications.filter((notif) => notif.userId === userId);
-  const userActivity = mockActivityLogs.filter((activity) => activity.userId === userId);
+  const userNotifications = mockNotifications.filter(
+    notif => notif.userId === userId,
+  );
+  const userActivity = mockActivityLogs.filter(
+    activity => activity.userId === userId,
+  );
 
   return {
     totalDocuments: mockDocuments.length,
     totalUsers: mockUsers.length,
-    totalDownloads: mockDocuments.reduce((sum, doc) => sum + doc.downloadCount, 0),
+    totalDownloads: mockDocuments.reduce(
+      (sum, doc) => sum + doc.downloadCount,
+      0,
+    ),
     totalViews: mockDocuments.reduce((sum, doc) => sum + doc.viewCount, 0),
     recentDocuments: mockDocuments
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
       .slice(0, 10),
     popularCategories: mockCategories
-      .map((cat) => ({
+      .map(cat => ({
         ...cat,
-        documentCount: mockDocuments.filter((doc) => doc.categoryId === cat.id).length,
+        documentCount: mockDocuments.filter(doc => doc.categoryId === cat.id)
+          .length,
         totalDownloads: mockDocuments
-          .filter((doc) => doc.categoryId === cat.id)
+          .filter(doc => doc.categoryId === cat.id)
           .reduce((sum, doc) => sum + doc.downloadCount, 0),
         totalViews: mockDocuments
-          .filter((doc) => doc.categoryId === cat.id)
+          .filter(doc => doc.categoryId === cat.id)
           .reduce((sum, doc) => sum + doc.viewCount, 0),
       }))
       .sort((a, b) => b.documentCount - a.documentCount)
       .slice(0, 5),
     userActivity: userActivity.slice(0, 10),
     recentNotifications: userNotifications
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
       .slice(0, 5),
   };
 };
@@ -437,7 +509,7 @@ export const mockApiResponses = {
   getNotifications: (userId?: string) => ({
     success: true,
     message: 'Notifications retrieved successfully',
-    data: mockNotifications.filter((notif) => !userId || notif.userId === userId),
+    data: mockNotifications.filter(notif => !userId || notif.userId === userId),
     meta: {
       timestamp: new Date().toISOString(),
     },
@@ -446,7 +518,9 @@ export const mockApiResponses = {
   getBookmarks: (userId?: string) => ({
     success: true,
     message: 'Bookmarks retrieved successfully',
-    data: mockBookmarks.filter((bookmark) => !userId || bookmark.userId === userId),
+    data: mockBookmarks.filter(
+      bookmark => !userId || bookmark.userId === userId,
+    ),
     meta: {
       timestamp: new Date().toISOString(),
     },

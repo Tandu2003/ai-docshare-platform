@@ -47,12 +47,12 @@ export class UploadService {
    */
   static async uploadFiles(
     files: File[],
-    data: UploadFileData = {}
+    data: UploadFileData = {},
   ): Promise<FileUploadResponse[] | FileUploadResponse> {
     const formData = new FormData();
 
     // Append files
-    files.forEach((file) => {
+    files.forEach(file => {
       formData.append('files', file);
     });
 
@@ -60,30 +60,29 @@ export class UploadService {
     if (data.title) formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
     if (data.categoryId) formData.append('categoryId', data.categoryId);
-    if (data.isPublic !== undefined) formData.append('isPublic', String(data.isPublic));
+    if (data.isPublic !== undefined)
+      formData.append('isPublic', String(data.isPublic));
     if (data.language) formData.append('language', data.language);
     if (data.tags) {
-      data.tags.forEach((tag) => formData.append('tags[]', tag));
+      data.tags.forEach(tag => formData.append('tags[]', tag));
     }
 
     try {
       console.log('Uploading files to server:', {
         fileCount: files.length,
         totalSize: files.reduce((sum, file) => sum + file.size, 0),
-        files: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
+        files: files.map(f => ({ name: f.name, size: f.size, type: f.type })),
       });
 
-      const response = await api.post<FileUploadResponse[] | FileUploadResponse>(
-        '/upload',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          // Increase timeout for large files
-          timeout: 60000 * 2, // 2 minutes
-        }
-      );
+      const response = await api.post<
+        FileUploadResponse[] | FileUploadResponse
+      >('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        // Increase timeout for large files
+        timeout: 60000 * 2, // 2 minutes
+      });
 
       console.log('Upload response received:', response.data);
       console.log({ response });
@@ -105,7 +104,9 @@ export class UploadService {
       }
 
       // Enhance error message with details from the server for axios errors
-      const axiosError = error as { response?: { data?: { message?: string; error?: string } } };
+      const axiosError = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
       if (axiosError.response?.data?.message) {
         throw new Error(`Upload failed: ${axiosError.response.data.message}`);
       } else if (axiosError.response?.data?.error) {
@@ -122,7 +123,7 @@ export class UploadService {
    */
   static async uploadSingleFile(
     file: File,
-    data: UploadFileData = {}
+    data: UploadFileData = {},
   ): Promise<FileUploadResponse> {
     try {
       const result = await this.uploadFiles([file], data);
@@ -138,7 +139,7 @@ export class UploadService {
    */
   static async uploadMultipleFiles(
     files: File[],
-    data: UploadFileData = {}
+    data: UploadFileData = {},
   ): Promise<FileUploadResponse[]> {
     try {
       const result = await this.uploadFiles(files, data);
@@ -155,7 +156,7 @@ export class UploadService {
   static async getUserFiles(
     page: number = 1,
     limit: number = 20,
-    mimeType?: string
+    mimeType?: string,
   ): Promise<FilesListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -167,7 +168,9 @@ export class UploadService {
     }
 
     try {
-      const response = await api.get<FilesListResponse>(`/upload/my-files?${params}`);
+      const response = await api.get<FilesListResponse>(
+        `/upload/my-files?${params}`,
+      );
 
       if (!response.data || !response.success) {
         throw new Error(response.message || 'Failed to fetch user files');
@@ -176,7 +179,9 @@ export class UploadService {
       return response.data;
     } catch (error) {
       console.error('Error fetching user files:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch user files');
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to fetch user files');
     }
   }
 
@@ -194,7 +199,9 @@ export class UploadService {
       return response.data;
     } catch (error) {
       console.error(`Error fetching file with ID ${fileId}:`, error);
-      throw error instanceof Error ? error : new Error('Failed to fetch file details');
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to fetch file details');
     }
   }
 
@@ -203,7 +210,9 @@ export class UploadService {
    */
   static async getDownloadUrl(fileId: string): Promise<string> {
     try {
-      const response = await api.get<{ downloadUrl: string }>(`/upload/download/${fileId}`);
+      const response = await api.get<{ downloadUrl: string }>(
+        `/upload/download/${fileId}`,
+      );
 
       if (!response.data || !response.success || !response.data?.downloadUrl) {
         throw new Error(response.message || 'Failed to get download URL');
@@ -212,7 +221,9 @@ export class UploadService {
       return response.data.downloadUrl;
     } catch (error) {
       console.error(`Error getting download URL for file ${fileId}:`, error);
-      throw error instanceof Error ? error : new Error('Failed to get download URL');
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to get download URL');
     }
   }
 
@@ -238,7 +249,7 @@ export class UploadService {
   static async getAllowedTypes(): Promise<string[]> {
     try {
       const response = await api.get<{ types: string[]; description: string }>(
-        '/documents/upload/allowed-types'
+        '/documents/upload/allowed-types',
       );
 
       if (!response.data || !response.success) {
@@ -278,8 +289,10 @@ export class UploadService {
     if (mimeType.startsWith('image/')) return '🖼️';
     if (mimeType.includes('pdf')) return '📄';
     if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📽️';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet'))
+      return '📊';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation'))
+      return '📽️';
     if (mimeType.includes('text')) return '📄';
     return '📁';
   }
@@ -290,7 +303,7 @@ export class UploadService {
   static validateFile(
     file: File,
     allowedTypes: string[],
-    maxSize: number = 100 * 1024 * 1024
+    maxSize: number = 100 * 1024 * 1024,
   ): string | null {
     // Check file size
     if (file.size > maxSize) {
@@ -313,15 +326,18 @@ export class UploadService {
           break;
         case 'doc':
         case 'docx':
-          fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          fileType =
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
           break;
         case 'xls':
         case 'xlsx':
-          fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          fileType =
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
           break;
         case 'ppt':
         case 'pptx':
-          fileType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+          fileType =
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation';
           break;
         case 'txt':
           fileType = 'text/plain';

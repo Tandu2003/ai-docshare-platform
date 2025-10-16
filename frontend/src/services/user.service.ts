@@ -66,7 +66,14 @@ export interface GetUsersQuery {
   role?: string;
   isActive?: boolean;
   isVerified?: boolean;
-  sortBy?: 'createdAt' | 'updatedAt' | 'lastLoginAt' | 'email' | 'username' | 'firstName' | 'lastName';
+  sortBy?:
+    | 'createdAt'
+    | 'updatedAt'
+    | 'lastLoginAt'
+    | 'email'
+    | 'username'
+    | 'firstName'
+    | 'lastName';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -127,17 +134,21 @@ class UserService {
 
   async getUsers(query: GetUsersQuery = {}): Promise<UsersResponse> {
     const params = new URLSearchParams();
-    
+
     if (query.page) params.append('page', query.page.toString());
     if (query.limit) params.append('limit', query.limit.toString());
     if (query.search) params.append('search', query.search);
     if (query.role) params.append('role', query.role);
-    if (typeof query.isActive === 'boolean') params.append('isActive', query.isActive.toString());
-    if (typeof query.isVerified === 'boolean') params.append('isVerified', query.isVerified.toString());
+    if (typeof query.isActive === 'boolean')
+      params.append('isActive', query.isActive.toString());
+    if (typeof query.isVerified === 'boolean')
+      params.append('isVerified', query.isVerified.toString());
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
-    const response = await apiClient.get(`${this.baseUrl}?${params.toString()}`);
+    const response = await apiClient.get(
+      `${this.baseUrl}?${params.toString()}`,
+    );
     return response.data;
   }
 
@@ -161,8 +172,14 @@ class UserService {
     return response.data;
   }
 
-  async updateUserStatus(id: string, data: UpdateUserStatusRequest): Promise<User> {
-    const response = await apiClient.patch(`${this.baseUrl}/${id}/status`, data);
+  async updateUserStatus(
+    id: string,
+    data: UpdateUserStatusRequest,
+  ): Promise<User> {
+    const response = await apiClient.patch(
+      `${this.baseUrl}/${id}/status`,
+      data,
+    );
     return response.data;
   }
 
@@ -170,7 +187,11 @@ class UserService {
     await apiClient.delete(`${this.baseUrl}/${id}`);
   }
 
-  async getUserActivity(id: string, page: number = 1, limit: number = 10): Promise<UserActivityResponse> {
+  async getUserActivity(
+    id: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<UserActivityResponse> {
     const response = await apiClient.get(`${this.baseUrl}/${id}/activity`, {
       params: { page, limit },
     });

@@ -1,11 +1,12 @@
-import { Eye, EyeOff } from 'lucide-react';
-
 import * as React from 'react';
+
+import { Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface InputPasswordProps extends Omit<React.ComponentProps<'input'>, 'type'> {
+interface InputPasswordProps
+  extends Omit<React.ComponentProps<'input'>, 'type'> {
   showToggle?: boolean;
 }
 
@@ -23,7 +24,7 @@ const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>(
             'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
             'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
             showToggle && 'pr-10',
-            className
+            className,
           )}
           ref={ref}
           {...props}
@@ -33,21 +34,23 @@ const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>(
             type="button"
             variant="ghost"
             size="sm"
-            className="absolute right-0 top-0 h-9 px-3 py-2 hover:bg-transparent"
+            className="absolute top-0 right-0 h-9 px-3 py-2 hover:bg-transparent"
             onClick={() => setShowPassword(!showPassword)}
             disabled={props.disabled}
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4 text-muted-foreground" />
+              <EyeOff className="text-muted-foreground h-4 w-4" />
             ) : (
-              <Eye className="h-4 w-4 text-muted-foreground" />
+              <Eye className="text-muted-foreground h-4 w-4" />
             )}
-            <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+            <span className="sr-only">
+              {showPassword ? 'Hide password' : 'Show password'}
+            </span>
           </Button>
         )}
       </div>
     );
-  }
+  },
 );
 
 InputPassword.displayName = 'InputPassword';

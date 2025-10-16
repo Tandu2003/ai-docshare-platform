@@ -1,26 +1,26 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { PrismaService } from '@/prisma/prisma.service';
-import { MailService } from '@/mail/mail.service';
 import {
-  RegisterDto,
-  LoginDto,
   ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendVerificationDto,
   ResetPasswordDto,
   VerifyEmailDto,
-  ResendVerificationDto,
 } from './dto';
-import { JwtPayload, AuthTokens, LoginResponse, AuthUser } from './interfaces';
+import { AuthTokens, AuthUser, JwtPayload, LoginResponse } from './interfaces';
 import { AuthenticationError } from '@/common/errors';
+import { MailService } from '@/mail/mail.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -31,7 +31,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly mailService: MailService
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -76,10 +76,14 @@ export class AuthService {
       });
 
       return {
-        message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+        message:
+          'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
       };
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof BadRequestException) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new AuthenticationError('Đăng ký thất bại');
@@ -101,7 +105,10 @@ export class AuthService {
       }
 
       // Verify password
-      const isPasswordValid = await this.verifyPassword(password, user.password);
+      const isPasswordValid = await this.verifyPassword(
+        password,
+        user.password,
+      );
       if (!isPasswordValid) {
         throw new UnauthorizedException('Thông tin đăng nhập không hợp lệ');
       }
@@ -182,7 +189,10 @@ export class AuthService {
 
   // Private helper methods
 
-  private async validateUniqueUser(email: string, username: string): Promise<void> {
+  private async validateUniqueUser(
+    email: string,
+    username: string,
+  ): Promise<void> {
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [{ email }, { username }],
@@ -215,7 +225,10 @@ export class AuthService {
     return bcrypt.hash(password, this.saltRounds);
   }
 
-  private async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  private async verifyPassword(
+    password: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
 
@@ -243,7 +256,9 @@ export class AuthService {
 
     // Check if email verification is required
     if (!user.isVerified) {
-      throw new UnauthorizedException('Vui lòng xác thực địa chỉ email trước khi đăng nhập');
+      throw new UnauthorizedException(
+        'Vui lòng xác thực địa chỉ email trước khi đăng nhập',
+      );
     }
   }
 
@@ -265,11 +280,17 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
+        expiresIn: this.configService.get<string>(
+          'JWT_ACCESS_EXPIRES_IN',
+          '15m',
+        ),
       }),
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+        expiresIn: this.configService.get<string>(
+          'JWT_REFRESH_EXPIRES_IN',
+          '7d',
+        ),
       }),
     ]);
 
@@ -297,7 +318,9 @@ export class AuthService {
   /**
    * Verify email with token
    */
-  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(
+    verifyEmailDto: VerifyEmailDto,
+  ): Promise<{ message: string }> {
     const { token } = verifyEmailDto;
 
     try {
@@ -312,7 +335,9 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new BadRequestException('Mã xác thực không hợp lệ hoặc đã hết hạn');
+        throw new BadRequestException(
+          'Mã xác thực không hợp lệ hoặc đã hết hạn',
+        );
       }
 
       // Update user as verified and clear token
@@ -332,7 +357,8 @@ export class AuthService {
       });
 
       return {
-        message: 'Email đã được xác thực thành công! Chào mừng bạn đến với AI DocShare Platform.',
+        message:
+          'Email đã được xác thực thành công! Chào mừng bạn đến với AI DocShare Platform.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -345,7 +371,9 @@ export class AuthService {
   /**
    * Resend verification email
    */
-  async resendVerification(resendDto: ResendVerificationDto): Promise<{ message: string }> {
+  async resendVerification(
+    resendDto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
     const { email } = resendDto;
 
     try {
@@ -354,11 +382,15 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new NotFoundException('Không tìm thấy người dùng, vui lòng đăng ký trước');
+        throw new NotFoundException(
+          'Không tìm thấy người dùng, vui lòng đăng ký trước',
+        );
       }
 
       if (user.isVerified) {
-        throw new BadRequestException('Email đã được xác thực, vui lòng đăng nhập');
+        throw new BadRequestException(
+          'Email đã được xác thực, vui lòng đăng nhập',
+        );
       }
 
       // Generate new verification token
@@ -382,10 +414,14 @@ export class AuthService {
       });
 
       return {
-        message: 'Email xác thực đã được gửi thành công! Vui lòng kiểm tra hộp thư.',
+        message:
+          'Email xác thực đã được gửi thành công! Vui lòng kiểm tra hộp thư.',
       };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new AuthenticationError('Gửi lại email xác thực thất bại');
@@ -395,7 +431,9 @@ export class AuthService {
   /**
    * Forgot password - send reset email
    */
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
 
     try {
@@ -404,7 +442,9 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new BadRequestException('Không tìm thấy tài khoản, vui lòng đăng ký trước');
+        throw new BadRequestException(
+          'Không tìm thấy tài khoản, vui lòng đăng ký trước',
+        );
       }
 
       if (!user.isVerified) {
@@ -432,7 +472,8 @@ export class AuthService {
       });
 
       return {
-        message: 'Hướng dẫn đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư.',
+        message:
+          'Hướng dẫn đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -445,7 +486,9 @@ export class AuthService {
   /**
    * Reset password with token
    */
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
     const { token, password } = resetPasswordDto;
 
     try {
@@ -459,7 +502,9 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
+        throw new BadRequestException(
+          'Mã đặt lại không hợp lệ hoặc đã hết hạn',
+        );
       }
 
       // Hash new password
@@ -482,7 +527,8 @@ export class AuthService {
       });
 
       return {
-        message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
+        message:
+          'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {

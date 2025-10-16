@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
-
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { BookmarksService } from './bookmarks.service';
+import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { CheckPolicy } from '@/common/casl';
 import {
   Body,
@@ -16,10 +17,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-
-import { ResponseHelper } from '../common/helpers/response.helper';
-import { BookmarksService } from './bookmarks.service';
-import { CreateBookmarkDto } from './dto/create-bookmark.dto';
+import { Request, Response } from 'express';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -38,24 +36,42 @@ export class BookmarksController {
 
   @Get('stats')
   @CheckPolicy({ action: 'read', subject: 'Bookmark' })
-  @ApiOperation({ summary: 'Get bookmark statistics for the authenticated user' })
-  async getBookmarkStats(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+  @ApiOperation({
+    summary: 'Get bookmark statistics for the authenticated user',
+  })
+  async getBookmarkStats(
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
     const userId = req.user?.id;
 
     if (!userId) {
-      this.logger.warn('Attempt to access bookmark stats without authenticated user');
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      this.logger.warn(
+        'Attempt to access bookmark stats without authenticated user',
+      );
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
       const stats = await this.bookmarksService.getBookmarkStats(userId);
-      return ResponseHelper.success(res, stats, 'Thống kê đánh dấu đã được truy xuất thành công');
+      return ResponseHelper.success(
+        res,
+        stats,
+        'Thống kê đánh dấu đã được truy xuất thành công',
+      );
     } catch (error) {
-      this.logger.error(`Failed to load bookmark stats for user ${userId}`, error as Error);
+      this.logger.error(
+        `Failed to load bookmark stats for user ${userId}`,
+        error as Error,
+      );
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất thống kê đánh dấu',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -66,25 +82,35 @@ export class BookmarksController {
   async createBookmark(
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
-    @Body() payload: CreateBookmarkDto
+    @Body() payload: CreateBookmarkDto,
   ) {
     const userId = req.user?.id;
 
     if (!userId) {
       this.logger.warn('Attempt to create bookmark without authenticated user');
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
-      const bookmark = await this.bookmarksService.createBookmark(userId, payload);
+      const bookmark = await this.bookmarksService.createBookmark(
+        userId,
+        payload,
+      );
       return ResponseHelper.success(
         res,
         bookmark,
         'Đánh dấu đã được tạo thành công',
-        HttpStatus.CREATED
+        HttpStatus.CREATED,
       );
     } catch (error) {
-      this.logger.error(`Failed to create bookmark for user ${userId}`, error as Error);
+      this.logger.error(
+        `Failed to create bookmark for user ${userId}`,
+        error as Error,
+      );
       if (error instanceof HttpException) {
         return ResponseHelper.error(res, error.message, error.getStatus());
       }
@@ -92,7 +118,7 @@ export class BookmarksController {
         res,
         'Không thể tạo đánh dấu',
         HttpStatus.INTERNAL_SERVER_ERROR,
-        error
+        error,
       );
     }
   }
@@ -103,13 +129,17 @@ export class BookmarksController {
   async deleteBookmark(
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
-    @Param('bookmarkId') bookmarkId: string
+    @Param('bookmarkId') bookmarkId: string,
   ) {
     const userId = req.user?.id;
 
     if (!userId) {
       this.logger.warn('Attempt to delete bookmark without authenticated user');
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
@@ -118,7 +148,7 @@ export class BookmarksController {
     } catch (error) {
       this.logger.error(
         `Failed to delete bookmark ${bookmarkId} for user ${userId}`,
-        error as Error
+        error as Error,
       );
       if (error instanceof HttpException) {
         return ResponseHelper.error(res, error.message, error.getStatus());
@@ -127,7 +157,7 @@ export class BookmarksController {
         res,
         'Không thể xóa đánh dấu',
         HttpStatus.INTERNAL_SERVER_ERROR,
-        error
+        error,
       );
     }
   }
@@ -140,13 +170,19 @@ export class BookmarksController {
     @Res() res: Response,
     @Query('folderId') folderId?: string,
     @Query('search') search?: string,
-    @Query('documentId') documentId?: string
+    @Query('documentId') documentId?: string,
   ) {
     const userId = req.user?.id;
 
     if (!userId) {
-      this.logger.warn('Attempt to access bookmarks without authenticated user');
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      this.logger.warn(
+        'Attempt to access bookmarks without authenticated user',
+      );
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
@@ -156,13 +192,20 @@ export class BookmarksController {
         documentId,
       });
 
-      return ResponseHelper.success(res, bookmarks, 'Đánh dấu đã được truy xuất thành công');
+      return ResponseHelper.success(
+        res,
+        bookmarks,
+        'Đánh dấu đã được truy xuất thành công',
+      );
     } catch (error) {
-      this.logger.error(`Failed to fetch bookmarks for user ${userId}`, error as Error);
+      this.logger.error(
+        `Failed to fetch bookmarks for user ${userId}`,
+        error as Error,
+      );
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất đánh dấu',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

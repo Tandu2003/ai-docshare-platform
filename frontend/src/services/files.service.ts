@@ -79,10 +79,12 @@ export class FilesService {
   /**
    * Upload files to storage
    */
-  static async uploadFiles(files: File[]): Promise<ApiResponse<FileUploadResult[]>> {
+  static async uploadFiles(
+    files: File[],
+  ): Promise<ApiResponse<FileUploadResult[]>> {
     const formData = new FormData();
 
-    files.forEach((file) => {
+    files.forEach(file => {
       formData.append('files', file);
     });
 
@@ -95,7 +97,7 @@ export class FilesService {
             'Content-Type': 'multipart/form-data',
           },
           timeout: 60000 * 2, // 2 minutes
-        }
+        },
       );
 
       if (!response.data) {
@@ -127,10 +129,13 @@ export class DocumentsService {
   /**
    * Get user's documents with pagination
    */
-  static async getUserDocuments(page: number = 1, limit: number = 10): Promise<PaginatedDocuments> {
+  static async getUserDocuments(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedDocuments> {
     try {
       const response = await apiClient.get<PaginatedDocuments>(
-        `/documents/my?page=${page}&limit=${limit}`
+        `/documents/my?page=${page}&limit=${limit}`,
       );
 
       if (!response.data) {
@@ -149,11 +154,11 @@ export class DocumentsService {
    */
   static async getPublicDocuments(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<PaginatedDocuments> {
     try {
       const response = await apiClient.get<PaginatedDocuments>(
-        `/documents/public?page=${page}&limit=${limit}`
+        `/documents/public?page=${page}&limit=${limit}`,
       );
 
       if (!response.data) {
@@ -191,16 +196,20 @@ export class DocumentsService {
    */
   static async downloadDocument(documentId: string): Promise<void> {
     try {
-      const response = await apiClient.post<{ downloadUrl: string; title: string }>(
-        `/documents/${documentId}/download`
-      );
+      const response = await apiClient.post<{
+        downloadUrl: string;
+        title: string;
+      }>(`/documents/${documentId}/download`);
 
       if (!response.data?.downloadUrl) {
         throw new Error('Không được cung cấp URL tải xuống');
       }
 
       // Use the existing download method
-      await this.downloadFileFromUrl(response.data.downloadUrl, response.data.title);
+      await this.downloadFileFromUrl(
+        response.data.downloadUrl,
+        response.data.title,
+      );
     } catch (error) {
       console.error('Failed to download document', error);
       throw new Error('Không thể tải xuống tài liệu.');
@@ -210,7 +219,10 @@ export class DocumentsService {
   /**
    * Download file from URL using blob method
    */
-  private static async downloadFileFromUrl(downloadUrl: string, fileName: string): Promise<void> {
+  private static async downloadFileFromUrl(
+    downloadUrl: string,
+    fileName: string,
+  ): Promise<void> {
     try {
       // Fetch the file as a blob
       const response = await fetch(downloadUrl);

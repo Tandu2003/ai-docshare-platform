@@ -1,4 +1,10 @@
-import { IsArray, IsBoolean, IsOptional, IsString, IsObject } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateDocumentDto {
   @IsString()

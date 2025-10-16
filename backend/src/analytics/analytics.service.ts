@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
-
 import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 
 const RANGE_TO_DAYS: Record<string, number> = {
   '7d': 7,
@@ -13,7 +12,8 @@ const DEFAULT_RANGE = '30d';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-const subtractDays = (date: Date, days: number) => new Date(date.getTime() - days * MS_PER_DAY);
+const subtractDays = (date: Date, days: number) =>
+  new Date(date.getTime() - days * MS_PER_DAY);
 
 const subtractMonths = (date: Date, months: number) => {
   const result = new Date(date);
@@ -21,7 +21,8 @@ const subtractMonths = (date: Date, months: number) => {
   return result;
 };
 
-const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+const startOfMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
 
 const endOfMonth = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -48,7 +49,8 @@ export class AnalyticsService {
     const previousEndDate = startDate;
 
     return {
-      range: normalized && RANGE_TO_DAYS[normalized] ? normalized : DEFAULT_RANGE,
+      range:
+        normalized && RANGE_TO_DAYS[normalized] ? normalized : DEFAULT_RANGE,
       days,
       startDate,
       endDate,
@@ -154,7 +156,7 @@ export class AnalyticsService {
       }),
     ]);
 
-    const categoryIds = categoryAggregates.map((item) => item.categoryId);
+    const categoryIds = categoryAggregates.map(item => item.categoryId);
     const categories = categoryIds.length
       ? await this.prisma.category.findMany({
           where: {
@@ -172,9 +174,11 @@ export class AnalyticsService {
         })
       : [];
 
-    const categoryMap = new Map(categories.map((category) => [category.id, category]));
+    const categoryMap = new Map(
+      categories.map(category => [category.id, category]),
+    );
 
-    const popularCategories = categoryAggregates.map((aggregate) => {
+    const popularCategories = categoryAggregates.map(aggregate => {
       const category = categoryMap.get(aggregate.categoryId);
       return {
         id: aggregate.categoryId,
@@ -188,7 +192,7 @@ export class AnalyticsService {
       };
     });
 
-    const userActivity = activityLogsRaw.map((activity) => ({
+    const userActivity = activityLogsRaw.map(activity => ({
       id: activity.id,
       userId: activity.userId ?? undefined,
       action: activity.action,
@@ -209,7 +213,7 @@ export class AnalyticsService {
         : undefined,
     }));
 
-    const recentNotifications = notificationsRaw.map((notification) => ({
+    const recentNotifications = notificationsRaw.map(notification => ({
       id: notification.id,
       userId: notification.userId,
       type: notification.type,
@@ -311,14 +315,18 @@ export class AnalyticsService {
 
     const totalDownloads = Number(downloadsAggregate._sum.downloadCount || 0);
     const totalViews = Number(viewsAggregate._sum.viewCount || 0);
-    const averageRating = Number(averageRatingAggregate._avg.averageRating || 0);
+    const averageRating = Number(
+      averageRatingAggregate._avg.averageRating || 0,
+    );
 
     const monthlyGrowth =
       documentsPreviousRange > 0
         ? Number(
-            (((documentsInRange - documentsPreviousRange) / documentsPreviousRange) * 100).toFixed(
-              1
-            )
+            (
+              ((documentsInRange - documentsPreviousRange) /
+                documentsPreviousRange) *
+              100
+            ).toFixed(1),
           )
         : documentsInRange > 0
           ? 100
@@ -326,7 +334,11 @@ export class AnalyticsService {
 
     const userGrowth =
       previousNewUsers > 0
-        ? Number((((newUsers - previousNewUsers) / previousNewUsers) * 100).toFixed(1))
+        ? Number(
+            (((newUsers - previousNewUsers) / previousNewUsers) * 100).toFixed(
+              1,
+            ),
+          )
         : newUsers > 0
           ? 100
           : 0;
@@ -349,14 +361,16 @@ export class AnalyticsService {
     });
 
     const topCategories = topCategoriesRaw
-      .filter((category) => category._count.documents > 0)
-      .map((category) => ({
+      .filter(category => category._count.documents > 0)
+      .map(category => ({
         name: category.name,
         icon: category.icon || '📄',
         count: category._count.documents,
         percentage:
           totalDocuments > 0
-            ? Number(((category._count.documents / totalDocuments) * 100).toFixed(1))
+            ? Number(
+                ((category._count.documents / totalDocuments) * 100).toFixed(1),
+              )
             : 0,
       }));
 
@@ -373,11 +387,13 @@ export class AnalyticsService {
       take: 6,
     });
 
-    const topLanguages = topLanguagesGroup.map((lang) => ({
+    const topLanguages = topLanguagesGroup.map(lang => ({
       code: lang.language || 'unknown',
       count: lang._count.language,
       percentage:
-        totalDocuments > 0 ? Number(((lang._count.language / totalDocuments) * 100).toFixed(1)) : 0,
+        totalDocuments > 0
+          ? Number(((lang._count.language / totalDocuments) * 100).toFixed(1))
+          : 0,
     }));
 
     const topDocumentsRaw = await this.prisma.document.findMany({
@@ -404,7 +420,7 @@ export class AnalyticsService {
       take: 5,
     });
 
-    const topDocuments = topDocumentsRaw.map((doc) => ({
+    const topDocuments = topDocumentsRaw.map(doc => ({
       id: doc.id,
       title: doc.title,
       downloads: doc.downloadCount || 0,
@@ -414,8 +430,12 @@ export class AnalyticsService {
       language: doc.language || 'unknown',
     }));
 
-    const monthlyStats: { month: string; downloads: number; views: number; documents: number }[] =
-      [];
+    const monthlyStats: {
+      month: string;
+      downloads: number;
+      views: number;
+      documents: number;
+    }[] = [];
     for (let i = 5; i >= 0; i -= 1) {
       const targetDate = subtractMonths(endDate, i);
       const monthStart = startOfMonth(targetDate);
@@ -489,60 +509,61 @@ export class AnalyticsService {
       previousEndDate,
     } = this.resolveRange(range);
 
-    const [downloadsCurrent, viewsCurrent, downloadsPrevious, viewsPrevious] = await Promise.all([
-      this.prisma.download.groupBy({
-        by: ['documentId'],
-        where: {
-          downloadedAt: {
-            gte: startDate,
-            lte: endDate,
+    const [downloadsCurrent, viewsCurrent, downloadsPrevious, viewsPrevious] =
+      await Promise.all([
+        this.prisma.download.groupBy({
+          by: ['documentId'],
+          where: {
+            downloadedAt: {
+              gte: startDate,
+              lte: endDate,
+            },
           },
-        },
-        _count: {
-          documentId: true,
-        },
-      }),
-      this.prisma.view.groupBy({
-        by: ['documentId'],
-        where: {
-          viewedAt: {
-            gte: startDate,
-            lte: endDate,
+          _count: {
+            documentId: true,
           },
-        },
-        _count: {
-          documentId: true,
-        },
-      }),
-      this.prisma.download.groupBy({
-        by: ['documentId'],
-        where: {
-          downloadedAt: {
-            gte: previousStartDate,
-            lt: previousEndDate,
+        }),
+        this.prisma.view.groupBy({
+          by: ['documentId'],
+          where: {
+            viewedAt: {
+              gte: startDate,
+              lte: endDate,
+            },
           },
-        },
-        _count: {
-          documentId: true,
-        },
-      }),
-      this.prisma.view.groupBy({
-        by: ['documentId'],
-        where: {
-          viewedAt: {
-            gte: previousStartDate,
-            lt: previousEndDate,
+          _count: {
+            documentId: true,
           },
-        },
-        _count: {
-          documentId: true,
-        },
-      }),
-    ]);
+        }),
+        this.prisma.download.groupBy({
+          by: ['documentId'],
+          where: {
+            downloadedAt: {
+              gte: previousStartDate,
+              lt: previousEndDate,
+            },
+          },
+          _count: {
+            documentId: true,
+          },
+        }),
+        this.prisma.view.groupBy({
+          by: ['documentId'],
+          where: {
+            viewedAt: {
+              gte: previousStartDate,
+              lt: previousEndDate,
+            },
+          },
+          _count: {
+            documentId: true,
+          },
+        }),
+      ]);
 
     const docIdSet = new Set<string>();
-    downloadsCurrent.forEach((item) => docIdSet.add(item.documentId));
-    viewsCurrent.forEach((item) => docIdSet.add(item.documentId));
+    downloadsCurrent.forEach(item => docIdSet.add(item.documentId));
+    viewsCurrent.forEach(item => docIdSet.add(item.documentId));
 
     if (docIdSet.size === 0) {
       return {
@@ -561,22 +582,25 @@ export class AnalyticsService {
     }
 
     const downloadsMap = new Map<string, number>();
-    downloadsCurrent.forEach((item) => {
+    downloadsCurrent.forEach(item => {
       downloadsMap.set(item.documentId, Number(item._count.documentId || 0));
     });
 
     const viewsMap = new Map<string, number>();
-    viewsCurrent.forEach((item) => {
+    viewsCurrent.forEach(item => {
       viewsMap.set(item.documentId, Number(item._count.documentId || 0));
     });
 
     const downloadsPrevMap = new Map<string, number>();
-    downloadsPrevious.forEach((item) => {
-      downloadsPrevMap.set(item.documentId, Number(item._count.documentId || 0));
+    downloadsPrevious.forEach(item => {
+      downloadsPrevMap.set(
+        item.documentId,
+        Number(item._count.documentId || 0),
+      );
     });
 
     const viewsPrevMap = new Map<string, number>();
-    viewsPrevious.forEach((item) => {
+    viewsPrevious.forEach(item => {
       viewsPrevMap.set(item.documentId, Number(item._count.documentId || 0));
     });
 
@@ -615,7 +639,7 @@ export class AnalyticsService {
     });
 
     const trendingDocuments = documents
-      .map((document) => {
+      .map(document => {
         const downloads = downloadsMap.get(document.id) ?? 0;
         const views = viewsMap.get(document.id) ?? 0;
         const previousDownloads = downloadsPrevMap.get(document.id) ?? 0;
@@ -623,11 +647,14 @@ export class AnalyticsService {
         const rating = Number(document.averageRating || 0);
 
         const score = downloads * 3 + views + rating * 10;
-        const previousScore = previousDownloads * 3 + previousViews + rating * 10;
+        const previousScore =
+          previousDownloads * 3 + previousViews + rating * 10;
 
         let change = 0;
         if (previousScore > 0) {
-          change = Number((((score - previousScore) / previousScore) * 100).toFixed(1));
+          change = Number(
+            (((score - previousScore) / previousScore) * 100).toFixed(1),
+          );
         } else if (score > 0) {
           change = 100;
         }
@@ -649,7 +676,8 @@ export class AnalyticsService {
           downloadCount: downloads,
           viewCount: views,
           averageRating: Number(rating.toFixed(2)),
-          createdAt: document.createdAt?.toISOString() || new Date().toISOString(),
+          createdAt:
+            document.createdAt?.toISOString() || new Date().toISOString(),
           isPublic: document.isPublic,
           isPremium: document.isPremium,
           isApproved: document.isApproved,
@@ -661,16 +689,19 @@ export class AnalyticsService {
             new Date().toISOString(),
         };
       })
-      .filter((doc) => doc.downloadCount > 0 || doc.viewCount > 0)
+      .filter(doc => doc.downloadCount > 0 || doc.viewCount > 0)
       .sort((a, b) => b.trendingScore - a.trendingScore)
       .slice(0, 20);
 
-    const totalScore = trendingDocuments.reduce((sum, doc) => sum + doc.trendingScore, 0);
+    const totalScore = trendingDocuments.reduce(
+      (sum, doc) => sum + doc.trendingScore,
+      0,
+    );
     const averageScore = trendingDocuments.length
       ? Number((totalScore / trendingDocuments.length).toFixed(1))
       : 0;
     const topGrowth = trendingDocuments.length
-      ? Math.max(...trendingDocuments.map((doc) => doc.trendingChange))
+      ? Math.max(...trendingDocuments.map(doc => doc.trendingChange))
       : 0;
 
     return {
@@ -689,7 +720,11 @@ export class AnalyticsService {
   }
 
   async getTopRatedAnalytics(range?: string, minRatingsParam?: number) {
-    const { range: normalizedRange, startDate, endDate } = this.resolveRange(range);
+    const {
+      range: normalizedRange,
+      startDate,
+      endDate,
+    } = this.resolveRange(range);
 
     const minRatings = Number.isFinite(minRatingsParam)
       ? Math.max(1, Math.floor(minRatingsParam as number))
@@ -724,7 +759,7 @@ export class AnalyticsService {
     });
 
     const ratingGroups = ratingGroupsRaw
-      .filter((group) => (group._count.rating ?? 0) >= minRatings)
+      .filter(group => (group._count.rating ?? 0) >= minRatings)
       .slice(0, 50);
 
     if (ratingGroups.length === 0) {
@@ -747,7 +782,7 @@ export class AnalyticsService {
       };
     }
 
-    const documentIds = ratingGroups.map((group) => group.documentId);
+    const documentIds = ratingGroups.map(group => group.documentId);
     const documents = await this.prisma.document.findMany({
       where: {
         id: { in: documentIds },
@@ -783,7 +818,7 @@ export class AnalyticsService {
       },
     });
 
-    const documentMap = new Map(documents.map((doc) => [doc.id, doc]));
+    const documentMap = new Map(documents.map(doc => [doc.id, doc]));
 
     const topDocuments = ratingGroups
       .map((group, index) => {
@@ -813,7 +848,8 @@ export class AnalyticsService {
           viewCount: document.viewCount || 0,
           averageRating,
           ratingCount,
-          createdAt: document.createdAt?.toISOString() || new Date().toISOString(),
+          createdAt:
+            document.createdAt?.toISOString() || new Date().toISOString(),
           isPublic: document.isPublic,
           isPremium: document.isPremium,
           isApproved: document.isApproved,
@@ -823,15 +859,21 @@ export class AnalyticsService {
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
     const totalDocuments = topDocuments.length;
-    const totalRatings = topDocuments.reduce((sum, doc) => sum + doc.ratingCount, 0);
+    const totalRatings = topDocuments.reduce(
+      (sum, doc) => sum + doc.ratingCount,
+      0,
+    );
     const averageRating = totalDocuments
       ? Number(
-          (topDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) / totalDocuments).toFixed(
-            2
-          )
+          (
+            topDocuments.reduce((sum, doc) => sum + doc.averageRating, 0) /
+            totalDocuments
+          ).toFixed(2),
         )
       : 0;
-    const perfectCount = topDocuments.filter((doc) => doc.averageRating >= 4.8).length;
+    const perfectCount = topDocuments.filter(
+      doc => doc.averageRating >= 4.8,
+    ).length;
 
     return {
       timeframe: {

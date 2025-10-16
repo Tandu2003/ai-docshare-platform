@@ -72,14 +72,13 @@ export interface BookmarkStats {
 }
 
 export const getUserBookmarks = async (
-  params?: GetBookmarksParams
+  params?: GetBookmarksParams,
 ): Promise<BookmarkWithDocument[]> => {
-  const response: ApiResponse<BookmarkWithDocument[]> = await apiClient.get<BookmarkWithDocument[]>(
-    '/bookmarks',
-    {
-      params,
-    }
-  );
+  const response: ApiResponse<BookmarkWithDocument[]> = await apiClient.get<
+    BookmarkWithDocument[]
+  >('/bookmarks', {
+    params,
+  });
 
   if (!response.success) {
     throw new Error(response.message || 'Không thể tải danh sách bookmark');
@@ -93,9 +92,12 @@ export const getUserBookmarks = async (
 };
 
 export const createBookmark = async (
-  payload: CreateBookmarkPayload
+  payload: CreateBookmarkPayload,
 ): Promise<BookmarkWithDocument> => {
-  const response = await apiClient.post<BookmarkWithDocument>('/bookmarks', payload);
+  const response = await apiClient.post<BookmarkWithDocument>(
+    '/bookmarks',
+    payload,
+  );
 
   if (!response.success || !response.data) {
     throw new Error(response.message || 'Không thể thêm bookmark');

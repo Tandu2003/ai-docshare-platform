@@ -1,6 +1,16 @@
-import { Bell, Eye, EyeOff, Globe, Palette, Save, Settings, Shield, User } from 'lucide-react';
-
 import { useState } from 'react';
+
+import {
+  Bell,
+  Eye,
+  EyeOff,
+  Globe,
+  Palette,
+  Save,
+  Settings,
+  Shield,
+  User,
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -69,29 +79,31 @@ export default function SettingsPage() {
   };
 
   const handleSettingChange = (key: keyof UserSettings, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="container mx-auto space-y-6 px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Settings className="h-8 w-8 text-primary" />
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
+            <Settings className="text-primary h-8 w-8" />
             Cài đặt
           </h1>
-          <p className="text-muted-foreground mt-1">Quản lý cài đặt tài khoản và tùy chọn của bạn</p>
+          <p className="text-muted-foreground mt-1">
+            Quản lý cài đặt tài khoản và tùy chọn của bạn
+          </p>
         </div>
         <Button onClick={handleSave} disabled={isLoading}>
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="mr-2 h-4 w-4" />
           {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Profile Settings */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -111,19 +123,21 @@ export default function SettingsPage() {
                   <Button variant="outline" size="sm">
                     Thay đổi ảnh đại diện
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     JPG, PNG hoặc GIF. Kích thước tối đa 2MB.
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Tên</Label>
                   <Input
                     id="firstName"
                     value={settings.firstName}
-                    onChange={(e) => handleSettingChange('firstName', e.target.value)}
+                    onChange={e =>
+                      handleSettingChange('firstName', e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -131,7 +145,9 @@ export default function SettingsPage() {
                   <Input
                     id="lastName"
                     value={settings.lastName}
-                    onChange={(e) => handleSettingChange('lastName', e.target.value)}
+                    onChange={e =>
+                      handleSettingChange('lastName', e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -142,7 +158,7 @@ export default function SettingsPage() {
                   id="email"
                   type="email"
                   value={settings.email}
-                  onChange={(e) => handleSettingChange('email', e.target.value)}
+                  onChange={e => handleSettingChange('email', e.target.value)}
                 />
               </div>
 
@@ -152,18 +168,20 @@ export default function SettingsPage() {
                   id="bio"
                   placeholder="Hãy cho chúng tôi biết về bạn..."
                   value={settings.bio}
-                  onChange={(e) => handleSettingChange('bio', e.target.value)}
+                  onChange={e => handleSettingChange('bio', e.target.value)}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
                   <Input
                     id="website"
                     placeholder="https://websitecuaban.com"
                     value={settings.website}
-                    onChange={(e) => handleSettingChange('website', e.target.value)}
+                    onChange={e =>
+                      handleSettingChange('website', e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -172,7 +190,9 @@ export default function SettingsPage() {
                     id="location"
                     placeholder="Thành phố, Quốc gia"
                     value={settings.location}
-                    onChange={(e) => handleSettingChange('location', e.target.value)}
+                    onChange={e =>
+                      handleSettingChange('location', e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -190,39 +210,45 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Thông báo qua email</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Nhận thông báo qua email cho các cập nhật quan trọng
                   </p>
                 </div>
                 <Switch
                   checked={settings.emailNotifications}
-                  onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+                  onCheckedChange={checked =>
+                    handleSettingChange('emailNotifications', checked)
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Thông báo đẩy</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Nhận thông báo đẩy trong trình duyệt
                   </p>
                 </div>
                 <Switch
                   checked={settings.pushNotifications}
-                  onCheckedChange={(checked) => handleSettingChange('pushNotifications', checked)}
+                  onCheckedChange={checked =>
+                    handleSettingChange('pushNotifications', checked)
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Email tiếp thị</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Nhận email về các tính năng mới và khuyến mãi
                   </p>
                 </div>
                 <Switch
                   checked={settings.marketingEmails}
-                  onCheckedChange={(checked) => handleSettingChange('marketingEmails', checked)}
+                  onCheckedChange={checked =>
+                    handleSettingChange('marketingEmails', checked)
+                  }
                 />
               </div>
             </CardContent>
@@ -240,7 +266,9 @@ export default function SettingsPage() {
                 <Label>Hiển thị hồ sơ</Label>
                 <Select
                   value={settings.profileVisibility}
-                  onValueChange={(value) => handleSettingChange('profileVisibility', value)}
+                  onValueChange={value =>
+                    handleSettingChange('profileVisibility', value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -256,26 +284,30 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Hiển thị địa chỉ email</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Cho phép người khác xem địa chỉ email của bạn
                   </p>
                 </div>
                 <Switch
                   checked={settings.showEmail}
-                  onCheckedChange={(checked) => handleSettingChange('showEmail', checked)}
+                  onCheckedChange={checked =>
+                    handleSettingChange('showEmail', checked)
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Hiển thị vị trí</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Cho phép người khác xem vị trí của bạn
                   </p>
                 </div>
                 <Switch
                   checked={settings.showLocation}
-                  onCheckedChange={(checked) => handleSettingChange('showLocation', checked)}
+                  onCheckedChange={checked =>
+                    handleSettingChange('showLocation', checked)
+                  }
                 />
               </div>
 
@@ -284,14 +316,28 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <Label>Đổi mật khẩu</Label>
                 <div className="space-y-2">
-                  <Input type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu hiện tại" />
-                  <Input type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu mới" />
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Mật khẩu hiện tại"
+                  />
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Mật khẩu mới"
+                  />
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Xác nhận mật khẩu mới"
                   />
-                  <Button variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                     {showPassword ? 'Ẩn' : 'Hiển thị'} mật khẩu
                   </Button>
                 </div>
@@ -314,7 +360,9 @@ export default function SettingsPage() {
                 <Label>Ngôn ngữ</Label>
                 <Select
                   value={settings.language}
-                  onValueChange={(value) => handleSettingChange('language', value)}
+                  onValueChange={value =>
+                    handleSettingChange('language', value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -333,7 +381,7 @@ export default function SettingsPage() {
                 <Label>Giao diện</Label>
                 <Select
                   value={settings.theme}
-                  onValueChange={(value) => handleSettingChange('theme', value)}
+                  onValueChange={value => handleSettingChange('theme', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -350,7 +398,9 @@ export default function SettingsPage() {
                 <Label>Múi giờ</Label>
                 <Select
                   value={settings.timezone}
-                  onValueChange={(value) => handleSettingChange('timezone', value)}
+                  onValueChange={value =>
+                    handleSettingChange('timezone', value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -358,7 +408,9 @@ export default function SettingsPage() {
                   <SelectContent>
                     <SelectItem value="UTC">UTC</SelectItem>
                     <SelectItem value="America/New_York">Giờ Đông</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Giờ Thái Bình Dương</SelectItem>
+                    <SelectItem value="America/Los_Angeles">
+                      Giờ Thái Bình Dương
+                    </SelectItem>
                     <SelectItem value="Europe/London">Luân Đôn</SelectItem>
                     <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
                   </SelectContent>
@@ -385,7 +437,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Thành viên từ</span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {new Date().toLocaleDateString()}
                 </span>
               </div>
@@ -400,8 +452,9 @@ export default function SettingsPage() {
               <Button variant="destructive" className="w-full">
                 Xóa tài khoản
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.
+              <p className="text-muted-foreground text-xs">
+                Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị
+                xóa vĩnh viễn.
               </p>
             </CardContent>
           </Card>

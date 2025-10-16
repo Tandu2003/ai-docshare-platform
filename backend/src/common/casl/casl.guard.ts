@@ -1,25 +1,29 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import { AbilityFactory } from './ability.factory';
-import { CHECK_POLICIES_KEY, CHECK_POLICY_KEY, RequiredRule } from './casl.decorator';
+import {
+  CHECK_POLICIES_KEY,
+  CHECK_POLICY_KEY,
+  RequiredRule,
+} from './casl.decorator';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class CaslGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private abilityFactory: AbilityFactory
+    private abilityFactory: AbilityFactory,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const policies = this.reflector.getAllAndOverride<RequiredRule[]>(CHECK_POLICIES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const policies = this.reflector.getAllAndOverride<RequiredRule[]>(
+      CHECK_POLICIES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
-    const policy = this.reflector.getAllAndOverride<RequiredRule>(CHECK_POLICY_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const policy = this.reflector.getAllAndOverride<RequiredRule>(
+      CHECK_POLICY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     if (!policies && !policy) {
       return true;
@@ -36,13 +40,19 @@ export class CaslGuard implements CanActivate {
     }
 
     if (policies) {
-      return policies.every((policy) => this.checkPolicy(ability, policy, request));
+      return policies.every(policy =>
+        this.checkPolicy(ability, policy, request),
+      );
     }
 
     return true;
   }
 
-  private checkPolicy(ability: any, policy: RequiredRule, request: any): boolean {
+  private checkPolicy(
+    ability: any,
+    policy: RequiredRule,
+    request: any,
+  ): boolean {
     const { action, subject, conditions } = policy;
 
     // Handle dynamic conditions based on request context
@@ -58,7 +68,10 @@ export class CaslGuard implements CanActivate {
     return ability.can(action, subject);
   }
 
-  private resolveConditions(conditions: Record<string, any>, request: any): Record<string, any> {
+  private resolveConditions(
+    conditions: Record<string, any>,
+    request: any,
+  ): Record<string, any> {
     const resolved: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(conditions)) {

@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from 'react';
+
 import {
   Download,
   File,
@@ -11,8 +13,6 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-
-import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type Document, DocumentsService } from '@/services/files.service';
+import { DocumentsService, type Document } from '@/services/files.service';
 import { formatDate } from '@/utils/date';
 
 interface DocumentListProps {
@@ -65,9 +65,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       let filteredDocuments = response.documents;
       if (search) {
         filteredDocuments = response.documents.filter(
-          (document) =>
+          document =>
             document.title?.toLowerCase().includes(search.toLowerCase()) ||
-            document.description?.toLowerCase().includes(search.toLowerCase())
+            document.description?.toLowerCase().includes(search.toLowerCase()),
         );
       }
 
@@ -114,8 +114,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       await DocumentsService.deleteDocument(documentId);
 
       // Remove from local state
-      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
-      setTotal((prev) => prev - 1);
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      setTotal(prev => prev - 1);
 
       // Notify parent component
       onDocumentDeleted?.(documentId);
@@ -199,8 +199,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-lg border p-4"
+            >
+              <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-lg">
                 <Skeleton className="h-6 w-6" />
               </div>
               <div className="flex-1 space-y-2">
@@ -234,14 +237,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </CardTitle>
 
         {/* Search */}
-        <div className="flex gap-4 mt-4">
+        <div className="mt-4 flex gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="Search documents..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -268,25 +271,25 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           />
         ) : (
           <div className="space-y-3">
-            {documents.map((document) => (
+            {documents.map(document => (
               <div
                 key={document.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                className="hover:bg-muted/50 group flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors"
                 onClick={() => handleDocumentClick(document.id)}
               >
                 {/* Document Icon/Preview */}
                 <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
+                  <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-lg">
                     {getDocumentIcon(document)}
                   </div>
                 </div>
 
                 {/* Document Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                <div className="min-w-0 flex-1">
+                  <h4 className="group-hover:text-primary truncate font-medium transition-colors">
                     {document.title}
                   </h4>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                  <div className="text-muted-foreground mt-1 flex items-center gap-4 text-sm">
                     <span>{formatFileSize(getTotalFileSize(document))}</span>
                     <span>{formatDate(document.createdAt)}</span>
                     <span>{document.category?.name}</span>
@@ -298,14 +301,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     </Badge>
                   </div>
                   {document.description && (
-                    <p className="text-sm text-muted-foreground mt-1 truncate">
+                    <p className="text-muted-foreground mt-1 truncate text-sm">
                       {document.description}
                     </p>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="flex items-center gap-2"
+                  onClick={e => e.stopPropagation()}
+                >
                   <Button
                     size="sm"
                     variant="outline"
@@ -322,8 +328,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleDownload(document)}>
-                        <Download className="h-4 w-4 mr-2" />
+                      <DropdownMenuItem
+                        onClick={() => handleDownload(document)}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
                         Download
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -331,7 +339,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         disabled={deletingId === document.id}
                         className="text-destructive"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="mr-2 h-4 w-4" />
                         {deletingId === document.id ? 'Deleting...' : 'Delete'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -344,10 +352,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
         {/* Pagination */}
         {total > limit && (
-          <div className="flex items-center justify-between mt-6">
-            <p className="text-sm text-muted-foreground">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}{' '}
-              documents
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">
+              Showing {(page - 1) * limit + 1} to{' '}
+              {Math.min(page * limit, total)} of {total} documents
             </p>
             <div className="flex gap-2">
               <Button

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
 import * as pdfParse from 'pdf-parse';
+import * as XLSX from 'xlsx';
 
 export interface ExtractedContent {
   text: string;
@@ -22,7 +22,7 @@ export class ContentExtractorService {
   async extractContent(
     buffer: Buffer,
     mimeType: string,
-    fileName: string
+    fileName: string,
   ): Promise<ExtractedContent> {
     try {
       switch (mimeType) {
@@ -46,11 +46,15 @@ export class ContentExtractorService {
 
         default:
           // For unsupported file types, try to extract as text
-          this.logger.warn(`Unsupported file type: ${mimeType}. Attempting text extraction.`);
+          this.logger.warn(
+            `Unsupported file type: ${mimeType}. Attempting text extraction.`,
+          );
           return this.extractTextContent(buffer);
       }
     } catch (error) {
-      this.logger.error(`Failed to extract content from ${fileName}: ${error.message}`);
+      this.logger.error(
+        `Failed to extract content from ${fileName}: ${error.message}`,
+      );
       throw new Error(`Failed to extract content from file: ${error.message}`);
     }
   }
@@ -66,7 +70,7 @@ export class ContentExtractorService {
       return {
         text: text.trim(),
         metadata: {
-          words: text.split(/\s+/).filter((word) => word.length > 0).length,
+          words: text.split(/\s+/).filter(word => word.length > 0).length,
           characters: text.length,
         },
       };
@@ -83,16 +87,21 @@ export class ContentExtractorService {
       const workbook = XLSX.read(buffer, { type: 'buffer' });
       let allText = '';
 
-      workbook.SheetNames.forEach((sheetName) => {
+      workbook.SheetNames.forEach(sheetName => {
         const worksheet = workbook.Sheets[sheetName];
-        const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+        const sheetData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          raw: false,
+        });
 
         allText += `\n--- Sheet: ${sheetName} ---\n`;
 
         sheetData.forEach((row: any[]) => {
           if (row && row.length > 0) {
             const rowText = row
-              .filter((cell) => cell !== undefined && cell !== null && cell !== '')
+              .filter(
+                cell => cell !== undefined && cell !== null && cell !== '',
+              )
               .join(' | ');
             if (rowText.trim()) {
               allText += rowText + '\n';
@@ -104,7 +113,7 @@ export class ContentExtractorService {
       return {
         text: allText.trim(),
         metadata: {
-          words: allText.split(/\s+/).filter((word) => word.length > 0).length,
+          words: allText.split(/\s+/).filter(word => word.length > 0).length,
           characters: allText.length,
         },
       };
@@ -124,7 +133,7 @@ export class ContentExtractorService {
         text: data.text.trim(),
         metadata: {
           pages: data.numpages,
-          words: data.text.split(/\s+/).filter((word) => word.length > 0).length,
+          words: data.text.split(/\s+/).filter(word => word.length > 0).length,
           characters: data.text.length,
         },
       };
@@ -142,7 +151,7 @@ export class ContentExtractorService {
     return {
       text: text.trim(),
       metadata: {
-        words: text.split(/\s+/).filter((word) => word.length > 0).length,
+        words: text.split(/\s+/).filter(word => word.length > 0).length,
         characters: text.length,
       },
     };
@@ -154,7 +163,9 @@ export class ContentExtractorService {
   private extractPowerPointContent(_buffer: Buffer): ExtractedContent {
     // For now, we'll return a placeholder since PowerPoint extraction is complex
     // You can enhance this later with libraries like node-pptx or officegen
-    this.logger.warn('PowerPoint extraction not fully implemented. Returning placeholder.');
+    this.logger.warn(
+      'PowerPoint extraction not fully implemented. Returning placeholder.',
+    );
 
     return {
       text: 'PowerPoint file detected. Content extraction for PowerPoint files is not fully supported yet.',

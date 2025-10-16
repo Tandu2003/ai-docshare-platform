@@ -29,7 +29,7 @@ export const useAuth = () => {
       const result = await dispatch(loginUser(loginData));
       return result;
     },
-    [dispatch]
+    [dispatch],
   );
 
   const register = useCallback(
@@ -37,7 +37,7 @@ export const useAuth = () => {
       const result = await dispatch(registerUser(registerData));
       return result;
     },
-    [dispatch]
+    [dispatch],
   );
 
   const logout = useCallback(async () => {
@@ -64,7 +64,7 @@ export const useAuth = () => {
       const action = actionFromString?.trim();
       const normalizedSubject = subjectFromString?.trim();
 
-      return user.role.permissions.some((p) => {
+      return user.role.permissions.some(p => {
         const matchesAction = p.action === action;
         if (!matchesAction) return false;
         if (!normalizedSubject) return true;
@@ -75,14 +75,14 @@ export const useAuth = () => {
         );
       });
     },
-    [user]
+    [user],
   );
 
   const hasRole = useCallback(
     (roleName: string): boolean => {
       return user?.role?.name === roleName;
     },
-    [user]
+    [user],
   );
 
   const isAdmin = useCallback((): boolean => {

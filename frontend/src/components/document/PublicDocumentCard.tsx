@@ -1,11 +1,17 @@
-import { Download, ExternalLink, Eye, FileText, User } from 'lucide-react';
-
 import React, { useState } from 'react';
+
+import { Download, ExternalLink, Eye, FileText, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { triggerFileDownload } from '@/services/document.service';
 import { Document } from '@/services/files.service';
 
@@ -13,7 +19,9 @@ interface PublicDocumentCardProps {
   document: Document;
 }
 
-const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => {
+const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
+  document,
+}) => {
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -43,7 +51,10 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
   };
 
   const getTotalFileSize = () => {
-    return document.files.reduce((total, file) => total + Number(file.fileSize), 0);
+    return document.files.reduce(
+      (total, file) => total + Number(file.fileSize),
+      0,
+    );
   };
 
   const getDocumentIcon = () => {
@@ -57,21 +68,27 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
     if (mimeType?.includes('video')) return '🎥';
     if (mimeType?.includes('audio')) return '🎵';
     if (mimeType?.includes('word')) return '📝';
-    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return '📊';
-    if (mimeType?.includes('powerpoint') || mimeType?.includes('presentation')) return '📊';
+    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet'))
+      return '📊';
+    if (mimeType?.includes('powerpoint') || mimeType?.includes('presentation'))
+      return '📊';
 
     return '📄'; // Default document icon
   };
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-lg transition-shadow">
+    <Card className="flex h-full flex-col transition-shadow hover:shadow-lg">
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="text-3xl">{getDocumentIcon()}</div>
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg line-clamp-2">{document.title}</CardTitle>
+          <div className="min-w-0 flex-1">
+            <CardTitle className="line-clamp-2 text-lg">
+              {document.title}
+            </CardTitle>
             {document.description && (
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{document.description}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                {document.description}
+              </p>
             )}
           </div>
         </div>
@@ -83,7 +100,8 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <FileText className="h-4 w-4" />
             <span>
-              {document.files.length} file{document.files.length !== 1 ? 's' : ''}
+              {document.files.length} file
+              {document.files.length !== 1 ? 's' : ''}
             </span>
             <span>•</span>
             <span>{formatFileSize(getTotalFileSize())}</span>
@@ -138,13 +156,25 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({ document }) => 
         </div>
       </CardContent>
 
-      <CardFooter className="pt-0 flex gap-2">
-        <Button onClick={onViewDetails} variant="outline" className="flex-1" size="sm">
+      <CardFooter className="flex gap-2 pt-0">
+        <Button
+          onClick={onViewDetails}
+          variant="outline"
+          className="flex-1"
+          size="sm"
+        >
           <ExternalLink className="mr-2 h-4 w-4" />
           View Details
         </Button>
-        <Button onClick={onDownload} className="flex-1" size="sm" disabled={isDownloading}>
-          <Download className={`mr-2 h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`} />
+        <Button
+          onClick={onDownload}
+          className="flex-1"
+          size="sm"
+          disabled={isDownloading}
+        >
+          <Download
+            className={`mr-2 h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
+          />
           {isDownloading ? 'Downloading...' : 'Download'}
         </Button>
       </CardFooter>

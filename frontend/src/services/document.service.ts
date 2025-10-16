@@ -69,9 +69,12 @@ export interface ViewDocumentRequest {
   referrer?: string;
 }
 
-export const getDocuments = async (page = 1, limit = 10): Promise<PaginatedDocuments> => {
+export const getDocuments = async (
+  page = 1,
+  limit = 10,
+): Promise<PaginatedDocuments> => {
   const response = await apiClient.get<PaginatedDocuments>(
-    `/upload/public?page=${page}&limit=${limit}`
+    `/upload/public?page=${page}&limit=${limit}`,
   );
   if (!response.data) {
     throw new Error('Không có dữ liệu trả về từ API');
@@ -84,11 +87,14 @@ export const getDocuments = async (page = 1, limit = 10): Promise<PaginatedDocum
  */
 export const getDocumentById = async (
   documentId: string,
-  apiKey?: string
+  apiKey?: string,
 ): Promise<DocumentView> => {
-  const response = await apiClient.get<DocumentView>(`/documents/${documentId}`, {
-    params: apiKey ? { apiKey } : undefined,
-  });
+  const response = await apiClient.get<DocumentView>(
+    `/documents/${documentId}`,
+    {
+      params: apiKey ? { apiKey } : undefined,
+    },
+  );
   if (!response.data) {
     throw new Error('Không có dữ liệu trả về từ API');
   }
@@ -100,13 +106,13 @@ export const getDocumentById = async (
  */
 export const viewDocument = async (
   documentId: string,
-  options?: ViewDocumentRequest
+  options?: ViewDocumentRequest,
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const response = await apiClient.post<{ success: boolean; message: string }>(
-      `/documents/${documentId}/view`,
-      options || {}
-    );
+    const response = await apiClient.post<{
+      success: boolean;
+      message: string;
+    }>(`/documents/${documentId}/view`, options || {});
     if (!response.data) {
       throw new Error('Không có dữ liệu trả về từ API');
     }
@@ -147,11 +153,15 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
     if (response.data?.success) {
       return response.data.data.secureUrl;
     } else {
-      throw new Error(response.data?.message || 'Không thể lấy URL tệp bảo mật');
+      throw new Error(
+        response.data?.message || 'Không thể lấy URL tệp bảo mật',
+      );
     }
   } catch (error: any) {
     console.error('Failed to get secure file URL', error);
-    throw new Error(error.response?.data?.message || 'Không thể lấy URL tệp bảo mật.');
+    throw new Error(
+      error.response?.data?.message || 'Không thể lấy URL tệp bảo mật.',
+    );
   }
 };
 
@@ -159,7 +169,7 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
  * Download entire document (all files as ZIP if multiple)
  */
 export const downloadDocument = async (
-  documentId: string
+  documentId: string,
 ): Promise<{
   downloadUrl: string;
   fileName: string;
@@ -194,12 +204,16 @@ export const downloadDocument = async (
       };
     } else {
       console.error('Invalid response format:', response.data);
-      throw new Error(response.data?.message || 'Không thể chuẩn bị tải xuống tài liệu');
+      throw new Error(
+        response.data?.message || 'Không thể chuẩn bị tải xuống tài liệu',
+      );
     }
   } catch (error: any) {
     console.error('API call failed:', error);
     console.error('Error response:', error.response?.data);
-    throw new Error(error.response?.data?.message || 'Không thể chuẩn bị tải xuống tài liệu.');
+    throw new Error(
+      error.response?.data?.message || 'Không thể chuẩn bị tải xuống tài liệu.',
+    );
   }
 };
 
@@ -226,11 +240,11 @@ export interface ShareDocumentResponse {
 
 export const createDocumentShareLink = async (
   documentId: string,
-  payload: ShareDocumentRequest
+  payload: ShareDocumentRequest,
 ): Promise<ShareDocumentResponse> => {
   const response = await apiClient.post<ShareDocumentResponse>(
     `/documents/${documentId}/share-link`,
-    payload
+    payload,
   );
 
   if (!response.data) {
@@ -240,8 +254,12 @@ export const createDocumentShareLink = async (
   return response.data;
 };
 
-export const revokeDocumentShareLink = async (documentId: string): Promise<void> => {
-  const response = await apiClient.delete<null>(`/documents/${documentId}/share-link`);
+export const revokeDocumentShareLink = async (
+  documentId: string,
+): Promise<void> => {
+  const response = await apiClient.delete<null>(
+    `/documents/${documentId}/share-link`,
+  );
   if (!response.success) {
     throw new Error(response.message || 'Failed to revoke share link');
   }
@@ -252,7 +270,7 @@ export const revokeDocumentShareLink = async (documentId: string): Promise<void>
  */
 export const triggerFileDownload = async (
   documentId: string,
-  documentTitle?: string
+  documentTitle?: string,
 ): Promise<void> => {
   try {
     console.log('Starting download for document:', documentId);
@@ -261,25 +279,40 @@ export const triggerFileDownload = async (
     const downloadData = await downloadDocument(documentId);
     console.log('Download data received:', downloadData);
 
-    const fileName = downloadData.fileName || `${documentTitle || 'document'}.zip`;
+    const fileName =
+      downloadData.fileName || `${documentTitle || 'document'}.zip`;
 
     try {
       // Method 1: Fetch as blob and download (best for CORS and security)
       console.log('Fetching file as blob from URL:', downloadData.downloadUrl);
 
       // Validate URL first
-      if (!downloadData.downloadUrl || !downloadData.downloadUrl.startsWith('http')) {
-        throw new Error(`URL tải xuống không hợp lệ: ${downloadData.downloadUrl}`);
+      if (
+        !downloadData.downloadUrl ||
+        !downloadData.downloadUrl.startsWith('http')
+      ) {
+        throw new Error(
+          `URL tải xuống không hợp lệ: ${downloadData.downloadUrl}`,
+        );
       }
 
       const response = await fetch(downloadData.downloadUrl);
-      console.log('Fetch response status:', response.status, response.statusText);
-      console.log('Fetch response headers:', Object.fromEntries(response.headers.entries()));
+      console.log(
+        'Fetch response status:',
+        response.status,
+        response.statusText,
+      );
+      console.log(
+        'Fetch response headers:',
+        Object.fromEntries(response.headers.entries()),
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Fetch error response:', errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${errorText}`);
+        throw new Error(
+          `HTTP ${response.status}: ${response.statusText}. Response: ${errorText}`,
+        );
       }
 
       const blob = await response.blob();

@@ -1,5 +1,5 @@
-import { apiClient } from '@/utils/api-client';
 import type { CategoryWithStats } from '@/types';
+import { apiClient } from '@/utils/api-client';
 
 interface CategoryApiResponse {
   id: string;
@@ -61,7 +61,10 @@ const serializePayload = (payload: CategoryPayload | UpdateCategoryPayload) => {
     }
   }
 
-  if ('description' in serialized && typeof serialized.description === 'string') {
+  if (
+    'description' in serialized &&
+    typeof serialized.description === 'string'
+  ) {
     serialized.description = serialized.description.trim();
   }
 
@@ -73,7 +76,7 @@ const serializePayload = (payload: CategoryPayload | UpdateCategoryPayload) => {
 };
 
 export const fetchCategories = async (
-  includeInactive = true
+  includeInactive = true,
 ): Promise<CategoryWithStats[]> => {
   const response = await apiClient.get<CategoryListResponse>('/categories', {
     params: { includeInactive },
@@ -87,11 +90,11 @@ export const fetchCategories = async (
 };
 
 export const createCategory = async (
-  payload: CategoryPayload
+  payload: CategoryPayload,
 ): Promise<CategoryWithStats> => {
   const response = await apiClient.post<CategoryApiResponse>(
     '/categories',
-    serializePayload(payload)
+    serializePayload(payload),
   );
 
   if (!response.success || !response.data) {
@@ -103,11 +106,11 @@ export const createCategory = async (
 
 export const updateCategory = async (
   id: string,
-  payload: UpdateCategoryPayload
+  payload: UpdateCategoryPayload,
 ): Promise<CategoryWithStats> => {
   const response = await apiClient.patch<CategoryApiResponse>(
     `/categories/${id}`,
-    serializePayload(payload)
+    serializePayload(payload),
   );
 
   if (!response.success || !response.data) {

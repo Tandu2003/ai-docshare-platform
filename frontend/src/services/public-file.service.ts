@@ -9,9 +9,12 @@ export interface PaginatedPublicFiles {
   limit: number;
 }
 
-export const getPublicFiles = async (page = 1, limit = 10): Promise<PaginatedPublicFiles> => {
+export const getPublicFiles = async (
+  page = 1,
+  limit = 10,
+): Promise<PaginatedPublicFiles> => {
   const response = await apiClient.get<PaginatedPublicFiles>(
-    `/upload/public?page=${page}&limit=${limit}`
+    `/upload/public?page=${page}&limit=${limit}`,
   );
   if (!response.data) {
     throw new Error('Không có dữ liệu trả về từ API');

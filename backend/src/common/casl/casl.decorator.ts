@@ -1,5 +1,5 @@
-import { SetMetadata } from '@nestjs/common';
 import { Actions, Subjects } from './ability.factory';
+import { SetMetadata } from '@nestjs/common';
 
 export interface RequiredRule {
   action: Actions;

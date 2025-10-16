@@ -1,15 +1,15 @@
+import { AppError, ValidationError } from '../errors';
+import { ApiResponse } from '../interfaces/api-response.interface';
+import { ErrorUtils } from '../utils/error.utils';
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { AppError, ValidationError } from '../errors';
-import { ErrorUtils } from '../utils/error.utils';
-import { ApiResponse } from '../interfaces/api-response.interface';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -27,7 +27,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // Handle custom AppError
       statusCode = exception.statusCode;
       message = exception.message;
-      error = exception instanceof ValidationError ? exception.errors : undefined;
+      error =
+        exception instanceof ValidationError ? exception.errors : undefined;
 
       // Log server errors only
       if (ErrorUtils.shouldLog(exception)) {

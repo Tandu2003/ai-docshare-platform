@@ -1,6 +1,6 @@
-import { AlertCircle, CheckCircle, Loader2, Sparkles } from 'lucide-react';
-
 import React, { useState } from 'react';
+
+import { AlertCircle, CheckCircle, Loader2, Sparkles } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,9 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
       setHasAnalyzed(true);
     } catch (error) {
       console.error('AI analysis error:', error);
-      setError(error instanceof Error ? error.message : 'Không thể phân tích tài liệu');
+      setError(
+        error instanceof Error ? error.message : 'Không thể phân tích tài liệu',
+      );
     } finally {
       setIsAnalyzing(false);
     }
@@ -50,13 +52,15 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
 
   return (
     <div className={className}>
-      <Card className="border-2 border-dashed !py-0 border-gray-200 hover:border-gray-300 transition-colors">
+      <Card className="border-2 border-dashed border-gray-200 !py-0 transition-colors hover:border-gray-300">
         <CardContent className="p-4">
-          <div className="text-center space-y-3">
-            <div className="flex justify-between items-center gap-4">
-              <div className="flex items-center gap-1 justify-center">
+          <div className="space-y-3 text-center">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-center gap-1">
                 <Sparkles className="h-4 w-4 text-gray-600" />
-                <h3 className="font-semibold text-lg">Phân tích tài liệu bằng AI</h3>
+                <h3 className="text-lg font-semibold">
+                  Phân tích tài liệu bằng AI
+                </h3>
               </div>
               <Button
                 onClick={handleAnalyze}
@@ -67,12 +71,12 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
               >
                 {isAnalyzing ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Analyzing Documents...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Analyze with AI
                   </>
                 )}
@@ -80,8 +84,8 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
             </div>
 
             {hasAnalyzed && !isAnalyzing && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-100 rounded-md">
-                <p className="text-sm flex items-center gap-1 text-green-700">
+              <div className="mt-2 rounded-md border border-green-100 bg-green-50 p-2">
+                <p className="flex items-center gap-1 text-sm text-green-700">
                   <CheckCircle className="h-4 w-4" />
                   Phân tích đã được áp dụng cho tài liệu
                 </p>

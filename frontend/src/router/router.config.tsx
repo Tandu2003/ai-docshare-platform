@@ -1,4 +1,4 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { MainLayout, ProtectedRoute } from '@/components/layout';
 import {
@@ -195,8 +195,10 @@ export const router = createBrowserRouter([
         path: 'admin/settings',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground text-lg">System Settings - Coming Soon</p>
+            <div className="flex h-64 items-center justify-center">
+              <p className="text-muted-foreground text-lg">
+                System Settings - Coming Soon
+              </p>
             </div>
           </ProtectedRoute>
         ),

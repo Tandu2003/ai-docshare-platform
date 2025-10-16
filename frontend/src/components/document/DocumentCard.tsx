@@ -1,6 +1,6 @@
-import { Download, ExternalLink, Eye, User } from 'lucide-react';
-
 import React, { useState } from 'react';
+
+import { Download, ExternalLink, Eye, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -46,20 +46,22 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
     <Card className="flex flex-col">
       <CardHeader>
         <CardTitle
-          className="truncate text-lg cursor-pointer hover:text-blue-600 transition-colors"
+          className="cursor-pointer truncate text-lg transition-colors hover:text-blue-600"
           onClick={onViewDetails}
         >
           {document.title || 'Untitled'}
         </CardTitle>
-        <CardDescription className="text-sm text-gray-500">{document.description}</CardDescription>
+        <CardDescription className="text-sm text-gray-500">
+          {document.description}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
-        <div className="text-sm text-gray-500 space-y-2 flex justify-between items-center">
-          <div className="flex items-center mb-0">
+        <div className="flex items-center justify-between space-y-2 text-sm text-gray-500">
+          <div className="mb-0 flex items-center">
             <User className="mr-2 h-4 w-4" />
             <span>{document.uploader?.firstName || 'Anonymous'}</span>
           </div>
-          <div className="flex items-center mb-0">
+          <div className="mb-0 flex items-center">
             <Eye className="mr-2 h-4 w-4" />
             <span>{document.viewCount || 0} views</span>
           </div>
@@ -84,13 +86,17 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button size="sm" onClick={onDownload} disabled={isDownloading}>
-              <Download className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`} />
+              <Download
+                className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
+              />
               {isDownloading && <span className="ml-2">Downloading...</span>}
             </Button>
           </TooltipTrigger>
 
           <TooltipContent>
-            <p>{isDownloading ? 'Preparing download...' : 'Download all files'}</p>
+            <p>
+              {isDownloading ? 'Preparing download...' : 'Download all files'}
+            </p>
           </TooltipContent>
         </Tooltip>
       </CardFooter>

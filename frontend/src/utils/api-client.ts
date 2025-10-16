@@ -1,9 +1,8 @@
-import axios from 'axios';
-import type {
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosResponse,
-  InternalAxiosRequestConfig,
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from 'axios';
 
 import { API_CONFIG, HTTP_STATUS } from '@/config';
@@ -44,7 +43,10 @@ class TokenManager {
     }
   }
 
-  setCallbacks(setToken: (token: string) => void, clearToken: () => void): void {
+  setCallbacks(
+    setToken: (token: string) => void,
+    clearToken: () => void,
+  ): void {
     this.setTokenCallback = setToken;
     this.clearTokenCallback = clearToken;
   }
@@ -81,20 +83,23 @@ class ApiClient {
 
           // Debug log to verify token is being sent
           if (import.meta.env.DEV) {
-            console.log('[ApiClient] Sending request with token:', token.substring(0, 20) + '...');
+            console.log(
+              '[ApiClient] Sending request with token:',
+              token.substring(0, 20) + '...',
+            );
           }
         } else if (import.meta.env.DEV) {
           console.log('[ApiClient] Sending request without token');
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      error => Promise.reject(error),
     );
 
     // Response interceptor - Handle token refresh and error formatting
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
-      async (error) => {
+      async error => {
         const originalRequest = error.config;
 
         if (
@@ -119,7 +124,7 @@ class ApiClient {
         // Extract error message from API response
         const apiError = this.extractErrorMessage(error);
         return Promise.reject(apiError);
-      }
+      },
     );
   }
 
@@ -152,7 +157,7 @@ class ApiClient {
       const response = await axios.post(
         `${API_CONFIG.BASE_URL}/auth/refresh`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       const { data } = response.data as ApiResponse<{ accessToken: string }>;
@@ -201,27 +206,45 @@ class ApiClient {
   }
 
   // Public methods
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async get<T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
     const response = await this.client.get<ApiResponse<T>>(url, config);
     return response.data;
   }
 
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async post<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
     const response = await this.client.post<ApiResponse<T>>(url, data, config);
     return response.data;
   }
 
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async put<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
     const response = await this.client.put<ApiResponse<T>>(url, data, config);
     return response.data;
   }
 
-  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async patch<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
     const response = await this.client.patch<ApiResponse<T>>(url, data, config);
     return response.data;
   }
 
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async delete<T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
     const response = await this.client.delete<ApiResponse<T>>(url, config);
     return response.data;
   }
@@ -240,7 +263,7 @@ class ApiClient {
   connectToRedux(
     setTokenAction: (token: string) => void,
     clearTokenAction: () => void,
-    getTokenFromStore: () => string | null
+    getTokenFromStore: () => string | null,
   ): void {
     this.tokenManager.setCallbacks(setTokenAction, clearTokenAction);
     this.getTokenFromStore = getTokenFromStore;
@@ -253,7 +276,7 @@ class ApiClient {
   async uploadFile<T>(
     url: string,
     file: File,
-    onUploadProgress?: (progressEvent: any) => void
+    onUploadProgress?: (progressEvent: any) => void,
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
     formData.append('file', file);

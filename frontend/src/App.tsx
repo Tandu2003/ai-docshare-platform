@@ -1,10 +1,11 @@
-import { Toaster } from 'sonner';
-
 import { Provider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 import { AuthInitializer } from '@/components/auth';
+
 import '@/index.css';
+
 import { router } from '@/router';
 import { store } from '@/store';
 import { setStore } from '@/utils/auth.service';

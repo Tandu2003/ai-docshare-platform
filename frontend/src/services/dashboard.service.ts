@@ -92,7 +92,9 @@ interface DashboardNotificationApiResponse {
   user: DashboardUserSummaryApiResponse;
 }
 
-const mapUserSummary = (user?: DashboardUserSummaryApiResponse | null): DashboardUserSummary => ({
+const mapUserSummary = (
+  user?: DashboardUserSummaryApiResponse | null,
+): DashboardUserSummary => ({
   id: user?.id ?? '',
   username: user?.username ?? undefined,
   firstName: user?.firstName ?? null,
@@ -100,7 +102,9 @@ const mapUserSummary = (user?: DashboardUserSummaryApiResponse | null): Dashboar
   avatar: user?.avatar ?? null,
 });
 
-const mapDocument = (document: DashboardDocumentApiResponse): DashboardDocument => ({
+const mapDocument = (
+  document: DashboardDocumentApiResponse,
+): DashboardDocument => ({
   id: document.id,
   title: document.title,
   description: document.description ?? null,
@@ -128,7 +132,9 @@ const mapDocument = (document: DashboardDocumentApiResponse): DashboardDocument 
   },
 });
 
-const mapCategory = (category: DashboardCategoryApiResponse): DashboardCategory => ({
+const mapCategory = (
+  category: DashboardCategoryApiResponse,
+): DashboardCategory => ({
   id: category.id,
   name: category.name,
   icon: category.icon ?? null,
@@ -139,7 +145,9 @@ const mapCategory = (category: DashboardCategoryApiResponse): DashboardCategory 
   totalViews: category.totalViews,
 });
 
-const mapActivity = (activity: DashboardActivityApiResponse): DashboardActivity => ({
+const mapActivity = (
+  activity: DashboardActivityApiResponse,
+): DashboardActivity => ({
   id: activity.id,
   userId: activity.userId ?? undefined,
   action: activity.action,
@@ -153,7 +161,7 @@ const mapActivity = (activity: DashboardActivityApiResponse): DashboardActivity 
 });
 
 const mapNotification = (
-  notification: DashboardNotificationApiResponse
+  notification: DashboardNotificationApiResponse,
 ): DashboardNotification => ({
   id: notification.id,
   userId: notification.userId,
@@ -168,10 +176,14 @@ const mapNotification = (
 });
 
 export const getDashboardOverview = async (): Promise<DashboardOverview> => {
-  const response = await apiClient.get<DashboardOverviewApiResponse>('/analytics/dashboard');
+  const response = await apiClient.get<DashboardOverviewApiResponse>(
+    '/analytics/dashboard',
+  );
 
   if (!response.success || !response.data) {
-    throw new Error(response.message || 'Không thể tải dữ liệu tổng quan dashboard');
+    throw new Error(
+      response.message || 'Không thể tải dữ liệu tổng quan dashboard',
+    );
   }
 
   const data = response.data;

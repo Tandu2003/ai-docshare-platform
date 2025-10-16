@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { FilesService } from '../files/files.service';
-import { GeminiService, DocumentAnalysisResult } from './gemini.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { DocumentAnalysisResult, GeminiService } from './gemini.service';
+import { Injectable, Logger } from '@nestjs/common';
 
 export interface AIAnalysisRequest {
   fileIds: string[];
@@ -22,17 +22,21 @@ export class AIService {
   constructor(
     private prisma: PrismaService,
     private filesService: FilesService,
-    private geminiService: GeminiService
+    private geminiService: GeminiService,
   ) {}
 
   /**
    * Analyze documents using AI and return metadata suggestions
    */
-  async analyzeDocuments(request: AIAnalysisRequest): Promise<AIAnalysisResponse> {
+  async analyzeDocuments(
+    request: AIAnalysisRequest,
+  ): Promise<AIAnalysisResponse> {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Starting AI analysis for ${request.fileIds.length} files`);
+      this.logger.log(
+        `Starting AI analysis for ${request.fileIds.length} files`,
+      );
 
       // Validate files belong to user
       const files = await this.prisma.file.findMany({
@@ -48,23 +52,29 @@ export class AIService {
 
       if (files.length !== request.fileIds.length) {
         this.logger.warn(
-          `Some files not found or don't belong to user. Expected: ${request.fileIds.length}, Found: ${files.length}`
+          `Some files not found or don't belong to user. Expected: ${request.fileIds.length}, Found: ${files.length}`,
         );
       }
 
       // Get secure URLs for files
       const fileUrls = await Promise.all(
-        files.map(async (file) => {
+        files.map(async file => {
           try {
-            return await this.filesService.getSecureFileUrl(file.id, request.userId);
+            return await this.filesService.getSecureFileUrl(
+              file.id,
+              request.userId,
+            );
           } catch (error) {
-            this.logger.error(`Error getting secure URL for file ${file.id}:`, error);
+            this.logger.error(
+              `Error getting secure URL for file ${file.id}:`,
+              error,
+            );
             return null;
           }
-        })
+        }),
       );
 
-      const validUrls = fileUrls.filter((url) => url !== null);
+      const validUrls = fileUrls.filter(url => url !== null);
 
       if (validUrls.length === 0) {
         throw new Error('No accessible file URLs found');
@@ -73,7 +83,8 @@ export class AIService {
       this.logger.log(`Analyzing ${validUrls.length} files with Gemini AI`);
 
       // Analyze with Gemini
-      const analysisResult = await this.geminiService.analyzeDocumentFromFiles(validUrls);
+      const analysisResult =
+        await this.geminiService.analyzeDocumentFromFiles(validUrls);
 
       const processingTime = Date.now() - startTime;
 
@@ -111,7 +122,10 @@ export class AIService {
   /**
    * Save AI analysis to database
    */
-  async saveAnalysis(documentId: string, analysis: DocumentAnalysisResult): Promise<void> {
+  async saveAnalysis(
+    documentId: string,
+    analysis: DocumentAnalysisResult,
+  ): Promise<void> {
     try {
       await this.prisma.aIAnalysis.upsert({
         where: { documentId },

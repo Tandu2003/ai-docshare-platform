@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+import { useEffect } from 'react';
 
-import { Button } from '@/components/ui/button'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -18,19 +20,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { zodResolver } from '@hookform/resolvers/zod'
-
-import type { CreateUserRequest, UpdateUserRequest, User } from '@/services/user.service';
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import type {
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+} from '@/services/user.service';
 
 const userFormSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -38,13 +42,17 @@ const userFormSchema = z.object({
   password: z
     .string()
     .optional()
-    .refine((val) => {
+    .refine(val => {
       // Nếu có giá trị thì phải có ít nhất 6 ký tự, nếu không có thì OK
       return !val || val.length >= 6;
     }, 'Mật khẩu phải có ít nhất 6 ký tự'),
   firstName: z.string().min(1, 'Tên không được để trống'),
   lastName: z.string().min(1, 'Họ không được để trống'),
-  avatar: z.string().url('URL ảnh đại diện không hợp lệ').optional().or(z.literal('')),
+  avatar: z
+    .string()
+    .url('URL ảnh đại diện không hợp lệ')
+    .optional()
+    .or(z.literal('')),
   bio: z.string().max(500, 'Tiểu sử không được quá 500 ký tự').optional(),
   roleId: z.string().min(1, 'Vai trò không được để trống'),
 });
@@ -122,9 +130,11 @@ export function UserForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Chỉnh sửa người dùng' : 'Tạo người dùng mới'}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? 'Chỉnh sửa người dùng' : 'Tạo người dùng mới'}
+          </DialogTitle>
           <DialogDescription>
             {isEdit
               ? 'Cập nhật thông tin người dùng. Để trống mật khẩu nếu không muốn thay đổi.'
@@ -133,8 +143,11 @@ export function UserForm({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Email */}
               <FormField
                 control={form.control}
@@ -166,7 +179,7 @@ export function UserForm({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* First Name */}
               <FormField
                 control={form.control}
@@ -205,7 +218,8 @@ export function UserForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Mật khẩu {isEdit ? '(để trống nếu không muốn thay đổi)' : '*'}
+                    Mật khẩu{' '}
+                    {isEdit ? '(để trống nếu không muốn thay đổi)' : '*'}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -227,7 +241,10 @@ export function UserForm({
                 <FormItem>
                   <FormLabel>URL ảnh đại diện</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com/avatar.jpg" {...field} />
+                    <Input
+                      placeholder="https://example.com/avatar.jpg"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -254,7 +271,7 @@ export function UserForm({
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Role */}
               <FormField
                 control={form.control}
@@ -269,7 +286,7 @@ export function UserForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {roles.map((role) => (
+                        {roles.map(role => (
                           <SelectItem key={role.id} value={role.id}>
                             {role.name} - {role.description}
                           </SelectItem>

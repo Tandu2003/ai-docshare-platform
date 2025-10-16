@@ -1,6 +1,13 @@
-import { AlertCircle, CheckCircle, FileText, Plus, Upload, X } from 'lucide-react';
-
 import React, { useCallback, useRef, useState } from 'react';
+
+import {
+  AlertCircle,
+  CheckCircle,
+  FileText,
+  Plus,
+  Upload,
+  X,
+} from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +27,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { AIService, type DocumentAnalysisResult } from '@/services/ai.service';
-import { DocumentsService, FileUploadResult, FilesService } from '@/services/files.service';
+import {
+  DocumentsService,
+  FilesService,
+  FileUploadResult,
+} from '@/services/files.service';
 
 interface FileUploadProps {
   onUploadComplete?: (document: any) => void;
@@ -117,54 +128,59 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // Process files helper function
   const handleFiles = useCallback(
     async (newFiles: File[]) => {
-      const processedFiles: FileWithMetadata[] = newFiles.map((file) => {
+      const processedFiles: FileWithMetadata[] = newFiles.map(file => {
         const error = validateFile(file);
         return {
           file,
           id: Math.random().toString(36).substring(7),
-          preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+          preview: file.type.startsWith('image/')
+            ? URL.createObjectURL(file)
+            : undefined,
           error: error || undefined,
         };
       });
 
       // Add files to state
       if (multiple) {
-        setFiles((prev) => [...prev, ...processedFiles]);
+        setFiles(prev => [...prev, ...processedFiles]);
       } else {
         setFiles(processedFiles.slice(0, 1));
       }
 
       // Upload valid files using real API
-      const validFiles = processedFiles.filter((f) => !f.error);
+      const validFiles = processedFiles.filter(f => !f.error);
       if (validFiles.length > 0) {
         await uploadFilesToAPI(validFiles);
       }
     },
-    [multiple]
+    [multiple],
   );
 
   // Real file upload using API
   const uploadFilesToAPI = async (filesToUpload: FileWithMetadata[]) => {
     try {
       // Set uploading state
-      setFiles((prev) =>
-        prev.map((f) => (filesToUpload.find((tf) => tf.id === f.id) ? { ...f, progress: 10 } : f))
+      setFiles(prev =>
+        prev.map(f =>
+          filesToUpload.find(tf => tf.id === f.id) ? { ...f, progress: 10 } : f,
+        ),
       );
 
       // Extract File objects for upload
-      const files = filesToUpload.map((f) => f.file);
+      const files = filesToUpload.map(f => f.file);
 
       // Upload files using real API
       const response = await FilesService.uploadFiles(files);
 
       if (response.success && response.data) {
         // Update files with uploaded file IDs
-        setFiles((prev) =>
-          prev.map((f) => {
-            const fileToUpload = filesToUpload.find((tf) => tf.id === f.id);
+        setFiles(prev =>
+          prev.map(f => {
+            const fileToUpload = filesToUpload.find(tf => tf.id === f.id);
             if (fileToUpload) {
               const uploadedFile = response.data?.find(
-                (_uf: FileUploadResult, index: number) => filesToUpload[index].id === f.id
+                (_uf: FileUploadResult, index: number) =>
+                  filesToUpload[index].id === f.id,
               );
               return uploadedFile
                 ? {
@@ -176,11 +192,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 : f;
             }
             return f;
-          })
+          }),
         );
 
         // Trigger AI analysis after successful upload (only for supported file types)
-        const uploadedFileIds = response.data.map((f) => f.id);
+        const uploadedFileIds = response.data.map(f => f.id);
 
         // Create file info mapping for AI analysis
         const fileInfoMap = new Map();
@@ -200,12 +216,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      setFiles((prev) =>
-        prev.map((f) =>
-          filesToUpload.find((tf) => tf.id === f.id)
+      setFiles(prev =>
+        prev.map(f =>
+          filesToUpload.find(tf => tf.id === f.id)
             ? { ...f, error: 'Tải lên thất bại', progress: undefined }
-            : f
-        )
+            : f,
+        ),
       );
     }
   };
@@ -213,18 +229,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // AI Analysis function
   const analyzeFilesWithAI = async (
     fileIds: string[],
-    fileInfoMap?: Map<string, { id: string; name: string; type: string }>
+    fileInfoMap?: Map<string, { id: string; name: string; type: string }>,
   ) => {
     try {
-      setAiAnalysis((prev) => ({ ...prev, isAnalyzing: true, error: null }));
+      setAiAnalysis(prev => ({ ...prev, isAnalyzing: true, error: null }));
 
       let supportedFiles: { id: string; name: string; type: string }[] = [];
 
       if (fileInfoMap) {
         // Use file info from upload response
         supportedFiles = fileIds
-          .map((id) => fileInfoMap.get(id))
-          .filter((fileInfo) => fileInfo && AIService.isFileTypeSupported(fileInfo.name)) as {
+          .map(id => fileInfoMap.get(id))
+          .filter(
+            fileInfo =>
+              fileInfo && AIService.isFileTypeSupported(fileInfo.name),
+          ) as {
           id: string;
           name: string;
           type: string;
@@ -232,11 +251,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       } else {
         // Fallback to state-based approach
         const uploadedFiles = files.filter(
-          (f) => f.uploaded && f.fileId && fileIds.includes(f.fileId)
+          f => f.uploaded && f.fileId && fileIds.includes(f.fileId),
         );
         supportedFiles = uploadedFiles
-          .filter((f) => AIService.isFileTypeSupported(f.file.name))
-          .map((f) => ({ id: f.fileId!, name: f.file.name, type: f.file.type }));
+          .filter(f => AIService.isFileTypeSupported(f.file.name))
+          .map(f => ({ id: f.fileId!, name: f.file.name, type: f.file.type }));
       }
 
       console.log('File IDs to analyze:', fileIds);
@@ -244,7 +263,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       if (supportedFiles.length === 0) {
         const allFileInfo = fileIds
-          .map((id) => {
+          .map(id => {
             const fileInfo = fileInfoMap?.get(id);
             return fileInfo
               ? `${fileInfo.name} (${fileInfo.name.split('.').pop()?.toLowerCase()})`
@@ -252,7 +271,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           })
           .join(', ');
 
-        setAiAnalysis((prev) => ({
+        setAiAnalysis(prev => ({
           ...prev,
           isAnalyzing: false,
           error: `No supported file types for AI analysis. Files: ${allFileInfo}. Supported: ${AIService.getSupportedFileTypes().join(', ')}`,
@@ -261,14 +280,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
 
       // Use only supported file IDs for analysis
-      const supportedFileIds = supportedFiles.map((f) => f.id);
-      const analysisResponse = await AIService.analyzeDocument({ fileIds: supportedFileIds });
+      const supportedFileIds = supportedFiles.map(f => f.id);
+      const analysisResponse = await AIService.analyzeDocument({
+        fileIds: supportedFileIds,
+      });
 
       if (analysisResponse.success && analysisResponse.data) {
         const analysisResult = analysisResponse.data;
 
         // Update form with AI suggestions
-        setUploadData((prev) => ({
+        setUploadData(prev => ({
           ...prev,
           title: prev.title || analysisResult.title || '',
           description: prev.description || analysisResult.description || '',
@@ -276,7 +297,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           language: prev.language || analysisResult.language || 'en',
         }));
 
-        setAiAnalysis((prev) => ({
+        setAiAnalysis(prev => ({
           ...prev,
           isAnalyzing: false,
           analysisResult,
@@ -287,7 +308,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
     } catch (error) {
       console.error('AI analysis error:', error);
-      setAiAnalysis((prev) => ({
+      setAiAnalysis(prev => ({
         ...prev,
         isAnalyzing: false,
         error: error instanceof Error ? error.message : 'Phân tích AI thất bại',
@@ -317,7 +338,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         handleFiles(Array.from(e.dataTransfer.files));
       }
     },
-    [handleFiles]
+    [handleFiles],
   );
 
   // Handle file input
@@ -327,16 +348,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         handleFiles(Array.from(e.target.files));
       }
     },
-    [handleFiles]
+    [handleFiles],
   );
 
   const removeFile = (fileId: string) => {
-    setFiles((prev) => {
-      const fileWithMetadata = prev.find((f) => f.id === fileId);
+    setFiles(prev => {
+      const fileWithMetadata = prev.find(f => f.id === fileId);
       if (fileWithMetadata?.preview) {
         URL.revokeObjectURL(fileWithMetadata.preview);
       }
-      return prev.filter((f) => f.id !== fileId);
+      return prev.filter(f => f.id !== fileId);
     });
   };
 
@@ -358,7 +379,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const handleCreateDocument = async () => {
-    const uploadedFiles = files.filter((f) => f.uploaded && f.fileId);
+    const uploadedFiles = files.filter(f => f.uploaded && f.fileId);
     if (uploadedFiles.length === 0) {
       onUploadError?.('Vui lòng tải lên tệp trước');
       return;
@@ -376,7 +397,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const documentData = {
         title: uploadData.title,
         description: uploadData.description,
-        fileIds: uploadedFiles.map((f) => f.fileId!),
+        fileIds: uploadedFiles.map(f => f.fileId!),
         isPublic: uploadData.isPublic,
         tags: uploadData.tags,
         language: uploadData.language,
@@ -391,7 +412,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setUploadData({ isPublic: true, language: 'en', tags: [] });
     } catch (error) {
       console.error('Failed to create document:', error);
-      onUploadError?.(error instanceof Error ? error.message : 'Không thể tạo tài liệu');
+      onUploadError?.(
+        error instanceof Error ? error.message : 'Không thể tạo tài liệu',
+      );
     } finally {
       setUploading(false);
     }
@@ -410,11 +433,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* Drop Zone */}
         <div
           className={cn(
-            'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
+            'cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors',
             dragActive
               ? 'border-primary bg-primary/5'
               : 'border-muted-foreground/25 hover:border-primary/50',
-            files.length > 0 && 'mb-4'
+            files.length > 0 && 'mb-4',
           )}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -422,10 +445,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-lg font-medium mb-2">Nhấn vào đây hoặc kéo thả tài liệu để tải lên</p>
-          <p className="text-sm text-muted-foreground">
-            {multiple ? 'Tải lên nhiều tài liệu' : 'Tải lên một tài liệu'} (tối đa 100MB mỗi tệp)
+          <Upload className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+          <p className="mb-2 text-lg font-medium">
+            Nhấn vào đây hoặc kéo thả tài liệu để tải lên
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {multiple ? 'Tải lên nhiều tài liệu' : 'Tải lên một tài liệu'} (tối
+            đa 100MB mỗi tệp)
           </p>
           <input
             ref={fileInputRef}
@@ -441,13 +467,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {files.length > 0 && (
           <div className="space-y-3">
             <h3 className="font-medium">Tài liệu đã chọn</h3>
-            {files.map((file) => (
+            {files.map(file => (
               <div
                 key={file.id}
                 className={cn(
-                  'flex items-center gap-3 p-3 border rounded-lg',
+                  'flex items-center gap-3 rounded-lg border p-3',
                   file.error && 'border-destructive/50 bg-destructive/5',
-                  file.uploaded && 'border-green-500/50 bg-green-500/5'
+                  file.uploaded && 'border-green-500/50 bg-green-500/5',
                 )}
               >
                 <div className="flex-shrink-0">
@@ -455,21 +481,27 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     <img
                       src={file.preview}
                       alt={file.file.name}
-                      className="h-10 w-10 object-cover rounded"
+                      className="h-10 w-10 rounded object-cover"
                     />
                   ) : (
-                    <FileText className="h-10 w-10 text-muted-foreground" />
+                    <FileText className="text-muted-foreground h-10 w-10" />
                   )}
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{file.file.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatFileSize(file.file.size)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {file.file.name}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {formatFileSize(file.file.size)}
+                  </p>
 
                   {file.error && (
                     <Alert className="mt-2 py-2">
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-xs">{file.error}</AlertDescription>
+                      <AlertDescription className="text-xs">
+                        {file.error}
+                      </AlertDescription>
                     </Alert>
                   )}
 
@@ -482,7 +514,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   {file.uploaded ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : file.error ? (
-                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    <AlertCircle className="text-destructive h-5 w-5" />
                   ) : (
                     <Button
                       size="sm"
@@ -502,8 +534,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* AI Analysis Status */}
         {aiAnalysis.isAnalyzing && (
           <Alert className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            <span className="text-sm">AI đang phân tích tài liệu của bạn...</span>
+            <div className="border-primary h-4 w-4 animate-spin rounded-full border-b-2"></div>
+            <span className="text-sm">
+              AI đang phân tích tài liệu của bạn...
+            </span>
           </Alert>
         )}
 
@@ -511,7 +545,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <Alert variant="destructive">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">Lỗi phân tích AI: {aiAnalysis.error}</span>
+              <span className="text-sm">
+                Lỗi phân tích AI: {aiAnalysis.error}
+              </span>
             </div>
           </Alert>
         )}
@@ -522,17 +558,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <AlertDescription className="text-blue-800">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="font-medium">AI đã phân tích tài liệu của bạn!</p>
+                  <p className="font-medium">
+                    AI đã phân tích tài liệu của bạn!
+                  </p>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const uploadedFiles = files.filter((f) => f.uploaded && f.fileId);
-                      const supportedFiles = uploadedFiles.filter((f) =>
-                        AIService.isFileTypeSupported(f.file.name)
+                      const uploadedFiles = files.filter(
+                        f => f.uploaded && f.fileId,
+                      );
+                      const supportedFiles = uploadedFiles.filter(f =>
+                        AIService.isFileTypeSupported(f.file.name),
                       );
                       if (supportedFiles.length > 0) {
-                        analyzeFilesWithAI(supportedFiles.map((f) => f.fileId!));
+                        analyzeFilesWithAI(supportedFiles.map(f => f.fileId!));
                       }
                     }}
                     disabled={aiAnalysis.isAnalyzing}
@@ -543,17 +583,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 </div>
                 {aiAnalysis.analysisResult.summary && (
                   <p className="text-sm">
-                    <strong>Tóm tắt:</strong> {aiAnalysis.analysisResult.summary}
+                    <strong>Tóm tắt:</strong>{' '}
+                    {aiAnalysis.analysisResult.summary}
                   </p>
                 )}
                 {aiAnalysis.analysisResult.keyPoints &&
                   aiAnalysis.analysisResult.keyPoints.length > 0 && (
                     <div className="text-sm">
                       <strong>Điểm chính:</strong>
-                      <ul className="list-disc list-inside ml-2">
-                        {aiAnalysis.analysisResult.keyPoints.slice(0, 3).map((point, index) => (
-                          <li key={index}>{point}</li>
-                        ))}
+                      <ul className="ml-2 list-inside list-disc">
+                        {aiAnalysis.analysisResult.keyPoints
+                          .slice(0, 3)
+                          .map((point, index) => (
+                            <li key={index}>{point}</li>
+                          ))}
                       </ul>
                     </div>
                   )}
@@ -569,26 +612,29 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )}
 
         {/* Upload Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="title">Tiêu đề *</Label>
             <div className="relative">
               <Input
                 id="title"
                 value={uploadData.title || ''}
-                onChange={(e) =>
-                  setUploadData((prev: DocumentData) => ({ ...prev, title: e.target.value }))
+                onChange={e =>
+                  setUploadData((prev: DocumentData) => ({
+                    ...prev,
+                    title: e.target.value,
+                  }))
                 }
                 placeholder="Tiêu đề tài liệu"
                 required
                 className={cn(
                   aiAnalysis.analysisResult?.title &&
                     !uploadData.title &&
-                    'border-blue-300 bg-blue-50'
+                    'border-blue-300 bg-blue-50',
                 )}
               />
               {aiAnalysis.analysisResult?.title && !uploadData.title && (
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <div className="absolute top-1/2 right-2 -translate-y-1/2 transform">
                   <Badge variant="secondary" className="text-xs">
                     Được đề xuất bởi AI
                   </Badge>
@@ -601,8 +647,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <Label htmlFor="language">Language</Label>
             <Select
               value={uploadData.language}
-              onValueChange={(value) =>
-                setUploadData((prev: DocumentData) => ({ ...prev, language: value }))
+              onValueChange={value =>
+                setUploadData((prev: DocumentData) => ({
+                  ...prev,
+                  language: value,
+                }))
               }
             >
               <SelectTrigger>
@@ -628,24 +677,28 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <Textarea
               id="description"
               value={uploadData.description || ''}
-              onChange={(e) =>
-                setUploadData((prev: DocumentData) => ({ ...prev, description: e.target.value }))
+              onChange={e =>
+                setUploadData((prev: DocumentData) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
               }
               placeholder="Mô tả ngắn gọn về tài liệu"
               rows={3}
               className={cn(
                 aiAnalysis.analysisResult?.description &&
                   !uploadData.description &&
-                  'border-blue-300 bg-blue-50'
+                  'border-blue-300 bg-blue-50',
               )}
             />
-            {aiAnalysis.analysisResult?.description && !uploadData.description && (
-              <div className="absolute right-2 top-2">
-                <Badge variant="secondary" className="text-xs">
-                  AI Suggested
-                </Badge>
-              </div>
-            )}
+            {aiAnalysis.analysisResult?.description &&
+              !uploadData.description && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="secondary" className="text-xs">
+                    AI Suggested
+                  </Badge>
+                </div>
+              )}
           </div>
         </div>
 
@@ -653,30 +706,38 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Thẻ</Label>
-            {aiAnalysis.analysisResult?.tags && aiAnalysis.analysisResult.tags.length > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setUploadData((prev) => ({
-                    ...prev,
-                    tags: [...(prev.tags || []), ...(aiAnalysis.analysisResult?.tags || [])],
-                  }));
-                }}
-                className="text-xs"
-              >
-                Áp dụng thẻ AI
-              </Button>
-            )}
+            {aiAnalysis.analysisResult?.tags &&
+              aiAnalysis.analysisResult.tags.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setUploadData(prev => ({
+                      ...prev,
+                      tags: [
+                        ...(prev.tags || []),
+                        ...(aiAnalysis.analysisResult?.tags || []),
+                      ],
+                    }));
+                  }}
+                  className="text-xs"
+                >
+                  Áp dụng thẻ AI
+                </Button>
+              )}
           </div>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="mb-2 flex flex-wrap gap-2">
             {uploadData.tags?.map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="flex items-center gap-1"
+              >
                 {tag}
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                  className="hover:bg-destructive hover:text-destructive-foreground h-4 w-4 p-0"
                   onClick={() => removeTag(tag)}
                   title={`Remove ${tag} tag`}
                 >
@@ -688,9 +749,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <div className="flex gap-2">
             <Input
               value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
+              onChange={e => setNewTag(e.target.value)}
               placeholder="Thêm thẻ (ví dụ: nghiên cứu, hướng dẫn, tài liệu)"
-              onKeyPress={(e) => {
+              onKeyPress={e => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   addTag();
@@ -710,26 +771,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </Button>
           </div>
           {uploadData.tags && uploadData.tags.length > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {uploadData.tags.length} thẻ đã được thêm
             </p>
           )}
         </div>
 
-        <div className="flex items-center space-x-2 p-3 rounded-lg border bg-muted/50">
+        <div className="bg-muted/50 flex items-center space-x-2 rounded-lg border p-3">
           <Checkbox
             id="isPublic"
             checked={uploadData.isPublic}
-            onCheckedChange={(checked) =>
-              setUploadData((prev: DocumentData) => ({ ...prev, isPublic: !!checked }))
+            onCheckedChange={checked =>
+              setUploadData((prev: DocumentData) => ({
+                ...prev,
+                isPublic: !!checked,
+              }))
             }
           />
           <div className="flex-1">
-            <Label htmlFor="isPublic" className="font-medium cursor-pointer">
+            <Label htmlFor="isPublic" className="cursor-pointer font-medium">
               Làm cho tài liệu này công khai
             </Label>
-            <p className="text-xs text-muted-foreground mt-1">
-              Tài liệu công khai có thể được xem bởi bất kỳ ai mà không cần đăng nhập
+            <p className="text-muted-foreground mt-1 text-xs">
+              Tài liệu công khai có thể được xem bởi bất kỳ ai mà không cần đăng
+              nhập
             </p>
           </div>
         </div>
@@ -739,7 +804,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onClick={handleCreateDocument}
           disabled={
             files.length === 0 ||
-            !files.some((f) => f.uploaded) ||
+            !files.some(f => f.uploaded) ||
             !uploadData.title?.trim() ||
             uploading
           }
@@ -747,12 +812,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         >
           {uploading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
               Đang tạo tài liệu...
             </>
           ) : (
             <>
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="mr-2 h-4 w-4" />
               Tạo tài liệu
             </>
           )}

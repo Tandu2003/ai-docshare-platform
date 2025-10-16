@@ -1,5 +1,13 @@
-import { Request, Response } from 'express';
-
+import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from '../files/files.service';
+import { DocumentsService } from './documents.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { DownloadDocumentDto } from './dto/download-document.dto';
+import { ShareDocumentDto } from './dto/share-document.dto';
+import { ViewDocumentDto } from './dto/view-document.dto';
 import { CheckPolicy } from '@/common/casl';
 import {
   BadRequestException,
@@ -16,18 +24,13 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-
-import { Public } from '../auth/decorators/public.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { ResponseHelper } from '../common/helpers/response.helper';
-import { FilesService } from '../files/files.service';
-import { DocumentsService } from './documents.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { DownloadDocumentDto } from './dto/download-document.dto';
-import { ShareDocumentDto } from './dto/share-document.dto';
-import { ViewDocumentDto } from './dto/view-document.dto';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Request, Response } from 'express';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -45,7 +48,7 @@ export class DocumentsController {
 
   constructor(
     private readonly documentsService: DocumentsService,
-    private readonly filesService: FilesService
+    private readonly filesService: FilesService,
   ) {}
 
   @Post('create')
@@ -58,21 +61,28 @@ export class DocumentsController {
   async createDocument(
     @Body() createDocumentDto: CreateDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     const userId = req.user?.id;
     if (!userId) {
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
-      const document = await this.documentsService.createDocument(createDocumentDto, userId);
+      const document = await this.documentsService.createDocument(
+        createDocumentDto,
+        userId,
+      );
 
       return ResponseHelper.success(
         res,
         document,
         'Tài liệu đã được tạo thành công',
-        HttpStatus.CREATED
+        HttpStatus.CREATED,
       );
     } catch (error) {
       this.logger.error('Error creating document:', error);
@@ -84,7 +94,7 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi tạo tài liệu',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -101,7 +111,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() downloadDto: DownloadDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const userId = req.user?.id; // Use optional chaining since user might not be authenticated
@@ -119,11 +129,12 @@ export class DocumentsController {
         ipAddress = ipAddress.substring(7);
       }
 
-      const userAgent = downloadDto.userAgent || req.get('User-Agent') || 'unknown';
+      const userAgent =
+        downloadDto.userAgent || req.get('User-Agent') || 'unknown';
       const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
 
       this.logger.log(
-        `Download request for document ${documentId} from user ${userId}, IP: ${ipAddress}`
+        `Download request for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
       );
 
       const downloadResult = await this.documentsService.downloadDocument(
@@ -131,16 +142,19 @@ export class DocumentsController {
         userId,
         ipAddress,
         userAgent,
-        referrer
+        referrer,
       );
 
       return ResponseHelper.success(
         res,
         downloadResult,
-        'Tải xuống tài liệu đã được chuẩn bị thành công'
+        'Tải xuống tài liệu đã được chuẩn bị thành công',
       );
     } catch (error) {
-      this.logger.error(`Error preparing download for document ${documentId}:`, error);
+      this.logger.error(
+        `Error preparing download for document ${documentId}:`,
+        error,
+      );
 
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
@@ -149,7 +163,7 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể chuẩn bị tải xuống tài liệu',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -164,7 +178,7 @@ export class DocumentsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const pageNum = Math.max(1, Number(page) || 1);
@@ -173,15 +187,23 @@ export class DocumentsController {
       // Get user ID if authenticated
       const userId = (req as any).user?.id;
 
-      const result = await this.documentsService.getPublicDocuments(pageNum, limitNum, userId);
+      const result = await this.documentsService.getPublicDocuments(
+        pageNum,
+        limitNum,
+        userId,
+      );
 
-      return ResponseHelper.success(res, result, 'Tài liệu công khai đã được truy xuất thành công');
+      return ResponseHelper.success(
+        res,
+        result,
+        'Tài liệu công khai đã được truy xuất thành công',
+      );
     } catch (error) {
       this.logger.error('Error getting public documents:', error);
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất tài liệu công khai',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -196,22 +218,30 @@ export class DocumentsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     const userId = req.user.id;
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 10;
 
     try {
-      const documents = await this.documentsService.getUserDocuments(userId, pageNum, limitNum);
+      const documents = await this.documentsService.getUserDocuments(
+        userId,
+        pageNum,
+        limitNum,
+      );
 
-      return ResponseHelper.success(res, documents, 'Tài liệu đã được truy xuất thành công');
+      return ResponseHelper.success(
+        res,
+        documents,
+        'Tài liệu đã được truy xuất thành công',
+      );
     } catch (error) {
       this.logger.error('Error getting user documents:', error);
       return ResponseHelper.error(
         res,
         'Không thể lấy tài liệu người dùng',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -228,15 +258,23 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get user ID if authenticated
       const userId = (req as any).user?.id;
 
-      const document = await this.documentsService.getDocumentById(documentId, userId, apiKey);
+      const document = await this.documentsService.getDocumentById(
+        documentId,
+        userId,
+        apiKey,
+      );
 
-      return ResponseHelper.success(res, document, 'Tài liệu đã được truy xuất thành công');
+      return ResponseHelper.success(
+        res,
+        document,
+        'Tài liệu đã được truy xuất thành công',
+      );
     } catch (error) {
       this.logger.error(`Error getting document ${documentId}:`, error);
 
@@ -244,7 +282,11 @@ export class DocumentsController {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
-      return ResponseHelper.error(res, 'Không thể lấy tài liệu', HttpStatus.INTERNAL_SERVER_ERROR);
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -259,29 +301,40 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() shareDocumentDto: ShareDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     const userId = req.user?.id;
     if (!userId) {
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
       const shareLink = await this.documentsService.createOrUpdateShareLink(
         documentId,
         userId,
-        shareDocumentDto
+        shareDocumentDto,
       );
-      return ResponseHelper.success(res, shareLink, 'Liên kết chia sẻ đã được cấu hình thành công');
+      return ResponseHelper.success(
+        res,
+        shareLink,
+        'Liên kết chia sẻ đã được cấu hình thành công',
+      );
     } catch (error) {
-      this.logger.error(`Error configuring share link for document ${documentId}:`, error);
+      this.logger.error(
+        `Error configuring share link for document ${documentId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
       return ResponseHelper.error(
         res,
         'Không thể cấu hình liên kết chia sẻ',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -296,25 +349,36 @@ export class DocumentsController {
   async revokeShareLink(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     const userId = req.user?.id;
     if (!userId) {
-      return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
       await this.documentsService.revokeShareLink(documentId, userId);
-      return ResponseHelper.success(res, null, 'Liên kết chia sẻ đã được thu hồi thành công');
+      return ResponseHelper.success(
+        res,
+        null,
+        'Liên kết chia sẻ đã được thu hồi thành công',
+      );
     } catch (error) {
-      this.logger.error(`Error revoking share link for document ${documentId}:`, error);
+      this.logger.error(
+        `Error revoking share link for document ${documentId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
       return ResponseHelper.error(
         res,
         'Không thể thu hồi liên kết chia sẻ',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -329,7 +393,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() viewDocumentDto: ViewDocumentDto,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get user ID if authenticated (optional)
@@ -337,7 +401,10 @@ export class DocumentsController {
 
       // Get IP address with multiple fallback methods
       let ipAddress =
-        req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
+        req.ip ||
+        req.connection?.remoteAddress ||
+        req.socket?.remoteAddress ||
+        'unknown';
 
       // Handle x-forwarded-for header (can be array)
       if (!ipAddress || ipAddress === 'unknown') {
@@ -357,7 +424,7 @@ export class DocumentsController {
       const { referrer } = viewDocumentDto;
 
       this.logger.log(
-        `Tracking view for document ${documentId}: userId=${userId}, ip=${ipAddress}`
+        `Tracking view for document ${documentId}: userId=${userId}, ip=${ipAddress}`,
       );
 
       const result = await this.documentsService.viewDocument(
@@ -365,12 +432,19 @@ export class DocumentsController {
         userId,
         ipAddress,
         userAgent,
-        referrer
+        referrer,
       );
 
-      return ResponseHelper.success(res, result, 'Lượt xem tài liệu đã được theo dõi thành công');
+      return ResponseHelper.success(
+        res,
+        result,
+        'Lượt xem tài liệu đã được theo dõi thành công',
+      );
     } catch (error) {
-      this.logger.error(`Error tracking view for document ${documentId}:`, error);
+      this.logger.error(
+        `Error tracking view for document ${documentId}:`,
+        error,
+      );
 
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
@@ -379,7 +453,7 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể theo dõi lượt xem tài liệu',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -397,14 +471,14 @@ export class DocumentsController {
       return ResponseHelper.success(
         res,
         allowedTypes,
-        'Các loại tệp được phép đã được truy xuất thành công'
+        'Các loại tệp được phép đã được truy xuất thành công',
       );
     } catch (error) {
       this.logger.error('Error getting allowed file types:', error);
       return ResponseHelper.error(
         res,
         'Không thể lấy các loại tệp được phép',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -419,17 +493,25 @@ export class DocumentsController {
   async deleteDocument(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       await this.documentsService.deleteDocument(documentId, userId);
 
-      return ResponseHelper.success(res, null, 'Tài liệu đã được xóa thành công');
+      return ResponseHelper.success(
+        res,
+        null,
+        'Tài liệu đã được xóa thành công',
+      );
     } catch (error) {
       this.logger.error(`Error deleting document ${documentId}:`, error);
 
@@ -437,7 +519,11 @@ export class DocumentsController {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
-      return ResponseHelper.error(res, 'Không thể xóa tài liệu', HttpStatus.INTERNAL_SERVER_ERROR);
+      return ResponseHelper.error(
+        res,
+        'Không thể xóa tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -451,20 +537,27 @@ export class DocumentsController {
   async getSecureFileUrl(
     @Param('fileId') fileId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return ResponseHelper.error(res, 'Không được ủy quyền', HttpStatus.UNAUTHORIZED);
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
-      const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
+      const secureUrl = await this.filesService.getSecureFileUrl(
+        fileId,
+        userId,
+      );
 
       return ResponseHelper.success(
         res,
         { secureUrl },
-        'URL tệp bảo mật đã được truy xuất thành công'
+        'URL tệp bảo mật đã được truy xuất thành công',
       );
     } catch (error) {
       this.logger.error(`Error getting secure URL for file ${fileId}:`, error);
@@ -476,7 +569,7 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể lấy URL tệp bảo mật',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -490,7 +583,7 @@ export class DocumentsController {
   async incrementViewCount(
     @Param('fileId') fileId: string,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get user ID if authenticated (optional)
@@ -498,7 +591,10 @@ export class DocumentsController {
 
       // Get IP address with multiple fallback methods
       let ipAddress =
-        req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
+        req.ip ||
+        req.connection?.remoteAddress ||
+        req.socket?.remoteAddress ||
+        'unknown';
 
       // Handle x-forwarded-for header (can be array)
       if (!ipAddress || ipAddress === 'unknown') {
@@ -516,19 +612,37 @@ export class DocumentsController {
 
       const userAgent = req.get('User-Agent') || 'unknown';
 
-      this.logger.log(`Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`);
+      this.logger.log(
+        `Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`,
+      );
 
-      await this.filesService.incrementViewCount(fileId, userId, ipAddress, userAgent);
+      await this.filesService.incrementViewCount(
+        fileId,
+        userId,
+        ipAddress,
+        userAgent,
+      );
 
-      return ResponseHelper.success(res, null, 'Lượt xem đã được tăng thành công');
+      return ResponseHelper.success(
+        res,
+        null,
+        'Lượt xem đã được tăng thành công',
+      );
     } catch (error) {
-      this.logger.error(`Error incrementing view count for file ${fileId}:`, error);
+      this.logger.error(
+        `Error incrementing view count for file ${fileId}:`,
+        error,
+      );
 
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
-      return ResponseHelper.error(res, 'Không thể tăng lượt xem', HttpStatus.INTERNAL_SERVER_ERROR);
+      return ResponseHelper.error(
+        res,
+        'Không thể tăng lượt xem',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

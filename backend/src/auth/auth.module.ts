@@ -1,15 +1,15 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtStrategy } from './strategies';
-import { PrismaModule } from '@/prisma/prisma.module';
-import { MailModule } from '@/mail/mail.module';
-import { RoleService } from './role.service';
 import { RoleController } from './role.controller';
+import { RoleService } from './role.service';
+import { JwtStrategy } from './strategies';
+import { MailModule } from '@/mail/mail.module';
+import { PrismaModule } from '@/prisma/prisma.module';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [

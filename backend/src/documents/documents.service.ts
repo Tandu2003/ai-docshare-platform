@@ -1,6 +1,9 @@
-import * as archiver from 'archiver';
 import { randomBytes } from 'crypto';
-
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { FilesService } from '../files/files.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { ShareDocumentDto } from './dto/share-document.dto';
 import {
   BadRequestException,
   Injectable,
@@ -9,12 +12,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentShareLink } from '@prisma/client';
-
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { FilesService } from '../files/files.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { ShareDocumentDto } from './dto/share-document.dto';
+import * as archiver from 'archiver';
 
 @Injectable()
 export class DocumentsService {
@@ -24,7 +22,7 @@ export class DocumentsService {
     private prisma: PrismaService,
     private filesService: FilesService,
     private r2Service: CloudflareR2Service,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -44,7 +42,9 @@ export class DocumentsService {
         aiAnalysis,
       } = createDocumentDto;
 
-      this.logger.log(`Creating document for user ${userId} with files: ${fileIds.join(', ')}`);
+      this.logger.log(
+        `Creating document for user ${userId} with files: ${fileIds.join(', ')}`,
+      );
 
       // Validate that all files exist and belong to the user
       const files = await this.prisma.file.findMany({
@@ -53,14 +53,16 @@ export class DocumentsService {
 
       if (files.length !== fileIds.length) {
         this.logger.error(
-          `Files validation failed. Found ${files.length} files, expected ${fileIds.length}`
+          `Files validation failed. Found ${files.length} files, expected ${fileIds.length}`,
         );
 
-        throw new BadRequestException('Một số tệp không tìm thấy hoặc không thuộc về người dùng');
+        throw new BadRequestException(
+          'Một số tệp không tìm thấy hoặc không thuộc về người dùng',
+        );
       }
 
       this.logger.log(
-        `Files validated successfully: ${files.map((f) => f.originalName).join(', ')}`
+        `Files validated successfully: ${files.map(f => f.originalName).join(', ')}`,
       );
 
       // Get or create default category
@@ -113,14 +115,21 @@ export class DocumentsService {
             include: {
               file: true,
             },
-          })
-        )
+          }),
+        ),
       );
 
-      this.logger.log(`Document-file relationships created: ${documentFiles.length} files`);
+      this.logger.log(
+        `Document-file relationships created: ${documentFiles.length} files`,
+      );
 
       // Save AI analysis if provided
-      if (useAI && aiAnalysis && aiAnalysis.confidence && aiAnalysis.confidence > 0) {
+      if (
+        useAI &&
+        aiAnalysis &&
+        aiAnalysis.confidence &&
+        aiAnalysis.confidence > 0
+      ) {
         try {
           await this.prisma.aIAnalysis.create({
             data: {
@@ -150,10 +159,12 @@ export class DocumentsService {
       // Return document with files
       const result = {
         ...document,
-        files: documentFiles.map((df) => df.file),
+        files: documentFiles.map(df => df.file),
       };
 
-      this.logger.log(`Document creation completed successfully: ${document.id}`);
+      this.logger.log(
+        `Document creation completed successfully: ${document.id}`,
+      );
       return result;
     } catch (error) {
       this.logger.error('Error creating document:', error);
@@ -208,7 +219,7 @@ export class DocumentsService {
         category: document.category,
         createdAt: document.createdAt,
       },
-      files: document.files.map((df) => ({
+      files: document.files.map(df => ({
         id: df.file.id,
         originalName: df.file.originalName,
         fileName: df.file.fileName,
@@ -250,7 +261,9 @@ export class DocumentsService {
     try {
       const skip = (page - 1) * limit;
 
-      this.logger.log(`Getting documents for user ${userId}, page ${page}, limit ${limit}`);
+      this.logger.log(
+        `Getting documents for user ${userId}, page ${page}, limit ${limit}`,
+      );
 
       const [documents, total] = await Promise.all([
         this.prisma.document.findMany({
@@ -279,8 +292,8 @@ export class DocumentsService {
 
       // Transform the data and add secure URLs
       const transformedDocuments = await Promise.all(
-        documents.map(async (document) => {
-          const filesData = document.files.map((df) => ({
+        documents.map(async document => {
+          const filesData = document.files.map(df => ({
             id: df.file.id,
             originalName: df.file.originalName,
             fileName: df.file.fileName,
@@ -289,9 +302,10 @@ export class DocumentsService {
             order: df.order,
           }));
 
-          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, {
-            userId,
-          });
+          const filesWithSecureUrls =
+            await this.filesService.addSecureUrlsToFiles(filesData, {
+              userId,
+            });
 
           return {
             id: document.id,
@@ -314,7 +328,7 @@ export class DocumentsService {
             totalRatings: document.totalRatings,
             files: filesWithSecureUrls,
           };
-        })
+        }),
       );
 
       return {
@@ -325,14 +339,20 @@ export class DocumentsService {
       };
     } catch (error) {
       this.logger.error('Error getting user documents:', error);
-      throw new InternalServerErrorException('Không thể lấy tài liệu người dùng');
+      throw new InternalServerErrorException(
+        'Không thể lấy tài liệu người dùng',
+      );
     }
   }
 
   /**
    * Get public documents with pagination
    */
-  async getPublicDocuments(page: number = 1, limit: number = 10, userId?: string) {
+  async getPublicDocuments(
+    page: number = 1,
+    limit: number = 10,
+    userId?: string,
+  ) {
     try {
       const skip = (page - 1) * limit;
 
@@ -377,8 +397,8 @@ export class DocumentsService {
 
       // Transform the data and add secure URLs
       const transformedDocuments = await Promise.all(
-        documents.map(async (document) => {
-          const filesData = document.files.map((df) => ({
+        documents.map(async document => {
+          const filesData = document.files.map(df => ({
             id: df.file.id,
             originalName: df.file.originalName,
             fileName: df.file.fileName,
@@ -387,9 +407,10 @@ export class DocumentsService {
             order: df.order,
           }));
 
-          const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, {
-            userId,
-          });
+          const filesWithSecureUrls =
+            await this.filesService.addSecureUrlsToFiles(filesData, {
+              userId,
+            });
 
           return {
             id: document.id,
@@ -409,7 +430,7 @@ export class DocumentsService {
             averageRating: document.averageRating,
             files: filesWithSecureUrls,
           };
-        })
+        }),
       );
 
       return {
@@ -427,7 +448,9 @@ export class DocumentsService {
       };
     } catch (error) {
       this.logger.error('Error getting public documents:', error);
-      throw new InternalServerErrorException('Không thể lấy tài liệu công khai');
+      throw new InternalServerErrorException(
+        'Không thể lấy tài liệu công khai',
+      );
     }
   }
 
@@ -439,10 +462,12 @@ export class DocumentsService {
     userId?: string,
     ipAddress?: string,
     userAgent?: string,
-    referrer?: string
+    referrer?: string,
   ) {
     try {
-      this.logger.log(`Tracking view for document ${documentId} by user ${userId || 'anonymous'}`);
+      this.logger.log(
+        `Tracking view for document ${documentId} by user ${userId || 'anonymous'}`,
+      );
 
       // Check if document exists and is public (or user has access)
       const document = await this.prisma.document.findUnique({
@@ -488,18 +513,27 @@ export class DocumentsService {
         message: 'View tracked successfully',
       };
     } catch (error) {
-      this.logger.error(`Error tracking view for document ${documentId}:`, error);
+      this.logger.error(
+        `Error tracking view for document ${documentId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Không thể theo dõi lượt xem tài liệu');
+      throw new InternalServerErrorException(
+        'Không thể theo dõi lượt xem tài liệu',
+      );
     }
   }
 
   /**
    * Get document details with files
    */
-  async getDocumentById(documentId: string, userId?: string, shareToken?: string) {
+  async getDocumentById(
+    documentId: string,
+    userId?: string,
+    shareToken?: string,
+  ) {
     try {
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -564,10 +598,13 @@ export class DocumentsService {
         })) || [];
 
       // Add secure URLs to files
-      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(filesData, {
-        userId,
-        allowSharedAccess: isOwner || shareAccessGranted,
-      });
+      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
+        filesData,
+        {
+          userId,
+          allowSharedAccess: isOwner || shareAccessGranted,
+        },
+      );
 
       const response: any = {
         id: document.id,
@@ -581,8 +618,10 @@ export class DocumentsService {
         downloadCount: document.downloadCount,
         averageRating: document.averageRating,
         totalRatings: document.totalRatings,
-        createdAt: document.createdAt?.toISOString() || new Date().toISOString(),
-        updatedAt: document.updatedAt?.toISOString() || new Date().toISOString(),
+        createdAt:
+          document.createdAt?.toISOString() || new Date().toISOString(),
+        updatedAt:
+          document.updatedAt?.toISOString() || new Date().toISOString(),
         uploader: (document as any).uploader,
         category: (document as any).category,
         files: filesWithSecureUrls,
@@ -622,7 +661,7 @@ export class DocumentsService {
   async createOrUpdateShareLink(
     documentId: string,
     userId: string,
-    shareOptions: ShareDocumentDto
+    shareOptions: ShareDocumentDto,
   ) {
     try {
       const document = await this.prisma.document.findUnique({
@@ -634,7 +673,9 @@ export class DocumentsService {
       }
 
       if (document.uploaderId !== userId) {
-        throw new BadRequestException('Bạn không có quyền chia sẻ tài liệu này');
+        throw new BadRequestException(
+          'Bạn không có quyền chia sẻ tài liệu này',
+        );
       }
 
       const now = new Date();
@@ -654,7 +695,9 @@ export class DocumentsService {
       }
 
       if (expiration <= now) {
-        throw new BadRequestException('Thời gian hết hạn liên kết chia sẻ phải ở tương lai');
+        throw new BadRequestException(
+          'Thời gian hết hạn liên kết chia sẻ phải ở tương lai',
+        );
       }
 
       const existingShareLink = await this.prisma.documentShareLink.findUnique({
@@ -683,7 +726,9 @@ export class DocumentsService {
         },
       });
 
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:5173';
       const shareUrl = `${frontendUrl}/documents/${documentId}?apiKey=${shareLink.token}`;
 
       return {
@@ -693,7 +738,10 @@ export class DocumentsService {
         shareUrl,
       };
     } catch (error) {
-      this.logger.error(`Error creating/updating share link for document ${documentId}:`, error);
+      this.logger.error(
+        `Error creating/updating share link for document ${documentId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -715,7 +763,9 @@ export class DocumentsService {
       }
 
       if (document.uploaderId !== userId) {
-        throw new BadRequestException('Bạn không có quyền thu hồi liên kết chia sẻ này');
+        throw new BadRequestException(
+          'Bạn không có quyền thu hồi liên kết chia sẻ này',
+        );
       }
 
       await this.prisma.documentShareLink.updateMany({
@@ -723,18 +773,26 @@ export class DocumentsService {
         data: { isRevoked: true },
       });
     } catch (error) {
-      this.logger.error(`Error revoking share link for document ${documentId}:`, error);
+      this.logger.error(
+        `Error revoking share link for document ${documentId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Không thể thu hồi liên kết chia sẻ');
+      throw new InternalServerErrorException(
+        'Không thể thu hồi liên kết chia sẻ',
+      );
     }
   }
 
   /**
    * Validate share token for a document
    */
-  async validateShareLink(documentId: string, token: string): Promise<DocumentShareLink> {
+  async validateShareLink(
+    documentId: string,
+    token: string,
+  ): Promise<DocumentShareLink> {
     try {
       const shareLink = await this.prisma.documentShareLink.findUnique({
         where: { token },
@@ -756,12 +814,14 @@ export class DocumentsService {
     } catch (error) {
       this.logger.error(
         `Error validating share link for document ${documentId} with token ${token}:`,
-        error
+        error,
       );
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Không thể xác thực liên kết chia sẻ');
+      throw new InternalServerErrorException(
+        'Không thể xác thực liên kết chia sẻ',
+      );
     }
   }
 
@@ -777,14 +837,16 @@ export class DocumentsService {
     userId?: string, // Make userId optional for guest users
     ipAddress?: string,
     userAgent?: string,
-    referrer?: string
+    referrer?: string,
   ): Promise<{
     downloadUrl: string;
     fileName: string;
     fileCount: number;
   }> {
     try {
-      this.logger.log(`Preparing download for document ${documentId} by user ${userId || 'guest'}`);
+      this.logger.log(
+        `Preparing download for document ${documentId} by user ${userId || 'guest'}`,
+      );
 
       // Get document with files
       const document = await this.prisma.document.findUnique({
@@ -806,10 +868,14 @@ export class DocumentsService {
       // Check access permissions - only check if user is authenticated
       if (!document.isPublic) {
         if (!userId) {
-          throw new BadRequestException('Cần xác thực để tải xuống tài liệu riêng tư');
+          throw new BadRequestException(
+            'Cần xác thực để tải xuống tài liệu riêng tư',
+          );
         }
         if (document.uploaderId !== userId) {
-          throw new BadRequestException('Bạn không có quyền tải xuống tài liệu này');
+          throw new BadRequestException(
+            'Bạn không có quyền tải xuống tài liệu này',
+          );
         }
       }
 
@@ -818,7 +884,7 @@ export class DocumentsService {
       }
 
       // Create download record and increment counter in a transaction
-      await this.prisma.$transaction(async (prisma) => {
+      await this.prisma.$transaction(async prisma => {
         // Log download only if user is authenticated (for now, until prisma client is regenerated)
         if (userId) {
           await prisma.download.create({
@@ -847,9 +913,14 @@ export class DocumentsService {
       if (document.files.length === 1) {
         const file = document.files[0].file;
         this.logger.log(`Preparing single file download: ${file.originalName}`);
-        const downloadUrl = await this.r2Service.getSignedDownloadUrl(file.storageUrl, 300); // 5 minutes
+        const downloadUrl = await this.r2Service.getSignedDownloadUrl(
+          file.storageUrl,
+          300,
+        ); // 5 minutes
 
-        this.logger.log(`Generated download URL: ${downloadUrl.substring(0, 100)}...`);
+        this.logger.log(
+          `Generated download URL: ${downloadUrl.substring(0, 100)}...`,
+        );
 
         return {
           downloadUrl,
@@ -859,14 +930,19 @@ export class DocumentsService {
       }
 
       // For multiple files, create or use cached ZIP
-      this.logger.log(`Preparing ZIP download for ${document.files.length} files`);
+      this.logger.log(
+        `Preparing ZIP download for ${document.files.length} files`,
+      );
 
       // Check if ZIP file already exists and is still valid
       if (document.zipFileUrl) {
         this.logger.log(`Using cached ZIP file for document ${documentId}`);
 
         // Generate new signed URL for the existing ZIP file
-        const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(document.zipFileUrl, 1800);
+        const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(
+          document.zipFileUrl,
+          1800,
+        );
         const zipFileName = `${document.title || 'document'}.zip`;
 
         return {
@@ -879,8 +955,8 @@ export class DocumentsService {
       // Create new ZIP file
       const zipFileName = `${document.title || 'document'}.zip`;
       const zipDownloadUrl = await this.createZipDownload(
-        document.files.map((df) => df.file),
-        documentId
+        document.files.map(df => df.file),
+        documentId,
       );
 
       return {
@@ -889,11 +965,16 @@ export class DocumentsService {
         fileCount: document.files.length,
       };
     } catch (error) {
-      this.logger.error(`Error preparing download for document ${documentId}:`, error);
+      this.logger.error(
+        `Error preparing download for document ${documentId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Không thể chuẩn bị tải xuống tài liệu');
+      throw new InternalServerErrorException(
+        'Không thể chuẩn bị tải xuống tài liệu',
+      );
     }
   }
 
@@ -925,7 +1006,7 @@ export class DocumentsService {
       }
 
       // Delete document and related records in a transaction
-      await this.prisma.$transaction(async (prisma) => {
+      await this.prisma.$transaction(async prisma => {
         // Delete document files relationships
         await prisma.documentFile.deleteMany({
           where: { documentId },
@@ -976,10 +1057,13 @@ export class DocumentsService {
   /**
    * Create ZIP file download URL for multiple files
    */
-  private async createZipDownload(files: any[], documentId: string): Promise<string> {
+  private async createZipDownload(
+    files: any[],
+    documentId: string,
+  ): Promise<string> {
     try {
       this.logger.log(
-        `Creating new ZIP file for document ${documentId} with ${files.length} files`
+        `Creating new ZIP file for document ${documentId} with ${files.length} files`,
       );
 
       if (files.length === 0) {
@@ -991,7 +1075,7 @@ export class DocumentsService {
       const chunks: Buffer[] = [];
 
       // Collect ZIP data
-      archive.on('data', (chunk) => {
+      archive.on('data', chunk => {
         chunks.push(chunk);
       });
 
@@ -999,11 +1083,13 @@ export class DocumentsService {
       const zipPromise = new Promise<Buffer>((resolve, reject) => {
         archive.on('end', () => {
           const zipBuffer = Buffer.concat(chunks);
-          this.logger.log(`ZIP created successfully, size: ${zipBuffer.length} bytes`);
+          this.logger.log(
+            `ZIP created successfully, size: ${zipBuffer.length} bytes`,
+          );
           resolve(zipBuffer);
         });
 
-        archive.on('error', (error) => {
+        archive.on('error', error => {
           this.logger.error('ZIP creation error:', error);
           reject(error);
         });
@@ -1015,12 +1101,17 @@ export class DocumentsService {
           this.logger.log(`Adding file to ZIP: ${file.originalName}`);
 
           // Get file stream from R2
-          const fileStream = await this.r2Service.getFileStream(file.storageUrl);
+          const fileStream = await this.r2Service.getFileStream(
+            file.storageUrl,
+          );
 
           // Add file to archive
           archive.append(fileStream, { name: file.originalName });
         } catch (fileError) {
-          this.logger.error(`Error adding file ${file.originalName} to ZIP:`, fileError);
+          this.logger.error(
+            `Error adding file ${file.originalName} to ZIP:`,
+            fileError,
+          );
           // Continue with other files instead of failing completely
         }
       }
@@ -1036,7 +1127,9 @@ export class DocumentsService {
       await this.r2Service.uploadBuffer(zipBuffer, zipKey, 'application/zip');
 
       // Create storage URL using public URL and get signed URL for the ZIP file (30 minutes expiry)
-      const publicUrl = this.configService.get<string>('CLOUDFLARE_R2_PUBLIC_URL');
+      const publicUrl = this.configService.get<string>(
+        'CLOUDFLARE_R2_PUBLIC_URL',
+      );
       const storageUrl = publicUrl
         ? `${publicUrl}/${zipKey}`
         : `${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${this.r2Service.bucketName}/${zipKey}`;
@@ -1050,10 +1143,13 @@ export class DocumentsService {
         },
       });
 
-      const zipUrl = await this.r2Service.getSignedDownloadUrl(storageUrl, 1800);
+      const zipUrl = await this.r2Service.getSignedDownloadUrl(
+        storageUrl,
+        1800,
+      );
 
       this.logger.log(
-        `ZIP uploaded, cached, and signed URL generated: ${zipUrl.substring(0, 100)}...`
+        `ZIP uploaded, cached, and signed URL generated: ${zipUrl.substring(0, 100)}...`,
       );
 
       return zipUrl;

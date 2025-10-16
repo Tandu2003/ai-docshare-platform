@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
-
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   BadRequestException,
   Injectable,
@@ -7,9 +8,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 export interface FileUploadResult {
   id: string;
@@ -28,7 +26,7 @@ export class FilesService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly r2Service: CloudflareR2Service
+    private readonly r2Service: CloudflareR2Service,
   ) {}
 
   /**
@@ -42,7 +40,7 @@ export class FilesService {
 
       for (const file of files) {
         this.logger.log(
-          `Processing file: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`
+          `Processing file: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`,
         );
         const result = await this.uploadFile(file, userId);
         results.push(result.data);
@@ -65,13 +63,18 @@ export class FilesService {
    */
   async uploadFile(file: Express.Multer.File, userId: string) {
     try {
-      this.logger.log(`Uploading file: ${file.originalname} for user: ${userId}`);
+      this.logger.log(
+        `Uploading file: ${file.originalname} for user: ${userId}`,
+      );
 
       // Validate file
       this.validateFile(file);
 
       // Generate file hash first to check for duplicates
-      const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+      const fileHash = crypto
+        .createHash('sha256')
+        .update(file.buffer)
+        .digest('hex');
       this.logger.log(`Generated file hash: ${fileHash}`);
 
       // Check if file with same hash already exists
@@ -80,7 +83,9 @@ export class FilesService {
       });
 
       if (existingFile) {
-        this.logger.log(`File with hash ${fileHash} already exists, returning existing record`);
+        this.logger.log(
+          `File with hash ${fileHash} already exists, returning existing record`,
+        );
         return {
           success: true,
           data: {
@@ -138,11 +143,16 @@ export class FilesService {
       this.logger.error('Error stack:', error.stack);
 
       // Re-throw the original error if it's already a known exception
-      if (error instanceof BadRequestException || error instanceof InternalServerErrorException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
         throw error;
       }
 
-      throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to upload file: ${error.message}`,
+      );
     }
   }
 
@@ -172,7 +182,7 @@ export class FilesService {
   async getSecureFileUrl(
     fileId: string,
     userId?: string,
-    options: { allowSharedAccess?: boolean } = {}
+    options: { allowSharedAccess?: boolean } = {},
   ): Promise<string> {
     try {
       const file = await this.prisma.file.findUnique({
@@ -196,7 +206,10 @@ export class FilesService {
       return await this.r2Service.getSignedDownloadUrl(file.storageUrl, 3600); // 1 hour
     } catch (error) {
       this.logger.error('Error getting secure file URL:', error);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException('Không thể lấy URL tệp bảo mật');
@@ -208,14 +221,16 @@ export class FilesService {
    */
   async addSecureUrlsToFiles(
     files: any[],
-    options: { userId?: string; allowSharedAccess?: boolean } = {}
+    options: { userId?: string; allowSharedAccess?: boolean } = {},
   ): Promise<any[]> {
     try {
       const { userId, allowSharedAccess } = options;
       const filesWithUrls = await Promise.all(
-        files.map(async (file) => {
+        files.map(async file => {
           try {
-            const secureUrl = await this.getSecureFileUrl(file.id, userId, { allowSharedAccess });
+            const secureUrl = await this.getSecureFileUrl(file.id, userId, {
+              allowSharedAccess,
+            });
             return {
               ...file,
               secureUrl,
@@ -223,10 +238,13 @@ export class FilesService {
             };
           } catch (error) {
             // If can't get secure URL, return file without it
-            this.logger.warn(`Could not get secure URL for file ${file.id}:`, error.message);
+            this.logger.warn(
+              `Could not get secure URL for file ${file.id}:`,
+              error.message,
+            );
             return file;
           }
-        })
+        }),
       );
       return filesWithUrls;
     } catch (error) {
@@ -255,13 +273,13 @@ export class FilesService {
    */
   private validateFile(file: Express.Multer.File) {
     this.logger.log(
-      `Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`
+      `Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`,
     );
 
     // Check file size
     if (file.size > this.maxFileSize) {
       throw new BadRequestException(
-        `File size exceeds maximum limit of ${this.maxFileSize / (1024 * 1024)}MB`
+        `File size exceeds maximum limit of ${this.maxFileSize / (1024 * 1024)}MB`,
       );
     }
 
@@ -309,10 +327,10 @@ export class FilesService {
 
     if (!allowedTypes.includes(file.mimetype)) {
       this.logger.error(
-        `File type not supported: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`
+        `File type not supported: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`,
       );
       throw new BadRequestException(
-        `File type not supported: ${file.mimetype}. Please upload a supported file format.`
+        `File type not supported: ${file.mimetype}. Please upload a supported file format.`,
       );
     }
 
@@ -377,11 +395,11 @@ export class FilesService {
     fileId: string,
     userId?: string,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ) {
     try {
       this.logger.log(
-        `Incrementing view count for file ${fileId} by user ${userId || 'anonymous'}`
+        `Incrementing view count for file ${fileId} by user ${userId || 'anonymous'}`,
       );
 
       // Check if file exists
@@ -409,7 +427,9 @@ export class FilesService {
       // Find the document that contains this file
       const documentFile = file.documentFiles[0];
       if (!documentFile) {
-        throw new BadRequestException('Tệp không được liên kết với tài liệu nào');
+        throw new BadRequestException(
+          'Tệp không được liên kết với tài liệu nào',
+        );
       }
 
       // Create view record for the document (since View model tracks document views)
@@ -429,12 +449,18 @@ export class FilesService {
       });
 
       this.logger.log(
-        `View count incremented successfully for file ${fileId} via document ${documentFile.document.id}`
+        `View count incremented successfully for file ${fileId} via document ${documentFile.document.id}`,
       );
       return { success: true, message: 'View count incremented successfully' };
     } catch (error) {
-      this.logger.error(`Error incrementing view count for file ${fileId}:`, error);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      this.logger.error(
+        `Error incrementing view count for file ${fileId}:`,
+        error,
+      );
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException('Không thể tăng số lượt xem');
@@ -447,7 +473,9 @@ export class FilesService {
   private generateUniqueKey(prefix: string, originalName: string): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);
-    const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 50);
+    const sanitizedName = originalName
+      .replace(/[^a-zA-Z0-9.-]/g, '_')
+      .substring(0, 50);
 
     return `${prefix}${timestamp}_${random}_${sanitizedName}`;
   }

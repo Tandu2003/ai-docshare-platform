@@ -24,18 +24,26 @@ export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
         <Input
           id={inputId}
           ref={ref}
-          className={cn(error && 'border-destructive focus-visible:ring-destructive/20', className)}
+          className={cn(
+            error && 'border-destructive focus-visible:ring-destructive/20',
+            className,
+          )}
           aria-invalid={!!error}
           {...props}
         />
         {(error || helperText) && (
-          <p className={cn('text-sm', error ? 'text-destructive' : 'text-muted-foreground')}>
+          <p
+            className={cn(
+              'text-sm',
+              error ? 'text-destructive' : 'text-muted-foreground',
+            )}
+          >
             {error || helperText}
           </p>
         )}
       </div>
     );
-  }
+  },
 );
 
 FormField.displayName = 'FormField';

@@ -1,7 +1,8 @@
-import { Download, Edit, Eye, FolderOpen, Plus, Trash2 } from 'lucide-react';
-
 import { useCallback, useEffect, useState } from 'react';
 
+import { Download, Edit, Eye, FolderOpen, Plus, Trash2 } from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +17,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,8 @@ export default function CategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CategoryWithStats | null>(null);
+  const [editingCategory, setEditingCategory] =
+    useState<CategoryWithStats | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -66,9 +67,11 @@ export default function CategoriesPage() {
   const sortCategories = useCallback(
     (items: CategoryWithStats[]) =>
       [...items].sort((a, b) =>
-        a.sortOrder !== b.sortOrder ? a.sortOrder - b.sortOrder : a.name.localeCompare(b.name)
+        a.sortOrder !== b.sortOrder
+          ? a.sortOrder - b.sortOrder
+          : a.name.localeCompare(b.name),
       ),
-    []
+    [],
   );
 
   const loadCategories = useCallback(async () => {
@@ -80,7 +83,9 @@ export default function CategoriesPage() {
     } catch (fetchError) {
       console.error('Failed to fetch categories:', fetchError);
       const message =
-        fetchError instanceof Error ? fetchError.message : 'Không thể tải danh mục';
+        fetchError instanceof Error
+          ? fetchError.message
+          : 'Không thể tải danh mục';
       setError(message);
     } finally {
       setLoading(false);
@@ -116,13 +121,15 @@ export default function CategoriesPage() {
         isActive: true,
       });
 
-      setCategories((prev) => sortCategories([...prev, category]));
+      setCategories(prev => sortCategories([...prev, category]));
       resetForm();
       setIsCreateDialogOpen(false);
     } catch (createError) {
       console.error('Failed to create category:', createError);
       const message =
-        createError instanceof Error ? createError.message : 'Không thể tạo danh mục mới';
+        createError instanceof Error
+          ? createError.message
+          : 'Không thể tạo danh mục mới';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -144,8 +151,10 @@ export default function CategoriesPage() {
         sortOrder: formData.sortOrder,
       });
 
-      setCategories((prev) =>
-        sortCategories(prev.map((cat) => (cat.id === updated.id ? updated : cat)))
+      setCategories(prev =>
+        sortCategories(
+          prev.map(cat => (cat.id === updated.id ? updated : cat)),
+        ),
       );
       setEditingCategory(null);
       setIsEditDialogOpen(false);
@@ -153,7 +162,9 @@ export default function CategoriesPage() {
     } catch (updateError) {
       console.error('Failed to update category:', updateError);
       const message =
-        updateError instanceof Error ? updateError.message : 'Không thể cập nhật danh mục';
+        updateError instanceof Error
+          ? updateError.message
+          : 'Không thể cập nhật danh mục';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -165,11 +176,13 @@ export default function CategoriesPage() {
     setError(null);
     try {
       await deleteCategoryApi(categoryId);
-      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
     } catch (deleteError) {
       console.error(`Failed to delete category ${categoryId}:`, deleteError);
       const message =
-        deleteError instanceof Error ? deleteError.message : 'Không thể xóa danh mục';
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'Không thể xóa danh mục';
       setError(message);
     } finally {
       setDeletingId(null);
@@ -190,10 +203,23 @@ export default function CategoriesPage() {
   };
 
   const getParentCategory = (parentId: string) => {
-    return categories.find((cat) => cat.id === parentId);
+    return categories.find(cat => cat.id === parentId);
   };
 
-  const iconOptions = ['📁', '📄', '📊', '📈', '📋', '📝', '📚', '🔬', '💻', '🎨', '📱', '🌐'];
+  const iconOptions = [
+    '📁',
+    '📄',
+    '📊',
+    '📈',
+    '📋',
+    '📝',
+    '📚',
+    '🔬',
+    '💻',
+    '🎨',
+    '📱',
+    '🌐',
+  ];
 
   if (loading) {
     return (
@@ -232,11 +258,13 @@ export default function CategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Danh mục</h1>
-          <p className="text-muted-foreground">Quản lý danh mục tài liệu và tổ chức của chúng</p>
+          <p className="text-muted-foreground">
+            Quản lý danh mục tài liệu và tổ chức của chúng
+          </p>
         </div>
         <Dialog
           open={isCreateDialogOpen}
-          onOpenChange={(open) => {
+          onOpenChange={open => {
             setIsCreateDialogOpen(open);
             if (!open) {
               resetForm();
@@ -245,7 +273,7 @@ export default function CategoriesPage() {
         >
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Tạo danh mục
             </Button>
           </DialogTrigger>
@@ -259,7 +287,9 @@ export default function CategoriesPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, name: e.target.value }))
+                  }
                   placeholder="Tên danh mục"
                 />
               </div>
@@ -268,8 +298,11 @@ export default function CategoriesPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   placeholder="Mô tả danh mục"
                   rows={3}
@@ -280,13 +313,15 @@ export default function CategoriesPage() {
                   <Label htmlFor="icon">Biểu tượng</Label>
                   <Select
                     value={formData.icon}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, icon: value }))}
+                    onValueChange={value =>
+                      setFormData(prev => ({ ...prev, icon: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {iconOptions.map((icon) => (
+                      {iconOptions.map(icon => (
                         <SelectItem key={icon} value={icon}>
                           {icon} {icon}
                         </SelectItem>
@@ -300,7 +335,9 @@ export default function CategoriesPage() {
                     id="color"
                     type="color"
                     value={formData.color}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, color: e.target.value }))
+                    }
                   />
                 </div>
               </div>
@@ -308,16 +345,18 @@ export default function CategoriesPage() {
                 <Label htmlFor="parent">Danh mục cha</Label>
                 <Select
                   value={formData.parentId}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, parentId: value }))}
+                  onValueChange={value =>
+                    setFormData(prev => ({ ...prev, parentId: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn danh mục cha" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Không có danh mục cha</SelectItem>
-                    {categories.map((category) => (
+                    {categories.map(category => (
                       <SelectItem key={category.id} value={category.id}>
-                        {(category.icon ?? '📁')} {category.name}
+                        {category.icon ?? '📁'} {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -329,8 +368,11 @@ export default function CategoriesPage() {
                   id="sortOrder"
                   type="number"
                   value={formData.sortOrder}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      sortOrder: parseInt(e.target.value) || 0,
+                    }))
                   }
                   placeholder="0"
                 />
@@ -378,8 +420,10 @@ export default function CategoriesPage() {
 
       {/* Categories Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => {
-          const parentCategory = category.parentId ? getParentCategory(category.parentId) : null;
+        {categories.map(category => {
+          const parentCategory = category.parentId
+            ? getParentCategory(category.parentId)
+            : null;
           const categoryColor = category.color ?? '#3b82f6';
           const categoryIcon = category.icon ?? '📁';
 
@@ -392,14 +436,19 @@ export default function CategoriesPage() {
                     <div>
                       <CardTitle className="text-lg">{category.name}</CardTitle>
                       {parentCategory && (
-                        <p className="text-sm text-muted-foreground">
-                          Cha: {(parentCategory.icon ?? '📁')} {parentCategory.name}
+                        <p className="text-muted-foreground text-sm">
+                          Cha: {parentCategory.icon ?? '📁'}{' '}
+                          {parentCategory.name}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(category)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(category)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
@@ -412,15 +461,20 @@ export default function CategoriesPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Xóa danh mục</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa "{category.name}"? Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa "{category.name}"? Hành
+                            động này không thể hoàn tác.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel disabled={deletingId === category.id}>
+                          <AlertDialogCancel
+                            disabled={deletingId === category.id}
+                          >
                             Hủy
                           </AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => void handleDeleteCategory(category.id)}
+                            onClick={() =>
+                              void handleDeleteCategory(category.id)
+                            }
                             className="bg-red-600 hover:bg-red-700"
                             disabled={deletingId === category.id}
                           >
@@ -434,10 +488,12 @@ export default function CategoriesPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {category.description && (
-                  <p className="text-sm text-muted-foreground">{category.description}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {category.description}
+                  </p>
                 )}
 
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <FolderOpen className="h-4 w-4" />
                     <span>{category.documentCount} tài liệu</span>
@@ -475,7 +531,7 @@ export default function CategoriesPage() {
       {/* Edit Dialog */}
       <Dialog
         open={isEditDialogOpen}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           setIsEditDialogOpen(open);
           if (!open) {
             setEditingCategory(null);
@@ -493,7 +549,9 @@ export default function CategoriesPage() {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={e =>
+                  setFormData(prev => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Tên danh mục"
               />
             </div>
@@ -502,7 +560,12 @@ export default function CategoriesPage() {
               <Textarea
                 id="edit-description"
                 value={formData.description}
-                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Mô tả danh mục"
                 rows={3}
               />
@@ -512,13 +575,15 @@ export default function CategoriesPage() {
                 <Label htmlFor="edit-icon">Biểu tượng</Label>
                 <Select
                   value={formData.icon}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, icon: value }))}
+                  onValueChange={value =>
+                    setFormData(prev => ({ ...prev, icon: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {iconOptions.map((icon) => (
+                    {iconOptions.map(icon => (
                       <SelectItem key={icon} value={icon}>
                         {icon} {icon}
                       </SelectItem>
@@ -532,7 +597,9 @@ export default function CategoriesPage() {
                   id="edit-color"
                   type="color"
                   value={formData.color}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, color: e.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -540,7 +607,9 @@ export default function CategoriesPage() {
               <Label htmlFor="edit-parent">Danh mục cha</Label>
               <Select
                 value={formData.parentId}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, parentId: value }))}
+                onValueChange={value =>
+                  setFormData(prev => ({ ...prev, parentId: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn danh mục cha" />
@@ -548,10 +617,10 @@ export default function CategoriesPage() {
                 <SelectContent>
                   <SelectItem value="">Không có danh mục cha</SelectItem>
                   {categories
-                    .filter((cat) => cat.id !== editingCategory?.id)
-                    .map((category) => (
+                    .filter(cat => cat.id !== editingCategory?.id)
+                    .map(category => (
                       <SelectItem key={category.id} value={category.id}>
-                        {(category.icon ?? '📁')} {category.name}
+                        {category.icon ?? '📁'} {category.name}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -563,8 +632,11 @@ export default function CategoriesPage() {
                 id="edit-sortOrder"
                 type="number"
                 value={formData.sortOrder}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    sortOrder: parseInt(e.target.value) || 0,
+                  }))
                 }
                 placeholder="0"
               />

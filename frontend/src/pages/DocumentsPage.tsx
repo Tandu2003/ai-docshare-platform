@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { DocumentGrid } from '@/components/documents/document-grid';
-import { type Document, DocumentsService } from '@/services/files.service';
+import { DocumentsService, type Document } from '@/services/files.service';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -21,7 +21,7 @@ export default function DocumentsPage() {
       if (reset) {
         setDocuments(response.documents);
       } else {
-        setDocuments((prev) => [...prev, ...response.documents]);
+        setDocuments(prev => [...prev, ...response.documents]);
       }
 
       // Check if there are more pages

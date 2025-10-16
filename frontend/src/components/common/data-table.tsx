@@ -78,7 +78,7 @@ export function DataTable<T extends Record<string, any>>({
       )}
       <CardContent>
         {data.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <p className="text-muted-foreground">{emptyMessage}</p>
           </div>
         ) : (

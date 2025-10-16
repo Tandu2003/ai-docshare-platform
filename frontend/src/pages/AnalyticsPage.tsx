@@ -1,6 +1,14 @@
-import { BarChart3, Download, Eye, FileText, Star, TrendingUp, Users } from 'lucide-react';
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import {
+  BarChart3,
+  Download,
+  Eye,
+  FileText,
+  Star,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -14,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type AnalyticsData, getAnalytics } from '@/services/analytics.service';
+import { getAnalytics, type AnalyticsData } from '@/services/analytics.service';
 import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
@@ -56,7 +64,9 @@ const calculateGrowth = (current?: number | null, previous?: number | null) => {
   const previousValue = typeof previous === 'number' ? previous : 0;
 
   if (previousValue > 0) {
-    return Number((((currentValue - previousValue) / previousValue) * 100).toFixed(1));
+    return Number(
+      (((currentValue - previousValue) / previousValue) * 100).toFixed(1),
+    );
   }
 
   return currentValue > 0 ? 100 : 0;
@@ -64,7 +74,9 @@ const calculateGrowth = (current?: number | null, previous?: number | null) => {
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState('30d');
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +88,9 @@ export default function AnalyticsPage() {
       setAnalyticsData(data);
     } catch (err) {
       console.error('Failed to load analytics', err);
-      setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu phân tích');
+      setError(
+        err instanceof Error ? err.message : 'Không thể tải dữ liệu phân tích',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +106,9 @@ export default function AnalyticsPage() {
     if (!data.userStats.totalUsers) {
       return 0;
     }
-    return clampPercentage((data.userStats.activeUsers / data.userStats.totalUsers) * 100);
+    return clampPercentage(
+      (data.userStats.activeUsers / data.userStats.totalUsers) * 100,
+    );
   }, [data.userStats.activeUsers, data.userStats.totalUsers]);
 
   const { downloadsGrowth, viewsGrowth } = useMemo(() => {
@@ -102,7 +118,9 @@ export default function AnalyticsPage() {
 
     const latest = data.monthlyStats[data.monthlyStats.length - 1];
     const previous =
-      data.monthlyStats.length > 1 ? data.monthlyStats[data.monthlyStats.length - 2] : undefined;
+      data.monthlyStats.length > 1
+        ? data.monthlyStats[data.monthlyStats.length - 2]
+        : undefined;
 
     return {
       downloadsGrowth: calculateGrowth(latest?.downloads, previous?.downloads),
@@ -110,25 +128,35 @@ export default function AnalyticsPage() {
     };
   }, [data.monthlyStats]);
 
-  const ratingValue = Number.isFinite(data.averageRating) ? data.averageRating : 0;
-  const monthlyGrowthValue = Number.isFinite(data.monthlyGrowth) ? data.monthlyGrowth : 0;
+  const ratingValue = Number.isFinite(data.averageRating)
+    ? data.averageRating
+    : 0;
+  const monthlyGrowthValue = Number.isFinite(data.monthlyGrowth)
+    ? data.monthlyGrowth
+    : 0;
 
   const timeframeLabel = `${formatDate(data.timeframe.startDate)} → ${formatDate(data.timeframe.endDate)}`;
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="container mx-auto space-y-6 px-4 py-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-8 w-8 text-primary" />
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
+            <BarChart3 className="text-primary h-8 w-8" />
             Analytics Dashboard
           </h1>
-          <p className="text-muted-foreground">Thông tin chi tiết và số liệu hiệu suất nền tảng</p>
+          <p className="text-muted-foreground">
+            Thông tin chi tiết và số liệu hiệu suất nền tảng
+          </p>
           <Badge variant="outline" className="mt-2 text-xs font-normal">
             {timeframeLabel}
           </Badge>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange} disabled={isLoading}>
+        <Select
+          value={timeRange}
+          onValueChange={setTimeRange}
+          disabled={isLoading}
+        >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Chọn khoảng" />
           </SelectTrigger>
@@ -149,18 +177,22 @@ export default function AnalyticsPage() {
       )}
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng tài liệu</p>
-                <p className="text-2xl font-bold">{formatNumber(data.totalDocuments)}</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Tổng tài liệu
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatNumber(data.totalDocuments)}
+                </p>
               </div>
-              <FileText className="h-8 w-8 text-muted-foreground" />
+              <FileText className="text-muted-foreground h-8 w-8" />
             </div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+            <div className="mt-2 flex items-center">
+              <TrendingUp className="mr-1 h-4 w-4 text-green-500" />
               <span className="text-sm text-green-500">
                 {monthlyGrowthValue >= 0 ? '+' : ''}
                 {monthlyGrowthValue}%
@@ -173,13 +205,17 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng lượt tải</p>
-                <p className="text-2xl font-bold">{formatNumber(data.totalDownloads)}</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Tổng lượt tải
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatNumber(data.totalDownloads)}
+                </p>
               </div>
-              <Download className="h-8 w-8 text-muted-foreground" />
+              <Download className="text-muted-foreground h-8 w-8" />
             </div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+            <div className="mt-2 flex items-center">
+              <TrendingUp className="mr-1 h-4 w-4 text-green-500" />
               <span className="text-sm text-green-500">
                 {downloadsGrowth >= 0 ? '+' : ''}
                 {downloadsGrowth}%
@@ -192,13 +228,17 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng lượt xem</p>
-                <p className="text-2xl font-bold">{formatNumber(data.totalViews)}</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Tổng lượt xem
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatNumber(data.totalViews)}
+                </p>
               </div>
-              <Eye className="h-8 w-8 text-muted-foreground" />
+              <Eye className="text-muted-foreground h-8 w-8" />
             </div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+            <div className="mt-2 flex items-center">
+              <TrendingUp className="mr-1 h-4 w-4 text-green-500" />
               <span className="text-sm text-green-500">
                 {viewsGrowth >= 0 ? '+' : ''}
                 {viewsGrowth}%
@@ -211,26 +251,34 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Đánh giá trung bình</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Đánh giá trung bình
+                </p>
                 <p className="text-2xl font-bold">{ratingValue.toFixed(1)}</p>
               </div>
-              <Star className="h-8 w-8 text-muted-foreground" />
+              <Star className="text-muted-foreground h-8 w-8" />
             </div>
-            <p className="text-sm text-muted-foreground mt-2">Đánh giá trung bình toàn nền tảng</p>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Đánh giá trung bình toàn nền tảng
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* User Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tổng người dùng</p>
-                <p className="text-2xl font-bold">{formatNumber(data.userStats.totalUsers)}</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Tổng người dùng
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatNumber(data.userStats.totalUsers)}
+                </p>
               </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
+              <Users className="text-muted-foreground h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -239,10 +287,14 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Người dùng hoạt động</p>
-                <p className="text-2xl font-bold">{formatNumber(data.userStats.activeUsers)}</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Người dùng hoạt động
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatNumber(data.userStats.activeUsers)}
+                </p>
               </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
+              <Users className="text-muted-foreground h-8 w-8" />
             </div>
             <div className="mt-2">
               <Progress value={activeUsersPercentage} className="h-2" />
@@ -254,13 +306,17 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Người dùng mới</p>
-                <p className="text-2xl font-bold">{formatNumber(data.userStats.newUsers)}</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Người dùng mới
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatNumber(data.userStats.newUsers)}
+                </p>
               </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
+              <Users className="text-muted-foreground h-8 w-8" />
             </div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+            <div className="mt-2 flex items-center">
+              <TrendingUp className="mr-1 h-4 w-4 text-green-500" />
               <span className="text-sm text-green-500">
                 {data.userStats.userGrowth >= 0 ? '+' : ''}
                 {data.userStats.userGrowth}%
@@ -273,19 +329,21 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tăng trưởng người dùng</p>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Tăng trưởng người dùng
+                </p>
                 <p className="text-2xl font-bold">
                   {data.userStats.userGrowth >= 0 ? '+' : ''}
                   {data.userStats.userGrowth}%
                 </p>
               </div>
-              <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              <TrendingUp className="text-muted-foreground h-8 w-8" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Top Categories */}
         <Card>
           <CardHeader>
@@ -293,26 +351,33 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {data.topCategories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Chưa có dữ liệu danh mục nào.</p>
+              <p className="text-muted-foreground text-sm">
+                Chưa có dữ liệu danh mục nào.
+              </p>
             ) : (
               <div className="space-y-4">
                 {data.topCategories.map((category, index) => (
-                  <div key={category.name} className="flex items-center justify-between">
+                  <div
+                    key={category.name}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-muted-foreground w-6">
+                      <span className="text-muted-foreground w-6 text-sm font-medium">
                         #{index + 1}
                       </span>
                       <span className="text-lg">{category.icon}</span>
                       <div>
                         <p className="font-medium">{category.name}</p>
-                        <p className="text-sm text-muted-foreground">{category.count} tài liệu</p>
+                        <p className="text-muted-foreground text-sm">
+                          {category.count} tài liệu
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{category.percentage}%</p>
                       <Progress
                         value={clampPercentage(category.percentage)}
-                        className="w-20 h-2 mt-1"
+                        className="mt-1 h-2 w-20"
                       />
                     </div>
                   </div>
@@ -329,25 +394,34 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {data.topLanguages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Chưa có dữ liệu ngôn ngữ nào.</p>
+              <p className="text-muted-foreground text-sm">
+                Chưa có dữ liệu ngôn ngữ nào.
+              </p>
             ) : (
               <div className="space-y-4">
                 {data.topLanguages.map((language, index) => (
-                  <div key={language.code} className="flex items-center justify-between">
+                  <div
+                    key={language.code}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-muted-foreground w-6">
+                      <span className="text-muted-foreground w-6 text-sm font-medium">
                         #{index + 1}
                       </span>
                       <div>
-                        <p className="font-medium">{getLanguageName(language.code)}</p>
-                        <p className="text-sm text-muted-foreground">{language.count} tài liệu</p>
+                        <p className="font-medium">
+                          {getLanguageName(language.code)}
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          {language.count} tài liệu
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{language.percentage}%</p>
                       <Progress
                         value={clampPercentage(language.percentage)}
-                        className="w-20 h-2 mt-1"
+                        className="mt-1 h-2 w-20"
                       />
                     </div>
                   </div>
@@ -365,24 +439,28 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           {data.topDocuments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Chưa có dữ liệu hiệu suất tài liệu.</p>
+            <p className="text-muted-foreground text-sm">
+              Chưa có dữ liệu hiệu suất tài liệu.
+            </p>
           ) : (
             <div className="space-y-4">
               {data.topDocuments.map((document, index) => (
                 <div
                   key={document.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between rounded-lg border p-4"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="text-lg font-bold text-primary w-8">#{index + 1}</span>
+                    <span className="text-primary w-8 text-lg font-bold">
+                      #{index + 1}
+                    </span>
                     <div className="flex-1">
                       <Link
                         to={`/documents/${document.id}`}
-                        className="font-medium hover:text-primary transition-colors"
+                        className="hover:text-primary font-medium transition-colors"
                       >
                         {document.title}
                       </Link>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-1 flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">
                           {document.category}
                         </Badge>
@@ -392,7 +470,7 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                  <div className="text-muted-foreground flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-1">
                       <Download className="h-4 w-4" />
                       <span>{formatNumber(document.downloads)}</span>
@@ -420,26 +498,41 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           {data.monthlyStats.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Chưa có dữ liệu xu hướng hàng tháng.</p>
+            <p className="text-muted-foreground text-sm">
+              Chưa có dữ liệu xu hướng hàng tháng.
+            </p>
           ) : (
             <div className="space-y-4">
-              {data.monthlyStats.map((stat) => (
-                <div key={stat.month} className="flex items-center justify-between">
+              {data.monthlyStats.map(stat => (
+                <div
+                  key={stat.month}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-12 text-center">
                       <p className="font-medium">{stat.month}</p>
                     </div>
-                    <div className="flex-1 grid grid-cols-3 gap-4">
+                    <div className="grid flex-1 grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Lượt tải</p>
-                        <p className="font-medium">{formatNumber(stat.downloads)}</p>
+                        <p className="text-muted-foreground text-sm">
+                          Lượt tải
+                        </p>
+                        <p className="font-medium">
+                          {formatNumber(stat.downloads)}
+                        </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Lượt xem</p>
-                        <p className="font-medium">{formatNumber(stat.views)}</p>
+                        <p className="text-muted-foreground text-sm">
+                          Lượt xem
+                        </p>
+                        <p className="font-medium">
+                          {formatNumber(stat.views)}
+                        </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Tài liệu</p>
+                        <p className="text-muted-foreground text-sm">
+                          Tài liệu
+                        </p>
                         <p className="font-medium">{stat.documents}</p>
                       </div>
                     </div>

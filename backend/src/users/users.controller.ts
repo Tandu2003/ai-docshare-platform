@@ -1,8 +1,14 @@
-import { Request, Response } from 'express'
-
-import { AdminGuard, JwtAuthGuard } from '@/auth/guards'
-import { AuthUser } from '@/auth/interfaces'
-import { ResponseHelper } from '@/common'
+import {
+  CreateUserDto,
+  GetUsersQueryDto,
+  UpdateUserDto,
+  UpdateUserRoleDto,
+  UpdateUserStatusDto,
+} from './dto';
+import { UsersService } from './users.service';
+import { AdminGuard, JwtAuthGuard } from '@/auth/guards';
+import { AuthUser } from '@/auth/interfaces';
+import { ResponseHelper } from '@/common';
 import {
   Body,
   Controller,
@@ -17,16 +23,8 @@ import {
   Req,
   Res,
   UseGuards,
-} from '@nestjs/common'
-
-import {
-  CreateUserDto,
-  GetUsersQueryDto,
-  UpdateUserDto,
-  UpdateUserRoleDto,
-  UpdateUserStatusDto,
-} from './dto'
-import { UsersService } from './users.service'
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -37,11 +35,15 @@ export class UsersController {
   async getUsers(
     @Query() query: GetUsersQueryDto,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.usersService.getUsers(query, request.user);
 
-    ResponseHelper.success(response, result, 'Lấy danh sách người dùng thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Lấy danh sách người dùng thành công',
+    );
   }
 
   @Get(':id')
@@ -49,11 +51,15 @@ export class UsersController {
   async getUserById(
     @Param('id') id: string,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.usersService.getUserById(id, request.user);
 
-    ResponseHelper.success(response, result, 'Lấy thông tin người dùng thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Lấy thông tin người dùng thành công',
+    );
   }
 
   @Post()
@@ -62,9 +68,12 @@ export class UsersController {
   async createUser(
     @Body() createUserDto: CreateUserDto,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.createUser(createUserDto, request.user);
+    const result = await this.usersService.createUser(
+      createUserDto,
+      request.user,
+    );
 
     ResponseHelper.created(response, result, 'Tạo người dùng thành công');
   }
@@ -75,9 +84,13 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.updateUser(id, updateUserDto, request.user);
+    const result = await this.usersService.updateUser(
+      id,
+      updateUserDto,
+      request.user,
+    );
 
     ResponseHelper.success(response, result, 'Cập nhật người dùng thành công');
   }
@@ -88,11 +101,19 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updateUserRoleDto: UpdateUserRoleDto,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.updateUserRole(id, updateUserRoleDto, request.user);
+    const result = await this.usersService.updateUserRole(
+      id,
+      updateUserRoleDto,
+      request.user,
+    );
 
-    ResponseHelper.success(response, result, 'Cập nhật vai trò người dùng thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Cập nhật vai trò người dùng thành công',
+    );
   }
 
   @Patch(':id/status')
@@ -101,11 +122,19 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updateUserStatusDto: UpdateUserStatusDto,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.updateUserStatus(id, updateUserStatusDto, request.user);
+    const result = await this.usersService.updateUserStatus(
+      id,
+      updateUserStatusDto,
+      request.user,
+    );
 
-    ResponseHelper.success(response, result, 'Cập nhật trạng thái người dùng thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Cập nhật trạng thái người dùng thành công',
+    );
   }
 
   @Delete(':id')
@@ -114,7 +143,7 @@ export class UsersController {
   async deleteUser(
     @Param('id') id: string,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     await this.usersService.deleteUser(id, request.user);
 
@@ -128,11 +157,20 @@ export class UsersController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.getUserActivity(id, page, limit, request.user);
+    const result = await this.usersService.getUserActivity(
+      id,
+      page,
+      limit,
+      request.user,
+    );
 
-    ResponseHelper.success(response, result, 'Lấy hoạt động người dùng thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Lấy hoạt động người dùng thành công',
+    );
   }
 
   @Get(':id/statistics')
@@ -140,21 +178,29 @@ export class UsersController {
   async getUserStatistics(
     @Param('id') id: string,
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.usersService.getUserStatistics(id, request.user);
 
-    ResponseHelper.success(response, result, 'Lấy thống kê người dùng thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Lấy thống kê người dùng thành công',
+    );
   }
 
   @Get('roles/list')
   @UseGuards(JwtAuthGuard, AdminGuard)
   async getRoles(
     @Req() request: Request & { user: AuthUser },
-    @Res() response: Response
+    @Res() response: Response,
   ): Promise<void> {
     const result = await this.usersService.getRoles(request.user);
 
-    ResponseHelper.success(response, result, 'Lấy danh sách vai trò thành công');
+    ResponseHelper.success(
+      response,
+      result,
+      'Lấy danh sách vai trò thành công',
+    );
   }
 }

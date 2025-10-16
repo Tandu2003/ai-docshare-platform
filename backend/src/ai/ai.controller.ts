@@ -1,20 +1,25 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  UseGuards,
-  Req,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CheckPolicy } from '../common/casl/casl.decorator';
-import { AIService, AIAnalysisRequest, AIAnalysisResponse } from './ai.service';
+import { AIAnalysisRequest, AIAnalysisResponse, AIService } from './ai.service';
 import { AnalyzeDocumentDto } from './dto';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Request } from 'express';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -34,17 +39,19 @@ export class AIController {
 
   @Post('analyze-document')
   @CheckPolicy({ action: 'read', subject: 'Document' })
-  @ApiOperation({ summary: 'Analyze document files using AI to generate metadata' })
+  @ApiOperation({
+    summary: 'Analyze document files using AI to generate metadata',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Document analysis completed successfully',
   })
   async analyzeDocument(
     @Body() dto: AnalyzeDocumentDto,
-    @Req() req: AuthenticatedRequest
+    @Req() req: AuthenticatedRequest,
   ): Promise<AIAnalysisResponse> {
     this.logger.log(
-      `AI analysis requested by user ${req.user.id} for files: ${dto.fileIds.join(', ')}`
+      `AI analysis requested by user ${req.user.id} for files: ${dto.fileIds.join(', ')}`,
     );
 
     const request: AIAnalysisRequest = {

@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useState } from 'react';
+
 import {
   Archive,
   BarChart3,
@@ -14,9 +16,8 @@ import {
   TrendingUp,
   Upload,
   Users,
-} from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+} from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import {
   AlertDialog,
@@ -28,10 +29,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,16 +40,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/hooks'
-import { cn } from '@/lib/utils'
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks';
+import { cn } from '@/lib/utils';
 import {
   BOOKMARKS_UPDATED_EVENT,
   BookmarkStats,
   getBookmarkStats,
-} from '@/services/bookmark.service'
+} from '@/services/bookmark.service';
 
 interface SidebarProps {
   className?: string;
@@ -66,7 +67,9 @@ export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [bookmarkStats, setBookmarkStats] = useState<BookmarkStats | null>(null);
+  const [bookmarkStats, setBookmarkStats] = useState<BookmarkStats | null>(
+    null,
+  );
 
   const loadBookmarkStats = useCallback(async () => {
     if (!user) {
@@ -92,7 +95,8 @@ export function Sidebar({ className }: SidebarProps) {
     };
 
     window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
-    return () => window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
+    return () =>
+      window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
   }, [loadBookmarkStats]);
 
   const isActive = (href: string) => {
@@ -186,8 +190,8 @@ export function Sidebar({ className }: SidebarProps) {
       key={item.href}
       variant={isActive(item.href) ? 'secondary' : 'ghost'}
       className={cn(
-        'w-full justify-start h-10 px-3',
-        isActive(item.href) && 'bg-secondary text-secondary-foreground'
+        'h-10 w-full justify-start px-3',
+        isActive(item.href) && 'bg-secondary text-secondary-foreground',
       )}
       asChild
     >
@@ -205,7 +209,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const renderNavSection = (title: string, items: NavItem[]) => (
     <div className="space-y-1">
-      <h4 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <h4 className="text-muted-foreground px-3 text-xs font-semibold tracking-wider uppercase">
         {title}
       </h4>
       <div className="space-y-1">{items.map(renderNavItem)}</div>
@@ -213,17 +217,22 @@ export function Sidebar({ className }: SidebarProps) {
   );
 
   return (
-    <div className={cn('flex h-full w-64 flex-col border-r bg-background', className)}>
+    <div
+      className={cn(
+        'bg-background flex h-full w-64 flex-col border-r',
+        className,
+      )}
+    >
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-6">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <FileText className="h-6 w-6 text-primary" />
+          <FileText className="text-primary h-6 w-6" />
           <span className="text-lg font-semibold">AI DocShare</span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4 overflow-y-auto">
+      <ScrollArea className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-6">
           {renderNavSection('Chính', mainNavItems)}
           <Separator />
@@ -243,31 +252,35 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="border-t p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start p-2 h-auto">
-              <div className="flex items-center gap-3 w-full">
+            <Button variant="ghost" className="h-auto w-full justify-start p-2">
+              <div className="flex w-full items-center gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                     {user?.firstName?.charAt(0)}
                     {user?.lastName?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium truncate">
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-sm font-medium">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {user?.email}
+                  </p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="text-muted-foreground h-4 w-4" />
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
+                <p className="text-sm leading-none font-medium">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                <p className="text-muted-foreground text-xs leading-none">
+                  {user?.email}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -296,7 +309,7 @@ export function Sidebar({ className }: SidebarProps) {
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem
                   className="text-red-600 focus:text-red-600"
-                  onSelect={(e) => e.preventDefault()}
+                  onSelect={e => e.preventDefault()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Đăng xuất
@@ -306,14 +319,15 @@ export function Sidebar({ className }: SidebarProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Xác nhận đăng xuất</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Bạn có chắc chắn muốn đăng xuất? Bạn sẽ cần đăng nhập lại để tiếp tục.
+                    Bạn có chắc chắn muốn đăng xuất? Bạn sẽ cần đăng nhập lại để
+                    tiếp tục.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Hủy</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleLogout}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-red-600 text-white hover:bg-red-700"
                   >
                     Đăng xuất
                   </AlertDialogAction>

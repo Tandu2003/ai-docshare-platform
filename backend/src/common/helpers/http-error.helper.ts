@@ -1,9 +1,9 @@
-import { Response } from 'express';
-import { ApiResponse } from '../interfaces/api-response.interface';
-import { ResponseHelper } from './response.helper';
-import { HTTP_STATUS, HTTP_MESSAGES } from '../constants/http.constants';
+import { HTTP_MESSAGES, HTTP_STATUS } from '../constants/http.constants';
 import { AppError, ValidationError } from '../errors';
+import { ApiResponse } from '../interfaces/api-response.interface';
 import { ErrorUtils } from '../utils/error.utils';
+import { ResponseHelper } from './response.helper';
+import { Response } from 'express';
 
 export class HttpErrorHelper {
   /**
@@ -12,7 +12,7 @@ export class HttpErrorHelper {
   static badRequest(
     res: Response,
     message: string = HTTP_MESSAGES.BAD_REQUEST,
-    error?: any
+    error?: any,
   ): Response<ApiResponse> {
     return ResponseHelper.error(res, message, HTTP_STATUS.BAD_REQUEST, error);
   }
@@ -22,7 +22,7 @@ export class HttpErrorHelper {
    */
   static unauthorized(
     res: Response,
-    message: string = HTTP_MESSAGES.UNAUTHORIZED
+    message: string = HTTP_MESSAGES.UNAUTHORIZED,
   ): Response<ApiResponse> {
     return ResponseHelper.error(res, message, HTTP_STATUS.UNAUTHORIZED);
   }
@@ -32,7 +32,7 @@ export class HttpErrorHelper {
    */
   static forbidden(
     res: Response,
-    message: string = HTTP_MESSAGES.FORBIDDEN
+    message: string = HTTP_MESSAGES.FORBIDDEN,
   ): Response<ApiResponse> {
     return ResponseHelper.error(res, message, HTTP_STATUS.FORBIDDEN);
   }
@@ -40,7 +40,10 @@ export class HttpErrorHelper {
   /**
    * Not Found response (404)
    */
-  static notFound(res: Response, message: string = HTTP_MESSAGES.NOT_FOUND): Response<ApiResponse> {
+  static notFound(
+    res: Response,
+    message: string = HTTP_MESSAGES.NOT_FOUND,
+  ): Response<ApiResponse> {
     return ResponseHelper.error(res, message, HTTP_STATUS.NOT_FOUND);
   }
 
@@ -50,9 +53,14 @@ export class HttpErrorHelper {
   static validationError(
     res: Response,
     errors: any,
-    message: string = HTTP_MESSAGES.VALIDATION_FAILED
+    message: string = HTTP_MESSAGES.VALIDATION_FAILED,
   ): Response<ApiResponse> {
-    return ResponseHelper.error(res, message, HTTP_STATUS.UNPROCESSABLE_ENTITY, errors);
+    return ResponseHelper.error(
+      res,
+      message,
+      HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      errors,
+    );
   }
 
   /**
@@ -61,7 +69,7 @@ export class HttpErrorHelper {
   static conflict(
     res: Response,
     message: string = HTTP_MESSAGES.CONFLICT,
-    error?: any
+    error?: any,
   ): Response<ApiResponse> {
     return ResponseHelper.error(res, message, HTTP_STATUS.CONFLICT, error);
   }
@@ -71,7 +79,7 @@ export class HttpErrorHelper {
    */
   static tooManyRequests(
     res: Response,
-    message: string = HTTP_MESSAGES.TOO_MANY_REQUESTS
+    message: string = HTTP_MESSAGES.TOO_MANY_REQUESTS,
   ): Response<ApiResponse> {
     return ResponseHelper.error(res, message, HTTP_STATUS.TOO_MANY_REQUESTS);
   }
@@ -82,9 +90,14 @@ export class HttpErrorHelper {
   static internalError(
     res: Response,
     message: string = HTTP_MESSAGES.INTERNAL_ERROR,
-    error?: any
+    error?: any,
   ): Response<ApiResponse> {
-    return ResponseHelper.error(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR, error);
+    return ResponseHelper.error(
+      res,
+      message,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      error,
+    );
   }
 
   /**
@@ -93,7 +106,8 @@ export class HttpErrorHelper {
   static handleAppError(res: Response, error: AppError): Response<ApiResponse> {
     const statusCode = error.statusCode;
     const message = error.message;
-    const errorData = error instanceof ValidationError ? error.errors : undefined;
+    const errorData =
+      error instanceof ValidationError ? error.errors : undefined;
 
     return ResponseHelper.error(res, message, statusCode, errorData);
   }

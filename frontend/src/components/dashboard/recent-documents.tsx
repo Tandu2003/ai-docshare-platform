@@ -1,5 +1,4 @@
 import { Calendar, Download, Eye, Star, User } from 'lucide-react';
-
 import { Link } from 'react-router-dom';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -19,7 +18,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
           <CardTitle>Tài liệu gần đây</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Chưa có tài liệu nào.</p>
+          <p className="text-muted-foreground text-sm">Chưa có tài liệu nào.</p>
         </CardContent>
       </Card>
     );
@@ -32,7 +31,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {documents.slice(0, 5).map((document) => (
+          {documents.slice(0, 5).map(document => (
             <div key={document.id} className="flex items-center space-x-4">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary/10 text-primary">
@@ -42,16 +41,18 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
               <div className="flex-1 space-y-1">
                 <Link
                   to={`/documents/${document.id}`}
-                  className="text-sm font-medium hover:text-primary transition-colors"
+                  className="hover:text-primary text-sm font-medium transition-colors"
                 >
                   {document.title}
                 </Link>
-                <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                <div className="text-muted-foreground flex items-center space-x-4 text-xs">
                   <div className="flex items-center space-x-1">
                     <User className="h-3 w-3" />
                     <span>
                       {[document.uploader.firstName, document.uploader.lastName]
-                        .filter((name): name is string => Boolean(name && name.trim()))
+                        .filter((name): name is string =>
+                          Boolean(name && name.trim()),
+                        )
                         .join(' ') ||
                         document.uploader.username ||
                         'Người dùng'}
@@ -59,7 +60,9 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                   </div>
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-3 w-3" />
-                    <span>{new Date(document.createdAt).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(document.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Download className="h-3 w-3" />
@@ -78,7 +81,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                   <Badge variant="secondary" className="text-xs">
                     {document.category.name}
                   </Badge>
-                  {document.tags.slice(0, 2).map((tag) => (
+                  {document.tags.slice(0, 2).map(tag => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>

@@ -1,6 +1,9 @@
-import { Request, Response } from 'express';
-
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { ResponseHelper } from '../common/helpers/response.helper';
+import { FilesService } from './files.service';
 import { CheckPolicy } from '@/common/casl';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
   Controller,
@@ -16,13 +19,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-
-import { PrismaService } from '@/prisma/prisma.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { ResponseHelper } from '../common/helpers/response.helper';
-import { FilesService } from './files.service';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Request, Response } from 'express';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -41,7 +45,7 @@ export class FilesController {
   constructor(
     private readonly filesService: FilesService,
     private readonly r2Service: CloudflareR2Service,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('upload')
@@ -57,12 +61,12 @@ export class FilesController {
       limits: {
         fileSize: 100 * 1024 * 1024, // 100MB per file
       },
-    })
+    }),
   )
   async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     const userId = req.user.id;
 
@@ -72,7 +76,9 @@ export class FilesController {
       },
     });
 
-    this.logger.log(`Uploading ${files.length} files for user ${user?.username}`);
+    this.logger.log(
+      `Uploading ${files.length} files for user ${user?.username}`,
+    );
 
     if (!files || files.length === 0) {
       throw new BadRequestException('Không có tệp nào được cung cấp');
@@ -87,7 +93,7 @@ export class FilesController {
         res,
         uploadResults,
         'Tệp đã được tải lên thành công',
-        HttpStatus.CREATED
+        HttpStatus.CREATED,
       );
     } catch (error) {
       this.logger.error('Error uploading files:', error);
@@ -99,7 +105,7 @@ export class FilesController {
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi tải lên tệp',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -114,17 +120,27 @@ export class FilesController {
   async getSecureFileUrl(
     @Param('fileId') fileId: string,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     try {
       // Get user ID if authenticated
       const userId = (req as any).user?.id;
 
-      const secureUrl = await this.filesService.getSecureFileUrl(fileId, userId);
+      const secureUrl = await this.filesService.getSecureFileUrl(
+        fileId,
+        userId,
+      );
 
-      return ResponseHelper.success(res, { secureUrl }, 'URL tệp bảo mật đã được tạo');
+      return ResponseHelper.success(
+        res,
+        { secureUrl },
+        'URL tệp bảo mật đã được tạo',
+      );
     } catch (error) {
-      this.logger.error(`Failed to generate secure URL for file ${fileId}`, error);
+      this.logger.error(
+        `Failed to generate secure URL for file ${fileId}`,
+        error,
+      );
 
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
@@ -133,7 +149,7 @@ export class FilesController {
       return ResponseHelper.error(
         res,
         'Không thể tạo URL tệp bảo mật',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

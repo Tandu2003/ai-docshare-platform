@@ -1,11 +1,14 @@
-import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-
+import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { ResponseHelper } from '@/common/helpers/response.helper';
-
-import { AnalyticsService } from './analytics.service';
+import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Request, Response } from 'express';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
@@ -28,7 +31,11 @@ export class AnalyticsController {
     required: false,
     description: 'Time range for analytics (7d, 30d, 90d, 1y)',
   })
-  async getAnalytics(@Query('range') range: string, @Req() _req: Request, @Res() res: Response) {
+  async getAnalytics(
+    @Query('range') range: string,
+    @Req() _req: Request,
+    @Res() res: Response,
+  ) {
     const analytics = await this.analyticsService.getAnalytics(range);
     return ResponseHelper.success(res, analytics);
   }
@@ -40,7 +47,11 @@ export class AnalyticsController {
     required: false,
     description: 'Time range for trending documents (7d, 30d, 90d, 1y)',
   })
-  async getTrending(@Query('range') range: string, @Req() _req: Request, @Res() res: Response) {
+  async getTrending(
+    @Query('range') range: string,
+    @Req() _req: Request,
+    @Res() res: Response,
+  ) {
     const trending = await this.analyticsService.getTrendingAnalytics(range);
     return ResponseHelper.success(res, trending);
   }
@@ -55,13 +66,14 @@ export class AnalyticsController {
   @ApiQuery({
     name: 'minRatings',
     required: false,
-    description: 'Minimum number of ratings required for inclusion (default 10)',
+    description:
+      'Minimum number of ratings required for inclusion (default 10)',
   })
   async getTopRated(
     @Query('range') range: string,
     @Query('minRatings') minRatings: string,
     @Req() _req: Request,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     let minRatingsValue: number | undefined;
     if (typeof minRatings === 'string' && minRatings.trim().length > 0) {
@@ -71,7 +83,10 @@ export class AnalyticsController {
       }
     }
 
-    const topRated = await this.analyticsService.getTopRatedAnalytics(range, minRatingsValue);
+    const topRated = await this.analyticsService.getTopRatedAnalytics(
+      range,
+      minRatingsValue,
+    );
     return ResponseHelper.success(res, topRated);
   }
 }

@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import {
   AlertTriangle,
   CheckCircle,
@@ -7,8 +9,6 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-
-import { useEffect, useState } from 'react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockActivityLogs, mockDocuments, mockUsers } from '@/services/mock-data.service';
+import {
+  mockActivityLogs,
+  mockDocuments,
+  mockUsers,
+} from '@/services/mock-data.service';
 import type { ActivityLog, Document, User } from '@/types';
 
 export default function AdminDashboardPage() {
@@ -38,7 +42,7 @@ export default function AdminDashboardPage() {
       setLoading(true);
       try {
         // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setUsers(mockUsers);
         setDocuments(mockDocuments);
         setActivity(mockActivityLogs);
@@ -54,12 +58,17 @@ export default function AdminDashboardPage() {
 
   const getSystemStats = () => {
     const totalUsers = users.length;
-    const activeUsers = users.filter((user) => user.isActive).length;
-    const verifiedUsers = users.filter((user) => user.isVerified).length;
+    const activeUsers = users.filter(user => user.isActive).length;
+    const verifiedUsers = users.filter(user => user.isVerified).length;
     const totalDocuments = documents.length;
-    const approvedDocuments = documents.filter((doc) => doc.isApproved).length;
-    const pendingDocuments = documents.filter((doc) => !doc.isApproved && !doc.isDraft).length;
-    const totalDownloads = documents.reduce((sum, doc) => sum + doc.downloadCount, 0);
+    const approvedDocuments = documents.filter(doc => doc.isApproved).length;
+    const pendingDocuments = documents.filter(
+      doc => !doc.isApproved && !doc.isDraft,
+    ).length;
+    const totalDownloads = documents.reduce(
+      (sum, doc) => sum + doc.downloadCount,
+      0,
+    );
     const totalViews = documents.reduce((sum, doc) => sum + doc.viewCount, 0);
 
     return {
@@ -77,15 +86,24 @@ export default function AdminDashboardPage() {
   const stats = getSystemStats();
 
   const recentUsers = users
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, 5);
 
   const recentDocuments = documents
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, 5);
 
   const recentActivity = activity
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, 10);
 
   if (loading) {
@@ -93,7 +111,9 @@ export default function AdminDashboardPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">System overview and management</p>
+          <p className="text-muted-foreground">
+            System overview and management
+          </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -102,7 +122,7 @@ export default function AdminDashboardPage() {
                 <Skeleton className="h-4 w-3/4" />
               </CardHeader>
               <CardContent className="animate-pulse">
-                <Skeleton className="h-8 w-1/2 mb-2" />
+                <Skeleton className="mb-2 h-8 w-1/2" />
                 <Skeleton className="h-3 w-full" />
               </CardContent>
             </Card>
@@ -116,10 +136,12 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center space-x-2">
-        <Shield className="h-8 w-8 text-primary" />
+        <Shield className="text-primary h-8 w-8" />
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">System overview and management</p>
+          <p className="text-muted-foreground">
+            System overview and management
+          </p>
         </div>
       </div>
 
@@ -127,45 +149,57 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng người dùng</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Tổng người dùng
+            </CardTitle>
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeUsers} người dùng đang hoạt động</p>
+            <p className="text-muted-foreground text-xs">
+              {stats.activeUsers} người dùng đang hoạt động
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng tài liệu</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDocuments}</div>
-            <p className="text-xs text-muted-foreground">{stats.approvedDocuments} đã duyệt</p>
+            <p className="text-muted-foreground text-xs">
+              {stats.approvedDocuments} đã duyệt
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng lượt tải</CardTitle>
-            <Download className="h-4 w-4 text-muted-foreground" />
+            <Download className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalDownloads.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">{stats.totalViews.toLocaleString()} tổng lượt xem</p>
+            <div className="text-2xl font-bold">
+              {stats.totalDownloads.toLocaleString()}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {stats.totalViews.toLocaleString()} tổng lượt xem
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Chờ duyệt</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
-            <p className="text-xs text-muted-foreground">Tài liệu đang chờ xem xét</p>
+            <p className="text-muted-foreground text-xs">
+              Tài liệu đang chờ xem xét
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -189,7 +223,7 @@ export default function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentUsers.map((user) => (
+                  {recentUsers.map(user => (
                     <div key={user.id} className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="text-xs">
@@ -201,8 +235,9 @@ export default function AdminDashboardPage() {
                         <p className="text-sm font-medium">
                           {user.firstName} {user.lastName}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          @{user.username} • {new Date(user.createdAt).toLocaleDateString()}
+                        <p className="text-muted-foreground text-xs">
+                          @{user.username} •{' '}
+                          {new Date(user.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex items-center space-x-1">
@@ -232,19 +267,25 @@ export default function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentDocuments.map((document) => (
-                    <div key={document.id} className="flex items-center space-x-3">
+                  {recentDocuments.map(document => (
+                    <div
+                      key={document.id}
+                      className="flex items-center space-x-3"
+                    >
                       <div className="text-lg">{document.category.icon}</div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">{document.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {document.uploader.firstName} {document.uploader.lastName} •{' '}
+                        <p className="text-muted-foreground text-xs">
+                          {document.uploader.firstName}{' '}
+                          {document.uploader.lastName} •{' '}
                           {new Date(document.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Badge
-                          variant={document.isApproved ? 'default' : 'secondary'}
+                          variant={
+                            document.isApproved ? 'default' : 'secondary'
+                          }
                           className="text-xs"
                         >
                           {document.isApproved ? 'Đã duyệt' : 'Đang chờ'}
@@ -283,7 +324,7 @@ export default function AdminDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {users.map(user => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center space-x-2">
@@ -297,7 +338,9 @@ export default function AdminDashboardPage() {
                             <p className="text-sm font-medium">
                               {user.firstName} {user.lastName}
                             </p>
-                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+                            <p className="text-muted-foreground text-xs">
+                              @{user.username}
+                            </p>
                           </div>
                         </div>
                       </TableCell>
@@ -311,12 +354,18 @@ export default function AdminDashboardPage() {
                             variant={user.isActive ? 'default' : 'destructive'}
                             className="text-xs"
                           >
-                            {user.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
+                            {user.isActive
+                              ? 'Đang hoạt động'
+                              : 'Không hoạt động'}
                           </Badge>
-                          {user.isVerified && <CheckCircle className="h-4 w-4 text-green-500" />}
+                          {user.isVerified && (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm">
                           Quản lý
@@ -349,47 +398,61 @@ export default function AdminDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documents.map((document) => (
+                  {documents.map(document => (
                     <TableRow key={document.id}>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <span className="text-lg">{document.category.icon}</span>
+                          <span className="text-lg">
+                            {document.category.icon}
+                          </span>
                           <div>
-                            <p className="text-sm font-medium">{document.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(document.createdAt).toLocaleDateString()}
+                            <p className="text-sm font-medium">
+                              {document.title}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {new Date(
+                                document.createdAt,
+                              ).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <p className="text-sm">
-                          {document.uploader.firstName} {document.uploader.lastName}
+                          {document.uploader.firstName}{' '}
+                          {document.uploader.lastName}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           @{document.uploader.username}
                         </p>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{document.category.name}</Badge>
+                        <Badge variant="outline">
+                          {document.category.name}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           <Badge
-                            variant={document.isApproved ? 'default' : 'secondary'}
+                            variant={
+                              document.isApproved ? 'default' : 'secondary'
+                            }
                             className="text-xs"
                           >
                             {document.isApproved ? 'Đã duyệt' : 'Đang chờ'}
                           </Badge>
                           {document.isPremium && (
-                            <Badge variant="default" className="text-xs bg-yellow-500">
+                            <Badge
+                              variant="default"
+                              className="bg-yellow-500 text-xs"
+                            >
                               Premium
                             </Badge>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           <p>{document.downloadCount} lượt tải</p>
                           <p>{document.viewCount} lượt xem</p>
                           <p>{document.averageRating.toFixed(1)}★</p>
@@ -416,10 +479,13 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center space-x-3">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <TrendingUp className="h-4 w-4 text-primary" />
+                {recentActivity.map(activity => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center space-x-3"
+                  >
+                    <div className="bg-primary/10 rounded-full p-2">
+                      <TrendingUp className="text-primary h-4 w-4" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm">
@@ -428,18 +494,21 @@ export default function AdminDashboardPage() {
                             <span className="font-medium">
                               {activity.user.firstName} {activity.user.lastName}
                             </span>{' '}
-                            {activity.action === 'upload' && 'đã tải lên tài liệu'}
-                            {activity.action === 'download' && 'đã tải xuống tài liệu'}
+                            {activity.action === 'upload' &&
+                              'đã tải lên tài liệu'}
+                            {activity.action === 'download' &&
+                              'đã tải xuống tài liệu'}
                             {activity.action === 'view' && 'đã xem tài liệu'}
                             {activity.action === 'login' && 'đã đăng nhập'}
-                            {!['upload', 'download', 'view', 'login'].includes(activity.action) &&
-                              `đã thực hiện ${activity.action}`}
+                            {!['upload', 'download', 'view', 'login'].includes(
+                              activity.action,
+                            ) && `đã thực hiện ${activity.action}`}
                           </>
                         ) : (
                           `Hệ thống ${activity.action}`
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {new Date(activity.createdAt).toLocaleString()}
                       </p>
                     </div>

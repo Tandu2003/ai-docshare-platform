@@ -1,22 +1,31 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-
 import React, { useState } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
 import { FormFieldPassword } from '@/components/ui/form-field-password';
 import { useAuth } from '@/hooks';
-import { type RegisterFormData, registerSchema } from '@/schemas';
+import { registerSchema, type RegisterFormData } from '@/schemas';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
   onSwitchToLogin?: () => void;
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin }) => {
+export const RegisterForm: React.FC<RegisterFormProps> = ({
+  onSuccess,
+  onSwitchToLogin,
+}) => {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,10 +65,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <CardTitle>Tạo tài khoản</CardTitle>
-        <CardDescription>Đăng ký để bắt đầu sử dụng nền tảng của chúng tôi</CardDescription>
+        <CardDescription>
+          Đăng ký để bắt đầu sử dụng nền tảng của chúng tôi
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -122,13 +133,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           </Button>
 
           {onSwitchToLogin && (
-            <div className="text-center text-sm space-y-2">
+            <div className="space-y-2 text-center text-sm">
               <div>
                 <span className="text-muted-foreground">Đã có tài khoản? </span>
                 <Button
                   type="button"
                   variant="link"
-                  className="p-0 h-auto"
+                  className="h-auto p-0"
                   onClick={onSwitchToLogin}
                   disabled={isSubmitting}
                 >
@@ -136,7 +147,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
                 </Button>
               </div>
               <div>
-                <span className="text-muted-foreground">Không nhận được email xác thực? </span>
+                <span className="text-muted-foreground">
+                  Không nhận được email xác thực?{' '}
+                </span>
                 <Link
                   to="/auth/resend-verification"
                   className="text-primary hover:text-primary/80 underline underline-offset-4"

@@ -1,15 +1,15 @@
+import { AuthService } from '@/auth/auth.service';
+import { AuthUser, JwtPayload } from '@/auth/interfaces';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
-import { AuthService } from '@/auth/auth.service';
-import { JwtPayload, AuthUser } from '@/auth/interfaces';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) {
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
     if (!secret) {
@@ -27,7 +27,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.authService.validateUser(payload);
 
     if (!user) {
-      throw new UnauthorizedException('Không tìm thấy người dùng hoặc tài khoản không hoạt động');
+      throw new UnauthorizedException(
+        'Không tìm thấy người dùng hoặc tài khoản không hoạt động',
+      );
     }
 
     return user;

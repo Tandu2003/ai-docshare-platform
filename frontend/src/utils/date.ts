@@ -31,7 +31,7 @@ const normalizeToDate = (value?: string | number | Date | null) => {
 
 export const formatDate = (
   value?: string | number | Date | null,
-  dateFormat: string = DEFAULT_FORMAT
+  dateFormat: string = DEFAULT_FORMAT,
 ): string => {
   const date = normalizeToDate(value);
   if (!date) {

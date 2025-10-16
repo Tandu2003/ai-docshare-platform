@@ -59,7 +59,7 @@ export class AbilityFactory {
     const role = user.role;
     const perms = role?.permissions as Permission[];
     if (perms && Array.isArray(perms)) {
-      perms.forEach((permission) => {
+      perms.forEach(permission => {
         if (permission.conditions) {
           can(permission.action, permission.subject, permission.conditions);
         } else {
@@ -117,7 +117,12 @@ export class AbilityFactory {
   }
 
   // Helper method to check if user can perform action on subject
-  can(user: any, action: Actions, subject: Subjects, conditions?: Record<string, any>): boolean {
+  can(
+    user: any,
+    action: Actions,
+    subject: Subjects,
+    conditions?: Record<string, any>,
+  ): boolean {
     const ability = this.createForUser(user);
     return ability.can(action, subject, conditions as any);
   }

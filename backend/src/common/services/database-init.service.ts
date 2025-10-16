@@ -1,6 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
 import { RoleService } from '@/auth/role.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 @Injectable()
 export class DatabaseInitService implements OnModuleInit {
@@ -8,7 +8,7 @@ export class DatabaseInitService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly roleService: RoleService
+    private readonly roleService: RoleService,
   ) {}
 
   async onModuleInit() {

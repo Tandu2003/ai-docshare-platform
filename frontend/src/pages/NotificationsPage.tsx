@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import {
   Bell,
   Check,
@@ -10,8 +12,6 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-
-import { useEffect, useState } from 'react';
 
 import {
   AlertDialog,
@@ -44,14 +44,16 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>(
+    [],
+  );
 
   useEffect(() => {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
         // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setNotifications(mockNotifications);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
@@ -63,53 +65,65 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, []);
 
-  const filteredNotifications = notifications.filter((notification) => {
+  const filteredNotifications = notifications.filter(notification => {
     const matchesFilter =
       filter === 'all' ||
       (filter === 'unread' && !notification.isRead) ||
       (filter === 'read' && notification.isRead);
 
-    const matchesType = typeFilter === 'all' || notification.type === typeFilter;
+    const matchesType =
+      typeFilter === 'all' || notification.type === typeFilter;
 
     return matchesFilter && matchesType;
   });
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleMarkAsRead = (notificationId: string) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === notificationId ? { ...notif, isRead: true, readAt: new Date() } : notif
-      )
+    setNotifications(prev =>
+      prev.map(notif =>
+        notif.id === notificationId
+          ? { ...notif, isRead: true, readAt: new Date() }
+          : notif,
+      ),
     );
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notif) => (!notif.isRead ? { ...notif, isRead: true, readAt: new Date() } : notif))
+    setNotifications(prev =>
+      prev.map(notif =>
+        !notif.isRead ? { ...notif, isRead: true, readAt: new Date() } : notif,
+      ),
     );
   };
 
   const handleDeleteNotification = (notificationId: string) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== notificationId));
+    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
   };
 
   const handleDeleteSelected = () => {
-    setNotifications((prev) => prev.filter((notif) => !selectedNotifications.includes(notif.id)));
+    setNotifications(prev =>
+      prev.filter(notif => !selectedNotifications.includes(notif.id)),
+    );
     setSelectedNotifications([]);
   };
 
-  const handleSelectNotification = (notificationId: string, checked: boolean) => {
+  const handleSelectNotification = (
+    notificationId: string,
+    checked: boolean,
+  ) => {
     if (checked) {
-      setSelectedNotifications((prev) => [...prev, notificationId]);
+      setSelectedNotifications(prev => [...prev, notificationId]);
     } else {
-      setSelectedNotifications((prev) => prev.filter((id) => id !== notificationId));
+      setSelectedNotifications(prev =>
+        prev.filter(id => id !== notificationId),
+      );
     }
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedNotifications(filteredNotifications.map((n) => n.id));
+      setSelectedNotifications(filteredNotifications.map(n => n.id));
     } else {
       setSelectedNotifications([]);
     }
@@ -154,9 +168,12 @@ export default function NotificationsPage() {
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
     if (diffInSeconds < 60) return 'Vừa xong';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} phút trước`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} giờ trước`;
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
+    if (diffInSeconds < 3600)
+      return `${Math.floor(diffInSeconds / 60)} phút trước`;
+    if (diffInSeconds < 86400)
+      return `${Math.floor(diffInSeconds / 3600)} giờ trước`;
+    if (diffInSeconds < 2592000)
+      return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
     return date.toLocaleDateString();
   };
 
@@ -173,7 +190,7 @@ export default function NotificationsPage() {
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i}>
-              <CardContent className="p-4 animate-pulse">
+              <CardContent className="animate-pulse p-4">
                 <div className="flex items-start space-x-3">
                   <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="flex-1 space-y-2">
@@ -197,13 +214,16 @@ export default function NotificationsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
           <p className="text-muted-foreground">
-            {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : 'Đã cập nhật tất cả!'};
+            {unreadCount > 0
+              ? `${unreadCount} thông báo chưa đọc`
+              : 'Đã cập nhật tất cả!'}
+            ;
           </p>
         </div>
         <div className="flex items-center space-x-2">
           {unreadCount > 0 && (
             <Button variant="outline" onClick={handleMarkAllAsRead}>
-              <CheckCheck className="h-4 w-4 mr-2" />
+              <CheckCheck className="mr-2 h-4 w-4" />
               Đánh dấu tất cả đã đọc
             </Button>
           )}
@@ -211,7 +231,7 @@ export default function NotificationsPage() {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Xóa đã chọn
                 </Button>
               </AlertDialogTrigger>
@@ -219,7 +239,9 @@ export default function NotificationsPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Xóa thông báo</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Bạn có chắc chắn muốn xóa {selectedNotifications.length} thông báo{selectedNotifications.length > 1 ? 's' : ''}? Hành động này không thể hoàn tác.
+                    Bạn có chắc chắn muốn xóa {selectedNotifications.length}{' '}
+                    thông báo{selectedNotifications.length > 1 ? 's' : ''}? Hành
+                    động này không thể hoàn tác.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -245,7 +267,10 @@ export default function NotificationsPage() {
               <Filter className="h-4 w-4" />
               <span className="text-sm font-medium">Bộ lọc:</span>
             </div>
-            <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
+            <Select
+              value={filter}
+              onValueChange={(value: any) => setFilter(value)}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -277,11 +302,13 @@ export default function NotificationsPage() {
         {filteredNotifications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">Không có thông báo</h3>
-              <p className="text-sm text-muted-foreground">
+              <Bell className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+              <h3 className="text-muted-foreground mb-2 text-lg font-medium">
+                Không có thông báo
+              </h3>
+              <p className="text-muted-foreground text-sm">
                 {filter === 'all'
-                  ? "Bạn đã cập nhật tất cả! Không có thông báo nào để hiển thị."
+                  ? 'Bạn đã cập nhật tất cả! Không có thông báo nào để hiển thị.'
                   : `Không tìm thấy thông báo ${filter}.`}
               </p>
             </CardContent>
@@ -292,50 +319,63 @@ export default function NotificationsPage() {
             <div className="flex items-center space-x-2 p-2">
               <Checkbox
                 checked={
-                  selectedNotifications.length === filteredNotifications.length &&
+                  selectedNotifications.length ===
+                    filteredNotifications.length &&
                   filteredNotifications.length > 0
                 }
                 onCheckedChange={handleSelectAll}
               />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 Chọn tất cả ({filteredNotifications.length})
               </span>
             </div>
 
-            {filteredNotifications.map((notification) => (
+            {filteredNotifications.map(notification => (
               <Card
                 key={notification.id}
-                className={!notification.isRead ? 'border-primary/20 bg-primary/5' : ''}
+                className={
+                  !notification.isRead ? 'border-primary/20 bg-primary/5' : ''
+                }
               >
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-3">
                     <Checkbox
                       checked={selectedNotifications.includes(notification.id)}
-                      onCheckedChange={(checked) =>
-                        handleSelectNotification(notification.id, checked as boolean)
+                      onCheckedChange={checked =>
+                        handleSelectNotification(
+                          notification.id,
+                          checked as boolean,
+                        )
                       }
                     />
                     <div
-                      className={`p-2 rounded-full ${getNotificationColor(notification.type)} flex items-center justify-center`}
+                      className={`rounded-full p-2 ${getNotificationColor(notification.type)} flex items-center justify-center`}
                     >
-                      <span className="text-white">{getNotificationIcon(notification.type)}</span>
+                      <span className="text-white">
+                        {getNotificationIcon(notification.type)}
+                      </span>
                     </div>
                     <div className="flex-1 space-y-2">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium">{notification.title}</h4>
-                          <p className="text-sm text-muted-foreground">{notification.message}</p>
+                          <p className="text-muted-foreground text-sm">
+                            {notification.message}
+                          </p>
                         </div>
-                        <div className="flex items-center space-x-2 ml-4">
+                        <div className="ml-4 flex items-center space-x-2">
                           {!notification.isRead && (
                             <Badge variant="default" className="text-xs">
                               Mới
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-xs capitalize">
+                          <Badge
+                            variant="outline"
+                            className="text-xs capitalize"
+                          >
                             {notification.type.replace('_', ' ')}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-muted-foreground text-xs">
                             {formatTimeAgo(notification.createdAt)}
                           </span>
                         </div>
@@ -347,7 +387,7 @@ export default function NotificationsPage() {
                             size="sm"
                             onClick={() => handleMarkAsRead(notification.id)}
                           >
-                            <Check className="h-3 w-3 mr-1" />
+                            <Check className="mr-1 h-3 w-3" />
                             Đánh dấu đã đọc
                           </Button>
                         )}
@@ -361,13 +401,16 @@ export default function NotificationsPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Xóa thông báo</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Bạn có chắc chắn muốn xóa thông báo này? Hành động này không thể hoàn tác.
+                                Bạn có chắc chắn muốn xóa thông báo này? Hành
+                                động này không thể hoàn tác.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Hủy</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteNotification(notification.id)}
+                                onClick={() =>
+                                  handleDeleteNotification(notification.id)
+                                }
                                 className="bg-red-600 hover:bg-red-700"
                               >
                                 Xóa

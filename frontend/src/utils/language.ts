@@ -24,7 +24,7 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
  * @returns Language display name (e.g., 'English', 'Vietnamese')
  */
 export function getLanguageName(code: string): string {
-  const language = LANGUAGE_OPTIONS.find((lang) => lang.code === code);
+  const language = LANGUAGE_OPTIONS.find(lang => lang.code === code);
   return language?.name || code.toUpperCase();
 }
 
@@ -33,7 +33,7 @@ export function getLanguageName(code: string): string {
  * @returns Array of language codes
  */
 export function getLanguageCodes(): string[] {
-  return LANGUAGE_OPTIONS.map((lang) => lang.code);
+  return LANGUAGE_OPTIONS.map(lang => lang.code);
 }
 
 /**

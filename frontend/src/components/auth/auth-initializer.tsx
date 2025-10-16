@@ -3,16 +3,23 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { CaslProvider } from '@/lib/casl';
 import { store } from '@/store';
-import { clearAccessToken, handleAutoLogout, initializeAuth, setAccessToken } from '@/store/slices';
+import {
+  clearAccessToken,
+  handleAutoLogout,
+  initializeAuth,
+  setAccessToken,
+} from '@/store/slices';
 import { apiClient } from '@/utils/api-client';
 
 interface AuthInitializerProps {
   children: React.ReactNode;
 }
 
-export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) => {
+export const AuthInitializer: React.FC<AuthInitializerProps> = ({
+  children,
+}) => {
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
+  const user = useAppSelector(state => state.auth.user);
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
@@ -22,7 +29,7 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) =>
         apiClient.connectToRedux(
           (token: string) => dispatch(setAccessToken(token)),
           () => dispatch(clearAccessToken()),
-          () => store.getState().auth.accessToken || null
+          () => store.getState().auth.accessToken || null,
         );
 
         // Initialize auth state on app startup
@@ -56,9 +63,9 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) =>
   // Show loading while initializing auth
   if (isInitializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
           <p className="text-muted-foreground">Đang khởi tạo...</p>
         </div>
       </div>
