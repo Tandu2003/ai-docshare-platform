@@ -3,6 +3,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -30,6 +31,21 @@ interface CategoryWithMetrics extends CategoryWithParent {
 @Injectable()
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private validateRole(user: any, requiredRoles: string[]): void {
+    if (!user || !user.role) {
+      throw new ForbiddenException(
+        'Yêu cầu đăng nhập để thực hiện thao tác này',
+      );
+    }
+
+    const userRole = user.role.name;
+    if (!requiredRoles.includes(userRole)) {
+      throw new ForbiddenException(
+        `Chỉ có ${requiredRoles.join(' hoặc ')} mới có thể thực hiện thao tác này`,
+      );
+    }
+  }
 
   private async attachMetrics(
     categories: CategoryWithParent[],
@@ -177,7 +193,10 @@ export class CategoriesService {
     }
   }
 
-  async createCategory(dto: CreateCategoryDto) {
+  async createCategory(dto: CreateCategoryDto, user?: any) {
+    // Validate role - chỉ admin mới có thể tạo category
+    this.validateRole(user, ['admin']);
+
     const parentId = dto.parentId?.trim() || undefined;
     await this.validateParent(undefined, parentId);
 
@@ -207,7 +226,10 @@ export class CategoriesService {
     return this.mapCategoryResponse(categoryWithMetrics);
   }
 
-  async updateCategory(id: string, dto: UpdateCategoryDto) {
+  async updateCategory(id: string, dto: UpdateCategoryDto, user?: any) {
+    // Validate role - chỉ admin mới có thể cập nhật category
+    this.validateRole(user, ['admin']);
+
     const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Không tìm thấy danh mục');
@@ -277,7 +299,10 @@ export class CategoriesService {
     return this.mapCategoryResponse(categoryWithMetrics);
   }
 
-  async deleteCategory(id: string) {
+  async deleteCategory(id: string, user?: any) {
+    // Validate role - chỉ admin mới có thể xóa category
+    this.validateRole(user, ['admin']);
+
     const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Không tìm thấy danh mục');

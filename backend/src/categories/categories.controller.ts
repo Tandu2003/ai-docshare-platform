@@ -15,6 +15,7 @@ import {
   Patch,
   Post,
   Query,
+  Request,
   Res,
 } from '@nestjs/common';
 import {
@@ -40,6 +41,7 @@ export class CategoriesController {
     required: false,
     description: 'Include inactive categories (default: true)',
   })
+  @CheckPolicy({ action: 'read', subject: 'Category' })
   async getCategories(
     @Query('includeInactive') includeInactive: string,
     @Res() res: Response,
@@ -66,12 +68,40 @@ export class CategoriesController {
     }
   }
 
+  @Get('public')
+  @ApiOperation({ summary: 'Get public categories (active only)' })
+  async getPublicCategories(@Res() res: Response) {
+    try {
+      const categories = await this.categoriesService.findAll(false);
+      return ResponseHelper.success(
+        res,
+        categories,
+        'Danh mục công khai đã được truy xuất thành công',
+      );
+    } catch (error) {
+      this.logger.error('Error retrieving public categories', error);
+      return ResponseHelper.error(
+        res,
+        'Không thể truy xuất danh mục công khai',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+  }
+
   @Post()
   @CheckPolicy({ action: 'create', subject: 'Category' })
   @ApiOperation({ summary: 'Create category' })
-  async createCategory(@Body() dto: CreateCategoryDto, @Res() res: Response) {
+  async createCategory(
+    @Body() dto: CreateCategoryDto,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
     try {
-      const category = await this.categoriesService.createCategory(dto);
+      const category = await this.categoriesService.createCategory(
+        dto,
+        req.user,
+      );
       return ResponseHelper.success(
         res,
         category,
@@ -99,9 +129,14 @@ export class CategoriesController {
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
     @Res() res: Response,
+    @Request() req: any,
   ) {
     try {
-      const category = await this.categoriesService.updateCategory(id, dto);
+      const category = await this.categoriesService.updateCategory(
+        id,
+        dto,
+        req.user,
+      );
       return ResponseHelper.success(
         res,
         category,
@@ -124,9 +159,13 @@ export class CategoriesController {
   @Delete(':id')
   @CheckPolicy({ action: 'delete', subject: 'Category' })
   @ApiOperation({ summary: 'Delete category' })
-  async deleteCategory(@Param('id') id: string, @Res() res: Response) {
+  async deleteCategory(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
     try {
-      await this.categoriesService.deleteCategory(id);
+      await this.categoriesService.deleteCategory(id, req.user);
       return ResponseHelper.success(
         res,
         null,

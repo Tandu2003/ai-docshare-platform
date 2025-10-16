@@ -143,7 +143,6 @@ export function UserFilters({
                   <SelectContent>
                     <SelectItem value="all">Tất cả vai trò</SelectItem>
                     <SelectItem value="admin">Quản trị viên</SelectItem>
-                    <SelectItem value="moderator">Điều hành viên</SelectItem>
                     <SelectItem value="user">Người dùng</SelectItem>
                   </SelectContent>
                 </Select>

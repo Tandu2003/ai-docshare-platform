@@ -46,10 +46,9 @@ export class AbilityFactory {
   createForUser(user: any): AppAbility {
     const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
-    // Default permissions for all users
-    can('read', 'Document', { isPublic: true });
-    can('upload', 'File');
-    can('read', 'Category');
+    // Default permissions for guest users (not logged in)
+    can('read', 'Document', { isPublic: true, isApproved: true });
+    can('read', 'Category', { isActive: true });
     can('read', 'File', { isPublic: true });
 
     if (!user || !user.role) {
@@ -109,13 +108,8 @@ export class AbilityFactory {
         can('download', 'Document', { uploaderId: user.id });
         can('read', 'File', { isPublic: true });
         can('read', 'File', { uploaderId: user.id });
+        // Categories - users chỉ có thể đọc danh mục
         can('read', 'Category');
-        can('read', 'Notification', { userId: user.id });
-        can('update', 'Notification', { userId: user.id });
-        can('delete', 'Notification', { userId: user.id });
-        // User có thể xem profile của mình
-        can('read', 'User', { id: user.id });
-        can('update', 'User', { id: user.id });
         break;
     }
 

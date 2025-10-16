@@ -89,6 +89,16 @@ export const fetchCategories = async (
   return response.data.map(mapCategory);
 };
 
+export const fetchPublicCategories = async (): Promise<CategoryWithStats[]> => {
+  const response = await apiClient.get<CategoryListResponse>('/categories/public');
+
+  if (!response.success || !response.data) {
+    throw new Error(response.message || 'Không thể tải danh sách danh mục công khai');
+  }
+
+  return response.data.map(mapCategory);
+};
+
 export const createCategory = async (
   payload: CategoryPayload,
 ): Promise<CategoryWithStats> => {

@@ -55,7 +55,14 @@ export const useAuth = () => {
     (action: string, subject: string, conditions?: any): boolean => {
       if (!user?.role?.permissions) return false;
 
-      return user.role.permissions.some(p => {
+      // Handle both Permission[] and string[] formats
+      return user.role.permissions.some((p: any) => {
+        // If permissions are strings, check if action is in the string
+        if (typeof p === 'string') {
+          return p === action || p === 'manage';
+        }
+
+        // If permissions are Permission objects
         const matchesAction = p.action === action;
         if (!matchesAction) return false;
 
@@ -69,7 +76,7 @@ export const useAuth = () => {
         // Check conditions if provided
         if (conditions && p.conditions) {
           return Object.keys(conditions).every(
-            key => p.conditions?.[key] === conditions[key],
+            key => p.conditions![key] === conditions[key],
           );
         }
 
@@ -90,10 +97,6 @@ export const useAuth = () => {
     return hasRole('admin');
   }, [hasRole]);
 
-  const isModerator = useCallback((): boolean => {
-    return hasRole('moderator') || hasRole('admin');
-  }, [hasRole]);
-
   return {
     // State
     auth,
@@ -112,6 +115,5 @@ export const useAuth = () => {
     hasPermission,
     hasRole,
     isAdmin,
-    isModerator,
   };
 };

@@ -35,10 +35,12 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   createCategory as createCategoryApi,
   deleteCategory as deleteCategoryApi,
   fetchCategories as fetchCategoriesApi,
+  fetchPublicCategories as fetchPublicCategoriesApi,
   updateCategory as updateCategoryApi,
 } from '@/services/category.service';
 import type { CategoryWithStats } from '@/types';
@@ -47,6 +49,14 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Kiểm tra quyền của user
+  const {
+    canCreateCategory,
+    canUpdateCategory,
+    canDeleteCategory,
+    canManageCategories,
+  } = usePermissions();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] =
@@ -78,7 +88,10 @@ export default function CategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchCategoriesApi();
+      // Sử dụng endpoint phù hợp dựa trên quyền
+      const data = canManageCategories
+        ? await fetchCategoriesApi()
+        : await fetchPublicCategoriesApi();
       setCategories(sortCategories(data));
     } catch (fetchError) {
       console.error('Failed to fetch categories:', fetchError);
@@ -90,7 +103,7 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [sortCategories]);
+  }, [sortCategories, canManageCategories]);
 
   useEffect(() => {
     void loadCategories();
@@ -262,142 +275,147 @@ export default function CategoriesPage() {
             Quản lý danh mục tài liệu và tổ chức của chúng
           </p>
         </div>
-        <Dialog
-          open={isCreateDialogOpen}
-          onOpenChange={open => {
-            setIsCreateDialogOpen(open);
-            if (!open) {
-              resetForm();
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Tạo danh mục
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Tạo danh mục mới</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Tên</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="Tên danh mục"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Mô tả</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Mô tả danh mục"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        {canCreateCategory && (
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={open => {
+              setIsCreateDialogOpen(open);
+              if (!open) {
+                resetForm();
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Tạo danh mục
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tạo danh mục mới</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="icon">Biểu tượng</Label>
+                  <Label htmlFor="name">Tên</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, name: e.target.value }))
+                    }
+                    placeholder="Tên danh mục"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Mô tả</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    placeholder="Mô tả danh mục"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="icon">Biểu tượng</Label>
+                    <Select
+                      value={formData.icon}
+                      onValueChange={value =>
+                        setFormData(prev => ({ ...prev, icon: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {iconOptions.map(icon => (
+                          <SelectItem key={icon} value={icon}>
+                            {icon} {icon}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="color">Màu sắc</Label>
+                    <Input
+                      id="color"
+                      type="color"
+                      value={formData.color}
+                      onChange={e =>
+                        setFormData(prev => ({
+                          ...prev,
+                          color: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="parent">Danh mục cha</Label>
                   <Select
-                    value={formData.icon}
+                    value={formData.parentId}
                     onValueChange={value =>
-                      setFormData(prev => ({ ...prev, icon: value }))
+                      setFormData(prev => ({ ...prev, parentId: value }))
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Chọn danh mục cha" />
                     </SelectTrigger>
                     <SelectContent>
-                      {iconOptions.map(icon => (
-                        <SelectItem key={icon} value={icon}>
-                          {icon} {icon}
+                      <SelectItem value="">Không có danh mục cha</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.icon ?? '📁'} {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="color">Màu sắc</Label>
+                  <Label htmlFor="sortOrder">Thứ tự sắp xếp</Label>
                   <Input
-                    id="color"
-                    type="color"
-                    value={formData.color}
+                    id="sortOrder"
+                    type="number"
+                    value={formData.sortOrder}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, color: e.target.value }))
+                      setFormData(prev => ({
+                        ...prev,
+                        sortOrder: parseInt(e.target.value) || 0,
+                      }))
                     }
+                    placeholder="0"
                   />
                 </div>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      resetForm();
+                      setIsCreateDialogOpen(false);
+                    }}
+                    disabled={submitting}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={() => void handleCreateCategory()}
+                    disabled={!formData.name.trim() || submitting}
+                  >
+                    {submitting ? 'Đang lưu...' : 'Tạo danh mục'}
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="parent">Danh mục cha</Label>
-                <Select
-                  value={formData.parentId}
-                  onValueChange={value =>
-                    setFormData(prev => ({ ...prev, parentId: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn danh mục cha" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Không có danh mục cha</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.icon ?? '📁'} {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="sortOrder">Thứ tự sắp xếp</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      sortOrder: parseInt(e.target.value) || 0,
-                    }))
-                  }
-                  placeholder="0"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    resetForm();
-                    setIsCreateDialogOpen(false);
-                  }}
-                  disabled={submitting}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={() => void handleCreateCategory()}
-                  disabled={!formData.name.trim() || submitting}
-                >
-                  {submitting ? 'Đang lưu...' : 'Tạo danh mục'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {error && (
@@ -444,45 +462,51 @@ export default function CategoriesPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(category)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Xóa danh mục</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa "{category.name}"? Hành
-                            động này không thể hoàn tác.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel
-                            disabled={deletingId === category.id}
-                          >
-                            Hủy
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() =>
-                              void handleDeleteCategory(category.id)
-                            }
-                            className="bg-red-600 hover:bg-red-700"
-                            disabled={deletingId === category.id}
-                          >
-                            {deletingId === category.id ? 'Đang xóa...' : 'Xóa'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {canUpdateCategory && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(category)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDeleteCategory && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Xóa danh mục</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Bạn có chắc chắn muốn xóa "{category.name}"? Hành
+                              động này không thể hoàn tác.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel
+                              disabled={deletingId === category.id}
+                            >
+                              Hủy
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() =>
+                                void handleDeleteCategory(category.id)
+                              }
+                              className="bg-red-600 hover:bg-red-700"
+                              disabled={deletingId === category.id}
+                            >
+                              {deletingId === category.id
+                                ? 'Đang xóa...'
+                                : 'Xóa'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -529,140 +553,142 @@ export default function CategoriesPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog
-        open={isEditDialogOpen}
-        onOpenChange={open => {
-          setIsEditDialogOpen(open);
-          if (!open) {
-            setEditingCategory(null);
-            resetForm();
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Chỉnh sửa danh mục</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">Tên</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={e =>
-                  setFormData(prev => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Tên danh mục"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Mô tả</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={e =>
-                  setFormData(prev => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                placeholder="Mô tả danh mục"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+      {canUpdateCategory && (
+        <Dialog
+          open={isEditDialogOpen}
+          onOpenChange={open => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              setEditingCategory(null);
+              resetForm();
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa danh mục</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-icon">Biểu tượng</Label>
+                <Label htmlFor="edit-name">Tên</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Tên danh mục"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Mô tả</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Mô tả danh mục"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-icon">Biểu tượng</Label>
+                  <Select
+                    value={formData.icon}
+                    onValueChange={value =>
+                      setFormData(prev => ({ ...prev, icon: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {iconOptions.map(icon => (
+                        <SelectItem key={icon} value={icon}>
+                          {icon} {icon}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-color">Màu sắc</Label>
+                  <Input
+                    id="edit-color"
+                    type="color"
+                    value={formData.color}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, color: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-parent">Danh mục cha</Label>
                 <Select
-                  value={formData.icon}
+                  value={formData.parentId}
                   onValueChange={value =>
-                    setFormData(prev => ({ ...prev, icon: value }))
+                    setFormData(prev => ({ ...prev, parentId: value }))
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Chọn danh mục cha" />
                   </SelectTrigger>
                   <SelectContent>
-                    {iconOptions.map(icon => (
-                      <SelectItem key={icon} value={icon}>
-                        {icon} {icon}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="">Không có danh mục cha</SelectItem>
+                    {categories
+                      .filter(cat => cat.id !== editingCategory?.id)
+                      .map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.icon ?? '📁'} {category.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit-color">Màu sắc</Label>
+                <Label htmlFor="edit-sortOrder">Thứ tự sắp xếp</Label>
                 <Input
-                  id="edit-color"
-                  type="color"
-                  value={formData.color}
+                  id="edit-sortOrder"
+                  type="number"
+                  value={formData.sortOrder}
                   onChange={e =>
-                    setFormData(prev => ({ ...prev, color: e.target.value }))
+                    setFormData(prev => ({
+                      ...prev,
+                      sortOrder: parseInt(e.target.value) || 0,
+                    }))
                   }
+                  placeholder="0"
                 />
               </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingCategory(null);
+                    resetForm();
+                  }}
+                  disabled={submitting}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={() => void handleEditCategory()}
+                  disabled={!formData.name.trim() || submitting}
+                >
+                  {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="edit-parent">Danh mục cha</Label>
-              <Select
-                value={formData.parentId}
-                onValueChange={value =>
-                  setFormData(prev => ({ ...prev, parentId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn danh mục cha" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Không có danh mục cha</SelectItem>
-                  {categories
-                    .filter(cat => cat.id !== editingCategory?.id)
-                    .map(category => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.icon ?? '📁'} {category.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="edit-sortOrder">Thứ tự sắp xếp</Label>
-              <Input
-                id="edit-sortOrder"
-                type="number"
-                value={formData.sortOrder}
-                onChange={e =>
-                  setFormData(prev => ({
-                    ...prev,
-                    sortOrder: parseInt(e.target.value) || 0,
-                  }))
-                }
-                placeholder="0"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingCategory(null);
-                  resetForm();
-                }}
-                disabled={submitting}
-              >
-                Hủy
-              </Button>
-              <Button
-                onClick={() => void handleEditCategory()}
-                disabled={!formData.name.trim() || submitting}
-              >
-                {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

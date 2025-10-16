@@ -22,7 +22,7 @@ Hệ thống quản lý người dùng cho phép quản trị viên thực hiệ
 
 ### 3. Quản lý vai trò và trạng thái
 
-- **Thay đổi vai trò**: Cập nhật vai trò của người dùng (admin, moderator, user)
+- **Thay đổi vai trò**: Cập nhật vai trò của người dùng (admin, user)
 - **Quản lý trạng thái**: Kích hoạt/vô hiệu hóa tài khoản người dùng
 - **Xác thực email**: Quản lý trạng thái xác thực email
 

@@ -5,6 +5,7 @@ A comprehensive document sharing platform with AI capabilities, built with React
 ## 🚀 Features
 
 ### Core Functionality
+
 - **Document Management**: Upload, organize, and share documents
 - **AI Analysis**: Automatic document analysis with AI-powered insights
 - **User Management**: Complete user authentication and profile system
@@ -15,6 +16,7 @@ A comprehensive document sharing platform with AI capabilities, built with React
 - **Notifications**: Real-time activity notifications
 
 ### Admin Features
+
 - **Admin Dashboard**: Comprehensive system overview
 - **User Management**: Manage users, roles, and permissions
 - **Document Moderation**: Approve/reject document submissions
@@ -22,6 +24,7 @@ A comprehensive document sharing platform with AI capabilities, built with React
 - **Category Management**: Create and organize document categories
 
 ### User Experience
+
 - **Responsive Design**: Mobile-first, fully responsive interface
 - **Dark/Light Mode**: Theme switching support
 - **Accessibility**: WCAG compliant components
@@ -64,11 +67,13 @@ src/
 ## 🎨 Component Architecture
 
 ### Layout Components
+
 - **MainLayout**: Main application layout with sidebar and header
 - **Sidebar**: Navigation sidebar with user info and menu items
 - **ProtectedRoute**: Route protection based on authentication
 
 ### Document Components
+
 - **DocumentGrid**: Grid layout for document listings
 - **DocumentCard**: Individual document card component
 - **DocumentFilters**: Advanced filtering interface
@@ -78,12 +83,14 @@ src/
 - **DocumentAIAnalysis**: AI analysis display component
 
 ### Dashboard Components
+
 - **StatsCards**: Statistics display cards
 - **RecentDocuments**: Recent documents list
 - **PopularCategories**: Popular categories with progress bars
 - **ActivityFeed**: User activity timeline
 
 ### Common Components
+
 - **LoadingSpinner**: Reusable loading indicator
 - **EmptyState**: Empty state placeholder
 - **PageHeader**: Standardized page headers
@@ -93,13 +100,16 @@ src/
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```env
 VITE_API_URL=http://localhost:3000/api
 VITE_APP_NAME=AI DocShare Platform
 ```
 
 ### Tailwind Configuration
+
 The project uses Tailwind CSS with custom configuration for:
+
 - Design system colors
 - Component-specific utilities
 - Responsive breakpoints
@@ -108,6 +118,7 @@ The project uses Tailwind CSS with custom configuration for:
 ## 📱 Responsive Design
 
 The application is built with a mobile-first approach:
+
 - **Mobile**: Single column layout with collapsible sidebar
 - **Tablet**: Two-column layout with sidebar
 - **Desktop**: Full layout with persistent sidebar
@@ -115,18 +126,21 @@ The application is built with a mobile-first approach:
 ## 🎯 Key Features Implementation
 
 ### Authentication System
+
 - JWT-based authentication
 - Role-based access control (RBAC)
 - Protected routes and components
 - User session management
 
 ### Document Management
+
 - File upload with progress tracking
 - Document categorization and tagging
-- Approval workflow for moderators
+- Admin approval workflow
 - Download tracking and analytics
 
 ### AI Integration
+
 - Document analysis and summarization
 - Automatic tag suggestions
 - Difficulty level detection
@@ -134,6 +148,7 @@ The application is built with a mobile-first approach:
 - Reading time estimation
 
 ### Search & Discovery
+
 - Full-text search across documents
 - Advanced filtering by category, tags, rating
 - Sorting by relevance, date, popularity
@@ -142,11 +157,13 @@ The application is built with a mobile-first approach:
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm or yarn
 - Backend API running on port 3000
 
 ### Installation
+
 ```bash
 # Install dependencies
 npm install
@@ -162,6 +179,7 @@ npm run preview
 ```
 
 ### Development
+
 ```bash
 # Run linting
 npm run lint
@@ -176,6 +194,7 @@ npm run test
 ## 📊 Mock Data
 
 The application includes comprehensive mock data for development:
+
 - **Users**: 50+ mock users with different roles
 - **Documents**: 100+ documents across various categories
 - **Categories**: 20+ hierarchical categories
@@ -186,6 +205,7 @@ The application includes comprehensive mock data for development:
 ## 🎨 Design System
 
 ### Colors
+
 - **Primary**: Blue (#3b82f6)
 - **Secondary**: Gray (#6b7280)
 - **Success**: Green (#10b981)
@@ -193,11 +213,13 @@ The application includes comprehensive mock data for development:
 - **Error**: Red (#ef4444)
 
 ### Typography
+
 - **Headings**: Inter font family
 - **Body**: System font stack
 - **Code**: JetBrains Mono
 
 ### Spacing
+
 - Consistent 4px base unit
 - Responsive spacing scales
 - Component-specific spacing tokens
@@ -246,6 +268,7 @@ This project is licensed under the MIT License.
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue on GitHub
 - Check the documentation
 - Contact the development team

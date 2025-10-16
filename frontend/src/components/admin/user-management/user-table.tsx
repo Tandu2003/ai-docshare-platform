@@ -53,8 +53,6 @@ export function UserTable({
     switch (roleName) {
       case 'admin':
         return 'destructive';
-      case 'moderator':
-        return 'secondary';
       default:
         return 'outline';
     }
