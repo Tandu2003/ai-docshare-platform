@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
-import { AIService } from '@/services/ai.service';
 import {
   createBookmark,
   deleteBookmark,
@@ -43,6 +42,7 @@ export default function DocumentDetailPage() {
   const [bookmarkRecord, setBookmarkRecord] =
     useState<BookmarkWithDocument | null>(null);
   const [isBookmarkActionLoading, setIsBookmarkActionLoading] = useState(false);
+  const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const apiKey = useMemo(() => {
@@ -226,18 +226,40 @@ export default function DocumentDetailPage() {
     }
   };
 
-  const handleRate = (rating: number) => {
-    setUserRating(rating);
-    if (!documentId) return;
-    // Persist to API (fire-and-forget)
-    RatingService.setUserRating(documentId, rating).catch(err => {
+  const handleRate = async (rating: number) => {
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để đánh giá tài liệu');
+      return;
+    }
+
+    if (!documentId || isRatingLoading) return;
+
+    try {
+      setIsRatingLoading(true);
+      await RatingService.setUserRating(documentId, rating);
+      setUserRating(rating);
+
+      // Refresh document to get updated average rating
+      const updatedDocument = await getDocumentById(documentId, apiKey);
+      setDocument(updatedDocument);
+
+      toast.success('Đã cập nhật đánh giá');
+    } catch (err) {
       console.error('Failed to set rating', err);
       toast.error('Không thể cập nhật đánh giá');
-    });
+    } finally {
+      setIsRatingLoading(false);
+    }
   };
 
   const handleAddComment = (content: string, parentId?: string) => {
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để bình luận');
+      return;
+    }
+
     if (!documentId) return;
+
     CommentsService.addComment(documentId, { content, parentId })
       .then(created => {
         if (parentId) {
@@ -254,6 +276,7 @@ export default function DocumentDetailPage() {
         } else {
           setComments(prev => [...prev, created]);
         }
+        toast.success('Đã thêm bình luận');
       })
       .catch(err => {
         console.error('Failed to add comment', err);
@@ -262,7 +285,13 @@ export default function DocumentDetailPage() {
   };
 
   const handleLikeComment = (commentId: string) => {
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để thích bình luận');
+      return;
+    }
+
     if (!documentId) return;
+
     setComments(prev =>
       prev.map(comment =>
         comment.id === commentId
@@ -272,6 +301,7 @@ export default function DocumentDetailPage() {
     );
     CommentsService.likeComment(documentId, commentId).catch(err => {
       console.error('Failed to like comment', err);
+      toast.error('Không thể thích bình luận');
     });
   };
 
@@ -405,6 +435,7 @@ export default function DocumentDetailPage() {
         userRating={userRating}
         isBookmarked={isBookmarked}
         isBookmarking={isBookmarkActionLoading}
+        isRatingLoading={isRatingLoading}
       />
 
       {/* Main Content */}
@@ -427,7 +458,7 @@ export default function DocumentDetailPage() {
             onLikeComment={handleLikeComment}
             onEditComment={handleEditComment}
             onDeleteComment={handleDeleteComment}
-            currentUserId="current-user"
+            currentUserId={user?.id}
           />
         </div>
 

@@ -40,7 +40,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.getUsers(query, request.user);
+    const result = await this.usersService.getUsers(query);
 
     ResponseHelper.success(
       response,
@@ -57,7 +57,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.getUserById(id, request.user);
+    const result = await this.usersService.getUserById(id);
 
     ResponseHelper.success(
       response,
@@ -75,10 +75,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.createUser(
-      createUserDto,
-      request.user,
-    );
+    const result = await this.usersService.createUser(createUserDto);
 
     ResponseHelper.created(response, result, 'Tạo người dùng thành công');
   }
@@ -92,11 +89,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.updateUser(
-      id,
-      updateUserDto,
-      request.user,
-    );
+    const result = await this.usersService.updateUser(id, updateUserDto);
 
     ResponseHelper.success(response, result, 'Cập nhật người dùng thành công');
   }
@@ -113,7 +106,6 @@ export class UsersController {
     const result = await this.usersService.updateUserRole(
       id,
       updateUserRoleDto,
-      request.user,
     );
 
     ResponseHelper.success(
@@ -135,7 +127,6 @@ export class UsersController {
     const result = await this.usersService.updateUserStatus(
       id,
       updateUserStatusDto,
-      request.user,
     );
 
     ResponseHelper.success(
@@ -154,7 +145,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    await this.usersService.deleteUser(id, request.user);
+    await this.usersService.deleteUser(id);
 
     ResponseHelper.success(response, null, 'Xóa người dùng thành công');
   }
@@ -169,12 +160,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.getUserActivity(
-      id,
-      page,
-      limit,
-      request.user,
-    );
+    const result = await this.usersService.getUserActivity(id, page, limit);
 
     ResponseHelper.success(
       response,
@@ -191,7 +177,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.getUserStatistics(id, request.user);
+    const result = await this.usersService.getUserStatistics(id);
 
     ResponseHelper.success(
       response,
@@ -207,7 +193,7 @@ export class UsersController {
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.usersService.getRoles(request.user);
+    const result = await this.usersService.getRoles();
 
     ResponseHelper.success(
       response,

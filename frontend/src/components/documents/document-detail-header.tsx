@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import {
   ArrowLeft,
   Bookmark,
@@ -13,17 +11,12 @@ import {
 import { Link } from 'react-router-dom';
 
 import { DocumentPermissionGate } from '@/components/common/permission-gate';
+import { RatingStars } from '@/components/documents/rating-stars';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import type { DocumentView } from '@/services/document.service';
 import { formatDate } from '@/utils/date';
 
@@ -36,6 +29,7 @@ interface DocumentDetailHeaderProps {
   userRating?: number;
   isBookmarked?: boolean;
   isBookmarking?: boolean;
+  isRatingLoading?: boolean;
 }
 
 export function DocumentDetailHeader({
@@ -47,21 +41,8 @@ export function DocumentDetailHeader({
   userRating = 0,
   isBookmarked = false,
   isBookmarking = false,
+  isRatingLoading = false,
 }: DocumentDetailHeaderProps) {
-  const [hoveredRating, setHoveredRating] = useState(0);
-
-  const handleRatingClick = (rating: number) => {
-    onRate(rating);
-  };
-
-  const handleRatingHover = (rating: number) => {
-    setHoveredRating(rating);
-  };
-
-  const handleRatingLeave = () => {
-    setHoveredRating(0);
-  };
-
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -191,40 +172,15 @@ export function DocumentDetailHeader({
             {/* Rating Section */}
             <div className="space-y-2">
               <p className="text-sm font-medium">Đánh giá tài liệu này:</p>
-              <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map(rating => (
-                  <TooltipProvider key={rating}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => handleRatingClick(rating)}
-                          onMouseEnter={() => handleRatingHover(rating)}
-                          onMouseLeave={handleRatingLeave}
-                          className="focus:outline-none"
-                        >
-                          <Star
-                            className={`h-6 w-6 transition-colors ${
-                              rating <= (hoveredRating || userRating)
-                                ? 'fill-current text-yellow-400'
-                                : 'text-muted-foreground'
-                            }`}
-                          />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          {rating} sao{rating > 1 ? 's' : ''}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ))}
-                {userRating > 0 && (
-                  <span className="text-muted-foreground ml-2 text-sm">
-                    Bạn đã đánh giá {userRating} sao{userRating > 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
+              <RatingStars
+                rating={userRating}
+                averageRating={document.averageRating || 0}
+                totalRatings={document.totalRatings || 0}
+                onRatingChange={onRate}
+                showAverage={false}
+                size="lg"
+                loading={isRatingLoading}
+              />
             </div>
 
             {/* Tags and Category */}
