@@ -139,7 +139,12 @@ ${content.content}
       .join('\n');
 
     return `
-Analyze the following document(s) and extract the following information in JSON format:
+Analyze the following document(s) and extract the following information in JSON format.
+
+IMPORTANT LANGUAGE REQUIREMENT:
+- You must respond in Vietnamese (tiếng Việt) only
+- All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
+- Set the field \"language\" strictly to \"vi\"
 
 ${documentsText}
 
@@ -157,13 +162,13 @@ Please provide the analysis in this exact JSON format:
 }
 
 Instructions:
-1. Generate a meaningful title that captures the main topic
-2. Write a clear description that explains what the document is about
-3. Extract relevant tags/keywords that would help in searching
-4. Provide a comprehensive summary of the content
-5. List the most important key points
+1. Generate a meaningful Vietnamese title that captures the main topic
+2. Write a clear Vietnamese description explaining the document content
+3. Extract relevant Vietnamese tags/keywords for searching
+4. Provide a comprehensive Vietnamese summary of the content
+5. List the most important key points in Vietnamese
 6. Assess the difficulty level based on content complexity
-7. Detect the primary language of the document
+7. Set the primary language to \"vi\"
 8. Provide a confidence score (0-1) for the analysis
 
 Please analyze all provided document content and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
@@ -175,7 +180,12 @@ Please analyze all provided document content and provide a consolidated response
    */
   private createAnalysisPrompt(): string {
     return `
-Analyze the provided document(s) and extract the following information in JSON format:
+Analyze the provided document(s) and extract the following information in JSON format.
+
+IMPORTANT LANGUAGE REQUIREMENT:
+- You must respond in Vietnamese (tiếng Việt) only
+- All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
+- Set the field \"language\" strictly to \"vi\"
 
 {
   "title": "A clear, descriptive title for the document (max 100 characters)",
@@ -189,13 +199,13 @@ Analyze the provided document(s) and extract the following information in JSON f
 }
 
 Instructions:
-1. Generate a meaningful title that captures the main topic
-2. Write a clear description that explains what the document is about
-3. Extract relevant tags/keywords that would help in searching
-4. Provide a comprehensive summary of the content
-5. List the most important key points
+1. Generate a meaningful Vietnamese title that captures the main topic
+2. Write a clear Vietnamese description explaining the document content
+3. Extract relevant Vietnamese tags/keywords for searching
+4. Provide a comprehensive Vietnamese summary of the content
+5. List the most important key points in Vietnamese
 6. Assess the difficulty level based on content complexity
-7. Detect the primary language of the document
+7. Set the primary language to \"vi\"
 8. Provide a confidence score (0-1) for the analysis
 
 Please analyze all provided files and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
@@ -239,7 +249,7 @@ Please analyze all provided files and provide a consolidated response in valid J
         )
           ? parsed.difficulty
           : 'beginner',
-        language: this.sanitizeString(parsed.language, 10) || 'en',
+        language: this.sanitizeString(parsed.language, 10) || 'vi',
         confidence:
           typeof parsed.confidence === 'number'
             ? Math.max(0, Math.min(1, parsed.confidence))
@@ -249,15 +259,16 @@ Please analyze all provided files and provide a consolidated response in valid J
       this.logger.error('Error parsing Gemini response:', error);
       this.logger.debug('Raw response:', text);
 
-      // Return fallback result
+      // Return fallback result in Vietnamese
       return {
-        title: 'Document Analysis',
-        description: 'Document processed but analysis could not be completed.',
-        tags: ['document'],
-        summary: 'Analysis unavailable',
+        title: 'Phân tích tài liệu',
+        description:
+          'Tài liệu đã được xử lý nhưng không thể hoàn tất phân tích.',
+        tags: ['tài liệu'],
+        summary: 'Chưa có kết quả phân tích',
         keyPoints: [],
         difficulty: 'beginner',
-        language: 'en',
+        language: 'vi',
         confidence: 0.3,
       };
     }

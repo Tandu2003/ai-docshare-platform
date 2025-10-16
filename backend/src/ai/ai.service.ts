@@ -100,17 +100,17 @@ export class AIService {
       const processingTime = Date.now() - startTime;
       this.logger.error('Error in AI analysis:', error);
 
-      // Return error with fallback data
+      // Return error with fallback data (Vietnamese)
       return {
         success: false,
         data: {
-          title: 'Analysis Error',
-          description: 'Could not analyze the document content.',
-          tags: ['document'],
-          summary: 'Analysis failed',
+          title: 'Lỗi phân tích',
+          description: 'Không thể phân tích nội dung tài liệu.',
+          tags: ['tài liệu'],
+          summary: 'Phân tích thất bại',
           keyPoints: [],
           difficulty: 'beginner',
-          language: 'en',
+          language: 'vi',
           confidence: 0,
         },
         processedFiles: 0,
@@ -134,7 +134,7 @@ export class AIService {
           keyPoints: analysis.keyPoints || [],
           suggestedTags: analysis.tags || [],
           difficulty: analysis.difficulty || 'beginner',
-          language: analysis.language || 'en',
+          language: analysis.language || 'vi',
           confidence: analysis.confidence || 0,
           processedAt: new Date(),
         },
@@ -144,7 +144,7 @@ export class AIService {
           keyPoints: analysis.keyPoints || [],
           suggestedTags: analysis.tags || [],
           difficulty: analysis.difficulty || 'beginner',
-          language: analysis.language || 'en',
+          language: analysis.language || 'vi',
           confidence: analysis.confidence || 0,
           processedAt: new Date(),
         },
