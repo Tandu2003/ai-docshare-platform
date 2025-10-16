@@ -18,6 +18,7 @@ export function VerifyEmailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasCompleted, setHasCompleted] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -27,16 +28,23 @@ export function VerifyEmailPage() {
     const verifyEmail = async () => {
       if (!token) {
         setError('Token xác thực không hợp lệ');
+        setHasCompleted(true);
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
+        setError(null); // Clear any previous errors
+        setIsSuccess(false); // Clear any previous success state
+        setHasCompleted(false); // Reset completion state
+        
         const result = await authService.verifyEmail({ token });
 
-        toast.success(result.message);
+        // Only update success state after API call completes successfully
         setIsSuccess(true);
+        setHasCompleted(true);
+        toast.success(result.message);
 
         // Redirect to login after 3 seconds
         setTimeout(() => {
@@ -44,9 +52,12 @@ export function VerifyEmailPage() {
         }, 3000);
       } catch (error: any) {
         console.error('Verify email error:', error);
+        // Only set error after API call fails
         setError(error.message || 'Xác thực email thất bại');
+        setHasCompleted(true);
         toast.error(error.message || 'Xác thực email thất bại');
       } finally {
+        // Always set loading to false after API call completes (success or error)
         setIsLoading(false);
       }
     };
@@ -79,6 +90,10 @@ export function VerifyEmailPage() {
               <CardTitle className="text-2xl">Đang xác thực email...</CardTitle>
               <CardDescription>
                 Vui lòng đợi trong khi chúng tôi xác thực địa chỉ email của bạn.
+                <br />
+                <span className="text-sm text-gray-500">
+                  Quá trình này có thể mất vài giây.
+                </span>
               </CardDescription>
             </CardHeader>
           </Card>
@@ -87,7 +102,7 @@ export function VerifyEmailPage() {
     );
   }
 
-  if (isSuccess) {
+  if (hasCompleted && isSuccess) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md">
@@ -122,7 +137,7 @@ export function VerifyEmailPage() {
     );
   }
 
-  if (error) {
+  if (hasCompleted && error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md">
@@ -158,5 +173,29 @@ export function VerifyEmailPage() {
     );
   }
 
-  return null;
+  // Fallback state - should not reach here in normal flow
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-3xl font-bold text-gray-900">
+            AI DocShare Platform
+          </h1>
+          <p className="text-gray-600">Đang xử lý yêu cầu của bạn</p>
+        </div>
+
+        <Card>
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-600 dark:text-gray-400" />
+            </div>
+            <CardTitle className="text-2xl">Đang xử lý...</CardTitle>
+            <CardDescription>
+              Vui lòng đợi trong khi chúng tôi xử lý yêu cầu của bạn.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    </div>
+  );
 }
