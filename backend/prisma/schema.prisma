@@ -50,6 +50,7 @@ model User {
   // Relations
   role            Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
   documents       Document[]             @relation("DocumentUploader")
+  moderatedDocuments Document[]          @relation("DocumentModeratedBy")
   uploadedFiles   File[]                 @relation("FileUploader")
   ratings         Rating[]
   comments        Comment[]
@@ -115,6 +116,12 @@ model Document {
   isPremium     Boolean   @default(false)
   isApproved    Boolean   @default(false)
   isDraft       Boolean   @default(false)
+  moderationStatus DocumentModerationStatus @default(PENDING)
+  moderatedById String?
+  moderatedAt  DateTime?
+  moderationNotes String?
+  rejectionReason String?
+  aiModeration Json?
   tags          String[]  @default([])
   language      String    @default("en")
   zipFileUrl    String?   // Cached ZIP file URL for multi-file documents
@@ -124,6 +131,7 @@ model Document {
 
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  moderatedBy     User?                  @relation("DocumentModeratedBy", fields: [moderatedById], references: [id])
   category        Category               @relation(fields: [categoryId], references: [id])
   files           DocumentFile[] // Many-to-many relationship with files
   ratings         Rating[]
@@ -142,6 +150,8 @@ model Document {
   @@index([isPublic])
   @@index([isApproved])
   @@index([isDraft])
+  @@index([moderationStatus])
+  @@index([moderatedById])
   @@index([averageRating])
   @@index([downloadCount])
   @@index([viewCount])
@@ -527,3 +537,9 @@ model File {
 // ================================
 // ENUMS
 // ================================
+
+enum DocumentModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

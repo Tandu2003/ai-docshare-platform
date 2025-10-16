@@ -1,3 +1,4 @@
+import type { DocumentModerationStatus } from '@/types';
 import { ApiResponse } from '@/types/api.types';
 import { apiClient } from '@/utils/api-client';
 
@@ -38,6 +39,11 @@ export interface Document {
   isPremium: boolean;
   isApproved: boolean;
   isDraft: boolean;
+  moderationStatus?: DocumentModerationStatus;
+  moderatedById?: string | null;
+  moderatedAt?: string | null;
+  moderationNotes?: string | null;
+  rejectionReason?: string | null;
   tags: string[];
   language: string;
   createdAt: string;
@@ -60,7 +66,7 @@ export interface Document {
     originalName: string;
     fileName: string;
     mimeType: string;
-    fileSize: bigint;
+    fileSize: number | string;
     // storageUrl: string; // Removed for security
     secureUrl?: string; // Temporary secure URL
     expiresAt?: string; // Expiration time

@@ -41,6 +41,11 @@ interface DashboardDocumentApiResponse {
   isPremium: boolean;
   isApproved: boolean;
   isDraft: boolean;
+  moderationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  moderatedById?: string | null;
+  moderatedAt?: string | null;
+  moderationNotes?: string | null;
+  rejectionReason?: string | null;
   tags?: string[] | null;
   language: string;
   createdAt: string;
@@ -128,6 +133,11 @@ const mapDocument = (
   isPremium: document.isPremium,
   isApproved: document.isApproved,
   isDraft: document.isDraft,
+  moderationStatus: document.moderationStatus ?? (document.isApproved ? 'APPROVED' : 'PENDING'),
+  moderatedById: document.moderatedById ?? null,
+  moderatedAt: document.moderatedAt ?? null,
+  moderationNotes: document.moderationNotes ?? null,
+  rejectionReason: document.rejectionReason ?? null,
   tags: document.tags ?? [],
   language: document.language,
   createdAt: document.createdAt,

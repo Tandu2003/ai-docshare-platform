@@ -78,10 +78,14 @@ export class DocumentsController {
         userId,
       );
 
+      const responseMessage = document.isApproved
+        ? 'Tài liệu đã được tạo thành công'
+        : 'Tài liệu đã được tạo, vui lòng chờ quản trị viên duyệt';
+
       return ResponseHelper.success(
         res,
         document,
-        'Tài liệu đã được tạo thành công',
+        responseMessage,
         HttpStatus.CREATED,
       );
     } catch (error) {

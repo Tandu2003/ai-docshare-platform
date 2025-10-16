@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { AIService } from '../ai/ai.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,7 +12,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentShareLink } from '@prisma/client';
+import {
+  DocumentModerationStatus,
+  DocumentShareLink,
+  Prisma,
+} from '@prisma/client';
 import * as archiver from 'archiver';
 
 @Injectable()
@@ -23,6 +28,7 @@ export class DocumentsService {
     private filesService: FilesService,
     private r2Service: CloudflareR2Service,
     private configService: ConfigService,
+    private aiService: AIService,
   ) {}
 
   /**
@@ -77,6 +83,11 @@ export class DocumentsService {
 
       this.logger.log(`Using category: ${category.name} (${category.id})`);
 
+      const wantsPublic = Boolean(isPublic);
+      const moderationStatus = wantsPublic
+        ? DocumentModerationStatus.PENDING
+        : DocumentModerationStatus.APPROVED;
+
       // Create one document with multiple files
       const document = await this.prisma.document.create({
         data: {
@@ -84,7 +95,9 @@ export class DocumentsService {
           description,
           uploaderId: userId,
           categoryId: category.id,
-          isPublic,
+          isPublic: wantsPublic,
+          isApproved: !wantsPublic,
+          moderationStatus,
           tags,
           language,
         },
@@ -148,12 +161,29 @@ export class DocumentsService {
         }
       }
 
-      // Update files to mark them as public if document is public
-      if (isPublic) {
-        await this.prisma.file.updateMany({
-          where: { id: { in: fileIds } },
-          data: { isPublic: true },
-        });
+      // Automatically trigger AI analysis for public documents when not provided
+      if (wantsPublic && (!useAI || !aiAnalysis)) {
+        try {
+          const aiResult = await this.aiService.analyzeDocuments({
+            fileIds,
+            userId,
+          });
+
+          if (aiResult.success && aiResult.data) {
+            await this.aiService.saveAnalysis(document.id, aiResult.data);
+            this.logger.log(
+              `AI moderation analysis generated for document ${document.id}`,
+            );
+          } else {
+            this.logger.warn(
+              `AI analysis skipped or failed for document ${document.id}`,
+            );
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
+          );
+        }
       }
 
       // Return document with files
@@ -313,6 +343,13 @@ export class DocumentsService {
             description: document.description,
             isPublic: document.isPublic,
             isApproved: document.isApproved,
+            moderationStatus: document.moderationStatus,
+            moderatedAt: document.moderatedAt
+              ? document.moderatedAt.toISOString()
+              : null,
+            moderatedById: document.moderatedById,
+            moderationNotes: document.moderationNotes,
+            rejectionReason: document.rejectionReason,
             isPremium: document.isPremium,
             isDraft: document.isDraft,
             tags: document.tags,
@@ -355,12 +392,19 @@ export class DocumentsService {
     userRole?: string,
   ) {
     try {
+      console.log('userId', userId);
+      console.log('userRole', userRole);
+
       const skip = (page - 1) * limit;
 
       this.logger.log(`Getting public documents, page ${page}, limit ${limit}`);
 
-      // Admin can see all documents, regular users only see public documents
-      const whereCondition = userRole === 'admin' ? {} : { isPublic: true };
+      // Only return documents that are approved and public
+      const whereCondition = {
+        isPublic: true,
+        isApproved: true,
+        moderationStatus: DocumentModerationStatus.APPROVED,
+      };
 
       const [documents, total] = await Promise.all([
         this.prisma.document.findMany({
@@ -417,6 +461,8 @@ export class DocumentsService {
             title: document.title,
             description: document.description,
             isPublic: document.isPublic,
+            isApproved: document.isApproved,
+            moderationStatus: document.moderationStatus,
             tags: document.tags,
             language: document.language,
             createdAt: document.createdAt,
@@ -432,13 +478,6 @@ export class DocumentsService {
           };
         }),
       );
-
-      return {
-        documents: transformedDocuments,
-        total,
-        page,
-        limit,
-      };
 
       return {
         documents: transformedDocuments,
@@ -556,6 +595,7 @@ export class DocumentsService {
             orderBy: { order: 'asc' },
           },
           shareLink: true,
+          aiAnalysis: true,
           _count: {
             select: {
               ratings: true,
@@ -585,14 +625,38 @@ export class DocumentsService {
       if (apiKey) {
         // API key access - only allow if document is public
         if (!document.isPublic) {
-          throw new BadRequestException('Tài liệu riêng tư không thể truy cập qua API key');
+          throw new BadRequestException(
+            'Tài liệu riêng tư không thể truy cập qua API key',
+          );
         }
         isApiKeyAccess = true;
       }
 
       // Check access permissions
-      if (!document.isPublic && !isOwner && !shareAccessGranted && !isApiKeyAccess) {
+      if (
+        !document.isPublic &&
+        !isOwner &&
+        !shareAccessGranted &&
+        !isApiKeyAccess
+      ) {
         throw new BadRequestException('Tài liệu không công khai');
+      }
+
+      if (
+        document.isPublic &&
+        !document.isApproved &&
+        !isOwner &&
+        !shareAccessGranted &&
+        !isApiKeyAccess
+      ) {
+        throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
+      }
+
+      if (
+        document.moderationStatus === DocumentModerationStatus.REJECTED &&
+        !isOwner
+      ) {
+        throw new BadRequestException('Tài liệu đã bị từ chối');
       }
 
       // Prepare file data without secure URLs first
@@ -624,6 +688,14 @@ export class DocumentsService {
         language: document.language,
         isPublic: document.isPublic,
         isPremium: document.isPremium,
+        isApproved: document.isApproved,
+        moderationStatus: document.moderationStatus,
+        moderationNotes: document.moderationNotes,
+        rejectionReason: document.rejectionReason,
+        moderatedAt: document.moderatedAt
+          ? document.moderatedAt.toISOString()
+          : null,
+        moderatedById: document.moderatedById,
         viewCount: document.viewCount,
         downloadCount: document.downloadCount,
         averageRating: document.averageRating,
@@ -641,6 +713,7 @@ export class DocumentsService {
           viewsCount: (document as any)._count?.views || 0,
           downloadsCount: (document as any)._count?.downloads || 0,
         },
+        aiAnalysis: (document as any).aiAnalysis || null,
       };
 
       if (isOwner && document.shareLink) {
@@ -875,14 +948,25 @@ export class DocumentsService {
         throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
-      // Check access permissions - only check if user is authenticated
-      if (!document.isPublic) {
+      const isOwner = document.uploaderId === userId;
+
+      if (document.isPublic) {
+        if (!document.isApproved && !isOwner) {
+          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
+        }
+        if (
+          document.moderationStatus === DocumentModerationStatus.REJECTED &&
+          !isOwner
+        ) {
+          throw new BadRequestException('Tài liệu đã bị từ chối');
+        }
+      } else {
         if (!userId) {
           throw new BadRequestException(
             'Cần xác thực để tải xuống tài liệu riêng tư',
           );
         }
-        if (document.uploaderId !== userId) {
+        if (!isOwner) {
           throw new BadRequestException(
             'Bạn không có quyền tải xuống tài liệu này',
           );
@@ -984,6 +1068,467 @@ export class DocumentsService {
       }
       throw new InternalServerErrorException(
         'Không thể chuẩn bị tải xuống tài liệu',
+      );
+    }
+  }
+
+  /**
+   * Get moderation queue data for admin review
+   */
+  async getModerationQueue(options: {
+    page?: number;
+    limit?: number;
+    categoryId?: string;
+    uploaderId?: string;
+    status?: DocumentModerationStatus;
+    sort?: 'createdAt' | 'title' | 'uploader';
+    order?: 'asc' | 'desc';
+  }) {
+    const {
+      page = 1,
+      limit = 10,
+      categoryId,
+      uploaderId,
+      status = DocumentModerationStatus.PENDING,
+      sort = 'createdAt',
+      order = 'desc',
+    } = options;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.DocumentWhereInput = {
+      isPublic: true,
+      moderationStatus: status,
+    };
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    if (uploaderId) {
+      where.uploaderId = uploaderId;
+    }
+
+    const orderBy: Prisma.DocumentOrderByWithRelationInput =
+      sort === 'title'
+        ? { title: order }
+        : sort === 'uploader'
+          ? { uploader: { username: order } }
+          : { createdAt: order };
+
+    try {
+      const [
+        documents,
+        total,
+        pendingDocuments,
+        rejectedDocuments,
+        approvedToday,
+      ] = await Promise.all([
+        this.prisma.document.findMany({
+          where,
+          include: {
+            files: {
+              include: {
+                file: true,
+              },
+              orderBy: { order: 'asc' },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            uploader: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+                email: true,
+                isVerified: true,
+              },
+            },
+            aiAnalysis: true,
+          },
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        this.prisma.document.count({ where }),
+        this.prisma.document.count({
+          where: {
+            isPublic: true,
+            moderationStatus: DocumentModerationStatus.PENDING,
+          },
+        }),
+        this.prisma.document.count({
+          where: {
+            isPublic: true,
+            moderationStatus: DocumentModerationStatus.REJECTED,
+          },
+        }),
+        this.prisma.document.count({
+          where: {
+            isPublic: true,
+            moderationStatus: DocumentModerationStatus.APPROVED,
+            moderatedAt: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)),
+            },
+          },
+        }),
+      ]);
+
+      const mappedDocuments = documents.map(document => ({
+        id: document.id,
+        title: document.title,
+        description: document.description,
+        isPublic: document.isPublic,
+        isApproved: document.isApproved,
+        moderationStatus: document.moderationStatus,
+        moderatedAt: document.moderatedAt
+          ? document.moderatedAt.toISOString()
+          : null,
+        moderatedById: document.moderatedById,
+        moderationNotes: document.moderationNotes,
+        rejectionReason: document.rejectionReason,
+        tags: document.tags,
+        language: document.language,
+        createdAt: document.createdAt.toISOString(),
+        updatedAt: document.updatedAt.toISOString(),
+        category: document.category,
+        uploader: document.uploader,
+        aiAnalysis: document.aiAnalysis
+          ? {
+              summary: document.aiAnalysis.summary,
+              keyPoints: document.aiAnalysis.keyPoints,
+              difficulty: document.aiAnalysis.difficulty,
+              confidence: document.aiAnalysis.confidence,
+            }
+          : null,
+        files: document.files.map(df => ({
+          id: df.file.id,
+          originalName: df.file.originalName,
+          mimeType: df.file.mimeType,
+          fileSize: df.file.fileSize,
+          order: df.order,
+          thumbnailUrl: df.file.thumbnailUrl,
+        })),
+      }));
+
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+
+      return {
+        summary: {
+          pendingDocuments,
+          rejectedDocuments,
+          approvedToday,
+        },
+        documents: mappedDocuments,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Error getting moderation queue:', error);
+      throw new InternalServerErrorException(
+        'Không thể lấy danh sách tài liệu chờ duyệt',
+      );
+    }
+  }
+
+  /**
+   * Get document detail for moderation
+   */
+  async getDocumentForModeration(documentId: string) {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              email: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+          aiAnalysis: true,
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const files = document.files.map(df => ({
+        id: df.file.id,
+        originalName: df.file.originalName,
+        fileName: df.file.fileName,
+        mimeType: df.file.mimeType,
+        fileSize: df.file.fileSize,
+        order: df.order,
+        thumbnailUrl: df.file.thumbnailUrl,
+      }));
+
+      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
+        files,
+        {
+          allowSharedAccess: true,
+        },
+      );
+
+      return {
+        id: document.id,
+        title: document.title,
+        description: document.description,
+        isPublic: document.isPublic,
+        isApproved: document.isApproved,
+        moderationStatus: document.moderationStatus,
+        moderationNotes: document.moderationNotes,
+        rejectionReason: document.rejectionReason,
+        moderatedAt: document.moderatedAt
+          ? document.moderatedAt.toISOString()
+          : null,
+        moderatedById: document.moderatedById,
+        language: document.language,
+        tags: document.tags,
+        createdAt: document.createdAt.toISOString(),
+        updatedAt: document.updatedAt.toISOString(),
+        uploader: document.uploader,
+        category: document.category,
+        aiAnalysis: document.aiAnalysis || null,
+        files: filesWithSecureUrls,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error getting moderation detail for document ${documentId}:`,
+        error,
+      );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Không thể lấy chi tiết tài liệu chờ duyệt',
+      );
+    }
+  }
+
+  /**
+   * Approve a document and publish it
+   */
+  async approveDocumentModeration(
+    documentId: string,
+    adminId: string,
+    options: { notes?: string; publish?: boolean } = {},
+  ) {
+    const publish = options.publish ?? true;
+
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            select: {
+              fileId: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const updatedDocument = await this.prisma.document.update({
+        where: { id: documentId },
+        data: {
+          isApproved: true,
+          isPublic: publish,
+          moderationStatus: DocumentModerationStatus.APPROVED,
+          moderatedById: adminId,
+          moderatedAt: new Date(),
+          moderationNotes: options.notes || null,
+          rejectionReason: null,
+        },
+        include: {
+          aiAnalysis: true,
+        },
+      });
+
+      await this.prisma.file.updateMany({
+        where: {
+          id: {
+            in: document.files.map(file => file.fileId),
+          },
+        },
+        data: {
+          isPublic: publish,
+        },
+      });
+
+      return updatedDocument;
+    } catch (error) {
+      this.logger.error(`Error approving document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Không thể duyệt tài liệu này');
+    }
+  }
+
+  /**
+   * Reject a document and optionally add notes
+   */
+  async rejectDocumentModeration(
+    documentId: string,
+    adminId: string,
+    options: { reason: string; notes?: string },
+  ) {
+    if (!options.reason) {
+      throw new BadRequestException('Vui lòng cung cấp lý do từ chối');
+    }
+
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            select: {
+              fileId: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const updatedDocument = await this.prisma.document.update({
+        where: { id: documentId },
+        data: {
+          isApproved: false,
+          isPublic: false,
+          moderationStatus: DocumentModerationStatus.REJECTED,
+          moderatedById: adminId,
+          moderatedAt: new Date(),
+          moderationNotes: options.notes || null,
+          rejectionReason: options.reason,
+        },
+        include: {
+          aiAnalysis: true,
+        },
+      });
+
+      await Promise.all([
+        this.prisma.file.updateMany({
+          where: {
+            id: {
+              in: document.files.map(file => file.fileId),
+            },
+          },
+          data: {
+            isPublic: false,
+          },
+        }),
+        this.prisma.documentShareLink.updateMany({
+          where: { documentId },
+          data: { isRevoked: true },
+        }),
+      ]);
+
+      return updatedDocument;
+    } catch (error) {
+      this.logger.error(`Error rejecting document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Không thể từ chối tài liệu này');
+    }
+  }
+
+  /**
+   * Trigger AI moderation analysis for a document
+   */
+  async generateModerationAnalysis(documentId: string) {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            select: {
+              fileId: true,
+            },
+          },
+          uploader: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const fileIds = document.files.map(file => file.fileId);
+
+      if (!fileIds.length) {
+        throw new BadRequestException('Tài liệu không có tệp để phân tích AI');
+      }
+
+      const analysisResult = await this.aiService.analyzeDocuments({
+        fileIds,
+        userId: document.uploader.id,
+      });
+
+      if (analysisResult.success) {
+        await this.aiService.saveAnalysis(documentId, analysisResult.data);
+      }
+
+      const savedAnalysis = await this.prisma.aIAnalysis.findUnique({
+        where: { documentId },
+      });
+
+      return {
+        success: analysisResult.success,
+        analysis: savedAnalysis,
+        processedFiles: analysisResult.processedFiles,
+        processingTime: analysisResult.processingTime,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error generating AI moderation analysis for document ${documentId}:`,
+        error,
+      );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Không thể phân tích AI cho tài liệu này',
       );
     }
   }

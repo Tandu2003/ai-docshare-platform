@@ -21,11 +21,38 @@ interface UserDashboardProps {
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
   const userDocuments = stats.recentDocuments || [];
+  const resolveStatus = (doc: (typeof userDocuments)[number]) => {
+    if (doc.isDraft) {
+      return 'DRAFT' as const;
+    }
+    return doc.moderationStatus ?? (doc.isApproved ? 'APPROVED' as const : 'PENDING' as const);
+  };
+  const getStatusDisplay = (doc: (typeof userDocuments)[number]) => {
+    if (doc.isDraft) {
+      return { label: 'Bản nháp', variant: 'outline' as const };
+    }
+    const status = doc.moderationStatus ?? (doc.isApproved ? 'APPROVED' : 'PENDING');
+    switch (status) {
+      case 'APPROVED':
+        return { label: 'Đã xuất bản', variant: 'default' as const };
+      case 'REJECTED':
+        return { label: 'Bị từ chối', variant: 'destructive' as const };
+      default:
+        return { label: 'Chờ duyệt', variant: 'secondary' as const };
+    }
+  };
   const userStats = {
     totalDocuments: userDocuments.length,
-    publishedDocuments: userDocuments.filter(doc => doc.isApproved && !doc.isDraft).length,
+    publishedDocuments: userDocuments.filter(
+      doc => resolveStatus(doc) === 'APPROVED',
+    ).length,
     draftDocuments: userDocuments.filter(doc => doc.isDraft).length,
-    pendingDocuments: userDocuments.filter(doc => !doc.isApproved && !doc.isDraft).length,
+    pendingDocuments: userDocuments.filter(
+      doc => resolveStatus(doc) === 'PENDING',
+    ).length,
+    rejectedDocuments: userDocuments.filter(
+      doc => resolveStatus(doc) === 'REJECTED',
+    ).length,
     totalViews: userDocuments.reduce((sum, doc) => sum + (doc.viewCount || 0), 0),
     totalDownloads: userDocuments.reduce((sum, doc) => sum + (doc.downloadCount || 0), 0),
     averageRating: userDocuments.length > 0 
@@ -159,6 +186,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
                   {userStats.pendingDocuments}
                 </Badge>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Bị từ chối</span>
+                <Badge variant="destructive">
+                  {userStats.rejectedDocuments}
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -176,6 +209,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
                 <div className="flex items-center gap-2 text-sm">
                   <AlertCircle className="h-4 w-4 text-yellow-500" />
                   <span>{userStats.pendingDocuments} tài liệu đang chờ duyệt</span>
+                </div>
+              )}
+              {userStats.rejectedDocuments > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <span>{userStats.rejectedDocuments} tài liệu bị từ chối</span>
                 </div>
               )}
               {userStats.draftDocuments > 0 && (
@@ -203,31 +242,35 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
         <CardContent>
           {userDocuments.length > 0 ? (
             <div className="space-y-4">
-              {userDocuments.slice(0, 5).map((document) => (
-                <div key={document.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{document.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {document.isDraft ? 'Bản nháp' : 
-                       document.isApproved ? 'Đã xuất bản' : 'Chờ duyệt'} • 
-                      {document.viewCount || 0} lượt xem • 
-                      {document.downloadCount || 0} lượt tải
-                    </p>
+              {userDocuments.slice(0, 5).map(document => {
+                const statusInfo = getStatusDisplay(document);
+                return (
+                  <div
+                    key={document.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-medium">{document.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {statusInfo.label} • {document.viewCount || 0} lượt xem •{' '}
+                        {document.downloadCount || 0} lượt tải
+                      </p>
+                      {document.moderationStatus === 'REJECTED' &&
+                        document.rejectionReason && (
+                          <p className="text-sm text-destructive mt-1">
+                            Lý do: {document.rejectionReason}
+                          </p>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                      <Button asChild size="sm" variant="outline">
+                        <Link to={`/documents/${document.id}`}>Xem</Link>
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={
-                      document.isDraft ? 'outline' : 
-                      document.isApproved ? 'default' : 'secondary'
-                    }>
-                      {document.isDraft ? 'Bản nháp' : 
-                       document.isApproved ? 'Đã xuất bản' : 'Chờ duyệt'}
-                    </Badge>
-                    <Button asChild size="sm" variant="outline">
-                      <Link to={`/documents/${document.id}`}>Xem</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {userDocuments.length > 5 && (
                 <div className="text-center pt-4">
                   <Button asChild variant="outline">

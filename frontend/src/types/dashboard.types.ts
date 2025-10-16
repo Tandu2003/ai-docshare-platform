@@ -17,6 +17,8 @@ export interface DashboardCategory {
   color?: string | null;
 }
 
+import type { DocumentModerationStatus } from './database.types';
+
 export interface DashboardDocument {
   id: string;
   title: string;
@@ -31,6 +33,11 @@ export interface DashboardDocument {
   isPremium: boolean;
   isApproved: boolean;
   isDraft: boolean;
+  moderationStatus: DocumentModerationStatus;
+  moderatedById?: string | null;
+  moderatedAt?: string | null;
+  moderationNotes?: string | null;
+  rejectionReason?: string | null;
   tags: string[];
   language: string;
   createdAt: string;

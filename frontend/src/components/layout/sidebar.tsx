@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { AdminOnly, PermissionGate } from '@/components/common/permission-gate';
+import { AdminOnly } from '@/components/common/permission-gate';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -177,8 +177,8 @@ export function Sidebar({ className }: SidebarProps) {
 
   const adminNavItems: NavItem[] = [
     {
-      title: 'Bảng điều khiển quản trị',
-      href: '/admin',
+      title: 'Kiểm duyệt tài liệu',
+      href: '/moderation',
       icon: Shield,
     },
     {
@@ -217,7 +217,7 @@ export function Sidebar({ className }: SidebarProps) {
       if (item.href === '/analytics') {
         return canRead('SystemSetting');
       }
-      if (item.href === '/admin' || item.href === '/admin/users') {
+      if (item.href === '/moderation' || item.href === '/admin/users') {
         return user?.role?.name === 'admin';
       }
       return true; // Show all other items

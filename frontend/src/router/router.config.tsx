@@ -182,7 +182,7 @@ export const router = createBrowserRouter([
         element: <TopRatedPage />,
       },
       {
-        path: 'admin',
+        path: 'moderation',
         element: (
           <ProtectedRoute
             requiredPermissions={[{ action: 'read', subject: 'User' }]}

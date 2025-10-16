@@ -1,6 +1,8 @@
 // Database types based on Prisma schema
 import type { Actions, Subjects } from '@/lib/casl/ability.factory';
 
+export type DocumentModerationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface Permission {
   action: Actions;
   subject: Subjects;
@@ -34,6 +36,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   role: Role;
+  moderatedDocuments?: Document[];
 }
 
 export interface Category {
@@ -66,6 +69,12 @@ export interface Document {
   isPremium: boolean;
   isApproved: boolean;
   isDraft: boolean;
+  moderationStatus: DocumentModerationStatus;
+  moderatedById?: string | null;
+  moderatedAt?: Date | null;
+  moderationNotes?: string | null;
+  rejectionReason?: string | null;
+  aiModeration?: Record<string, any> | null;
   tags: string[];
   language: string;
   zipFileUrl?: string;

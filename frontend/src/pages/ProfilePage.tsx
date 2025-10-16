@@ -458,6 +458,23 @@ export default function ProfilePage() {
                         ? document.averageRating.toFixed(1)
                         : '0.0';
                     const isApproved = Boolean(document.isApproved);
+                    const moderationStatus =
+                      document.moderationStatus ??
+                      (isApproved ? 'APPROVED' : 'PENDING');
+                    const statusLabel = document.isDraft
+                      ? 'Bản nháp'
+                      : moderationStatus === 'APPROVED'
+                        ? 'Đã duyệt'
+                        : moderationStatus === 'REJECTED'
+                          ? 'Bị từ chối'
+                          : 'Đang chờ';
+                    const statusVariant = document.isDraft
+                      ? 'outline'
+                      : moderationStatus === 'APPROVED'
+                        ? 'default'
+                        : moderationStatus === 'REJECTED'
+                          ? 'destructive'
+                          : 'secondary';
 
                     return (
                       <div
@@ -487,10 +504,16 @@ export default function ProfilePage() {
                             <Star className="h-4 w-4" />
                             <span>{averageRatingDisplay}</span>
                           </div>
-                          <Badge variant={isApproved ? 'default' : 'secondary'}>
-                            {isApproved ? 'Đã duyệt' : 'Đang chờ'}
+                          <Badge variant={statusVariant}>
+                            {statusLabel}
                           </Badge>
                         </div>
+                        {moderationStatus === 'REJECTED' &&
+                          document.rejectionReason && (
+                            <p className="text-destructive mt-2 text-sm">
+                              Lý do từ chối: {document.rejectionReason}
+                            </p>
+                          )}
                       </div>
                     );
                   })}

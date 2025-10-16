@@ -1,17 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  FileText, 
-  TrendingUp, 
-  Shield, 
-  BarChart3,
+import {
   Activity,
   AlertTriangle,
-  CheckCircle
+  BarChart3,
+  CheckCircle,
+  FileText,
+  Shield,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DashboardOverview } from '@/types';
 
 interface AdminDashboardProps {
@@ -32,25 +33,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/admin/users" className="flex flex-col items-center gap-2">
+              <Link
+                to="/admin/users"
+                className="flex flex-col items-center gap-2"
+              >
                 <Users className="h-6 w-6" />
                 <span className="text-sm font-medium">Quản lý người dùng</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/analytics" className="flex flex-col items-center gap-2">
+              <Link
+                to="/analytics"
+                className="flex flex-col items-center gap-2"
+              >
                 <BarChart3 className="h-6 w-6" />
                 <span className="text-sm font-medium">Phân tích hệ thống</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/admin/settings" className="flex flex-col items-center gap-2">
+              <Link
+                to="/admin/settings"
+                className="flex flex-col items-center gap-2"
+              >
                 <Shield className="h-6 w-6" />
                 <span className="text-sm font-medium">Cài đặt hệ thống</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/admin" className="flex flex-col items-center gap-2">
+              <Link
+                to="/moderation"
+                className="flex flex-col items-center gap-2"
+              >
                 <Activity className="h-6 w-6" />
                 <span className="text-sm font-medium">Hoạt động hệ thống</span>
               </Link>
@@ -63,12 +76,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng người dùng</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Tổng người dùng
+            </CardTitle>
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               +{stats.newUsersThisMonth || 0} tháng này
             </p>
           </CardContent>
@@ -77,11 +92,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng tài liệu</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalDocuments || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold">
+              {stats.totalDocuments || 0}
+            </div>
+            <p className="text-muted-foreground text-xs">
               +{stats.newDocumentsThisMonth || 0} tháng này
             </p>
           </CardContent>
@@ -90,11 +107,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng lượt tải</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalDownloads || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold">
+              {stats.totalDownloads || 0}
+            </div>
+            <p className="text-muted-foreground text-xs">
               +{stats.downloadsThisMonth || 0} tháng này
             </p>
           </CardContent>
@@ -103,11 +122,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng lượt xem</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalViews || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               +{stats.viewsThisMonth || 0} tháng này
             </p>
           </CardContent>
@@ -134,7 +153,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
               <div className="flex items-center justify-between">
                 <span className="text-sm">Tài liệu chờ duyệt</span>
                 <Badge variant="secondary">
-                  {stats.recentDocuments.filter(doc => !doc.isApproved && !doc.isDraft).length}
+                  {
+                    stats.recentDocuments.filter(
+                      doc => !doc.isApproved && !doc.isDraft,
+                    ).length
+                  }
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
@@ -159,20 +182,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
               <div className="flex items-center justify-between">
                 <span className="text-sm">Tài liệu cần duyệt</span>
                 <Badge variant="destructive">
-                  {stats.recentDocuments.filter(doc => !doc.isApproved && !doc.isDraft).length}
+                  {
+                    stats.recentDocuments.filter(
+                      doc => !doc.isApproved && !doc.isDraft,
+                    ).length
+                  }
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Người dùng chưa xác thực</span>
-                <Badge variant="secondary">
-                  {stats.unverifiedUsers || 0}
-                </Badge>
+                <Badge variant="secondary">{stats.unverifiedUsers || 0}</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Báo cáo chưa xử lý</span>
-                <Badge variant="outline">
-                  {stats.pendingReports || 0}
-                </Badge>
+                <Badge variant="outline">{stats.pendingReports || 0}</Badge>
               </div>
             </div>
           </CardContent>
@@ -188,10 +211,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
           <div className="space-y-4">
             {stats.userActivity.slice(0, 5).map((activity, index) => (
               <div key={index} className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {new Date(activity.timestamp).toLocaleString()}
                   </p>
                 </div>

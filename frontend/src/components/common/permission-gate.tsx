@@ -8,109 +8,82 @@ interface PermissionGateProps {
   subject: string;
   conditions?: any;
   fallback?: ReactNode;
-  requireAll?: boolean;
 }
 
-export const PermissionGate: React.FC<PermissionGateProps> = ({
+export function PermissionGate({
   children,
   action,
   subject,
   conditions,
   fallback = null,
-  requireAll = false,
-}) => {
-  try {
-    const { can } = usePermissions();
-    
-    if (!can) {
-      console.warn('PermissionGate: can function not available');
-      return <>{fallback}</>;
-    }
-    
-    const hasPermission = can(action, subject, conditions);
-    
-    if (hasPermission) {
-      return <>{children}</>;
-    }
-    
-    return <>{fallback}</>;
-  } catch (error) {
-    console.error('PermissionGate error:', error);
+}: PermissionGateProps) {
+  const { can } = usePermissions();
+
+  if (!can) {
+    console.warn('PermissionGate: can function not available');
     return <>{fallback}</>;
   }
-};
+
+  const hasPermission = can(action, subject, conditions);
+
+  if (hasPermission) {
+    return <>{children}</>;
+  }
+
+  return <>{fallback}</>;
+}
 
 interface RoleGateProps {
   children: ReactNode;
   roles: string[];
   fallback?: ReactNode;
-  requireAll?: boolean;
 }
 
-export const RoleGate: React.FC<RoleGateProps> = ({
-  children,
-  roles,
-  fallback = null,
-  requireAll = false,
-}) => {
-  try {
-    const { user } = usePermissions();
-    
-    if (!user?.role) {
-      return <>{fallback}</>;
-    }
-    
-    const hasRole = requireAll
-      ? roles.every(role => user.role.name === role)
-      : roles.includes(user.role.name);
-    
-    if (hasRole) {
-      return <>{children}</>;
-    }
-    
-    return <>{fallback}</>;
-  } catch (error) {
-    console.error('RoleGate error:', error);
+export function RoleGate({ children, roles, fallback = null }: RoleGateProps) {
+  const { isAdmin, isUser } = usePermissions();
+
+  const userHasAnyRole = () => {
+    if (roles.includes('admin') && isAdmin()) return true;
+    if (roles.includes('user') && isUser()) return true;
+    return false;
+  };
+
+  if (!userHasAnyRole()) {
     return <>{fallback}</>;
   }
-};
+
+  if (userHasAnyRole()) {
+    return <>{children}</>;
+  }
+
+  return <>{fallback}</>;
+}
 
 interface AdminOnlyProps {
   children: ReactNode;
   fallback?: ReactNode;
 }
 
-export const AdminOnly: React.FC<AdminOnlyProps> = ({
-  children,
-  fallback = null,
-}) => {
-  try {
-    return (
-      <RoleGate roles={['admin']} fallback={fallback}>
-        {children}
-      </RoleGate>
-    );
-  } catch (error) {
-    console.error('AdminOnly error:', error);
-    return <>{fallback}</>;
-  }
-};
+export function AdminOnly({ children, fallback = null }: AdminOnlyProps) {
+  return (
+    <RoleGate roles={['admin']} fallback={fallback}>
+      {children}
+    </RoleGate>
+  );
+}
 
 interface UserOnlyProps {
   children: ReactNode;
   fallback?: ReactNode;
 }
 
-export const UserOnly: React.FC<UserOnlyProps> = ({
-  children,
-  fallback = null,
-}) => {
+export function UserOnly({ children, fallback = null }: UserOnlyProps) {
   return (
     <RoleGate roles={['user']} fallback={fallback}>
       {children}
     </RoleGate>
   );
-};
+}
 
 interface DocumentPermissionGateProps {
   children: ReactNode;
@@ -119,12 +92,12 @@ interface DocumentPermissionGateProps {
   fallback?: ReactNode;
 }
 
-export const DocumentPermissionGate: React.FC<DocumentPermissionGateProps> = ({
+export function DocumentPermissionGate({
   children,
   document,
   action,
   fallback = null,
-}) => {
+}: DocumentPermissionGateProps) {
   const {
     canViewDocument,
     canEditDocument,
@@ -160,7 +133,7 @@ export const DocumentPermissionGate: React.FC<DocumentPermissionGateProps> = ({
   }
 
   return <>{fallback}</>;
-};
+}
 
 interface CommentPermissionGateProps {
   children: ReactNode;
@@ -169,12 +142,12 @@ interface CommentPermissionGateProps {
   fallback?: ReactNode;
 }
 
-export const CommentPermissionGate: React.FC<CommentPermissionGateProps> = ({
+export function CommentPermissionGate({
   children,
   comment,
   action,
   fallback = null,
-}) => {
+}: CommentPermissionGateProps) {
   const { canEditComment, canDeleteComment } = usePermissions();
 
   let hasPermission = false;
@@ -195,7 +168,7 @@ export const CommentPermissionGate: React.FC<CommentPermissionGateProps> = ({
   }
 
   return <>{fallback}</>;
-};
+}
 
 interface BookmarkPermissionGateProps {
   children: ReactNode;
@@ -204,12 +177,12 @@ interface BookmarkPermissionGateProps {
   fallback?: ReactNode;
 }
 
-export const BookmarkPermissionGate: React.FC<BookmarkPermissionGateProps> = ({
+export function BookmarkPermissionGate({
   children,
   bookmark,
   action,
   fallback = null,
-}) => {
+}: BookmarkPermissionGateProps) {
   const { canEditBookmark, canDeleteBookmark } = usePermissions();
 
   let hasPermission = false;
@@ -230,4 +203,4 @@ export const BookmarkPermissionGate: React.FC<BookmarkPermissionGateProps> = ({
   }
 
   return <>{fallback}</>;
-};
+}
