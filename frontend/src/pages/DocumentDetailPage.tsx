@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
+import { DocumentInlineViewer } from '@/components/documents/document-inline-viewer';
 import DocumentShareDialog from '@/components/documents/document-share-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -159,7 +160,9 @@ export default function DocumentDetailPage() {
 
     // Kiểm tra nếu document là private và đang truy cập qua API key
     if (apiKey && !document.isPublic) {
-      toast.error('Tài liệu riêng tư không thể đánh dấu khi chia sẻ qua API key');
+      toast.error(
+        'Tài liệu riêng tư không thể đánh dấu khi chia sẻ qua API key',
+      );
       return;
     }
 
@@ -171,10 +174,13 @@ export default function DocumentDetailPage() {
         setIsBookmarked(false);
         toast.success('Đã xóa khỏi bookmark');
       } else {
-        const created = await createBookmark({ 
-          documentId,
-          isFromApiKey: !!apiKey
-        }, apiKey);
+        const created = await createBookmark(
+          {
+            documentId,
+            isFromApiKey: !!apiKey,
+          },
+          apiKey,
+        );
         setBookmarkRecord(created);
         setIsBookmarked(true);
         toast.success('Đã lưu vào bookmark');
@@ -422,19 +428,7 @@ export default function DocumentDetailPage() {
               <CardTitle>Nội dung tài liệu</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none">
-                <p className="text-muted-foreground">
-                  Đây là bản xem trước nội dung tài liệu. Trong ứng dụng thực
-                  tế, phần này sẽ hiển thị nội dung tài liệu thực tế dựa trên
-                  loại tệp.
-                </p>
-                <div className="bg-muted mt-4 rounded-lg p-4">
-                  <h4 className="mb-2 font-medium">Xem trước tài liệu</h4>
-                  <p className="text-muted-foreground text-sm">
-                    {document.description || 'Không có mô tả nào.'}
-                  </p>
-                </div>
-              </div>
+              <DocumentInlineViewer files={document.files} />
             </CardContent>
           </Card>
 
