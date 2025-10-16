@@ -5,6 +5,7 @@ import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
+import { NotificationsService } from '@/notifications/notifications.service';
 import {
   BadRequestException,
   Injectable,
@@ -29,6 +30,7 @@ export class DocumentsService {
     private r2Service: CloudflareR2Service,
     private configService: ConfigService,
     private aiService: AIService,
+    private notifications: NotificationsService,
   ) {}
 
   /**
@@ -1249,6 +1251,14 @@ export class DocumentsService {
         });
       });
 
+      // Emit realtime download event to uploader
+      this.notifications.emitToUploaderOfDocument(document.uploaderId, {
+        type: 'download',
+        documentId,
+        userId,
+        count: 1,
+      });
+
       // If single file, return direct download URL
       if (document.files.length === 1) {
         const file = document.files[0].file;
@@ -1634,6 +1644,14 @@ export class DocumentsService {
         },
       });
 
+      // Emit moderation approved event to uploader
+      this.notifications.emitToUploaderOfDocument(updatedDocument.uploaderId, {
+        type: 'moderation',
+        documentId,
+        status: 'approved',
+        notes: options.notes || null,
+      });
+
       return updatedDocument;
     } catch (error) {
       this.logger.error(`Error approving document ${documentId}:`, error);
@@ -1704,6 +1722,15 @@ export class DocumentsService {
           data: { isRevoked: true },
         }),
       ]);
+
+      // Emit moderation rejected event to uploader
+      this.notifications.emitToUploaderOfDocument(updatedDocument.uploaderId, {
+        type: 'moderation',
+        documentId,
+        status: 'rejected',
+        notes: options.notes || null,
+        reason: options.reason,
+      });
 
       return updatedDocument;
     } catch (error) {

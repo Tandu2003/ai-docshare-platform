@@ -90,10 +90,13 @@ export const fetchCategories = async (
 };
 
 export const fetchPublicCategories = async (): Promise<CategoryWithStats[]> => {
-  const response = await apiClient.get<CategoryListResponse>('/categories/public');
+  const response =
+    await apiClient.get<CategoryListResponse>('/categories/public');
 
   if (!response.success || !response.data) {
-    throw new Error(response.message || 'Không thể tải danh sách danh mục công khai');
+    throw new Error(
+      response.message || 'Không thể tải danh sách danh mục công khai',
+    );
   }
 
   return response.data.map(mapCategory);

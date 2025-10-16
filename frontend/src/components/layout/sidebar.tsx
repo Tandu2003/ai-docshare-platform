@@ -46,12 +46,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks';
 import { usePermissions } from '@/hooks/use-permissions';
+import { getSocket } from '@/lib/socket';
 import { cn } from '@/lib/utils';
 import {
   BOOKMARKS_UPDATED_EVENT,
   BookmarkStats,
   getBookmarkStats,
 } from '@/services/bookmark.service';
+import { getMyNotifications } from '@/services/notifications.service';
 
 interface SidebarProps {
   className?: string;
@@ -73,6 +75,7 @@ export function Sidebar({ className }: SidebarProps) {
   const [bookmarkStats, setBookmarkStats] = useState<BookmarkStats | null>(
     null,
   );
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const loadBookmarkStats = useCallback(async () => {
     if (!user) {
@@ -101,6 +104,32 @@ export function Sidebar({ className }: SidebarProps) {
     return () =>
       window.removeEventListener(BOOKMARKS_UPDATED_EVENT, handleUpdated);
   }, [loadBookmarkStats]);
+
+  // Load unread notifications count and subscribe to realtime increases
+  useEffect(() => {
+    const loadUnread = async () => {
+      try {
+        const res = await getMyNotifications({
+          page: 1,
+          limit: 1,
+          onlyUnread: true,
+        });
+        const total = res?.meta?.total ?? 0;
+        setUnreadCount(total);
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    void loadUnread();
+
+    const socket = getSocket();
+    const onNotif = () => setUnreadCount(prev => prev + 1);
+    socket.on('notification', onNotif);
+    return () => {
+      socket.off('notification', onNotif);
+    };
+  }, []);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -148,7 +177,7 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'Thông báo',
       href: '/notifications',
       icon: Bell,
-      badge: 3,
+      badge: unreadCount,
     },
     {
       title: 'Tài liệu của tôi',

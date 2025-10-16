@@ -12,6 +12,7 @@ import { ConfigModule } from '@/config/config.module';
 import { DocumentsModule } from '@/documents/documents.module';
 import { FilesModule } from '@/files/files.module';
 import { HealthModule } from '@/health/health.module';
+import { NotificationsModule } from '@/notifications/notifications.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { UsersModule } from '@/users/users.module';
 import { Module } from '@nestjs/common';
@@ -33,6 +34,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
     CategoriesModule,
     AnalyticsModule,
     UsersModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [

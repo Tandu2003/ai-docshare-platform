@@ -36,7 +36,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockNotifications } from '@/services/mock-data.service';
+import { getSocket } from '@/lib/socket';
+import { getMyNotifications } from '@/services/notifications.service';
 import type { Notification } from '@/types';
 
 export default function NotificationsPage() {
@@ -52,9 +53,8 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setNotifications(mockNotifications);
+        const res = await getMyNotifications({ page: 1, limit: 50 });
+        setNotifications(res.data || []);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       } finally {
@@ -63,6 +63,75 @@ export default function NotificationsPage() {
     };
 
     fetchNotifications();
+
+    // Realtime: subscribe to socket notifications
+    const socket = getSocket();
+    const handler = (event: any) => {
+      const now = new Date();
+      let type: Notification['type'] = 'system';
+      let title = 'Thông báo hệ thống';
+      let message = 'Có cập nhật mới.';
+
+      if (event?.type === 'view') {
+        type = 'system';
+        title = 'Lượt xem mới';
+        message = 'Tài liệu vừa có lượt xem mới.';
+      } else if (event?.type === 'download') {
+        type = 'system';
+        title = 'Lượt tải xuống mới';
+        message = 'Tài liệu vừa có lượt tải xuống mới.';
+      } else if (event?.type === 'moderation') {
+        if (event.status === 'approved') {
+          type = 'document_approved';
+          title = 'Tài liệu đã được duyệt';
+          message = 'Tài liệu của bạn đã được duyệt và công khai.';
+        } else {
+          type = 'system';
+          title = 'Tài liệu bị từ chối';
+          message = 'Tài liệu của bạn đã bị từ chối kiểm duyệt.';
+        }
+      }
+
+      const newNotif: Notification = {
+        id: crypto.randomUUID(),
+        userId: 'me',
+        type,
+        title,
+        message,
+        data: event || {},
+        isRead: false,
+        createdAt: now,
+        user: {
+          id: 'me',
+          email: '',
+          username: 'me',
+          password: '',
+          firstName: '',
+          lastName: '',
+          roleId: 'user',
+          isVerified: true,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+          role: {
+            id: 'user',
+            name: 'User',
+            description: 'User',
+            permissions: [],
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      } as Notification;
+
+      setNotifications(prev => [newNotif, ...prev]);
+    };
+
+    socket.on('notification', handler);
+    return () => {
+      socket.off('notification', handler);
+    };
   }, []);
 
   const filteredNotifications = notifications.filter(notification => {

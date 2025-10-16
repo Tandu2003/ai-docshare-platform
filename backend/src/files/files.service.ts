@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 import {
   BadRequestException,
   Injectable,
@@ -27,6 +28,7 @@ export class FilesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly r2Service: CloudflareR2Service,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -446,6 +448,15 @@ export class FilesService {
       await this.prisma.document.update({
         where: { id: documentFile.document.id },
         data: { viewCount: { increment: 1 } },
+      });
+
+      // Emit realtime view event (to uploader room if available)
+      this.notifications.emitToUploaderOfDocument(file.uploaderId, {
+        type: 'view',
+        documentId: documentFile.document.id,
+        fileId,
+        userId,
+        count: 1,
       });
 
       this.logger.log(
