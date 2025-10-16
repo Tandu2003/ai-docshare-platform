@@ -101,7 +101,17 @@ export class GeminiService {
       }
 
       // Create prompt with extracted content
-      const prompt = this.createAnalysisPromptWithContent(validContents);
+      const prompt = this.createAnalysisPromptWithContent(
+        validContents as {
+          fileName: string;
+          content: string;
+          metadata?: {
+            pages?: number;
+            words?: number;
+            characters?: number;
+          };
+        }[],
+      );
 
       // Generate content with text prompt only
       const result = await model.generateContent(prompt);
@@ -144,7 +154,7 @@ Analyze the following document(s) and extract the following information in JSON 
 IMPORTANT LANGUAGE REQUIREMENT:
 - You must respond in Vietnamese (tiếng Việt) only
 - All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
-- Set the field \"language\" strictly to \"vi\"
+- Set the field "language" strictly to "vi"
 
 ${documentsText}
 
@@ -168,7 +178,7 @@ Instructions:
 4. Provide a comprehensive Vietnamese summary of the content
 5. List the most important key points in Vietnamese
 6. Assess the difficulty level based on content complexity
-7. Set the primary language to \"vi\"
+7. Set the primary language to "vi"
 8. Provide a confidence score (0-1) for the analysis
 
 Please analyze all provided document content and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
@@ -185,7 +195,7 @@ Analyze the provided document(s) and extract the following information in JSON f
 IMPORTANT LANGUAGE REQUIREMENT:
 - You must respond in Vietnamese (tiếng Việt) only
 - All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
-- Set the field \"language\" strictly to \"vi\"
+- Set the field "language" strictly to "vi"
 
 {
   "title": "A clear, descriptive title for the document (max 100 characters)",
@@ -205,7 +215,7 @@ Instructions:
 4. Provide a comprehensive Vietnamese summary of the content
 5. List the most important key points in Vietnamese
 6. Assess the difficulty level based on content complexity
-7. Set the primary language to \"vi\"
+7. Set the primary language to "vi"
 8. Provide a confidence score (0-1) for the analysis
 
 Please analyze all provided files and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
