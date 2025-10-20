@@ -74,7 +74,7 @@ export class AIService {
         }),
       );
 
-      const validUrls = fileUrls.filter(url => url !== null);
+      const validUrls = fileUrls.filter((url): url is string => url !== null);
 
       if (validUrls.length === 0) {
         throw new Error('No accessible file URLs found');
@@ -136,7 +136,13 @@ export class AIService {
           difficulty: analysis.difficulty || 'beginner',
           language: analysis.language || 'vi',
           confidence: analysis.confidence || 0,
+          reliabilityScore: analysis.reliabilityScore || 0,
           processedAt: new Date(),
+          // Enhanced moderation fields
+          moderationScore: analysis.moderationScore || 50,
+          safetyFlags: analysis.safetyFlags || [],
+          isSafe: analysis.isSafe || false,
+          recommendedAction: analysis.recommendedAction || 'review',
         },
         create: {
           documentId,
@@ -146,7 +152,13 @@ export class AIService {
           difficulty: analysis.difficulty || 'beginner',
           language: analysis.language || 'vi',
           confidence: analysis.confidence || 0,
+          reliabilityScore: analysis.reliabilityScore || 0,
           processedAt: new Date(),
+          // Enhanced moderation fields
+          moderationScore: analysis.moderationScore || 50,
+          safetyFlags: analysis.safetyFlags || [],
+          isSafe: analysis.isSafe || false,
+          recommendedAction: analysis.recommendedAction || 'review',
         },
       });
 

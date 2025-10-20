@@ -1,4 +1,5 @@
 // import { DocumentModule } from '@/document/document.module';
+import { AdminModule } from '@/admin/admin.module';
 import { AIModule } from '@/ai/ai.module';
 import { AnalyticsModule } from '@/analytics/analytics.module';
 import { AuthModule } from '@/auth/auth.module';
@@ -35,6 +36,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
     AnalyticsModule,
     UsersModule,
     NotificationsModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [

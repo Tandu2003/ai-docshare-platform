@@ -569,21 +569,157 @@ export default function AdminDashboardPage() {
                                   {formatDateTime(document.createdAt)}
                                 </span>
                               </div>
-                              {document.aiAnalysis?.summary && (
+                              {document.aiAnalysis && (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <div className="flex cursor-help items-center gap-1.5">
                                         <Sparkles className="h-3.5 w-3.5 text-purple-500" />
                                         <span className="text-purple-500">
-                                          AI đã phân tích
+                                          AI:{' '}
+                                          {document.aiAnalysis
+                                            .moderationScore || 0}
+                                          /100
                                         </span>
+                                        <Badge
+                                          variant={
+                                            (document.aiAnalysis
+                                              .recommendedAction ||
+                                              'review') === 'approve'
+                                              ? 'default'
+                                              : (document.aiAnalysis
+                                                    .recommendedAction ||
+                                                    'review') === 'reject'
+                                                ? 'destructive'
+                                                : 'secondary'
+                                          }
+                                          className="text-xs"
+                                        >
+                                          {(document.aiAnalysis
+                                            .recommendedAction || 'review') ===
+                                          'approve'
+                                            ? 'Duyệt'
+                                            : (document.aiAnalysis
+                                                  .recommendedAction ||
+                                                  'review') === 'reject'
+                                              ? 'Từ chối'
+                                              : 'Xem xét'}
+                                        </Badge>
                                       </div>
                                     </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs">
-                                      <p className="text-sm">
-                                        {document.aiAnalysis.summary}
-                                      </p>
+                                    <TooltipContent className="max-w-sm border border-gray-200 bg-white shadow-lg">
+                                      <div className="space-y-3 p-1">
+                                        {/* AI Score and Recommendation */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-sm font-medium text-gray-900">
+                                            Điểm an toàn:
+                                            <span className="ml-1 text-xs text-gray-500">
+                                              (0-100)
+                                            </span>
+                                          </span>
+                                          <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-16 rounded-full bg-gray-200">
+                                              <div
+                                                className={`h-1.5 rounded-full ${
+                                                  (document.aiAnalysis
+                                                    .moderationScore || 0) >= 80
+                                                    ? 'bg-green-500'
+                                                    : (document.aiAnalysis
+                                                          .moderationScore ||
+                                                          0) >= 50
+                                                      ? 'bg-yellow-500'
+                                                      : 'bg-red-500'
+                                                }`}
+                                                style={{
+                                                  width: `${document.aiAnalysis.moderationScore || 0}%`,
+                                                }}
+                                              />
+                                            </div>
+                                            <span className="text-sm font-bold text-gray-900">
+                                              {document.aiAnalysis
+                                                .moderationScore || 0}
+                                              /100
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Safety Status */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-sm font-medium text-gray-900">
+                                            Trạng thái:
+                                          </span>
+                                          <Badge
+                                            variant={
+                                              (document.aiAnalysis.isSafe ??
+                                              true)
+                                                ? 'default'
+                                                : 'destructive'
+                                            }
+                                            className="text-xs"
+                                          >
+                                            {(document.aiAnalysis.isSafe ??
+                                            true)
+                                              ? 'An toàn'
+                                              : 'Không an toàn'}
+                                          </Badge>
+                                        </div>
+
+                                        {/* Confidence Score */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-sm font-medium text-gray-900">
+                                            Độ tin cậy tài liệu:
+                                            <span className="ml-1 text-xs text-gray-500">
+                                              (độ tin cậy nội dung)
+                                            </span>
+                                          </span>
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            {(
+                                              document.aiAnalysis
+                                                .reliabilityScore ?? 0
+                                            ).toFixed(0)}
+                                            %
+                                          </Badge>
+                                        </div>
+
+                                        {/* Summary */}
+                                        {document.aiAnalysis.summary && (
+                                          <div>
+                                            <p className="mb-1 text-xs font-medium text-gray-600">
+                                              Tóm tắt:
+                                            </p>
+                                            <p className="line-clamp-3 text-xs text-gray-700">
+                                              {document.aiAnalysis.summary}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        {/* Safety Flags */}
+                                        {document.aiAnalysis.safetyFlags &&
+                                          document.aiAnalysis.safetyFlags
+                                            .length > 0 && (
+                                            <div>
+                                              <p className="mb-1 text-xs font-medium text-red-600">
+                                                Cảnh báo phát hiện:
+                                              </p>
+                                              <ul className="space-y-0.5 text-xs text-red-500">
+                                                {document.aiAnalysis.safetyFlags.map(
+                                                  (flag, index) => (
+                                                    <li
+                                                      key={index}
+                                                      className="flex items-center gap-1"
+                                                    >
+                                                      <XCircle className="h-2.5 w-2.5" />
+                                                      {flag}
+                                                    </li>
+                                                  ),
+                                                )}
+                                              </ul>
+                                            </div>
+                                          )}
+                                      </div>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -901,41 +1037,154 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {selectedDocument.aiAnalysis ? (
-                      <Card>
-                        <CardContent className="space-y-4 p-4">
-                          <div>
-                            <h4 className="mb-2 font-semibold">Tóm tắt</h4>
-                            <p className="text-sm">
-                              {selectedDocument.aiAnalysis.summary}
-                            </p>
-                          </div>
-                          {selectedDocument.aiAnalysis.keyPoints?.length ? (
-                            <div>
-                              <h4 className="mb-2 font-semibold">Điểm chính</h4>
-                              <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-                                {selectedDocument.aiAnalysis.keyPoints.map(
-                                  point => (
-                                    <li key={point}>{point}</li>
-                                  ),
-                                )}
-                              </ul>
+                      <div className="space-y-4">
+                        {/* Moderation Score Card */}
+                        <Card className="border-l-4 border-l-blue-500">
+                          <CardContent className="p-4">
+                            <div className="mb-3 flex items-center justify-between">
+                              <h4 className="flex items-center gap-2 font-semibold">
+                                <ShieldCheck className="h-4 w-4" />
+                                Đánh giá an toàn AI
+                              </h4>
+                              <Badge
+                                variant={
+                                  (selectedDocument.aiAnalysis
+                                    .recommendedAction || 'review') ===
+                                  'approve'
+                                    ? 'default'
+                                    : (selectedDocument.aiAnalysis
+                                          .recommendedAction || 'review') ===
+                                        'reject'
+                                      ? 'destructive'
+                                      : 'secondary'
+                                }
+                              >
+                                {(selectedDocument.aiAnalysis
+                                  .recommendedAction || 'review') === 'approve'
+                                  ? 'Khuyến nghị duyệt'
+                                  : (selectedDocument.aiAnalysis
+                                        .recommendedAction || 'review') ===
+                                      'reject'
+                                    ? 'Khuyến nghị từ chối'
+                                    : 'Cần xem xét'}
+                              </Badge>
                             </div>
-                          ) : null}
-                          <Separator />
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Độ tin cậy
-                            </span>
-                            <Badge variant="secondary">
-                              {(
-                                (selectedDocument.aiAnalysis.confidence || 0) *
-                                100
-                              ).toFixed(0)}
-                              %
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                  Điểm an toàn:
+                                  <span className="ml-1 text-xs text-gray-500">
+                                    (0-100)
+                                  </span>
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-24 rounded-full bg-gray-200">
+                                    <div
+                                      className={`h-2 rounded-full ${
+                                        (selectedDocument.aiAnalysis
+                                          .moderationScore || 0) >= 80
+                                          ? 'bg-green-500'
+                                          : (selectedDocument.aiAnalysis
+                                                .moderationScore || 0) >= 50
+                                            ? 'bg-yellow-500'
+                                            : 'bg-red-500'
+                                      }`}
+                                      style={{
+                                        width: `${selectedDocument.aiAnalysis.moderationScore || 0}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-bold">
+                                    {selectedDocument.aiAnalysis
+                                      .moderationScore || 0}
+                                    /100
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                  Trạng thái:
+                                </span>
+                                <Badge
+                                  variant={
+                                    (selectedDocument.aiAnalysis.isSafe ?? true)
+                                      ? 'default'
+                                      : 'destructive'
+                                  }
+                                >
+                                  {(selectedDocument.aiAnalysis.isSafe ?? true)
+                                    ? 'An toàn'
+                                    : 'Không an toàn'}
+                                </Badge>
+                              </div>
+                              {selectedDocument.aiAnalysis.safetyFlags &&
+                                selectedDocument.aiAnalysis.safetyFlags.length >
+                                  0 && (
+                                  <div>
+                                    <span className="text-sm font-medium text-red-600">
+                                      Cảnh báo phát hiện:
+                                    </span>
+                                    <ul className="mt-1 space-y-1">
+                                      {selectedDocument.aiAnalysis.safetyFlags.map(
+                                        (flag, index) => (
+                                          <li
+                                            key={index}
+                                            className="flex items-center gap-1 text-sm text-red-500"
+                                          >
+                                            <XCircle className="h-3 w-3" />
+                                            {flag}
+                                          </li>
+                                        ),
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Analysis Details Card */}
+                        <Card>
+                          <CardContent className="space-y-4 p-4">
+                            <div>
+                              <h4 className="mb-2 font-semibold">Tóm tắt</h4>
+                              <p className="text-sm">
+                                {selectedDocument.aiAnalysis.summary}
+                              </p>
+                            </div>
+                            {selectedDocument.aiAnalysis.keyPoints?.length ? (
+                              <div>
+                                <h4 className="mb-2 font-semibold">
+                                  Điểm chính
+                                </h4>
+                                <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
+                                  {selectedDocument.aiAnalysis.keyPoints.map(
+                                    point => (
+                                      <li key={point}>{point}</li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            ) : null}
+                            <Separator />
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                Độ tin cậy tài liệu
+                                <span className="ml-1 text-xs text-gray-400">
+                                  (độ tin cậy nội dung)
+                                </span>
+                              </span>
+                              <Badge variant="secondary">
+                                {(
+                                  selectedDocument.aiAnalysis
+                                    .reliabilityScore ?? 0
+                                ).toFixed(0)}
+                                %
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     ) : (
                       <Card>
                         <CardContent className="flex flex-col items-center justify-center gap-4 p-12 text-center">

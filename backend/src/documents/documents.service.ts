@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
 import { AIService } from '../ai/ai.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -31,6 +32,7 @@ export class DocumentsService {
     private configService: ConfigService,
     private aiService: AIService,
     private notifications: NotificationsService,
+    private systemSettings: SystemSettingsService,
   ) {}
 
   /**
@@ -1461,6 +1463,13 @@ export class DocumentsService {
               keyPoints: document.aiAnalysis.keyPoints,
               difficulty: document.aiAnalysis.difficulty,
               confidence: document.aiAnalysis.confidence,
+              reliabilityScore:
+                (document as any).aiAnalysis?.reliabilityScore ?? 0,
+              // Enhanced moderation fields
+              moderationScore: document.aiAnalysis.moderationScore,
+              safetyFlags: document.aiAnalysis.safetyFlags,
+              isSafe: document.aiAnalysis.isSafe,
+              recommendedAction: document.aiAnalysis.recommendedAction,
             }
           : null,
         files: document.files.map(df => ({
@@ -1743,6 +1752,82 @@ export class DocumentsService {
   }
 
   /**
+   * Check if document should be auto-approved or auto-rejected based on AI analysis
+   */
+  async checkAutoModeration(documentId: string): Promise<{
+    shouldAutoApprove: boolean;
+    shouldAutoReject: boolean;
+    reason?: string;
+  }> {
+    try {
+      const aiSettings = await this.systemSettings.getAIModerationSettings();
+
+      const analysis = await this.prisma.aIAnalysis.findUnique({
+        where: { documentId },
+      });
+
+      if (!analysis) {
+        return {
+          shouldAutoApprove: false,
+          shouldAutoReject: false,
+          reason: 'No AI analysis available',
+        };
+      }
+
+      const { moderationScore, safetyFlags } = analysis;
+
+      // Auto-reject if score is below threshold or has critical safety flags
+      if (aiSettings.enableAutoRejection) {
+        if (moderationScore < aiSettings.autoRejectThreshold) {
+          return {
+            shouldAutoApprove: false,
+            shouldAutoReject: true,
+            reason: `AI score ${moderationScore} below rejection threshold ${aiSettings.autoRejectThreshold}`,
+          };
+        }
+
+        if (safetyFlags.length > 0) {
+          return {
+            shouldAutoApprove: false,
+            shouldAutoReject: true,
+            reason: `Safety flags detected: ${safetyFlags.join(', ')}`,
+          };
+        }
+      }
+
+      // Auto-approve if score is above threshold and no safety issues
+      if (aiSettings.enableAutoApproval) {
+        if (
+          moderationScore >= aiSettings.autoApprovalThreshold &&
+          safetyFlags.length === 0
+        ) {
+          return {
+            shouldAutoApprove: true,
+            shouldAutoReject: false,
+            reason: `AI score ${moderationScore} above approval threshold ${aiSettings.autoApprovalThreshold}`,
+          };
+        }
+      }
+
+      return {
+        shouldAutoApprove: false,
+        shouldAutoReject: false,
+        reason: 'Requires manual review',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking auto moderation for document ${documentId}:`,
+        error,
+      );
+      return {
+        shouldAutoApprove: false,
+        shouldAutoReject: false,
+        reason: 'Error checking auto moderation',
+      };
+    }
+  }
+
+  /**
    * Trigger AI moderation analysis for a document
    */
   async generateModerationAnalysis(documentId: string) {
@@ -1786,11 +1871,58 @@ export class DocumentsService {
         where: { documentId },
       });
 
+      // Check for auto-moderation after AI analysis
+      const autoModeration = await this.checkAutoModeration(documentId);
+      let autoModerationResult: { action: string; reason: string } | null =
+        null;
+
+      if (autoModeration.shouldAutoApprove) {
+        this.logger.log(
+          `Auto-approving document ${documentId}: ${autoModeration.reason}`,
+        );
+        try {
+          await this.approveDocumentModeration(documentId, 'system', {
+            notes: `Tự động duyệt bởi AI: ${autoModeration.reason}`,
+            publish: true,
+          });
+          autoModerationResult = {
+            action: 'approved',
+            reason: autoModeration.reason || 'Auto-approved by AI',
+          };
+        } catch (error) {
+          this.logger.error(
+            `Failed to auto-approve document ${documentId}:`,
+            error,
+          );
+        }
+      } else if (autoModeration.shouldAutoReject) {
+        this.logger.log(
+          `Auto-rejecting document ${documentId}: ${autoModeration.reason}`,
+        );
+        try {
+          await this.rejectDocumentModeration(documentId, 'system', {
+            reason: `Tự động từ chối bởi AI: ${autoModeration.reason}`,
+            notes:
+              'Tài liệu này đã được AI phân tích và tự động từ chối do không đáp ứng tiêu chuẩn an toàn.',
+          });
+          autoModerationResult = {
+            action: 'rejected',
+            reason: autoModeration.reason || 'Auto-rejected by AI',
+          };
+        } catch (error) {
+          this.logger.error(
+            `Failed to auto-reject document ${documentId}:`,
+            error,
+          );
+        }
+      }
+
       return {
         success: analysisResult.success,
         analysis: savedAnalysis,
         processedFiles: analysisResult.processedFiles,
         processingTime: analysisResult.processingTime,
+        autoModeration: autoModerationResult,
       };
     } catch (error) {
       this.logger.error(

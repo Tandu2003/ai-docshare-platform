@@ -165,9 +165,15 @@ export interface AIAnalysis {
   readingTime: number;
   language: string;
   confidence: number;
+  reliabilityScore?: number;
   sentimentScore?: number;
   topicModeling?: Record<string, any>;
   namedEntities?: Record<string, any>;
+  // Enhanced moderation fields
+  moderationScore?: number; // 0-100 safety score
+  safetyFlags?: string[]; // List of detected safety issues
+  isSafe?: boolean; // Overall safety assessment
+  recommendedAction?: 'approve' | 'review' | 'reject'; // AI recommendation
   processedAt: Date;
   createdAt: Date;
   updatedAt: Date;

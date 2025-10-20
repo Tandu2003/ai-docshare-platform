@@ -23,6 +23,7 @@ export { HttpErrorHelper } from './helpers/http-error.helper';
 
 // Services
 export { DatabaseInitService } from './services/database-init.service';
+export { SystemSettingsService } from './system-settings.service';
 
 // Convenient exports for direct usage (with proper context binding)
 export const success = ResponseHelper.success.bind(ResponseHelper);

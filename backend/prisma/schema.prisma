@@ -280,9 +280,16 @@ model AIAnalysis {
   readingTime    Int      @default(0) // in minutes
   language       String   @default("en")
   confidence     Float    @default(0)
+  // Document reliability score (AI's estimate of document trustworthiness/accuracy) 0-100
+  reliabilityScore Int     @default(0)
   sentimentScore Float? // Sentiment analysis of content
   topicModeling  Json? // Topic modeling results
   namedEntities  Json? // Named entity recognition
+  // Enhanced moderation fields
+  moderationScore Int     @default(50) // 0-100 safety score
+  safetyFlags     String[] @default([]) // List of detected safety issues
+  isSafe          Boolean  @default(false) // Overall safety assessment
+  recommendedAction String @default("review") // approve, review, reject
   processedAt    DateTime @default(now())
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -294,8 +301,29 @@ model AIAnalysis {
   @@index([difficulty])
   @@index([language])
   @@index([confidence])
+  @@index([reliabilityScore])
   @@index([processedAt])
+  @@index([moderationScore])
+  @@index([isSafe])
+  @@index([recommendedAction])
   @@map("ai_analyses")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  type        String   @default("string") // "string", "number", "boolean", "json"
+  description String?
+  category    String   @default("general") // general, moderation, ai, etc.
+  isPublic    Boolean  @default(false) // Whether this setting is visible to non-admins
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+  @@index([isPublic])
+  @@map("system_settings")
 }
 
 model SearchHistory {
@@ -465,21 +493,6 @@ model View {
 // SYSTEM ADMINISTRATION
 // ================================
 
-model SystemSetting {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  type        String   @default("string") // "string", "number", "boolean", "json"
-  description String?
-  isPublic    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Indexes
-  @@index([key])
-  @@index([isPublic])
-  @@map("system_settings")
-}
 
 model ActivityLog {
   id           String   @id @default(cuid())
