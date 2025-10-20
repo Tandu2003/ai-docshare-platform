@@ -25,6 +25,12 @@ export function VerifyEmailPage() {
   const token = searchParams.get('token');
 
   useEffect(() => {
+    // Reset all states when token changes
+    setIsLoading(true);
+    setIsSuccess(false);
+    setError(null);
+    setHasCompleted(false);
+
     const verifyEmail = async () => {
       if (!token) {
         setError('Token xác thực không hợp lệ');
@@ -34,11 +40,6 @@ export function VerifyEmailPage() {
       }
 
       try {
-        setIsLoading(true);
-        setError(null); // Clear any previous errors
-        setIsSuccess(false); // Clear any previous success state
-        setHasCompleted(false); // Reset completion state
-
         const result = await authService.verifyEmail({ token });
 
         // Only update success state after API call completes successfully
@@ -71,6 +72,7 @@ export function VerifyEmailPage() {
     navigate('/resend-verification');
   };
 
+  // Show loading state first (highest priority)
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -102,6 +104,7 @@ export function VerifyEmailPage() {
     );
   }
 
+  // Show success state only after loading is complete and success is true
   if (hasCompleted && isSuccess) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -137,6 +140,7 @@ export function VerifyEmailPage() {
     );
   }
 
+  // Show error state only after loading is complete and there's an error
   if (hasCompleted && error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
