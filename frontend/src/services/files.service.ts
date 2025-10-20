@@ -198,24 +198,42 @@ export class DocumentsService {
   }
 
   /**
-   * Download all files of a document
+   * Download all files of a document with proper tracking
    */
   static async downloadDocument(documentId: string): Promise<void> {
     try {
+      // Step 1: Get download URL without tracking
       const response = await apiClient.post<{
         downloadUrl: string;
-        title: string;
-      }>(`/documents/${documentId}/download`);
+        fileName: string;
+        fileCount: number;
+      }>(`/documents/${documentId}/download-url`);
 
-      if (!response.data?.downloadUrl) {
+      if (!response.success || !response.data?.downloadUrl) {
         throw new Error('Không được cung cấp URL tải xuống');
       }
 
-      // Use the existing download method
+      // Step 2: Download the file
       await this.downloadFileFromUrl(
         response.data.downloadUrl,
-        response.data.title,
+        response.data.fileName,
       );
+
+      // Step 3: Track download completion
+      try {
+        await apiClient.post<{ success: boolean }>(
+          `/documents/${documentId}/track-download`,
+          {
+            ipAddress: '',
+            userAgent: navigator.userAgent,
+            referrer: window.location.href,
+          },
+        );
+        console.log('Download completion tracked successfully');
+      } catch (trackError) {
+        console.warn('Failed to track download completion:', trackError);
+        // Don't throw error to avoid breaking the download flow
+      }
     } catch (error) {
       console.error('Failed to download document', error);
       throw new Error('Không thể tải xuống tài liệu.');
@@ -256,6 +274,35 @@ export class DocumentsService {
     } catch (error) {
       console.error('Failed to download file from URL', error);
       throw new Error('Không thể tải xuống tệp.');
+    }
+  }
+
+  /**
+   * Track document view
+   */
+  static async trackDocumentView(
+    documentId: string,
+    referrer?: string,
+  ): Promise<void> {
+    try {
+      console.log('Tracking view for document:', documentId);
+
+      const response = await apiClient.post<{
+        success: boolean;
+        data: any;
+        message?: string;
+      }>(`/documents/${documentId}/view`, {
+        referrer: referrer || window.location.href,
+      });
+
+      if (response?.success) {
+        console.log('View tracked successfully for document:', documentId);
+      } else {
+        console.warn('Failed to track view:', response.data?.message);
+      }
+    } catch (error: any) {
+      console.error('Error tracking view:', error);
+      // Don't throw error to avoid breaking the user experience
     }
   }
 }

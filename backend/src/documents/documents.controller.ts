@@ -175,6 +175,123 @@ export class DocumentsController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':documentId/download-url')
+  @CheckPolicy({ action: 'download', subject: 'Document' })
+  @ApiOperation({ summary: 'Get download URL for a document without tracking' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'URL tải xuống đã được tạo',
+  })
+  async getDownloadUrl(
+    @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+
+      this.logger.log(
+        `Getting download URL for document ${documentId} from user ${userId}`,
+      );
+
+      const downloadResult = await this.documentsService.getDownloadUrl(
+        documentId,
+        userId,
+      );
+
+      return ResponseHelper.success(
+        res,
+        downloadResult,
+        'URL tải xuống đã được tạo thành công',
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error getting download URL for document ${documentId}:`,
+        error,
+      );
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể tạo URL tải xuống',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':documentId/track-download')
+  @CheckPolicy({ action: 'download', subject: 'Document' })
+  @ApiOperation({ summary: 'Track download completion' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download đã được track thành công',
+  })
+  async trackDownload(
+    @Param('documentId') documentId: string,
+    @Body() downloadDto: DownloadDocumentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+
+      // Extract IP address from request
+      let ipAddress =
+        downloadDto.ipAddress ||
+        req.ip ||
+        req.connection?.remoteAddress ||
+        req.socket?.remoteAddress ||
+        'unknown';
+
+      // Clean up IPv6 mapped IPv4 addresses
+      if (ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+
+      const userAgent =
+        downloadDto.userAgent || req.get('User-Agent') || 'unknown';
+      const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
+
+      this.logger.log(
+        `Tracking download completion for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
+      );
+
+      await this.documentsService.trackDownload(
+        documentId,
+        userId,
+        ipAddress,
+        userAgent,
+        referrer,
+      );
+
+      return ResponseHelper.success(
+        res,
+        { success: true },
+        'Download đã được track thành công',
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error tracking download for document ${documentId}:`,
+        error,
+      );
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể track download',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
   @ApiResponse({

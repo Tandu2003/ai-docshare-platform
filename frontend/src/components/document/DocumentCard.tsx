@@ -12,7 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { triggerFileDownload } from '@/services/document.service';
+import {
+  trackDocumentView,
+  triggerFileDownload,
+} from '@/services/document.service';
 import { Document } from '@/services/files.service';
 
 import { Button } from '../ui/button';
@@ -39,7 +42,11 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
     }
   };
 
-  const onViewDetails = () => {
+  const onViewDetails = async () => {
+    // Track view before navigating
+    if (document.isPublic && document.isApproved) {
+      await trackDocumentView(document.id, window.location.href);
+    }
     navigate(`/documents/${document.id}`);
   };
 

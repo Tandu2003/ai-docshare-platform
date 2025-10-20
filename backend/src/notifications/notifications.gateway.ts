@@ -10,8 +10,30 @@ import { Server } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: (origin, callback) => {
+      // Allow all origins in development
+      if (process.env.NODE_ENV === 'development') {
+        callback(null, true);
+        return;
+      }
+
+      // In production, check against allowed origins
+      const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://localhost:3000',
+        'https://localhost:5173',
+      ];
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
   namespace: '/realtime',
 })
@@ -37,8 +59,8 @@ export class NotificationsGateway
           this.logger.log(`Socket ${socket.id} joined room user:${userId}`);
         }
       }
-    } catch (err) {
-      this.logger.warn(`Socket ${socket.id} auth failed`);
+    } catch (error) {
+      this.logger.warn(`Socket ${socket.id} auth failed:`, error);
     }
   }
 

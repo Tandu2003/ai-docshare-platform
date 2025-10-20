@@ -1986,4 +1986,221 @@ export class DocumentsService {
       throw new InternalServerErrorException('Không thể tạo tải xuống ZIP');
     }
   }
+
+  /**
+   * Get download URL for a document without tracking download
+   */
+  async getDownloadUrl(
+    documentId: string,
+    userId?: string,
+  ): Promise<{
+    downloadUrl: string;
+    fileName: string;
+    fileCount: number;
+  }> {
+    try {
+      this.logger.log(
+        `Getting download URL for document ${documentId} by user ${userId || 'guest'}`,
+      );
+
+      // Get document with files
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const isOwner = document.uploaderId === userId;
+
+      if (document.isPublic) {
+        if (!document.isApproved && !isOwner) {
+          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
+        }
+        if (
+          document.moderationStatus === DocumentModerationStatus.REJECTED &&
+          !isOwner
+        ) {
+          throw new BadRequestException('Tài liệu đã bị từ chối');
+        }
+      } else {
+        if (!userId) {
+          throw new BadRequestException(
+            'Cần xác thực để tải xuống tài liệu riêng tư',
+          );
+        }
+        if (!isOwner) {
+          throw new BadRequestException(
+            'Bạn không có quyền tải xuống tài liệu này',
+          );
+        }
+      }
+
+      if (!document.files || document.files.length === 0) {
+        throw new BadRequestException('Tài liệu không có tệp để tải xuống');
+      }
+
+      // If single file, return direct download URL
+      if (document.files.length === 1) {
+        const file = document.files[0].file;
+        this.logger.log(
+          `Preparing single file download URL: ${file.originalName}`,
+        );
+        const downloadUrl = await this.r2Service.getSignedDownloadUrl(
+          file.storageUrl,
+          300,
+        ); // 5 minutes
+
+        return {
+          downloadUrl,
+          fileName: file.originalName,
+          fileCount: 1,
+        };
+      }
+
+      // For multiple files, create or use cached ZIP
+      this.logger.log(
+        `Preparing ZIP download URL for ${document.files.length} files`,
+      );
+
+      // Check if ZIP file already exists and is still valid
+      if (document.zipFileUrl) {
+        this.logger.log(`Using cached ZIP file for document ${documentId}`);
+
+        // Generate new signed URL for the existing ZIP file
+        const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(
+          document.zipFileUrl,
+          1800,
+        );
+        const zipFileName = `${document.title || 'document'}.zip`;
+
+        return {
+          downloadUrl: zipDownloadUrl,
+          fileName: zipFileName,
+          fileCount: document.files.length,
+        };
+      }
+
+      // Create new ZIP file
+      const zipUrl = await this.createZipDownload(document.files, documentId);
+      const zipFileName = `${document.title || 'document'}.zip`;
+
+      return {
+        downloadUrl: zipUrl,
+        fileName: zipFileName,
+        fileCount: document.files.length,
+      };
+    } catch (error) {
+      this.logger.error('Error getting download URL:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Track download completion (without creating download URL)
+   */
+  async trackDownload(
+    documentId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    referrer?: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(
+        `Tracking download completion for document ${documentId} by user ${userId || 'guest'}`,
+      );
+
+      // Verify document exists and user has permission
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        select: {
+          id: true,
+          isPublic: true,
+          isApproved: true,
+          moderationStatus: true,
+          uploaderId: true,
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const isOwner = document.uploaderId === userId;
+
+      if (document.isPublic) {
+        if (!document.isApproved && !isOwner) {
+          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
+        }
+        if (
+          document.moderationStatus === DocumentModerationStatus.REJECTED &&
+          !isOwner
+        ) {
+          throw new BadRequestException('Tài liệu đã bị từ chối');
+        }
+      } else {
+        if (!userId) {
+          throw new BadRequestException(
+            'Cần xác thực để tải xuống tài liệu riêng tư',
+          );
+        }
+        if (!isOwner) {
+          throw new BadRequestException(
+            'Bạn không có quyền tải xuống tài liệu này',
+          );
+        }
+      }
+
+      // Create download record and increment counter in a transaction
+      await this.prisma.$transaction(async prisma => {
+        // Log download only if user is authenticated
+        if (userId) {
+          await prisma.download.create({
+            data: {
+              userId,
+              documentId,
+              ipAddress,
+              userAgent,
+              referrer,
+            },
+          });
+        }
+
+        // Increment download count regardless of authentication
+        await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            downloadCount: {
+              increment: 1,
+            },
+          },
+        });
+      });
+
+      // Emit realtime download event to uploader
+      this.notifications.emitToUploaderOfDocument(document.uploaderId, {
+        type: 'download',
+        documentId,
+        userId,
+        count: 1,
+      });
+
+      this.logger.log(
+        `Successfully tracked download for document ${documentId}`,
+      );
+    } catch (error) {
+      this.logger.error('Error tracking download:', error);
+      throw error;
+    }
+  }
 }

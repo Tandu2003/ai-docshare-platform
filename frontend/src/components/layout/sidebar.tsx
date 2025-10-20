@@ -114,7 +114,7 @@ export function Sidebar({ className }: SidebarProps) {
           limit: 1,
           onlyUnread: true,
         });
-        const total = res?.meta?.total ?? 0;
+        const total = (res as { meta?: { total: number } })?.meta?.total ?? 0;
         setUnreadCount(total);
       } catch (err) {
         // ignore
@@ -188,11 +188,6 @@ export function Sidebar({ className }: SidebarProps) {
 
   const analyticsNavItems: NavItem[] = [
     {
-      title: 'Phân tích',
-      href: '/analytics',
-      icon: BarChart3,
-    },
-    {
       title: 'Xu hướng',
       href: '/trending',
       icon: TrendingUp,
@@ -205,6 +200,11 @@ export function Sidebar({ className }: SidebarProps) {
   ];
 
   const adminNavItems: NavItem[] = [
+    {
+      title: 'Phân tích số liệu',
+      href: '/analytics',
+      icon: BarChart3,
+    },
     {
       title: 'Kiểm duyệt tài liệu',
       href: '/moderation',

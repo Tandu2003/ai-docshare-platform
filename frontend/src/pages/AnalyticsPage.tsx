@@ -24,6 +24,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   getAnalytics,
   getDailyActivity,
   getTopReport,
@@ -146,6 +154,17 @@ export default function AnalyticsPage() {
       viewsGrowth: calculateGrowth(latest?.views, previous?.views),
     };
   }, [data.monthlyStats]);
+
+  // Lọc bỏ những ngày có tất cả 3 cột đều bằng 0
+  const filteredDailyData = useMemo(() => {
+    if (!dailyData || dailyData.days.length === 0) {
+      return [];
+    }
+
+    return dailyData.days.filter(
+      day => day.uploads > 0 || day.downloads > 0 || day.views > 0,
+    );
+  }, [dailyData]);
 
   const ratingValue = Number.isFinite(data.averageRating)
     ? data.averageRating
@@ -556,37 +575,37 @@ export default function AnalyticsPage() {
           <CardTitle>Hoạt động theo ngày</CardTitle>
         </CardHeader>
         <CardContent>
-          {!dailyData || dailyData.days.length === 0 ? (
+          {filteredDailyData.length === 0 ? (
             <p className="text-muted-foreground text-sm">
               Chưa có dữ liệu hoạt động theo ngày.
             </p>
           ) : (
-            <div className="space-y-3">
-              {dailyData.days.map(day => (
-                <div
-                  key={day.date}
-                  className="flex items-center justify-between"
-                >
-                  <div className="w-24 text-sm font-medium">{day.date}</div>
-                  <div className="grid flex-1 grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <p className="text-muted-foreground text-xs">Tải lên</p>
-                      <p className="font-medium">{formatNumber(day.uploads)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground text-xs">Tải xuống</p>
-                      <p className="font-medium">
-                        {formatNumber(day.downloads)}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground text-xs">Lượt xem</p>
-                      <p className="font-medium">{formatNumber(day.views)}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-32">Ngày</TableHead>
+                  <TableHead className="text-center">Tải lên</TableHead>
+                  <TableHead className="text-center">Tải xuống</TableHead>
+                  <TableHead className="text-center">Lượt xem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDailyData.map(day => (
+                  <TableRow key={day.date}>
+                    <TableCell className="font-medium">{day.date}</TableCell>
+                    <TableCell className="text-center">
+                      {formatNumber(day.uploads)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {formatNumber(day.downloads)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {formatNumber(day.views)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

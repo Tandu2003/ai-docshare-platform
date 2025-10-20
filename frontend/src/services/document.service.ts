@@ -267,7 +267,78 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
 };
 
 /**
- * Download entire document (all files as ZIP if multiple)
+ * Get download URL for a document without tracking download
+ */
+export const getDownloadUrl = async (
+  documentId: string,
+): Promise<{
+  downloadUrl: string;
+  fileName: string;
+  fileCount: number;
+}> => {
+  try {
+    console.log('Getting download URL for document:', documentId);
+
+    const response = await apiClient.post<{
+      downloadUrl: string;
+      fileName: string;
+      fileCount: number;
+    }>(`/documents/${documentId}/download-url`);
+
+    console.log('Download URL response:', response);
+
+    if (response?.success && response?.data) {
+      console.log('Download URL extracted:', response.data);
+      return {
+        downloadUrl: response.data.downloadUrl,
+        fileName: response.data.fileName,
+        fileCount: response.data.fileCount,
+      };
+    } else {
+      console.error('Invalid response format:', response.data);
+      throw new Error(response.message || 'Không thể lấy URL tải xuống');
+    }
+  } catch (error: any) {
+    console.error('API call failed:', error);
+    console.error('Error response:', error.response?.data);
+    throw new Error(
+      error.response?.data?.message || 'Không thể lấy URL tải xuống.',
+    );
+  }
+};
+
+/**
+ * Track download completion
+ */
+export const trackDownloadCompletion = async (
+  documentId: string,
+): Promise<void> => {
+  try {
+    console.log('Tracking download completion for document:', documentId);
+
+    const response = await apiClient.post<{ success: boolean }>(
+      `/documents/${documentId}/track-download`,
+      {
+        ipAddress: '', // Will be extracted from request
+        userAgent: navigator.userAgent,
+        referrer: window.location.href,
+      },
+    );
+
+    if (response?.success) {
+      console.log('Download completion tracked successfully');
+    } else {
+      console.warn('Failed to track download completion:', response.message);
+    }
+  } catch (error: any) {
+    console.error('Failed to track download completion:', error);
+    // Don't throw error to avoid breaking the download flow
+  }
+};
+
+/**
+ * Download entire document (all files as ZIP if multiple) - Legacy method
+ * @deprecated Use getDownloadUrl + trackDownloadCompletion instead
  */
 export const downloadDocument = async (
   documentId: string,
@@ -280,13 +351,9 @@ export const downloadDocument = async (
     console.log('Calling download API for document:', documentId);
 
     const response = await apiClient.post<{
-      success: boolean;
-      data: {
-        downloadUrl: string;
-        fileName: string;
-        fileCount: number;
-      };
-      message?: string;
+      downloadUrl: string;
+      fileName: string;
+      fileCount: number;
     }>(`/documents/${documentId}/download`, {
       ipAddress: '', // Will be extracted from request
       userAgent: navigator.userAgent,
@@ -299,14 +366,14 @@ export const downloadDocument = async (
     if (response?.success && response?.data) {
       console.log('Download data extracted:', response.data);
       return {
-        downloadUrl: response.data.data.downloadUrl,
-        fileName: response.data.data.fileName,
-        fileCount: response.data.data.fileCount,
+        downloadUrl: response.data.downloadUrl,
+        fileName: response.data.fileName,
+        fileCount: response.data.fileCount,
       };
     } else {
       console.error('Invalid response format:', response.data);
       throw new Error(
-        response.data?.message || 'Không thể chuẩn bị tải xuống tài liệu',
+        response.message || 'Không thể chuẩn bị tải xuống tài liệu',
       );
     }
   } catch (error: any) {
@@ -367,7 +434,36 @@ export const revokeDocumentShareLink = async (
 };
 
 /**
- * Trigger actual file download in browser
+ * Track document view
+ */
+export const trackDocumentView = async (
+  documentId: string,
+  referrer?: string,
+): Promise<void> => {
+  try {
+    console.log('Tracking view for document:', documentId);
+
+    const response = await apiClient.post<{
+      success: boolean;
+      data: any;
+      message?: string;
+    }>(`/documents/${documentId}/view`, {
+      referrer: referrer || window.location.href,
+    });
+
+    if (response?.success) {
+      console.log('View tracked successfully for document:', documentId);
+    } else {
+      console.warn('Failed to track view:', response.data?.message);
+    }
+  } catch (error: any) {
+    console.error('Error tracking view:', error);
+    // Don't throw error to avoid breaking the user experience
+  }
+};
+
+/**
+ * Trigger actual file download in browser with proper tracking
  */
 export const triggerFileDownload = async (
   documentId: string,
@@ -376,8 +472,8 @@ export const triggerFileDownload = async (
   try {
     console.log('Starting download for document:', documentId);
 
-    // Get download URL
-    const downloadData = await downloadDocument(documentId);
+    // Step 1: Get download URL without tracking
+    const downloadData = await getDownloadUrl(documentId);
     console.log('Download data received:', downloadData);
 
     const fileName =
@@ -426,6 +522,10 @@ export const triggerFileDownload = async (
         throw new Error('Tệp tải xuống trống');
       }
 
+      // Step 2: Track download completion since we successfully got the file
+      console.log('File downloaded successfully, tracking completion...');
+      await trackDownloadCompletion(documentId);
+
       // Create blob URL and download
       const blobUrl = window.URL.createObjectURL(blob);
       console.log('Blob URL created:', blobUrl);
@@ -458,6 +558,9 @@ export const triggerFileDownload = async (
         const newWindow = window.open(downloadData.downloadUrl, '_blank');
         if (newWindow) {
           console.log('Successfully opened download in new window');
+
+          // Track download completion for direct download
+          await trackDownloadCompletion(documentId);
           return;
         } else {
           console.log('Window.open was blocked, trying direct link');
@@ -483,6 +586,9 @@ export const triggerFileDownload = async (
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Track download completion for direct link click
+      await trackDownloadCompletion(documentId);
 
       console.log(`Attempted direct download of ${fileName}`);
     }

@@ -127,7 +127,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  const handleDocumentClick = (documentId: string) => {
+  const handleDocumentClick = async (documentId: string) => {
+    // Track view before navigating
+    const document = documents.find(doc => doc.id === documentId);
+    if (document?.isPublic && document?.isApproved) {
+      await DocumentsService.trackDocumentView(
+        documentId,
+        window.location.href,
+      );
+    }
     navigate(`/documents/${documentId}`);
   };
 
