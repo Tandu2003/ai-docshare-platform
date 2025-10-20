@@ -25,6 +25,7 @@ export class UsersService {
       role,
       isActive,
       isVerified,
+      isDeleted,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = query;
@@ -33,6 +34,13 @@ export class UsersService {
 
     // Xây dựng điều kiện where
     const where: any = {};
+
+    // Mặc định chỉ lấy user chưa bị xóa nếu không có filter isDeleted
+    if (typeof isDeleted === 'undefined') {
+      where.isDeleted = false;
+    } else if (typeof isDeleted === 'boolean') {
+      where.isDeleted = isDeleted;
+    }
 
     if (search) {
       where.OR = [
@@ -111,7 +119,10 @@ export class UsersService {
 
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: {
+        id,
+        isDeleted: false, // Chỉ lấy user chưa bị xóa
+      },
       include: {
         role: {
           select: {
@@ -145,7 +156,7 @@ export class UsersService {
   }
 
   async createUser(createUserDto: CreateUserDto) {
-    // Kiểm tra email và username đã tồn tại
+    // Kiểm tra email và username đã tồn tại (bao gồm cả user đã bị xóa)
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -155,8 +166,35 @@ export class UsersService {
       },
     });
 
-    if (existingUser) {
+    if (existingUser && !existingUser.isDeleted) {
       throw new BadRequestException('Email hoặc tên đăng nhập đã tồn tại');
+    }
+
+    // Nếu user đã bị xóa, khôi phục thay vì tạo mới
+    if (existingUser && existingUser.isDeleted) {
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+      const restoredUser = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          ...createUserDto,
+          password: hashedPassword,
+          isDeleted: false,
+        },
+        include: {
+          role: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+      });
+
+      const { password, ...userWithoutPassword } = restoredUser;
+      void password;
+      return userWithoutPassword;
     }
 
     // Kiểm tra role tồn tại
@@ -354,6 +392,27 @@ export class UsersService {
     //   throw new BadRequestException('Bạn không thể xóa chính mình');
     // }
 
+    // Kiểm tra user tồn tại và chưa bị xóa
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    if (user.isDeleted) {
+      throw new BadRequestException('Người dùng đã bị xóa');
+    }
+
+    // Soft delete: chỉ đánh dấu isDeleted = true
+    await this.prisma.user.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
+  }
+
+  async unDeleteUser(id: string) {
     // Kiểm tra user tồn tại
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -363,9 +422,14 @@ export class UsersService {
       throw new NotFoundException('Không tìm thấy người dùng');
     }
 
-    // Xóa user (cascade sẽ xóa các bản ghi liên quan)
-    await this.prisma.user.delete({
+    if (!user.isDeleted) {
+      throw new BadRequestException('Người dùng chưa bị xóa');
+    }
+
+    // UnDelete: đánh dấu isDeleted = false
+    await this.prisma.user.update({
       where: { id },
+      data: { isDeleted: false },
     });
   }
 

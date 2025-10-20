@@ -150,6 +150,20 @@ export class UsersController {
     ResponseHelper.success(response, null, 'Xóa người dùng thành công');
   }
 
+  @Patch(':id/undelete')
+  @AdminOnly()
+  @CheckPolicy({ action: 'update', subject: 'User' })
+  @HttpCode(HttpStatus.OK)
+  async unDeleteUser(
+    @Param('id') id: string,
+    @Req() request: Request & { user: AuthUser },
+    @Res() response: Response,
+  ): Promise<void> {
+    await this.usersService.unDeleteUser(id);
+
+    ResponseHelper.success(response, null, 'Khôi phục người dùng thành công');
+  }
+
   @Get(':id/activity')
   @AdminOnly()
   @CheckPolicy({ action: 'read', subject: 'User' })

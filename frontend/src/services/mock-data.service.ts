@@ -78,6 +78,11 @@ export const generateMockDocument = (
   isPremium: faker.datatype.boolean(),
   isApproved: faker.datatype.boolean(),
   isDraft: faker.datatype.boolean(),
+  moderationStatus: faker.helpers.arrayElement([
+    'PENDING',
+    'APPROVED',
+    'REJECTED',
+  ]),
   tags: faker.helpers.arrayElements(
     [
       'javascript',

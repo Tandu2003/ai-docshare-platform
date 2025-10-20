@@ -41,6 +41,7 @@ model User {
   roleId       String
   isVerified   Boolean   @default(false)
   isActive     Boolean   @default(true)
+  isDeleted    Boolean   @default(false)
   lastLoginAt  DateTime?
   resetToken   String?
   resetExpires DateTime?
@@ -70,6 +71,7 @@ model User {
   @@index([username])
   @@index([roleId])
   @@index([isActive])
+  @@index([isDeleted])
   @@map("users")
 }
 

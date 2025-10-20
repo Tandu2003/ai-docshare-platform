@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Plus, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Trash2, UserCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
-import {
-  UserFilters,
-  UserForm,
-  UserTable,
-} from '@/components/admin/user-management';
+import { UserForm, UserTable } from '@/components/admin/user-management';
 import { LoadingSpinner } from '@/components/common';
 import { UnauthorizedMessage } from '@/components/common/unauthorized-message';
 import {
@@ -23,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks';
+import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   userService,
@@ -35,10 +31,8 @@ import {
 } from '@/services/user.service';
 
 export default function AdminUsersPage() {
-  const { user: currentUser } = useAuth();
-  const { canRead, canCreate, canUpdate, canDelete } = usePermissions();
+  const { canRead, canCreate } = usePermissions();
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -53,13 +47,9 @@ export default function AdminUsersPage() {
     hasPrev: false,
   });
 
-  const [filters, setFilters] = useState<GetUsersQuery>({
-    page: 1,
-    limit: 10,
-    search: '',
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'active' | 'deleted'>('active');
 
   // Kiểm tra quyền truy cập
   if (!canRead('User')) {
@@ -81,7 +71,15 @@ export default function AdminUsersPage() {
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await userService.getUsers(filters);
+      const queryFilters: GetUsersQuery = {
+        page,
+        limit: 10,
+        search: search || undefined,
+        isDeleted: viewMode === 'deleted',
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      };
+      const response = await userService.getUsers(queryFilters);
       setUsers(response.users);
       setPagination(response.pagination);
     } catch (error) {
@@ -90,7 +88,7 @@ export default function AdminUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [search, page, viewMode]);
 
   // Load roles from API
   const loadRoles = useCallback(async () => {
@@ -111,27 +109,10 @@ export default function AdminUsersPage() {
     loadRoles();
   }, [loadRoles]);
 
-  // Handle filters change
-  const handleFiltersChange = (newFilters: GetUsersQuery) => {
-    setFilters(newFilters);
-  };
-
-  // Handle select user
-  const handleSelectUser = (userId: string, selected: boolean) => {
-    if (selected) {
-      setSelectedUsers([...selectedUsers, userId]);
-    } else {
-      setSelectedUsers(selectedUsers.filter(id => id !== userId));
-    }
-  };
-
-  // Handle select all
-  const handleSelectAll = (selected: boolean) => {
-    if (selected) {
-      setSelectedUsers(users.map(user => user.id));
-    } else {
-      setSelectedUsers([]);
-    }
+  // Handle search change
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
   };
 
   // Handle create user
@@ -194,30 +175,27 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
-    if (selectedUsers.length === 0) return;
-
+  // Handle unDelete user
+  const handleUnDeleteUser = async (user: User) => {
     try {
-      await Promise.all(selectedUsers.map(id => userService.deleteUser(id)));
-      toast.success(`Đã xóa ${selectedUsers.length} người dùng`);
-      setSelectedUsers([]);
+      await userService.unDeleteUser(user.id);
+      toast.success('Khôi phục người dùng thành công');
       await loadUsers();
     } catch (error) {
-      console.error('Failed to delete users:', error);
-      toast.error('Không thể xóa người dùng');
+      console.error('Failed to undelete user:', error);
+      toast.error('Không thể khôi phục người dùng');
     }
   };
 
-  // Reset filters
-  const handleResetFilters = () => {
-    setFilters({
-      page: 1,
-      limit: 10,
-      search: '',
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
+  // Handle view mode change
+  const handleViewModeChange = (mode: 'active' | 'deleted') => {
+    setViewMode(mode);
+    setPage(1); // Reset to first page when switching view
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   return (
@@ -234,22 +212,33 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {selectedUsers.length > 0 && canDelete('User') && (
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={isLoading}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Xóa ({selectedUsers.length})
-            </Button>
-          )}
-          {canCreate('User') && (
+          {canCreate('User') && viewMode === 'active' && (
             <Button onClick={handleCreateUser} disabled={isLoading}>
               <Plus className="mr-2 h-4 w-4" />
               Thêm người dùng
             </Button>
           )}
+          {/* View Mode Toggle */}
+          <div className="flex items-center rounded-lg border p-1">
+            <Button
+              variant={viewMode === 'active' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleViewModeChange('active')}
+              disabled={isLoading}
+            >
+              <UserCheck className="mr-2 h-4 w-4" />
+              Hoạt động
+            </Button>
+            <Button
+              variant={viewMode === 'deleted' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleViewModeChange('deleted')}
+              disabled={isLoading}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Đã xóa
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -333,17 +322,23 @@ export default function AdminUsersPage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <Card>
         <CardHeader>
-          <CardTitle>Bộ lọc và tìm kiếm</CardTitle>
+          <CardTitle>Tìm kiếm</CardTitle>
         </CardHeader>
         <CardContent>
-          <UserFilters
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onReset={handleResetFilters}
-          />
+          <div className="flex items-center gap-4">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                placeholder="Tìm kiếm người dùng..."
+                value={search}
+                onChange={e => handleSearchChange(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -351,21 +346,12 @@ export default function AdminUsersPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Danh sách người dùng ({pagination.total})</CardTitle>
-            {selectedUsers.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-sm">
-                  Đã chọn {selectedUsers.length} người dùng
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedUsers([])}
-                >
-                  Bỏ chọn
-                </Button>
-              </div>
-            )}
+            <CardTitle>
+              {viewMode === 'active'
+                ? 'Người dùng hoạt động'
+                : 'Người dùng đã xóa'}{' '}
+              ({pagination.total})
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -376,11 +362,9 @@ export default function AdminUsersPage() {
           ) : (
             <UserTable
               users={users}
-              selectedUsers={selectedUsers}
-              onSelectUser={handleSelectUser}
-              onSelectAll={handleSelectAll}
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
+              onUnDeleteUser={handleUnDeleteUser}
               isLoading={isLoading}
             />
           )}
@@ -399,9 +383,7 @@ export default function AdminUsersPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                setFilters({ ...filters, page: pagination.page - 1 })
-              }
+              onClick={() => handlePageChange(pagination.page - 1)}
               disabled={!pagination.hasPrev}
             >
               Trước
@@ -412,9 +394,7 @@ export default function AdminUsersPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                setFilters({ ...filters, page: pagination.page + 1 })
-              }
+              onClick={() => handlePageChange(pagination.page + 1)}
               disabled={!pagination.hasNext}
             >
               Sau

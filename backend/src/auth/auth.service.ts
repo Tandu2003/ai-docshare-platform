@@ -168,7 +168,10 @@ export class AuthService {
    */
   async validateUser(payload: JwtPayload): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
+      where: {
+        id: payload.sub,
+        isDeleted: false, // Chỉ lấy user chưa bị xóa
+      },
       include: {
         role: {
           select: {
@@ -236,6 +239,7 @@ export class AuthService {
     return this.prisma.user.findFirst({
       where: {
         OR: [{ email: emailOrUsername }, { username: emailOrUsername }],
+        isDeleted: false, // Chỉ tìm user chưa bị xóa
       },
       include: {
         role: {
@@ -250,6 +254,10 @@ export class AuthService {
   }
 
   private validateUserStatus(user: any): void {
+    if (user.isDeleted) {
+      throw new UnauthorizedException('Tài khoản đã bị xóa');
+    }
+
     if (!user.isActive) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }

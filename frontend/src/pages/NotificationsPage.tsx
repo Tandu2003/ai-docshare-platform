@@ -54,7 +54,7 @@ export default function NotificationsPage() {
       setLoading(true);
       try {
         const res = await getMyNotifications({ page: 1, limit: 50 });
-        setNotifications(res.data || []);
+        setNotifications((res as any).data || []);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       } finally {

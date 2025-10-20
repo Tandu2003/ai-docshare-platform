@@ -1,12 +1,11 @@
 import { useState } from 'react';
 
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
 
 import { PermissionGate } from '@/components/common/permission-gate';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,26 +27,20 @@ import { formatDate } from '@/utils/date';
 
 interface UserTableProps {
   users: User[];
-  selectedUsers: string[];
-  onSelectUser: (userId: string, selected: boolean) => void;
-  onSelectAll: (selected: boolean) => void;
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
+  onUnDeleteUser: (user: User) => void;
   isLoading?: boolean;
 }
 
 export function UserTable({
   users,
-  selectedUsers,
-  onSelectUser,
-  onSelectAll,
   onEditUser,
   onDeleteUser,
+  onUnDeleteUser,
   isLoading = false,
 }: UserTableProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-
-  const allSelected = users.length > 0 && selectedUsers.length === users.length;
 
   const getRoleBadgeVariant = (roleName: string) => {
     switch (roleName) {
@@ -58,13 +51,23 @@ export function UserTable({
     }
   };
 
-  const getStatusBadgeVariant = (isActive: boolean, isVerified: boolean) => {
+  const getStatusBadgeVariant = (
+    isActive: boolean,
+    isVerified: boolean,
+    isDeleted: boolean,
+  ) => {
+    if (isDeleted) return 'destructive';
     if (!isActive) return 'destructive';
     if (!isVerified) return 'secondary';
     return 'default';
   };
 
-  const getStatusText = (isActive: boolean, isVerified: boolean) => {
+  const getStatusText = (
+    isActive: boolean,
+    isVerified: boolean,
+    isDeleted: boolean,
+  ) => {
+    if (isDeleted) return 'Đã xóa';
     if (!isActive) return 'Không hoạt động';
     if (!isVerified) return 'Chưa xác thực';
     return 'Hoạt động';
@@ -79,13 +82,6 @@ export function UserTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={onSelectAll}
-                aria-label="Chọn tất cả"
-              />
-            </TableHead>
             <TableHead>Người dùng</TableHead>
             <TableHead>Vai trò</TableHead>
             <TableHead>Trạng thái</TableHead>
@@ -105,15 +101,6 @@ export function UserTable({
               onMouseEnter={() => setHoveredRow(user.id)}
               onMouseLeave={() => setHoveredRow(null)}
             >
-              <TableCell>
-                <Checkbox
-                  checked={selectedUsers.includes(user.id)}
-                  onCheckedChange={checked =>
-                    onSelectUser(user.id, checked as boolean)
-                  }
-                  aria-label={`Chọn ${user.firstName} ${user.lastName}`}
-                />
-              </TableCell>
               <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
@@ -151,9 +138,14 @@ export function UserTable({
                   variant={getStatusBadgeVariant(
                     user.isActive,
                     user.isVerified,
+                    user.isDeleted,
                   )}
                 >
-                  {getStatusText(user.isActive, user.isVerified)}
+                  {getStatusText(
+                    user.isActive,
+                    user.isVerified,
+                    user.isDeleted,
+                  )}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -192,13 +184,23 @@ export function UserTable({
                     </PermissionGate>
                     <PermissionGate action="delete" subject="User">
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => onDeleteUser(user)}
-                        className="text-red-600 focus:text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Xóa
-                      </DropdownMenuItem>
+                      {user.isDeleted ? (
+                        <DropdownMenuItem
+                          onClick={() => onUnDeleteUser(user)}
+                          className="text-green-600 focus:text-green-600"
+                        >
+                          <Undo2 className="mr-2 h-4 w-4" />
+                          Khôi phục
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => onDeleteUser(user)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Xóa
+                        </DropdownMenuItem>
+                      )}
                     </PermissionGate>
                   </DropdownMenuContent>
                 </DropdownMenu>

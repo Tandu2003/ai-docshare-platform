@@ -11,6 +11,7 @@ export interface User {
   roleId: string;
   isVerified: boolean;
   isActive: boolean;
+  isDeleted: boolean;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -66,6 +67,7 @@ export interface GetUsersQuery {
   role?: string;
   isActive?: boolean;
   isVerified?: boolean;
+  isDeleted?: boolean;
   sortBy?:
     | 'createdAt'
     | 'updatedAt'
@@ -143,33 +145,35 @@ class UserService {
       params.append('isActive', query.isActive.toString());
     if (typeof query.isVerified === 'boolean')
       params.append('isVerified', query.isVerified.toString());
+    if (typeof query.isDeleted === 'boolean')
+      params.append('isDeleted', query.isDeleted.toString());
     if (query.sortBy) params.append('sortBy', query.sortBy);
     if (query.sortOrder) params.append('sortOrder', query.sortOrder);
 
     const response = await apiClient.get(
       `${this.baseUrl}?${params.toString()}`,
     );
-    return response.data;
+    return response.data as any;
   }
 
   async getUserById(id: string): Promise<User> {
     const response = await apiClient.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    return response.data as any;
   }
 
   async createUser(data: CreateUserRequest): Promise<User> {
     const response = await apiClient.post(this.baseUrl, data);
-    return response.data;
+    return response.data as any;
   }
 
   async updateUser(id: string, data: UpdateUserRequest): Promise<User> {
     const response = await apiClient.patch(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    return response.data as any;
   }
 
   async updateUserRole(id: string, data: UpdateUserRoleRequest): Promise<User> {
     const response = await apiClient.patch(`${this.baseUrl}/${id}/role`, data);
-    return response.data;
+    return response.data as any;
   }
 
   async updateUserStatus(
@@ -180,11 +184,15 @@ class UserService {
       `${this.baseUrl}/${id}/status`,
       data,
     );
-    return response.data;
+    return response.data as any;
   }
 
   async deleteUser(id: string): Promise<void> {
     await apiClient.delete(`${this.baseUrl}/${id}`);
+  }
+
+  async unDeleteUser(id: string): Promise<void> {
+    await apiClient.patch(`${this.baseUrl}/${id}/undelete`);
   }
 
   async getUserActivity(
@@ -195,17 +203,17 @@ class UserService {
     const response = await apiClient.get(`${this.baseUrl}/${id}/activity`, {
       params: { page, limit },
     });
-    return response.data;
+    return response.data as any;
   }
 
   async getUserStatistics(id: string): Promise<UserStatistics> {
     const response = await apiClient.get(`${this.baseUrl}/${id}/statistics`);
-    return response.data;
+    return response.data as any;
   }
 
   async getRoles(): Promise<Role[]> {
     const response = await apiClient.get(`${this.baseUrl}/roles/list`);
-    return response.data;
+    return response.data as any;
   }
 }
 

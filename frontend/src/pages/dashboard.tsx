@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 
-import { AdminOnly, PermissionGate } from '@/components/common/permission-gate';
+import { AdminOnly } from '@/components/common/permission-gate';
 import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
 import { PopularCategories } from '@/components/dashboard/popular-categories';
 import { RecentDocuments } from '@/components/dashboard/recent-documents';
-import { DashboardStatsCards } from '@/components/dashboard/stats-cards';
 import { UserDashboard } from '@/components/dashboard/user-dashboard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingPage } from '@/components/ui/loading-skeleton';
-import { useAuth } from '@/hooks';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   getDashboardOverview,
@@ -20,7 +18,6 @@ import {
 import type { DashboardOverview } from '@/types';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

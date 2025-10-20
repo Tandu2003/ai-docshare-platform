@@ -85,6 +85,15 @@ export class GetUsersQueryDto {
   isVerified?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Lọc theo trạng thái xóa',
+    example: 'false',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean({ message: 'Trạng thái xóa phải là boolean' })
+  isDeleted?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Sắp xếp theo trường',
     enum: UserSortBy,
     example: UserSortBy.CREATED_AT,
