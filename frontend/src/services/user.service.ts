@@ -161,6 +161,30 @@ class UserService {
     return response.data as any;
   }
 
+  async getCurrentUserActivity(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<UserActivityResponse> {
+    // Get user activity from analytics endpoint since users/:id/activity is admin only
+    const response = await apiClient.get('/analytics/user-dashboard');
+    const dashboardData = response.data as any;
+
+    // Extract user activity from dashboard data
+    const activities = dashboardData.userActivity || [];
+
+    return {
+      activities: activities.slice((page - 1) * limit, page * limit),
+      pagination: {
+        page,
+        limit,
+        total: activities.length,
+        totalPages: Math.ceil(activities.length / limit),
+        hasNext: page * limit < activities.length,
+        hasPrev: page > 1,
+      },
+    };
+  }
+
   async createUser(data: CreateUserRequest): Promise<User> {
     const response = await apiClient.post(this.baseUrl, data);
     return response.data as any;

@@ -8,10 +8,12 @@ import {
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
+  Param,
   Post,
-  Query,
+  Put,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -32,39 +34,12 @@ export class SystemSettingsController {
 
   @Get()
   @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
-  @ApiOperation({ summary: 'Get system settings by category' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'System settings retrieved successfully',
-  })
-  async getSettings(@Query('category') category: string, @Res() res: Response) {
-    try {
-      const settings = await this.settingsService.getSettingsByCategory(
-        category || 'general',
-      );
-
-      return ResponseHelper.success(
-        res,
-        { settings, category: category || 'general' },
-        'Settings retrieved successfully',
-      );
-    } catch {
-      return ResponseHelper.error(
-        res,
-        'Failed to retrieve settings',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Get('ai-moderation')
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
   @ApiOperation({ summary: 'Get AI moderation settings' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'AI moderation settings retrieved successfully',
   })
-  async getAIModerationSettings(@Res() res: Response) {
+  async getSettings(@Res() res: Response) {
     try {
       const settings = await this.settingsService.getAIModerationSettings();
 
@@ -105,6 +80,109 @@ export class SystemSettingsController {
       return ResponseHelper.error(
         res,
         'Failed to update setting',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('all')
+  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Get all system settings' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'All system settings retrieved successfully',
+  })
+  async getAllSettings(@Res() res: Response) {
+    try {
+      const settings = await this.settingsService.getAllSettings();
+
+      return ResponseHelper.success(
+        res,
+        { settings },
+        'All settings retrieved successfully',
+      );
+    } catch {
+      return ResponseHelper.error(
+        res,
+        'Failed to retrieve all settings',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('categories')
+  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Get system settings categories' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Settings categories retrieved successfully',
+  })
+  async getCategories(@Res() res: Response) {
+    try {
+      const categories = await this.settingsService.getSettingsCategories();
+
+      return ResponseHelper.success(
+        res,
+        { categories },
+        'Categories retrieved successfully',
+      );
+    } catch {
+      return ResponseHelper.error(
+        res,
+        'Failed to retrieve categories',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put()
+  @CheckPolicy({ action: 'update', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Bulk update system settings' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Settings updated successfully',
+  })
+  async updateSettings(
+    @Body() settings: SystemSettingValue[],
+    @Res() res: Response,
+  ) {
+    try {
+      await this.settingsService.updateSettings(settings);
+
+      return ResponseHelper.success(
+        res,
+        { updatedCount: settings.length },
+        'Settings updated successfully',
+      );
+    } catch {
+      return ResponseHelper.error(
+        res,
+        'Failed to update settings',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete(':key')
+  @CheckPolicy({ action: 'delete', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Delete system setting' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Setting deleted successfully',
+  })
+  async deleteSetting(@Param('key') key: string, @Res() res: Response) {
+    try {
+      await this.settingsService.deleteSetting(key);
+
+      return ResponseHelper.success(
+        res,
+        { key },
+        'Setting deleted successfully',
+      );
+    } catch {
+      return ResponseHelper.error(
+        res,
+        'Failed to delete setting',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

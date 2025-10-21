@@ -528,7 +528,7 @@ model File {
   fileName     String // Stored filename (unique)
   mimeType     String // MIME type of the file
   fileSize     BigInt // File size in bytes
-  fileHash     String   @unique // SHA-256 hash for duplicate detection
+  fileHash     String // SHA-256 hash for duplicate detection
   storageUrl   String // Cloudflare R2 URL
   thumbnailUrl String? // Thumbnail URL if applicable
   uploaderId   String // User who uploaded the file

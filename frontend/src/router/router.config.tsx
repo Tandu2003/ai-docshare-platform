@@ -23,6 +23,7 @@ import MyDocumentsPage from '@/pages/MyDocumentsPage';
 import NotificationsPage from '@/pages/NotificationsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
+import SystemSettingsPage from '@/pages/SystemSettingsPage';
 import TopRatedPage from '@/pages/TopRatedPage';
 import TrendingPage from '@/pages/TrendingPage';
 import { UploadPage } from '@/pages/UploadPage';
@@ -207,11 +208,7 @@ export const router = createBrowserRouter([
           <ProtectedRoute
             requiredPermissions={[{ action: 'read', subject: 'SystemSetting' }]}
           >
-            <div className="flex h-64 items-center justify-center">
-              <p className="text-muted-foreground text-lg">
-                System Settings - Coming Soon
-              </p>
-            </div>
+            <SystemSettingsPage />
           </ProtectedRoute>
         ),
       },

@@ -9,6 +9,7 @@ import { BookmarksModule } from '@/bookmarks/bookmarks.module';
 import { CategoriesModule } from '@/categories/categories.module';
 import { DatabaseInitService, GlobalExceptionFilter } from '@/common';
 import { CaslGuard, CaslModule } from '@/common/casl';
+import { SystemSettingsService } from '@/common/system-settings.service';
 import { ConfigModule } from '@/config/config.module';
 import { DocumentsModule } from '@/documents/documents.module';
 import { FilesModule } from '@/files/files.module';
@@ -57,6 +58,8 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
     },
     // Database initialization service
     DatabaseInitService,
+    // System settings service
+    SystemSettingsService,
   ],
 })
 export class AppModule {}

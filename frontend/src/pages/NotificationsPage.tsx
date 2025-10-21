@@ -54,7 +54,33 @@ export default function NotificationsPage() {
       setLoading(true);
       try {
         const res = await getMyNotifications({ page: 1, limit: 50 });
-        setNotifications((res as any).data || []);
+        console.log('📊 Fetched notifications:', res);
+        console.log('📊 Response structure:', {
+          hasData: 'data' in res,
+          hasSuccess: 'success' in res,
+          dataType: typeof res.data,
+          dataLength: Array.isArray(res.data) ? res.data.length : 'not array',
+          fullResponse: res,
+        });
+
+        // Handle API response structure: {success: true, data: [...], meta: {...}}
+        let notificationsData = [];
+        if (res && res.data && Array.isArray(res.data)) {
+          notificationsData = res.data;
+        } else if (Array.isArray(res)) {
+          notificationsData = res;
+        }
+
+        console.log('📊 Final notifications data:', notificationsData);
+        console.log('📊 First notification structure:', notificationsData[0]);
+        if (notificationsData[0]) {
+          console.log(
+            '📊 First notification createdAt:',
+            notificationsData[0].createdAt,
+            typeof notificationsData[0].createdAt,
+          );
+        }
+        setNotifications(notificationsData);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       } finally {
@@ -143,6 +169,17 @@ export default function NotificationsPage() {
     const matchesType =
       typeFilter === 'all' || notification.type === typeFilter;
 
+    console.log('🔍 Filtering notification:', {
+      id: notification.id,
+      type: notification.type,
+      isRead: notification.isRead,
+      filter,
+      typeFilter,
+      matchesFilter,
+      matchesType,
+      finalMatch: matchesFilter && matchesType,
+    });
+
     return matchesFilter && matchesType;
   });
 
@@ -207,6 +244,7 @@ export default function NotificationsPage() {
       case 'system':
         return <Settings className="h-4 w-4" />;
       case 'document_approved':
+      case 'moderation':
         return <CheckCircle className="h-4 w-4" />;
       case 'collaboration':
         return <Users className="h-4 w-4" />;
@@ -224,6 +262,7 @@ export default function NotificationsPage() {
       case 'system':
         return 'bg-gray-500';
       case 'document_approved':
+      case 'moderation':
         return 'bg-green-500';
       case 'collaboration':
         return 'bg-purple-500';
@@ -232,18 +271,32 @@ export default function NotificationsPage() {
     }
   };
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const formatTimeAgo = (date: Date | string) => {
+    try {
+      const now = new Date();
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
 
-    if (diffInSeconds < 60) return 'Vừa xong';
-    if (diffInSeconds < 3600)
-      return `${Math.floor(diffInSeconds / 60)} phút trước`;
-    if (diffInSeconds < 86400)
-      return `${Math.floor(diffInSeconds / 3600)} giờ trước`;
-    if (diffInSeconds < 2592000)
-      return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
-    return date.toLocaleDateString();
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 'Không xác định';
+      }
+
+      const diffInSeconds = Math.floor(
+        (now.getTime() - dateObj.getTime()) / 1000,
+      );
+
+      if (diffInSeconds < 60) return 'Vừa xong';
+      if (diffInSeconds < 3600)
+        return `${Math.floor(diffInSeconds / 60)} phút trước`;
+      if (diffInSeconds < 86400)
+        return `${Math.floor(diffInSeconds / 3600)} giờ trước`;
+      if (diffInSeconds < 2592000)
+        return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
+      return dateObj.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting time:', error, 'Date:', date);
+      return 'Không xác định';
+    }
   };
 
   if (loading) {
@@ -359,6 +412,7 @@ export default function NotificationsPage() {
                 <SelectItem value="rating">Đánh giá</SelectItem>
                 <SelectItem value="system">Hệ thống</SelectItem>
                 <SelectItem value="document_approved">Duyệt</SelectItem>
+                <SelectItem value="moderation">Kiểm duyệt</SelectItem>
                 <SelectItem value="collaboration">Cộng tác</SelectItem>
               </SelectContent>
             </Select>

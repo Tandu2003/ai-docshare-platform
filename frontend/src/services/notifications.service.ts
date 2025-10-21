@@ -13,5 +13,7 @@ export async function getMyNotifications(params: GetNotificationsParams = {}) {
   query.set('limit', String(limit));
   if (onlyUnread !== undefined) query.set('onlyUnread', String(!!onlyUnread));
   const res = await apiClient.get(`/notifications?${query.toString()}`);
+  console.log('🔍 API response:', res);
+  console.log('🔍 API response.data:', res.data);
   return res.data;
 }

@@ -178,6 +178,74 @@ export class DocumentsService {
             this.logger.log(
               `AI moderation analysis generated for document ${document.id}`,
             );
+
+            // Apply AI moderation settings based on analysis score
+            try {
+              const moderationScore = aiResult.data.moderationScore || 50; // Default score if not provided
+              const moderationResult =
+                await this.aiService.applyModerationSettings(
+                  document.id,
+                  moderationScore,
+                );
+
+              this.logger.log(
+                `AI moderation applied for document ${document.id}: ${moderationResult.status} (${moderationResult.action})`,
+              );
+
+              // Update document status if auto-approved or auto-rejected
+              if (
+                moderationResult.status === 'approved' ||
+                moderationResult.status === 'rejected'
+              ) {
+                const isApproved = moderationResult.status === 'approved';
+                const moderatedAt = new Date();
+                const moderationNotes = `AI Tự động ${moderationResult.action === 'auto_approved' ? 'phê duyệt' : 'từ chối'}: Điểm ${moderationScore}% - ${moderationResult.reason || 'Không có lý do'}`;
+
+                await this.prisma.document.update({
+                  where: { id: document.id },
+                  data: {
+                    moderationStatus:
+                      moderationResult.status === 'approved'
+                        ? 'APPROVED'
+                        : 'REJECTED',
+                    isApproved,
+                    moderatedAt,
+                    moderationNotes,
+                  },
+                });
+                this.logger.log(
+                  `Document ${document.id} status updated to ${moderationResult.status} with moderation notes: ${moderationNotes}`,
+                );
+
+                // Send notification to document uploader
+                try {
+                  await this.notifications.emitToUploaderOfDocument(
+                    document.uploaderId,
+                    {
+                      type: 'moderation',
+                      documentId: document.id,
+                      status:
+                        moderationResult.status === 'approved'
+                          ? 'approved'
+                          : 'rejected',
+                      notes: moderationNotes,
+                      reason: moderationResult.reason,
+                    },
+                  );
+                  this.logger.log(
+                    `Moderation notification sent and saved to database for user ${document.uploaderId} for document ${document.id}`,
+                  );
+                } catch (notificationError) {
+                  this.logger.warn(
+                    `Failed to send moderation notification for document ${document.id}: ${notificationError.message}`,
+                  );
+                }
+              }
+            } catch (moderationError) {
+              this.logger.warn(
+                `Failed to apply AI moderation for document ${document.id}: ${moderationError.message}`,
+              );
+            }
           } else {
             this.logger.warn(
               `AI analysis skipped or failed for document ${document.id}`,

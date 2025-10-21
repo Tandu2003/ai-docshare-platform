@@ -28,6 +28,13 @@ export class AIService {
    */
   static async analyzeDocument(request: AIAnalysisRequest): Promise<any> {
     try {
+      // Validate request
+      if (!request.fileIds || request.fileIds.length === 0) {
+        throw new Error('No file IDs provided for analysis');
+      }
+
+      console.log('Analyzing files with IDs:', request.fileIds);
+
       const response = await apiClient.post<AIAnalysisResponse>(
         '/ai/analyze-document',
         request,
@@ -83,6 +90,88 @@ export class AIService {
     } catch (error) {
       console.error('Error testing AI connection:', error);
       return { gemini: false };
+    }
+  }
+
+  /**
+   * Get user's files that can be analyzed
+   */
+  static async getUserFilesForAnalysis(): Promise<{
+    success: boolean;
+    files: Array<{
+      id: string;
+      originalName: string;
+      mimeType: string;
+      fileSize: number;
+      createdAt: string;
+    }>;
+    count: number;
+    message: string;
+  }> {
+    try {
+      const response = await apiClient.get('/ai/my-files');
+      return response.data as {
+        success: boolean;
+        files: Array<{
+          id: string;
+          originalName: string;
+          mimeType: string;
+          fileSize: number;
+          createdAt: string;
+        }>;
+        count: number;
+        message: string;
+      };
+    } catch (error) {
+      console.error('Error getting user files:', error);
+      return {
+        success: false,
+        files: [],
+        count: 0,
+        message: 'Failed to get user files',
+      };
+    }
+  }
+
+  /**
+   * Search user's files by name
+   */
+  static async searchUserFiles(fileName: string): Promise<{
+    success: boolean;
+    files: Array<{
+      id: string;
+      originalName: string;
+      mimeType: string;
+      fileSize: number;
+      createdAt: string;
+    }>;
+    count: number;
+    message: string;
+  }> {
+    try {
+      const response = await apiClient.get(
+        `/ai/my-files/search?fileName=${encodeURIComponent(fileName)}`,
+      );
+      return response.data as {
+        success: boolean;
+        files: Array<{
+          id: string;
+          originalName: string;
+          mimeType: string;
+          fileSize: number;
+          createdAt: string;
+        }>;
+        count: number;
+        message: string;
+      };
+    } catch (error) {
+      console.error('Error searching user files:', error);
+      return {
+        success: false,
+        files: [],
+        count: 0,
+        message: 'Failed to search user files',
+      };
     }
   }
 

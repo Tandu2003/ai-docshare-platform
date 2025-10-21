@@ -79,14 +79,17 @@ export class FilesService {
         .digest('hex');
       this.logger.log(`Generated file hash: ${fileHash}`);
 
-      // Check if file with same hash already exists
-      const existingFile = await this.prisma.file.findUnique({
-        where: { fileHash },
+      // Check if file with same hash already exists for THIS USER only
+      const existingFile = await this.prisma.file.findFirst({
+        where: {
+          fileHash,
+          uploaderId: userId, // Only check for the same user
+        },
       });
 
       if (existingFile) {
         this.logger.log(
-          `File with hash ${fileHash} already exists, returning existing record`,
+          `File with hash ${fileHash} already exists for user ${userId}, returning existing record`,
         );
         return {
           success: true,

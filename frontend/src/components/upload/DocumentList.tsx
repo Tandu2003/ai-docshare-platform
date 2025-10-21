@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import {
+  Bot,
   Download,
   File,
   FileArchive,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  UserCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -183,9 +185,18 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  const getTotalFileSize = (_document: Document) => {
-    // Mock file size calculation
-    return Math.floor(Math.random() * 10000000) + 1000000; // 1MB to 10MB
+  const getTotalFileSize = (document: Document) => {
+    // Calculate total file size from document files
+    if (document.files && document.files.length > 0) {
+      return document.files.reduce((total, file) => {
+        const fileSize =
+          typeof file.fileSize === 'string'
+            ? parseInt(file.fileSize, 10)
+            : file.fileSize;
+        return total + (fileSize || 0);
+      }, 0);
+    }
+    return 0;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -307,6 +318,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     >
                       {document.isPublic ? 'Public' : 'Private'}
                     </Badge>
+                    {/* Moderation Info */}
+                    {document.moderatedAt && (
+                      <div className="flex items-center gap-1">
+                        {document.moderatedById ? (
+                          <UserCheck className="h-3 w-3 text-blue-600" />
+                        ) : (
+                          <Bot className="h-3 w-3 text-green-600" />
+                        )}
+                        <span className="text-xs">
+                          {document.moderatedById ? 'Admin' : 'AI'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {document.description && (
                     <p className="text-muted-foreground mt-1 truncate text-sm">

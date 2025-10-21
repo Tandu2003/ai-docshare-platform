@@ -9,7 +9,7 @@ export function getSocket(): Socket {
   if (!socket) {
     const socketUrl = `${API_CONFIG.BASE_URL}/realtime`;
     console.log('Connecting to WebSocket:', socketUrl);
-    
+
     socket = io(socketUrl, {
       withCredentials: true,
       autoConnect: true,
@@ -22,18 +22,23 @@ export function getSocket(): Socket {
 
     // Handle connection events
     socket.on('connect', () => {
-      console.log('WebSocket connected:', socket?.id);
+      console.log('🔌 WebSocket connected:', socket?.id);
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+    socket.on('disconnect', reason => {
+      console.log('🔌 WebSocket disconnected:', reason);
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+    socket.on('connect_error', error => {
+      console.error('🔌 WebSocket connection error:', error);
       if (error.message.includes('CORS')) {
         console.error('CORS error detected. Check backend CORS configuration.');
       }
+    });
+
+    // Debug: Log all socket events
+    socket.onAny((eventName, ...args) => {
+      console.log('🔌 Socket event received:', eventName, args);
     });
 
     // Update auth on token refresh

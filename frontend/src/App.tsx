@@ -21,6 +21,7 @@ function App() {
   useEffect(() => {
     const socket = getSocket();
     const handler = (event: any) => {
+      console.log('🔔 Received notification:', event);
       if (event?.type === 'view') {
         toast.info('Có lượt xem mới cho tài liệu');
       } else if (event?.type === 'download') {

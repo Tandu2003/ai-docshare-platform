@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 
-import { Download, ExternalLink, Eye, User } from 'lucide-react';
+import {
+  Bot,
+  Download,
+  ExternalLink,
+  Eye,
+  User,
+  UserCheck,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { DocumentPermissionGate } from '@/components/common/permission-gate';
@@ -18,6 +25,7 @@ import {
 } from '@/services/document.service';
 import { Document } from '@/services/files.service';
 
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
@@ -62,6 +70,31 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
         <CardDescription className="text-sm text-gray-500">
           {document.description}
         </CardDescription>
+        {/* Moderation Info */}
+        {document.moderatedAt && (
+          <div className="mt-2 flex items-center gap-2">
+            {document.moderatedById ? (
+              <Badge
+                variant="outline"
+                className="border-blue-600 text-blue-600"
+              >
+                <UserCheck className="mr-1 h-3 w-3" />
+                Admin duyệt
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="border-green-600 text-green-600"
+              >
+                <Bot className="mr-1 h-3 w-3" />
+                AI duyệt
+              </Badge>
+            )}
+            <span className="text-muted-foreground text-xs">
+              {new Date(document.moderatedAt).toLocaleDateString('vi-VN')}
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="flex items-center justify-between space-y-2 text-sm text-gray-500">

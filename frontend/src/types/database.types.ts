@@ -278,9 +278,45 @@ export interface SystemSetting {
   value: string;
   type: 'string' | 'number' | 'boolean' | 'json';
   description?: string;
+  category: string;
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AISettings {
+  autoApprovalThreshold: number;
+  autoRejectThreshold: number;
+  enableAutoApproval: boolean;
+  enableAutoRejection: boolean;
+  enableContentAnalysis: boolean;
+  enableSmartTags: boolean;
+  confidenceThreshold: number;
+}
+
+export interface GeneralSettings {
+  siteName: string;
+  siteDescription: string;
+  maxFileSize: number;
+  allowedFileTypes: string;
+  enableRegistration: boolean;
+  requireEmailVerification: boolean;
+  enablePublicUploads: boolean;
+  moderationRequired: boolean;
+}
+
+export interface NotificationSettings {
+  enableEmail: boolean;
+  enablePush: boolean;
+  emailOnApproval: boolean;
+  emailOnRejection: boolean;
+}
+
+export interface SecuritySettings {
+  enableRateLimiting: boolean;
+  maxLoginAttempts: number;
+  sessionTimeout: number;
+  requireStrongPasswords: boolean;
 }
 
 export interface ActivityLog {

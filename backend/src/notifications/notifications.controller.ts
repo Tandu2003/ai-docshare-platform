@@ -1,6 +1,7 @@
+import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -13,7 +14,10 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   @ApiOperation({ summary: 'Get notifications for current user' })
   @ApiQuery({ name: 'page', required: false })
@@ -51,6 +55,28 @@ export class NotificationsController {
         total,
         totalPages: Math.ceil(total / limitNum),
       },
+    };
+  }
+
+  @ApiOperation({ summary: 'Test WebSocket notification' })
+  @Post('test')
+  async testNotification(@Req() req: any) {
+    const userId = req.user.id;
+
+    // Test moderation notification
+    await this.notificationsService.emitToUser(userId, {
+      type: 'moderation',
+      documentId: 'test-doc-123',
+      status: 'approved',
+      notes:
+        'AI Tự động phê duyệt: Điểm 95% - Điểm 95% đạt ngưỡng phê duyệt 90%',
+      reason: 'Điểm 95% đạt ngưỡng phê duyệt 90%',
+    });
+
+    return {
+      success: true,
+      message: 'Test notification sent and saved to database',
+      userId,
     };
   }
 }

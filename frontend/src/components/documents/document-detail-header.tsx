@@ -2,11 +2,13 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
+  Bot,
   Download,
   Eye,
   Share2,
   Star,
   User,
+  UserCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -101,6 +103,32 @@ export function DocumentDetailHeader({
                 </p>
               </div>
             </div>
+
+            {/* Moderation Info */}
+            {document.moderatedAt && (
+              <div className="bg-muted/50 rounded-lg border p-4">
+                <div className="mb-2 flex items-center space-x-2">
+                  {document.moderatedById ? (
+                    <UserCheck className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    <Bot className="h-4 w-4 text-green-600" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {document.moderatedById
+                      ? 'Admin duyệt'
+                      : 'AI tự động duyệt'}
+                  </span>
+                  <span className="text-muted-foreground text-sm">
+                    {new Date(document.moderatedAt).toLocaleString('vi-VN')}
+                  </span>
+                </div>
+                {document.moderationNotes && (
+                  <p className="text-muted-foreground text-sm">
+                    {document.moderationNotes}
+                  </p>
+                )}
+              </div>
+            )}
 
             <Separator />
 

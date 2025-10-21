@@ -14,6 +14,7 @@ export { ForgotPasswordPage } from './forgot-password';
 export { ResendVerificationPage } from './resend-verification';
 export { ResetPasswordPage } from './reset-password';
 export { default as SettingsPage } from './SettingsPage';
+export { default as SystemSettingsPage } from './SystemSettingsPage';
 export { default as TopRatedPage } from './TopRatedPage';
 export { default as TrendingPage } from './TrendingPage';
 export { VerifyEmailPage } from './verify-email';

@@ -89,7 +89,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock file validation
+  // File validation
   const validateFile = (file: File): string | null => {
     const maxSize = 100 * 1024 * 1024; // 100MB
     const allowedTypes = [
@@ -146,7 +146,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       if (multiple) {
         setFiles(prev => [...prev, ...processedFiles]);
       } else {
+        // For single file mode, completely clear state and start fresh
         setFiles(processedFiles.slice(0, 1));
+        setAiAnalysis({
+          isAnalyzing: false,
+          analysisResult: null,
+          error: null,
+        });
+        // Clear any cached file IDs
+        localStorage.removeItem('cachedFileIds');
+        sessionStorage.removeItem('cachedFileIds');
       }
 
       // Upload valid files using real API
@@ -246,17 +255,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             }
           });
 
-        // Build full set of file IDs (existing + new)
-        const allUploadedIdsSet = new Set<string>([
-          ...Array.from(
-            files.filter(f => f.uploaded && f.fileId).map(f => f.fileId!),
-          ),
-          ...newlyUploadedIds,
-        ]);
-        const allUploadedIds = Array.from(allUploadedIdsSet);
+        // Only analyze the newly uploaded files, not all files in state
+        if (newlyUploadedIds.length === 0) {
+          toast.error('Không tìm thấy file vừa upload. Vui lòng thử lại.');
+          return;
+        }
 
-        console.log('AI analyze with all uploaded file IDs:', allUploadedIds);
-        analyzeFilesWithAI(allUploadedIds, fileInfoMap);
+        analyzeFilesWithAI(newlyUploadedIds, fileInfoMap);
       } else {
         toast.error('Tải lên thất bại');
         throw new Error('Tải lên thất bại');
@@ -282,6 +287,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     try {
       setAiAnalysis(prev => ({ ...prev, isAnalyzing: true, error: null }));
 
+      // Note: We don't validate file ownership here in the frontend
+      // because the backend will handle this validation properly.
+      // The backend will check if the files belong to the current user
+      // and return appropriate error messages if they don't.
+
       let supportedFiles: { id: string; name: string; type: string }[] = [];
 
       if (fileInfoMap) {
@@ -305,9 +315,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           .filter(f => AIService.isFileTypeSupported(f.file.name))
           .map(f => ({ id: f.fileId!, name: f.file.name, type: f.file.type }));
       }
-
-      console.log('File IDs to analyze:', fileIds);
-      console.log('Supported files:', supportedFiles);
 
       if (supportedFiles.length === 0) {
         const allFileInfo = fileIds

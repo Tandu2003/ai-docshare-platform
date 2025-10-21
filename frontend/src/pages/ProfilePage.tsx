@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import {
+  Bot,
   Calendar,
   Download,
   Edit,
@@ -8,6 +9,7 @@ import {
   Star,
   Upload,
   User,
+  UserCheck,
   Users,
 } from 'lucide-react';
 
@@ -38,7 +40,7 @@ import {
   DocumentsService,
   type Document as UserDocument,
 } from '@/services/files.service';
-import { mockActivityLogs } from '@/services/mock-data.service';
+import { userService } from '@/services/user.service';
 import type { ActivityLog } from '@/types';
 import { formatDate } from '@/utils/date';
 
@@ -75,11 +77,25 @@ export default function ProfilePage() {
         const bookmarks = await getUserBookmarks();
         setUserBookmarks(bookmarks);
 
-        // Get user's activity
-        const activity = mockActivityLogs.filter(
-          log => log.userId === user?.id,
+        // Get user's activity from real API
+        const activityResponse = await userService.getCurrentUserActivity(
+          1,
+          10,
         );
-        setUserActivity(activity);
+        // Convert UserActivity to ActivityLog format
+        const convertedActivities: ActivityLog[] =
+          activityResponse.activities.map(activity => ({
+            id: activity.id,
+            userId: activity.userId,
+            action: activity.action,
+            resourceType: activity.resourceType || undefined,
+            resourceId: activity.resourceId || undefined,
+            ipAddress: activity.ipAddress || undefined,
+            userAgent: activity.userAgent || undefined,
+            metadata: activity.metadata,
+            createdAt: new Date(activity.createdAt),
+          }));
+        setUserActivity(convertedActivities);
       } catch (error) {
         console.error('Failed to fetch user data:', error);
       } finally {
@@ -508,6 +524,19 @@ export default function ProfilePage() {
                             <Star className="h-4 w-4" />
                             <span>{averageRatingDisplay}</span>
                           </div>
+                          {/* Moderation Info */}
+                          {document.moderatedAt && (
+                            <div className="flex items-center space-x-1">
+                              {document.moderatedById ? (
+                                <UserCheck className="h-4 w-4 text-blue-600" />
+                              ) : (
+                                <Bot className="h-4 w-4 text-green-600" />
+                              )}
+                              <span className="text-xs">
+                                {document.moderatedById ? 'Admin' : 'AI'}
+                              </span>
+                            </div>
+                          )}
                           <Badge variant={statusVariant}>{statusLabel}</Badge>
                         </div>
                         {moderationStatus === 'REJECTED' &&

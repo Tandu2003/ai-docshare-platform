@@ -10,6 +10,7 @@ import {
   Logger,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -75,6 +76,27 @@ export class AIController {
     return await this.aiService.getAnalysis(documentId);
   }
 
+  @Post('apply-moderation/:documentId')
+  @CheckPolicy({ action: 'update', subject: 'Document' })
+  @ApiOperation({ summary: 'Apply AI moderation settings to a document' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Moderation settings applied successfully',
+  })
+  async applyModeration(
+    @Param('documentId') documentId: string,
+    @Body() body: { moderationScore: number },
+  ) {
+    this.logger.log(
+      `Applying moderation settings for document: ${documentId} with score: ${body.moderationScore}`,
+    );
+
+    return await this.aiService.applyModerationSettings(
+      documentId,
+      body.moderationScore,
+    );
+  }
+
   @Get('test-connection')
   @CheckPolicy({ action: 'read', subject: 'User' })
   @ApiOperation({ summary: 'Test AI service connections' })
@@ -86,5 +108,52 @@ export class AIController {
     this.logger.log('Testing AI service connections');
 
     return await this.aiService.testConnection();
+  }
+
+  @Get('my-files')
+  @CheckPolicy({ action: 'read', subject: 'File' })
+  @ApiOperation({
+    summary: 'Get files that belong to the current user for AI analysis',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User files retrieved successfully',
+  })
+  async getMyFiles(@Req() req: AuthenticatedRequest) {
+    this.logger.log(`Getting files for user ${req.user.id}`);
+
+    return await this.aiService.getUserFilesForAnalysis(req.user.id);
+  }
+
+  @Get('my-files/search')
+  @CheckPolicy({ action: 'read', subject: 'File' })
+  @ApiOperation({
+    summary: 'Search user files by name for AI analysis',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User files search results',
+  })
+  async searchMyFiles(
+    @Req() req: AuthenticatedRequest,
+    @Query('fileName') fileName: string,
+  ) {
+    this.logger.log(
+      `Searching files for user ${req.user.id} with name: ${fileName}`,
+    );
+
+    if (!fileName || fileName.trim().length === 0) {
+      return {
+        success: false,
+        files: [],
+        count: 0,
+        message: 'File name is required for search',
+      };
+    }
+
+    return await this.aiService.findUserFilesByName(
+      req.user.id,
+      fileName.trim(),
+    );
   }
 }
