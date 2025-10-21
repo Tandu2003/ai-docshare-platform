@@ -68,7 +68,7 @@ export function PopularCategories({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Popular Categories</CardTitle>
+        <CardTitle>Danh mục phổ biến</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

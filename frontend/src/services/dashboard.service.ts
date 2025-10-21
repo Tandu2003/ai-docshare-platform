@@ -13,6 +13,7 @@ interface DashboardOverviewApiResponse {
   totalUsers: number;
   totalDownloads: number;
   totalViews: number;
+  averageRating?: number;
   recentDocuments: DashboardDocumentApiResponse[];
   popularCategories: DashboardCategoryApiResponse[];
   userActivity: DashboardActivityApiResponse[];
@@ -216,6 +217,7 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
     totalUsers: data.totalUsers,
     totalDownloads: data.totalDownloads,
     totalViews: data.totalViews,
+    averageRating: data.averageRating || 0,
     recentDocuments: data.recentDocuments.map(mapDocument),
     popularCategories: data.popularCategories.map(mapCategory),
     userActivity: data.userActivity.map(mapActivity),
@@ -250,6 +252,7 @@ export const getUserDashboardOverview =
       totalUsers: data.totalUsers,
       totalDownloads: data.totalDownloads,
       totalViews: data.totalViews,
+      averageRating: data.averageRating || 0,
       recentDocuments: data.recentDocuments.map(mapDocument),
       popularCategories: data.popularCategories.map(mapCategory),
       userActivity: data.userActivity.map(mapActivity),

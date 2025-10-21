@@ -336,29 +336,44 @@ export class AnalyticsService {
     };
   }
 
-  async getUserDashboardOverview() {
+  async getUserDashboardOverview(userId: string) {
     const [
-      totalDocuments,
-      totalUsers,
-      downloadsAggregate,
-      viewsAggregate,
-      recentDocumentsRaw,
-      categoryAggregates,
-      activityLogsRaw,
-      notificationsRaw,
+      userDocumentsCount,
+      userDownloadsAggregate,
+      userViewsAggregate,
+      userRatingAggregate,
+      userRecentDocumentsRaw,
+      userActivityLogsRaw,
+      userNotificationsRaw,
+      // Get global stats for categories
+      globalCategories,
     ] = await Promise.all([
-      this.prisma.document.count(),
-      this.prisma.user.count(),
+      // User's document count
+      this.prisma.document.count({
+        where: { uploaderId: userId },
+      }),
+      // User's total downloads
       this.prisma.document.aggregate({
+        where: { uploaderId: userId },
         _sum: { downloadCount: true },
       }),
+      // User's total views
       this.prisma.document.aggregate({
+        where: { uploaderId: userId },
         _sum: { viewCount: true },
       }),
-      this.prisma.document.findMany({
+      // User's average rating (only from documents with ratings)
+      this.prisma.document.aggregate({
         where: {
-          isPublic: true,
+          uploaderId: userId,
+          averageRating: { gt: 0 },
         },
+        _avg: { averageRating: true },
+        _count: { averageRating: true },
+      }),
+      // User's recent documents
+      this.prisma.document.findMany({
+        where: { uploaderId: userId },
         include: {
           uploader: {
             select: {
@@ -384,23 +399,9 @@ export class AnalyticsService {
         },
         take: 10,
       }),
-      this.prisma.document.groupBy({
-        by: ['categoryId'],
-        _count: {
-          categoryId: true,
-        },
-        _sum: {
-          downloadCount: true,
-          viewCount: true,
-        },
-        orderBy: {
-          _sum: {
-            downloadCount: 'desc',
-          },
-        },
-        take: 6,
-      }),
+      // User's activity logs
       this.prisma.activityLog.findMany({
+        where: { userId },
         include: {
           user: {
             select: {
@@ -417,7 +418,9 @@ export class AnalyticsService {
         },
         take: 20,
       }),
+      // User's notifications
       this.prisma.notification.findMany({
+        where: { userId },
         include: {
           user: {
             select: {
@@ -434,39 +437,37 @@ export class AnalyticsService {
         },
         take: 10,
       }),
+      // Popular categories (global)
+      this.prisma.category.findMany({
+        include: {
+          _count: {
+            select: {
+              documents: true,
+            },
+          },
+        },
+        orderBy: {
+          documents: {
+            _count: 'desc',
+          },
+        },
+        take: 6,
+      }),
     ]);
 
-    const categoryIds = categoryAggregates.map(item => item.categoryId);
-    const categories = await this.prisma.category.findMany({
-      where: {
-        id: {
-          in: categoryIds,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        icon: true,
-        color: true,
-      },
-    });
+    // Process popular categories from global data
+    const popularCategories = globalCategories.map(category => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      color: category.color,
+      documentCount: category._count.documents,
+      totalDownloads: 0, // We'll calculate this if needed
+      totalViews: 0, // We'll calculate this if needed
+    }));
 
-    const popularCategories = categoryAggregates.map(item => {
-      const category = categories.find(cat => cat.id === item.categoryId);
-      return {
-        id: item.categoryId,
-        name: category?.name || 'Unknown',
-        description: category?.description || null,
-        icon: category?.icon || null,
-        color: category?.color || null,
-        documentCount: item._count.categoryId,
-        totalDownloads: Number(item._sum.downloadCount ?? 0),
-        totalViews: Number(item._sum.viewCount ?? 0),
-      };
-    });
-
-    const userActivity = activityLogsRaw.map(activity => ({
+    const userActivity = userActivityLogsRaw.map(activity => ({
       id: activity.id,
       userId: activity.userId ?? undefined,
       action: activity.action,
@@ -489,7 +490,7 @@ export class AnalyticsService {
         : undefined,
     }));
 
-    const recentNotifications = notificationsRaw.map(notification => ({
+    const recentNotifications = userNotificationsRaw.map(notification => ({
       id: notification.id,
       userId: notification.userId,
       type: notification.type,
@@ -509,11 +510,12 @@ export class AnalyticsService {
     }));
 
     return {
-      totalDocuments,
-      totalUsers,
-      totalDownloads: Number(downloadsAggregate._sum.downloadCount ?? 0),
-      totalViews: Number(viewsAggregate._sum.viewCount ?? 0),
-      recentDocuments: recentDocumentsRaw,
+      totalDocuments: userDocumentsCount,
+      totalUsers: 1, // Only current user
+      totalDownloads: Number(userDownloadsAggregate._sum.downloadCount ?? 0),
+      totalViews: Number(userViewsAggregate._sum.viewCount ?? 0),
+      averageRating: Number(userRatingAggregate._avg.averageRating ?? 0),
+      recentDocuments: userRecentDocumentsRaw,
       popularCategories,
       userActivity,
       recentNotifications,

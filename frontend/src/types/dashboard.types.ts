@@ -85,6 +85,7 @@ export interface DashboardOverview {
   totalUsers: number;
   totalDownloads: number;
   totalViews: number;
+  averageRating: number;
   recentDocuments: DashboardDocument[];
   popularCategories: DashboardCategory[];
   userActivity: DashboardActivity[];

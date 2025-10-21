@@ -46,8 +46,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
         return { label: 'Chờ duyệt', variant: 'secondary' as const };
     }
   };
+
+  // Use stats directly from API instead of calculating from recentDocuments
   const userStats = {
-    totalDocuments: userDocuments.length,
+    totalDocuments: stats.totalDocuments,
     publishedDocuments: userDocuments.filter(
       doc => resolveStatus(doc) === 'APPROVED',
     ).length,
@@ -58,21 +60,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
     rejectedDocuments: userDocuments.filter(
       doc => resolveStatus(doc) === 'REJECTED',
     ).length,
-    totalViews: userDocuments.reduce(
-      (sum, doc) => sum + (doc.viewCount || 0),
-      0,
-    ),
-    totalDownloads: userDocuments.reduce(
-      (sum, doc) => sum + (doc.downloadCount || 0),
-      0,
-    ),
-    averageRating:
-      userDocuments.length > 0
-        ? userDocuments.reduce(
-            (sum, doc) => sum + (doc.averageRating || 0),
-            0,
-          ) / userDocuments.length
-        : 0,
+    totalViews: stats.totalViews,
+    totalDownloads: stats.totalDownloads,
+    averageRating: stats.averageRating,
   };
 
   return (

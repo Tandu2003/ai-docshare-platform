@@ -28,8 +28,13 @@ export class AnalyticsController {
 
   @Get('user-dashboard')
   @ApiOperation({ summary: 'Get user dashboard overview stats' })
-  async getUserDashboardOverview(@Req() _req: Request, @Res() res: Response) {
-    const dashboard = await this.analyticsService.getUserDashboardOverview();
+  async getUserDashboardOverview(@Req() req: Request, @Res() res: Response) {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return ResponseHelper.error(res, 'User not authenticated', 401);
+    }
+    const dashboard =
+      await this.analyticsService.getUserDashboardOverview(userId);
     return ResponseHelper.success(res, dashboard);
   }
 
