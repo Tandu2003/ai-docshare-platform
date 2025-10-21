@@ -24,6 +24,7 @@ import {
   triggerFileDownload,
 } from '@/services/document.service';
 import { Document } from '@/services/files.service';
+import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
 
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -36,6 +37,11 @@ interface DocumentCardProps {
 const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const statusInfo = getDocumentStatusInfo(
+    document.isApproved,
+    document.moderationStatus,
+  );
 
   const onDownload = async () => {
     if (isDownloading) return;
@@ -70,6 +76,18 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
         <CardDescription className="text-sm text-gray-500">
           {document.description}
         </CardDescription>
+
+        {/* Review Status Badge */}
+        <div className="mt-2">
+          <Badge
+            variant={statusInfo.variant}
+            className={`${statusInfo.className} text-xs`}
+          >
+            <span className="mr-1">{getStatusIcon(statusInfo)}</span>
+            {statusInfo.label}
+          </Badge>
+        </div>
+
         {/* Moderation Info */}
         {document.moderatedAt && (
           <div className="mt-2 flex items-center gap-2">
@@ -121,7 +139,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
           </TooltipTrigger>
 
           <TooltipContent>
-            <p>View detail</p>
+            <p>Xem chi tiết</p>
           </TooltipContent>
         </Tooltip>
         <DocumentPermissionGate document={document} action="download">
@@ -131,13 +149,17 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
                 <Download
                   className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
                 />
-                {isDownloading && <span className="ml-2">Downloading...</span>}
+                {isDownloading && (
+                  <span className="ml-2">Đang tải xuống...</span>
+                )}
               </Button>
             </TooltipTrigger>
 
             <TooltipContent>
               <p>
-                {isDownloading ? 'Preparing download...' : 'Download all files'}
+                {isDownloading
+                  ? 'Đang chuẩn bị tải xuống...'
+                  : 'Tải xuống tất cả'}
               </p>
             </TooltipContent>
           </Tooltip>

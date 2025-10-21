@@ -78,9 +78,9 @@ export function DocumentDetailHeader({
                   </Badge>
                 )}
                 {document.isApproved ? (
-                  <Badge variant="default">Approved</Badge>
+                  <Badge variant="default">Đã duyệt</Badge>
                 ) : (
-                  <Badge variant="secondary">Pending</Badge>
+                  <Badge variant="secondary">Chờ duyệt</Badge>
                 )}
                 {document.isDraft && <Badge variant="outline">Draft</Badge>}
               </div>

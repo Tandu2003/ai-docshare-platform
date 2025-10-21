@@ -33,6 +33,7 @@ import {
   type TrendingDocument,
 } from '@/services/analytics.service';
 import { formatDate } from '@/utils/date';
+import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
 import { getLanguageName } from '@/utils/language';
 
 const RANGE_OPTIONS: Array<{ value: string; label: string }> = [
@@ -296,7 +297,7 @@ export default function TrendingPage() {
         <Card>
           <CardContent className="space-y-4 py-12 text-center">
             <p className="text-muted-foreground text-lg font-medium">
-              No trending documents found for this timeframe.
+              Không tìm thấy tài liệu thịnh hành trong khoảng thời gian này.
             </p>
             <p className="text-muted-foreground text-sm">
               Thử chọn khoảng thời gian khác hoặc khuyến khích người dùng tương
@@ -339,6 +340,7 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
   const tags = document.tags ?? [];
   const createdAt = formatDate(document.createdAt);
   const lastUpdated = formatDate(document.lastUpdated);
+  const statusInfo = getDocumentStatusInfo(document.isApproved, undefined);
 
   return (
     <Card className="border">
@@ -367,6 +369,15 @@ function TrendingDocumentCard({ index, document }: TrendingDocumentCardProps) {
                     {!document.isPublic && (
                       <Badge variant="secondary">Riêng tư</Badge>
                     )}
+
+                    {/* Review Status Badge */}
+                    <Badge
+                      variant={statusInfo.variant}
+                      className={`${statusInfo.className} text-xs`}
+                    >
+                      <span className="mr-1">{getStatusIcon(statusInfo)}</span>
+                      {statusInfo.label}
+                    </Badge>
                   </div>
                   {document.description && (
                     <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">

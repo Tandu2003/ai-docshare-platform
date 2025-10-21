@@ -8,14 +8,14 @@ export interface LanguageOption {
 }
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
-  { code: 'en', name: 'English' },
-  { code: 'vi', name: 'Vietnamese' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'zh', name: 'Chinese' },
-  { code: 'ja', name: 'Japanese' },
-  { code: 'ko', name: 'Korean' },
+  { code: 'en', name: 'Tiếng Anh' },
+  { code: 'vi', name: 'Tiếng Việt' },
+  { code: 'es', name: 'Tiếng Tây Ban Nha' },
+  { code: 'fr', name: 'Tiếng Pháp' },
+  { code: 'de', name: 'Tiếng Đức' },
+  { code: 'zh', name: 'Tiếng Trung' },
+  { code: 'ja', name: 'Tiếng Nhật' },
+  { code: 'ko', name: 'Tiếng Hàn' },
 ];
 
 /**

@@ -131,7 +131,7 @@ export const FileList: React.FC<FileListProps> = ({
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            My Documents ({total})
+            Tài liệu của tôi ({total})
           </span>
           <Button
             variant="outline"
@@ -180,7 +180,7 @@ export const FileList: React.FC<FileListProps> = ({
         {files.length === 0 ? (
           <div className="py-8 text-center">
             <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <p className="text-gray-500">No documents found</p>
+            <p className="text-gray-500">Không tìm thấy tài liệu</p>
           </div>
         ) : (
           <div className="space-y-3">

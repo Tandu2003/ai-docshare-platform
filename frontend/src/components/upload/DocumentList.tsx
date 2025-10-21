@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DocumentsService, type Document } from '@/services/files.service';
 import { formatDate } from '@/utils/date';
+import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
 
 interface DocumentListProps {
   refreshTrigger?: number;
@@ -213,7 +214,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            My Documents
+            Tài liệu của tôi
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -243,7 +244,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            My Documents ({total})
+            Tài liệu của tôi ({total})
           </span>
           <Button
             variant="outline"
@@ -261,7 +262,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             <div className="relative">
               <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
-                placeholder="Search documents..."
+                placeholder="Tìm kiếm tài liệu..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -281,7 +282,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         {documents.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No documents found"
+            title="Không tìm thấy tài liệu"
             description={
               searchTerm
                 ? 'No documents match your search criteria.'
@@ -290,95 +291,116 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           />
         ) : (
           <div className="space-y-3">
-            {documents.map(document => (
-              <div
-                key={document.id}
-                className="hover:bg-muted/50 group flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors"
-                onClick={() => handleDocumentClick(document.id)}
-              >
-                {/* Document Icon/Preview */}
-                <div className="flex-shrink-0">
-                  <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-lg">
-                    {getDocumentIcon(document)}
-                  </div>
-                </div>
+            {documents.map(document => {
+              const statusInfo = getDocumentStatusInfo(
+                document.isApproved,
+                document.moderationStatus,
+              );
 
-                {/* Document Info */}
-                <div className="min-w-0 flex-1">
-                  <h4 className="group-hover:text-primary truncate font-medium transition-colors">
-                    {document.title}
-                  </h4>
-                  <div className="text-muted-foreground mt-1 flex items-center gap-4 text-sm">
-                    <span>{formatFileSize(getTotalFileSize(document))}</span>
-                    <span>{formatDate(document.createdAt)}</span>
-                    <span>{document.category?.name}</span>
-                    <Badge
-                      variant={document.isPublic ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {document.isPublic ? 'Public' : 'Private'}
-                    </Badge>
-                    {/* Moderation Info */}
-                    {document.moderatedAt && (
-                      <div className="flex items-center gap-1">
-                        {document.moderatedById ? (
-                          <UserCheck className="h-3 w-3 text-blue-600" />
-                        ) : (
-                          <Bot className="h-3 w-3 text-green-600" />
-                        )}
-                        <span className="text-xs">
-                          {document.moderatedById ? 'Admin' : 'AI'}
+              return (
+                <div
+                  key={document.id}
+                  className="hover:bg-muted/50 group flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors"
+                  onClick={() => handleDocumentClick(document.id)}
+                >
+                  {/* Document Icon/Preview */}
+                  <div className="flex-shrink-0">
+                    <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-lg">
+                      {getDocumentIcon(document)}
+                    </div>
+                  </div>
+
+                  {/* Document Info */}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="group-hover:text-primary truncate font-medium transition-colors">
+                      {document.title}
+                    </h4>
+                    <div className="text-muted-foreground mt-1 flex items-center gap-4 text-sm">
+                      <span>{formatFileSize(getTotalFileSize(document))}</span>
+                      <span>{formatDate(document.createdAt)}</span>
+                      <span>{document.category?.name}</span>
+                      <Badge
+                        variant={document.isPublic ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {document.isPublic ? 'Công khai' : 'Riêng tư'}
+                      </Badge>
+
+                      {/* Review Status Badge */}
+                      <Badge
+                        variant={statusInfo.variant}
+                        className={`${statusInfo.className} text-xs`}
+                      >
+                        <span className="mr-1">
+                          {getStatusIcon(statusInfo)}
                         </span>
-                      </div>
+                        {statusInfo.label}
+                      </Badge>
+
+                      {/* Moderation Info */}
+                      {document.moderatedAt && (
+                        <div className="flex items-center gap-1">
+                          {document.moderatedById ? (
+                            <UserCheck className="h-3 w-3 text-blue-600" />
+                          ) : (
+                            <Bot className="h-3 w-3 text-green-600" />
+                          )}
+                          <span className="text-xs">
+                            {document.moderatedById ? 'Admin' : 'AI'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {document.description && (
+                      <p className="text-muted-foreground mt-1 truncate text-sm">
+                        {document.description}
+                      </p>
                     )}
                   </div>
-                  {document.description && (
-                    <p className="text-muted-foreground mt-1 truncate text-sm">
-                      {document.description}
-                    </p>
-                  )}
-                </div>
 
-                {/* Actions */}
-                <div
-                  className="flex items-center gap-2"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload(document)}
-                    disabled={loading}
+                  {/* Actions */}
+                  <div
+                    className="flex items-center gap-2"
+                    onClick={e => e.stopPropagation()}
                   >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(document)}
+                      disabled={loading}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => handleDownload(document)}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(document.id)}
-                        disabled={deletingId === document.id}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {deletingId === document.id ? 'Deleting...' : 'Delete'}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleDownload(document)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(document.id)}
+                          disabled={deletingId === document.id}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {deletingId === document.id
+                            ? 'Deleting...'
+                            : 'Delete'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

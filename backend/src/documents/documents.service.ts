@@ -584,14 +584,14 @@ export class DocumentsService {
    */
   private async getOrCreateDefaultCategory() {
     let category = await this.prisma.category.findFirst({
-      where: { name: 'General' },
+      where: { name: 'Tổng hợp' },
     });
 
     if (!category) {
       category = await this.prisma.category.create({
         data: {
-          name: 'General',
-          description: 'Default category for documents',
+          name: 'Tổng hợp',
+          description: 'Danh mục mặc định cho tài liệu',
           isActive: true,
           documentCount: 0,
           sortOrder: 0,

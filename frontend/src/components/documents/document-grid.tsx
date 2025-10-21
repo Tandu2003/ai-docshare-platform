@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Document } from '@/services/files.service';
 import { formatDate } from '@/utils/date';
+import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
 import { getLanguageName } from '@/utils/language';
 
 interface DocumentGridProps {
@@ -90,6 +91,34 @@ export function DocumentGrid({
                       {document.description}
                     </p>
                   )}
+
+                  {/* Review Status Badge */}
+                  <div className="mt-2">
+                    <Badge
+                      variant={
+                        getDocumentStatusInfo(
+                          document.isApproved,
+                          document.moderationStatus,
+                        ).variant
+                      }
+                      className={`${getDocumentStatusInfo(document.isApproved, document.moderationStatus).className} text-xs`}
+                    >
+                      <span className="mr-1">
+                        {getStatusIcon(
+                          getDocumentStatusInfo(
+                            document.isApproved,
+                            document.moderationStatus,
+                          ),
+                        )}
+                      </span>
+                      {
+                        getDocumentStatusInfo(
+                          document.isApproved,
+                          document.moderationStatus,
+                        ).label
+                      }
+                    </Badge>
+                  </div>
                 </div>
                 <div className="ml-2 flex items-center space-x-1">
                   {document.isPremium && (
@@ -170,15 +199,6 @@ export function DocumentGrid({
                 </Button>
                 <div className="text-muted-foreground flex items-center space-x-2 text-xs">
                   <span>{getLanguageName(document.language)}</span>
-                  {document.isApproved ? (
-                    <Badge variant="default" className="text-xs">
-                      Đã duyệt
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">
-                      Đang chờ
-                    </Badge>
-                  )}
                 </div>
               </div>
             </CardContent>

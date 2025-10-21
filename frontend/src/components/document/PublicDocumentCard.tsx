@@ -17,6 +17,7 @@ import {
   triggerFileDownload,
 } from '@/services/document.service';
 import { Document } from '@/services/files.service';
+import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
 
 interface PublicDocumentCardProps {
   document: Document;
@@ -27,6 +28,11 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const statusInfo = getDocumentStatusInfo(
+    document.isApproved,
+    document.moderationStatus,
+  );
 
   const onDownload = async () => {
     if (isDownloading) return;
@@ -98,6 +104,17 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
               </p>
             )}
           </div>
+        </div>
+
+        {/* Review Status Badge */}
+        <div className="mt-3">
+          <Badge
+            variant={statusInfo.variant}
+            className={`${statusInfo.className} text-xs`}
+          >
+            <span className="mr-1">{getStatusIcon(statusInfo)}</span>
+            {statusInfo.label}
+          </Badge>
         </div>
       </CardHeader>
 
@@ -171,7 +188,7 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
           size="sm"
         >
           <ExternalLink className="mr-2 h-4 w-4" />
-          View Details
+          Xem chi tiết
         </Button>
         <Button
           onClick={onDownload}
@@ -182,7 +199,7 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
           <Download
             className={`mr-2 h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
           />
-          {isDownloading ? 'Downloading...' : 'Download'}
+          {isDownloading ? 'Đang tải xuống...' : 'Tải xuống'}
         </Button>
       </CardFooter>
     </Card>
