@@ -1,29 +1,34 @@
-import { AuthService } from './auth.service';
-import {
-  ForgotPasswordDto,
-  LoginDto,
-  RegisterDto,
-  ResendVerificationDto,
-  ResetPasswordDto,
-  VerifyEmailDto,
-} from './dto';
-import { JwtAuthGuard } from './guards';
-import { AuthUser } from './interfaces';
-import { Public } from '@/auth/decorators/public.decorator';
-import { ResponseHelper } from '@/common';
+import { Request, Response } from 'express'
+
+import { Public } from '@/auth/decorators/public.decorator'
+import { ResponseHelper } from '@/common'
 import {
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
   UseGuards,
-} from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
-import { Request, Response } from 'express';
+} from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
+
+import { AuthService } from './auth.service'
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  UpdateProfileDto,
+  VerifyEmailDto,
+} from './dto'
+import { JwtAuthGuard } from './guards'
+import { AuthUser } from './interfaces'
 
 @Controller('auth')
 export class AuthController {
@@ -190,6 +195,38 @@ export class AuthController {
     const result = await this.authService.resetPassword(resetPasswordDto);
 
     ResponseHelper.success(response, result, 'Đặt lại mật khẩu thành công');
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(
+    @Body() updateProfileDto: UpdateProfileDto,
+    @Req() request: Request & { user: AuthUser },
+    @Res() response: Response,
+  ): Promise<void> {
+    const result = await this.authService.updateProfile(
+      request.user.id,
+      updateProfileDto,
+    );
+
+    ResponseHelper.success(response, result, 'Cập nhật hồ sơ thành công');
+  }
+
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() request: Request & { user: AuthUser },
+    @Res() response: Response,
+  ): Promise<void> {
+    const result = await this.authService.changePassword(
+      request.user.id,
+      changePasswordDto,
+    );
+
+    ResponseHelper.success(response, result, 'Đổi mật khẩu thành công');
   }
 
   // Private helper methods

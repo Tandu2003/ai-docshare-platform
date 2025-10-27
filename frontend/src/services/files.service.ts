@@ -1,6 +1,6 @@
 import type { DocumentModerationStatus } from '@/types';
-import { ApiResponse } from '@/types/api.types';
-import { apiClient } from '@/utils/api-client';
+import { ApiResponse } from '@/types/api.types'
+import { apiClient } from '@/utils/api-client'
 
 export interface FileUploadResult {
   id: string;
@@ -10,6 +10,15 @@ export interface FileUploadResult {
   fileSize: string;
   storageUrl: string;
   fileHash: string;
+}
+
+export interface AvatarUploadResult {
+  id: string;
+  avatarUrl: string;
+  originalName: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
 }
 
 export interface CreateDocumentData {
@@ -114,6 +123,35 @@ export class FilesService {
     } catch (error) {
       console.error('Failed to upload files:', error);
       throw new Error('Không thể tải lên tệp');
+    }
+  }
+
+  /**
+   * Upload avatar for user
+   */
+  static async uploadAvatar(
+    file: File,
+  ): Promise<ApiResponse<AvatarUploadResult>> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await apiClient.post<ApiResponse<AvatarUploadResult>>(
+        '/files/upload/avatar',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 30000, // 30 seconds
+        },
+      );
+
+      // Return the full response since the backend already returns ApiResponse format
+      return response;
+    } catch (error: any) {
+      console.error('Failed to upload avatar:', error);
+      throw new Error(error.message || 'Không thể tải lên ảnh đại diện');
     }
   }
 }

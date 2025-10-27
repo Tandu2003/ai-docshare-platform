@@ -38,6 +38,8 @@ model User {
   lastName     String
   avatar       String?
   bio          String?
+  website      String?
+  location     String?
   roleId       String
   isVerified   Boolean   @default(false)
   isActive     Boolean   @default(true)
@@ -49,22 +51,22 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  role            Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  documents       Document[]             @relation("DocumentUploader")
-  moderatedDocuments Document[]          @relation("DocumentModeratedBy")
-  uploadedFiles   File[]                 @relation("FileUploader")
-  ratings         Rating[]
-  comments        Comment[]
-  searches        SearchHistory[]
-  notifications   Notification[]
-  bookmarks       Bookmark[]
-  bookmarkFolders BookmarkFolder[]
-  downloads       Download[]
-  views           View[]
-  recommendations RecommendationEngine[]
-  CommentLike     CommentLike[]
-  ActivityLog     ActivityLog[]
-  shareLinks      DocumentShareLink[] @relation("ShareLinkCreator")
+  role               Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  documents          Document[]             @relation("DocumentUploader")
+  moderatedDocuments Document[]             @relation("DocumentModeratedBy")
+  uploadedFiles      File[]                 @relation("FileUploader")
+  ratings            Rating[]
+  comments           Comment[]
+  searches           SearchHistory[]
+  notifications      Notification[]
+  bookmarks          Bookmark[]
+  bookmarkFolders    BookmarkFolder[]
+  downloads          Download[]
+  views              View[]
+  recommendations    RecommendationEngine[]
+  CommentLike        CommentLike[]
+  ActivityLog        ActivityLog[]
+  shareLinks         DocumentShareLink[]    @relation("ShareLinkCreator")
 
   // Indexes
   @@index([email])
@@ -105,31 +107,31 @@ model Category {
 }
 
 model Document {
-  id            String    @id @default(cuid())
-  title         String
-  description   String?
-  uploaderId    String
-  categoryId    String
-  downloadCount Int       @default(0)
-  viewCount     Int       @default(0)
-  averageRating Float     @default(0)
-  totalRatings  Int       @default(0)
-  isPublic      Boolean   @default(true)
-  isPremium     Boolean   @default(false)
-  isApproved    Boolean   @default(false)
-  isDraft       Boolean   @default(false)
+  id               String                   @id @default(cuid())
+  title            String
+  description      String?
+  uploaderId       String
+  categoryId       String
+  downloadCount    Int                      @default(0)
+  viewCount        Int                      @default(0)
+  averageRating    Float                    @default(0)
+  totalRatings     Int                      @default(0)
+  isPublic         Boolean                  @default(true)
+  isPremium        Boolean                  @default(false)
+  isApproved       Boolean                  @default(false)
+  isDraft          Boolean                  @default(false)
   moderationStatus DocumentModerationStatus @default(PENDING)
-  moderatedById String?
-  moderatedAt  DateTime?
-  moderationNotes String?
-  rejectionReason String?
-  aiModeration Json?
-  tags          String[]  @default([])
-  language      String    @default("en")
-  zipFileUrl    String?   // Cached ZIP file URL for multi-file documents
+  moderatedById    String?
+  moderatedAt      DateTime?
+  moderationNotes  String?
+  rejectionReason  String?
+  aiModeration     Json?
+  tags             String[]                 @default([])
+  language         String                   @default("en")
+  zipFileUrl       String? // Cached ZIP file URL for multi-file documents
   zipFileCreatedAt DateTime? // When the ZIP file was created
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 
   // Relations
   uploader        User                   @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
@@ -182,14 +184,14 @@ model DocumentFile {
 }
 
 model DocumentShareLink {
-  id           String   @id @default(cuid())
-  documentId   String   @unique
-  token        String   @unique
-  expiresAt    DateTime
-  createdById  String
-  isRevoked    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  documentId  String   @unique
+  token       String   @unique
+  expiresAt   DateTime
+  createdById String
+  isRevoked   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   createdBy User     @relation("ShareLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
@@ -271,28 +273,28 @@ model CommentLike {
 // ================================
 
 model AIAnalysis {
-  id             String   @id @default(cuid())
-  documentId     String   @unique
-  summary        String?
-  keyPoints      String[] @default([])
-  suggestedTags  String[] @default([])
-  difficulty     String   @default("beginner") // beginner, intermediate, advanced
-  readingTime    Int      @default(0) // in minutes
-  language       String   @default("en")
-  confidence     Float    @default(0)
+  id                String   @id @default(cuid())
+  documentId        String   @unique
+  summary           String?
+  keyPoints         String[] @default([])
+  suggestedTags     String[] @default([])
+  difficulty        String   @default("beginner") // beginner, intermediate, advanced
+  readingTime       Int      @default(0) // in minutes
+  language          String   @default("en")
+  confidence        Float    @default(0)
   // Document reliability score (AI's estimate of document trustworthiness/accuracy) 0-100
-  reliabilityScore Int     @default(0)
-  sentimentScore Float? // Sentiment analysis of content
-  topicModeling  Json? // Topic modeling results
-  namedEntities  Json? // Named entity recognition
+  reliabilityScore  Int      @default(0)
+  sentimentScore    Float? // Sentiment analysis of content
+  topicModeling     Json? // Topic modeling results
+  namedEntities     Json? // Named entity recognition
   // Enhanced moderation fields
-  moderationScore Int     @default(50) // 0-100 safety score
-  safetyFlags     String[] @default([]) // List of detected safety issues
-  isSafe          Boolean  @default(false) // Overall safety assessment
-  recommendedAction String @default("review") // approve, review, reject
-  processedAt    DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  moderationScore   Int      @default(50) // 0-100 safety score
+  safetyFlags       String[] @default([]) // List of detected safety issues
+  isSafe            Boolean  @default(false) // Overall safety assessment
+  recommendedAction String   @default("review") // approve, review, reject
+  processedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -466,7 +468,7 @@ model Download {
 
 model View {
   id         String   @id @default(cuid())
-  userId     String?  // nullable for anonymous views
+  userId     String? // nullable for anonymous views
   documentId String
   ipAddress  String?
   userAgent  String?
@@ -492,7 +494,6 @@ model View {
 // ================================
 // SYSTEM ADMINISTRATION
 // ================================
-
 
 model ActivityLog {
   id           String   @id @default(cuid())

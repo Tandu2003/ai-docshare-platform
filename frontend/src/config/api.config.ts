@@ -18,12 +18,19 @@ export const API_ENDPOINTS = {
     RESEND_VERIFICATION: '/auth/resend-verification',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
+    UPDATE_PROFILE: '/auth/profile',
+    CHANGE_PASSWORD: '/auth/change-password',
   },
   // Future endpoints can be added here
   DOCUMENTS: {
     LIST: '/documents',
     UPLOAD: '/documents/upload',
     DOWNLOAD: '/documents/:id/download',
+  },
+  FILES: {
+    UPLOAD: '/files/upload',
+    UPLOAD_AVATAR: '/files/upload/avatar',
+    SECURE_URL: '/files/:fileId/secure-url',
   },
 } as const;
 

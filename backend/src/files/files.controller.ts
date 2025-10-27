@@ -110,6 +110,49 @@ export class FilesController {
     }
   }
 
+  @Post('upload/avatar')
+  @UseInterceptors(
+    FilesInterceptor('avatar', 1, {
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB max for avatars
+      },
+    }),
+  )
+  async uploadAvatar(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    const userId = req.user.id;
+
+    if (!files || files.length === 0) {
+      return ResponseHelper.error(res, 'Không có tệp ảnh được cung cấp', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const uploadResult = await this.filesService.uploadAvatar(files[0], userId);
+
+      return ResponseHelper.success(
+        res,
+        uploadResult,
+        'Ảnh đại diện đã được tải lên thành công',
+        HttpStatus.CREATED,
+      );
+    } catch (error) {
+      this.logger.error('Error uploading avatar:', error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Đã xảy ra lỗi khi tải lên ảnh đại diện',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get(':fileId/secure-url')
   @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({ summary: 'Get secure access URL for a file' })

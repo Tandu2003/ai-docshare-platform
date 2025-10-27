@@ -8,6 +8,8 @@ export interface User {
   lastName: string;
   avatar?: string;
   bio?: string;
+  website?: string;
+  location?: string;
   roleId: string;
   isVerified: boolean;
   isActive: boolean;

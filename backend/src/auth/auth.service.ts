@@ -1,26 +1,30 @@
-import * as crypto from 'crypto';
-import {
-  ForgotPasswordDto,
-  LoginDto,
-  RegisterDto,
-  ResendVerificationDto,
-  ResetPasswordDto,
-  VerifyEmailDto,
-} from './dto';
-import { AuthTokens, AuthUser, JwtPayload, LoginResponse } from './interfaces';
-import { AuthenticationError } from '@/common/errors';
-import { MailService } from '@/mail/mail.service';
-import { PrismaService } from '@/prisma/prisma.service';
+import * as bcrypt from 'bcrypt'
+import * as crypto from 'crypto'
+
+import { AuthenticationError } from '@/common/errors'
+import { MailService } from '@/mail/mail.service'
+import { PrismaService } from '@/prisma/prisma.service'
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { JwtService } from '@nestjs/jwt'
+
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  UpdateProfileDto,
+  VerifyEmailDto,
+} from './dto'
+import { AuthTokens, AuthUser, JwtPayload, LoginResponse } from './interfaces'
 
 @Injectable()
 export class AuthService {
@@ -543,6 +547,138 @@ export class AuthService {
         throw error;
       }
       throw new AuthenticationError('Đặt lại mật khẩu thất bại');
+    }
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<any> {
+    const { email, firstName, lastName, avatar, bio, website, location } =
+      updateProfileDto;
+
+    try {
+      // Check if email is being changed and if it's unique
+      if (email) {
+        const existingUser = await this.prisma.user.findFirst({
+          where: {
+            email,
+            id: {
+              not: userId,
+            },
+          },
+        });
+
+        if (existingUser) {
+          throw new ConflictException('Email đã tồn tại');
+        }
+      }
+
+      // Build update data object
+      const updateData: any = {};
+      if (email) updateData.email = email;
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (avatar !== undefined) updateData.avatar = avatar;
+      if (bio !== undefined) updateData.bio = bio;
+      if (website !== undefined) updateData.website = website;
+      if (location !== undefined) updateData.location = location;
+
+      // Update user
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        include: {
+          role: {
+            select: {
+              id: true,
+              name: true,
+              permissions: true,
+            },
+          },
+        },
+      });
+
+      const { password, ...userWithoutPassword } = user;
+      void password;
+
+      return {
+        ...userWithoutPassword,
+        role: {
+          name: user.role.name,
+          permissions: Array.isArray(user.role.permissions)
+            ? user.role.permissions
+            : typeof user.role.permissions === 'string'
+              ? JSON.parse(user.role.permissions)
+              : [],
+        },
+      };
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException('Cập nhật hồ sơ thất bại');
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const { currentPassword, newPassword } = changePasswordDto;
+
+    try {
+      // Get user
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Không tìm thấy người dùng');
+      }
+
+      // Verify current password
+      const isPasswordValid = await this.verifyPassword(
+        currentPassword,
+        user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+      }
+
+      // Hash new password
+      const hashedPassword = await this.hashPassword(newPassword);
+
+      // Update user with new password
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+
+      // Send confirmation email
+      await this.mailService.sendPasswordResetConfirmationEmail({
+        firstName: user.firstName,
+        email: user.email,
+      });
+
+      return {
+        message: 'Đổi mật khẩu thành công!',
+      };
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException('Đổi mật khẩu thất bại');
     }
   }
 }

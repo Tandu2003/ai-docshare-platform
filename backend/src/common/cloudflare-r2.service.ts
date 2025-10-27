@@ -1,15 +1,16 @@
-import * as crypto from 'crypto';
-import { Readable } from 'stream';
+import * as crypto from 'crypto'
+import { Readable } from 'stream'
+import { v4 as uuidv4 } from 'uuid'
+
 import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { v4 as uuidv4 } from 'uuid';
+} from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class CloudflareR2Service {
@@ -62,6 +63,7 @@ export class CloudflareR2Service {
   async uploadFile(
     file: Express.Multer.File,
     userId: string,
+    folder: string = 'uploads',
   ): Promise<{
     fileName: string;
     storageUrl: string;
@@ -93,7 +95,7 @@ export class CloudflareR2Service {
       // Generate unique filename
       const fileExtension = file.originalname.split('.').pop();
       const fileName = `${uuidv4()}.${fileExtension}`;
-      const key = `uploads/${userId}/${fileName}`;
+      const key = `${folder}/${userId}/${fileName}`;
       this.logger.log(`Generated key: ${key}`);
 
       // Upload to R2
@@ -261,7 +263,17 @@ export class CloudflareR2Service {
 
       // Extract key from full URL
       const url = new URL(storageUrl);
-      return url.pathname.substring(1); // Remove leading slash
+      let key = url.pathname.substring(1); // Remove leading slash
+
+      // Remove bucket name and any prefixes to get just the S3 key
+      if (key.includes('/')) {
+        const parts = key.split('/');
+        // Skip bucket name, keep the rest
+        key = parts.slice(1).join('/');
+      }
+
+      this.logger.log(`Extracted key from URL: ${storageUrl} -> ${key}`);
+      return key;
     } catch (error) {
       this.logger.error('Error extracting key from URL:', error);
       throw new BadRequestException('Định dạng URL lưu trữ không hợp lệ');

@@ -1,14 +1,16 @@
-import * as crypto from 'crypto';
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '@/notifications/notifications.service';
+import * as crypto from 'crypto'
+
+import { NotificationsService } from '@/notifications/notifications.service'
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
+} from '@nestjs/common'
+
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { PrismaService } from '../prisma/prisma.service'
 
 export interface FileUploadResult {
   id: string;
@@ -340,6 +342,117 @@ export class FilesService {
     }
 
     this.logger.log(`File validation passed for: ${file.originalname}`);
+  }
+
+  /**
+   * Upload avatar for user
+   */
+  async uploadAvatar(file: Express.Multer.File, userId: string) {
+    try {
+      this.logger.log(`Uploading avatar for user: ${userId}`);
+
+      // Validate avatar file
+      this.validateAvatarFile(file);
+
+      // Upload to R2
+      const uploadResult = await this.r2Service.uploadFile(
+        file,
+        userId,
+        'avatars',
+      );
+      this.logger.log(`R2 upload completed:`, uploadResult);
+
+      // Save file metadata to database
+      const fileRecord = await this.prisma.file.create({
+        data: {
+          originalName: file.originalname,
+          fileName: uploadResult.fileName,
+          fileSize: BigInt(uploadResult.fileSize),
+          mimeType: uploadResult.mimeType,
+          fileHash: uploadResult.fileHash,
+          storageUrl: uploadResult.storageUrl,
+          uploaderId: userId,
+          isPublic: true, // Avatars are public
+          metadata: {
+            type: 'avatar',
+          },
+        },
+      });
+
+      // Get signed URL for the avatar (expires in 1 year)
+      // Use the R2 key format: avatars/userId/filename.ext
+      const r2Key = `avatars/${userId}/${uploadResult.fileName}`;
+      this.logger.log(`Getting signed URL for key: ${r2Key}`);
+
+      let avatarUrl: string;
+      try {
+        // Try to get signed URL
+        avatarUrl = await this.r2Service.getSignedDownloadUrl(
+          r2Key,
+          31536000, // 1 year
+        );
+      } catch (error) {
+        // If getting signed URL fails, use the storage URL directly
+        this.logger.warn('Failed to get signed URL, using storage URL:', error);
+        avatarUrl = uploadResult.storageUrl;
+      }
+
+      // Update user's avatar field with the signed URL
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          avatar: avatarUrl,
+        },
+      });
+
+      this.logger.log(`Avatar uploaded successfully for user ${userId}`);
+
+      return {
+        id: fileRecord.id,
+        avatarUrl,
+        originalName: fileRecord.originalName,
+        fileName: fileRecord.fileName,
+        fileSize: Number(fileRecord.fileSize),
+        mimeType: fileRecord.mimeType,
+      };
+    } catch (error) {
+      this.logger.error('Error uploading avatar:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate avatar file
+   */
+  private validateAvatarFile(file: Express.Multer.File) {
+    this.logger.log(
+      `Validating avatar: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`,
+    );
+
+    // Check file size (max 5MB for avatars)
+    const maxAvatarSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxAvatarSize) {
+      throw new BadRequestException(
+        'Kích thước file ảnh không được vượt quá 5MB',
+      );
+    }
+
+    // Check file type (only images)
+    const allowedTypes = [
+      'image/jpeg', // .jpg, .jpeg
+      'image/png', // .png
+      'image/gif', // .gif
+      'image/webp', // .webp
+      'image/svg+xml', // .svg
+    ];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Chỉ cho phép file ảnh (JPG, PNG, GIF, WEBP, SVG)',
+      );
+    }
+
+    this.logger.log(`Avatar validation passed for: ${file.originalname}`);
   }
 
   /**

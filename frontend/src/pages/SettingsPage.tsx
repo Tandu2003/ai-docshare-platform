@@ -1,33 +1,16 @@
-import { useState } from 'react';
+import { Camera, Eye, EyeOff, Globe, Save, Settings, Shield, User } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 
-import {
-  Bell,
-  Eye,
-  EyeOff,
-  Globe,
-  Palette,
-  Save,
-  Settings,
-  Shield,
-  User,
-} from 'lucide-react';
-
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { useAuth } from '@/hooks';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAuth } from '@/hooks'
+import { FilesService } from '@/services/files.service'
+import { authService } from '@/utils'
 
 interface UserSettings {
   firstName: string;
@@ -36,50 +19,160 @@ interface UserSettings {
   bio?: string;
   website?: string;
   location?: string;
-  language: string;
-  timezone: string;
-  theme: 'light' | 'dark' | 'system';
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  marketingEmails: boolean;
-  profileVisibility: 'public' | 'private' | 'friends';
-  showEmail: boolean;
-  showLocation: boolean;
+}
+
+interface PasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, fetchCurrentUser } = useAuth();
   const [settings, setSettings] = useState<UserSettings>({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
-    bio: '',
-    website: '',
-    location: '',
-    language: 'en',
-    timezone: 'UTC',
-    theme: 'system',
-    emailNotifications: true,
-    pushNotifications: true,
-    marketingEmails: false,
-    profileVisibility: 'public',
-    showEmail: false,
-    showLocation: true,
+    bio: user?.bio || '',
+    website: (user as any)?.website || '',
+    location: (user as any)?.location || '',
+  });
+  const [passwordData, setPasswordData] = useState<PasswordData>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const updatedUser = await authService.updateProfile({
+        firstName: settings.firstName,
+        lastName: settings.lastName,
+        email: settings.email,
+        bio: settings.bio,
+        website: settings.website,
+        location: settings.location,
+      });
+
+      // Refresh user data
+      await fetchCurrentUser();
+
+      toast.success('Cập nhật hồ sơ thành công!');
+
+      // Update form with saved data
+      setSettings({
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        bio: updatedUser.bio || '',
+        website: (updatedUser as any).website || '',
+        location: (updatedUser as any).location || '',
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Cập nhật hồ sơ thất bại');
+    } finally {
       setIsLoading(false);
-      // Show success message
-    }, 1000);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    // Validate passwords
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('Mật khẩu mới và xác nhận không khớp');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error('Mật khẩu mới phải có ít nhất 8 ký tự');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authService.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      toast.success('Đổi mật khẩu thành công!');
+
+      // Clear form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Đổi mật khẩu thất bại');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSettingChange = (key: keyof UserSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handlePasswordChange = (key: keyof PasswordData, value: any) => {
+    setPasswordData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Chỉ cho phép file ảnh (JPG, PNG, GIF, WEBP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Kích thước file không được vượt quá 5MB');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const response = await FilesService.uploadAvatar(file);
+
+      if (response.success && response.data) {
+        // Refresh user data
+        await fetchCurrentUser();
+
+        toast.success('Cập nhật ảnh đại diện thành công!');
+      } else {
+        throw new Error(response.message || 'Upload failed');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Cập nhật ảnh đại diện thất bại');
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   return (
@@ -95,330 +188,256 @@ export default function SettingsPage() {
             Quản lý cài đặt tài khoản và tùy chọn của bạn
           </p>
         </div>
-        <Button onClick={handleSave} disabled={isLoading}>
-          <Save className="mr-2 h-4 w-4" />
-          {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Profile Settings */}
+        {/* Main Settings */}
         <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Thông tin hồ sơ
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-lg">
-                    {settings.firstName.charAt(0)}
-                    {settings.lastName.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <Button variant="outline" size="sm">
-                    Thay đổi ảnh đại diện
-                  </Button>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    JPG, PNG hoặc GIF. Kích thước tối đa 2MB.
-                  </p>
-                </div>
-              </div>
+          {/* Tabs */}
+          <div className="bg-muted flex space-x-1 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'profile'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Hồ sơ
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('password')}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'password'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Bảo mật
+            </button>
+          </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Thông tin hồ sơ
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-16 w-16">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt="Avatar" />
+                      ) : (
+                        <AvatarFallback className="text-lg">
+                          {settings.firstName.charAt(0)}
+                          {settings.lastName.charAt(0)}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="absolute right-0 bottom-0 h-6 w-6 rounded-full"
+                      onClick={handleAvatarClick}
+                      disabled={isUploadingAvatar}
+                    >
+                      <Camera className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAvatarClick}
+                      disabled={isUploadingAvatar}
+                    >
+                      {isUploadingAvatar
+                        ? 'Đang tải lên...'
+                        : 'Thay đổi ảnh đại diện'}
+                    </Button>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      JPG, PNG hoặc GIF. Kích thước tối đa 5MB.
+                    </p>
+                  </div>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Tên</Label>
+                    <Input
+                      id="firstName"
+                      value={settings.firstName}
+                      onChange={e =>
+                        handleSettingChange('firstName', e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Họ</Label>
+                    <Input
+                      id="lastName"
+                      value={settings.lastName}
+                      onChange={e =>
+                        handleSettingChange('lastName', e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">Tên</Label>
+                  <Label htmlFor="email">Địa chỉ email</Label>
                   <Input
-                    id="firstName"
-                    value={settings.firstName}
-                    onChange={e =>
-                      handleSettingChange('firstName', e.target.value)
-                    }
+                    id="email"
+                    type="email"
+                    value={settings.email}
+                    onChange={e => handleSettingChange('email', e.target.value)}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Họ</Label>
+                  <Label htmlFor="bio">Tiểu sử</Label>
                   <Input
-                    id="lastName"
-                    value={settings.lastName}
-                    onChange={e =>
-                      handleSettingChange('lastName', e.target.value)
-                    }
+                    id="bio"
+                    placeholder="Hãy cho chúng tôi biết về bạn..."
+                    value={settings.bio || ''}
+                    onChange={e => handleSettingChange('bio', e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Địa chỉ email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={settings.email}
-                  onChange={e => handleSettingChange('email', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Tiểu sử</Label>
-                <Input
-                  id="bio"
-                  placeholder="Hãy cho chúng tôi biết về bạn..."
-                  value={settings.bio}
-                  onChange={e => handleSettingChange('bio', e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    placeholder="https://websitecuaban.com"
-                    value={settings.website}
-                    onChange={e =>
-                      handleSettingChange('website', e.target.value)
-                    }
-                  />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      placeholder="https://websitecuaban.com"
+                      value={settings.website || ''}
+                      onChange={e =>
+                        handleSettingChange('website', e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Địa chỉ</Label>
+                    <Input
+                      id="location"
+                      placeholder="Thành phố, Quốc gia"
+                      value={settings.location || ''}
+                      onChange={e =>
+                        handleSettingChange('location', e.target.value)
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    placeholder="Thành phố, Quốc gia"
-                    value={settings.location}
-                    onChange={e =>
-                      handleSettingChange('location', e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Thông báo
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Thông báo qua email</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Nhận thông báo qua email cho các cập nhật quan trọng
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.emailNotifications}
-                  onCheckedChange={checked =>
-                    handleSettingChange('emailNotifications', checked)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Thông báo đẩy</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Nhận thông báo đẩy trong trình duyệt
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.pushNotifications}
-                  onCheckedChange={checked =>
-                    handleSettingChange('pushNotifications', checked)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email tiếp thị</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Nhận email về các tính năng mới và khuyến mãi
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.marketingEmails}
-                  onCheckedChange={checked =>
-                    handleSettingChange('marketingEmails', checked)
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Quyền riêng tư & Bảo mật
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Hiển thị hồ sơ</Label>
-                <Select
-                  value={settings.profileVisibility}
-                  onValueChange={value =>
-                    handleSettingChange('profileVisibility', value)
-                  }
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={isLoading}
+                  className="w-full"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">Công khai</SelectItem>
-                    <SelectItem value="private">Riêng tư</SelectItem>
-                    <SelectItem value="friends">Chỉ bạn bè</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Hiển thị địa chỉ email</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Cho phép người khác xem địa chỉ email của bạn
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.showEmail}
-                  onCheckedChange={checked =>
-                    handleSettingChange('showEmail', checked)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Hiển thị vị trí</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Cho phép người khác xem vị trí của bạn
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.showLocation}
-                  onCheckedChange={checked =>
-                    handleSettingChange('showLocation', checked)
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label>Đổi mật khẩu</Label>
+          {/* Password Tab */}
+          {activeTab === 'password' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Đổi mật khẩu
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Mật khẩu hiện tại</Label>
                   <Input
+                    id="currentPassword"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Mật khẩu hiện tại"
+                    placeholder="Nhập mật khẩu hiện tại"
+                    value={passwordData.currentPassword}
+                    onChange={e =>
+                      handlePasswordChange('currentPassword', e.target.value)
+                    }
                   />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Mật khẩu mới"
-                  />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Xác nhận mật khẩu mới"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    {showPassword ? 'Ẩn' : 'Hiển thị'} mật khẩu
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">Mật khẩu mới</Label>
+                  <Input
+                    id="newPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Nhập mật khẩu mới"
+                    value={passwordData.newPassword}
+                    onChange={e =>
+                      handlePasswordChange('newPassword', e.target.value)
+                    }
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Mật khẩu phải có ít nhất 8 ký tự
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Nhập lại mật khẩu mới"
+                    value={passwordData.confirmPassword}
+                    onChange={e =>
+                      handlePasswordChange('confirmPassword', e.target.value)
+                    }
+                  />
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPassword(!showPassword)}
+                  type="button"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  {showPassword ? 'Ẩn' : 'Hiển thị'} mật khẩu
+                </Button>
+
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {isLoading ? 'Đang lưu...' : 'Đổi mật khẩu'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Preferences Sidebar */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Tùy chọn
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Ngôn ngữ</Label>
-                <Select
-                  value={settings.language}
-                  onValueChange={value =>
-                    handleSettingChange('language', value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">Tiếng Anh</SelectItem>
-                    <SelectItem value="vi">Tiếng Việt</SelectItem>
-                    <SelectItem value="es">Tiếng Tây Ban Nha</SelectItem>
-                    <SelectItem value="fr">Tiếng Pháp</SelectItem>
-                    <SelectItem value="de">Tiếng Đức</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Giao diện</Label>
-                <Select
-                  value={settings.theme}
-                  onValueChange={value => handleSettingChange('theme', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Sáng</SelectItem>
-                    <SelectItem value="dark">Tối</SelectItem>
-                    <SelectItem value="system">Hệ thống</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Múi giờ</Label>
-                <Select
-                  value={settings.timezone}
-                  onValueChange={value =>
-                    handleSettingChange('timezone', value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="America/New_York">Giờ Đông</SelectItem>
-                    <SelectItem value="America/Los_Angeles">
-                      Giờ Thái Bình Dương
-                    </SelectItem>
-                    <SelectItem value="Europe/London">Luân Đôn</SelectItem>
-                    <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -429,33 +448,24 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Email đã xác thực</span>
-                <Badge variant="default">Đã xác thực</Badge>
+                <Badge variant={user?.isVerified ? 'default' : 'secondary'}>
+                  {user?.isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
+                </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Trạng thái tài khoản</span>
-                <Badge variant="default">Đang hoạt động</Badge>
+                <Badge variant={user?.isActive ? 'default' : 'destructive'}>
+                  {user?.isActive ? 'Đang hoạt động' : 'Đã khóa'}
+                </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Thành viên từ</span>
                 <span className="text-muted-foreground text-sm">
-                  {new Date().toLocaleDateString()}
+                  {user?.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString('vi-VN')
+                    : 'N/A'}
                 </span>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Khu vực nguy hiểm</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="destructive" className="w-full">
-                Xóa tài khoản
-              </Button>
-              <p className="text-muted-foreground text-xs">
-                Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị
-                xóa vĩnh viễn.
-              </p>
             </CardContent>
           </Card>
         </div>

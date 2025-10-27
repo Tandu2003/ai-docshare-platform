@@ -1,4 +1,6 @@
-import { API_ENDPOINTS } from '@/config';
+import { API_ENDPOINTS } from '@/config'
+import { apiClient } from '@/utils/api-client'
+
 import type {
   ForgotPasswordDto,
   LoginDto,
@@ -9,8 +11,6 @@ import type {
   User,
   VerifyEmailDto,
 } from '@/types';
-import { apiClient } from '@/utils/api-client';
-
 // We need to access the store to get the access token
 // This is a simple way to access the store from outside React components
 let store: any = null;
@@ -327,6 +327,59 @@ class AuthService {
       }
 
       throw new Error(response.message || 'Failed to send verification email');
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(profileData: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    bio?: string;
+    website?: string;
+    location?: string;
+  }): Promise<User> {
+    try {
+      const response = await apiClient.patch<User>(
+        API_ENDPOINTS.AUTH.UPDATE_PROFILE,
+        profileData,
+      );
+
+      if (response.success && response.data) {
+        // Update stored user data
+        this.setUserData(response.data);
+        return response.data;
+      }
+
+      throw new Error(response.message || 'Failed to update profile');
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Change password
+   */
+  async changePassword(passwordData: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.patch(
+        API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+        passwordData,
+      );
+
+      if (response.success) {
+        return { message: response.message || 'Password changed successfully' };
+      }
+
+      throw new Error(response.message || 'Failed to change password');
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
