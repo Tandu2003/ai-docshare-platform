@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-
 import {
   AlertTriangle,
   Calendar,
@@ -16,13 +14,14 @@ import {
   Sparkles,
   User,
   XCircle,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -30,35 +29,35 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   approveModerationDocument,
   generateModerationAnalysis,
   getModerationDocument,
   getModerationQueue,
+  getSimilarityResults,
+  processSimilarityDecision,
   rejectModerationDocument,
-} from '@/services/document.service';
+  SimilarityResult,
+  type,
+} from '@/services/document.service'
+
 import type {
   DocumentModerationStatus,
   ModerationDocument,
@@ -148,6 +147,10 @@ export default function AdminDashboardPage() {
     id: string;
     title: string;
   } | null>(null);
+  const [similarityWarnings, setSimilarityWarnings] = useState<
+    SimilarityResult[]
+  >([]);
+  const [_similarityLoading, setSimilarityLoading] = useState(false);
 
   const summary = useMemo(
     () => queueData?.summary ?? emptySummary,
@@ -188,9 +191,12 @@ export default function AdminDashboardPage() {
     if (selectedDocument) {
       setModerationNotes(selectedDocument.moderationNotes ?? '');
       setPublishPublicly(Boolean(selectedDocument.isPublic));
+      // Load similarity warnings for the selected document
+      loadSimilarityWarnings(selectedDocument.id);
     } else {
       setModerationNotes('');
       setPublishPublicly(true);
+      setSimilarityWarnings([]);
     }
   }, [selectedDocument]);
 
@@ -306,6 +312,42 @@ export default function AdminDashboardPage() {
       toast.error(message);
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const loadSimilarityWarnings = async (documentId: string) => {
+    setSimilarityLoading(true);
+    try {
+      const warnings = await getSimilarityResults(documentId);
+      setSimilarityWarnings(warnings);
+    } catch (error) {
+      console.error('Error loading similarity warnings:', error);
+      toast.error('Không thể tải cảnh báo tương đồng');
+    } finally {
+      setSimilarityLoading(false);
+    }
+  };
+
+  const handleSimilarityDecision = async (
+    similarityId: string,
+    decision: { isDuplicate: boolean; notes?: string },
+  ) => {
+    try {
+      await processSimilarityDecision(similarityId, decision);
+      toast.success(
+        decision.isDuplicate
+          ? 'Đã đánh dấu là trùng lặp'
+          : 'Đã đánh dấu là khác biệt',
+      );
+
+      // Remove the processed warning from the list
+      setSimilarityWarnings(prev =>
+        prev.filter(warning => warning.id !== similarityId),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Không thể xử lý quyết định';
+      toast.error(message);
     }
   };
 
@@ -1247,6 +1289,91 @@ export default function AdminDashboardPage() {
             <p className="text-muted-foreground py-8 text-center text-sm">
               Không tìm thấy dữ liệu cho tài liệu này.
             </p>
+          )}
+
+          {/* Similarity Warnings Section */}
+          {similarityWarnings.length > 0 && (
+            <div className="space-y-3">
+              <Separator />
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                <Label className="text-base font-semibold text-yellow-700">
+                  Cảnh báo tài liệu tương đồng
+                </Label>
+              </div>
+
+              <div className="space-y-2">
+                {similarityWarnings.map(warning => (
+                  <Card
+                    key={warning.id}
+                    className="border-l-4 border-l-yellow-500"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="mb-2 flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className="text-yellow-600"
+                            >
+                              {(warning.similarityScore * 100).toFixed(1)}%
+                              tương đồng
+                            </Badge>
+                            <span className="text-sm text-gray-500">
+                              {warning.similarityType}
+                            </span>
+                          </div>
+
+                          <h4 className="mb-1 font-medium text-gray-900">
+                            {warning.targetDocument.title}
+                          </h4>
+
+                          <div className="text-sm text-gray-600">
+                            <span>Người đăng: </span>
+                            <span className="font-medium">
+                              {warning.targetDocument.uploader.firstName ||
+                                warning.targetDocument.uploader.lastName ||
+                                warning.targetDocument.uploader.username}
+                            </span>
+                            <span className="mx-2">•</span>
+                            <span>
+                              {formatDateTime(warning.targetDocument.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              handleSimilarityDecision(warning.id, {
+                                isDuplicate: false,
+                              });
+                            }}
+                          >
+                            <CheckCircle2 className="mr-1 h-4 w-4" />
+                            Khác biệt
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              handleSimilarityDecision(warning.id, {
+                                isDuplicate: true,
+                              });
+                            }}
+                          >
+                            <XCircle className="mr-1 h-4 w-4" />
+                            Trùng lặp
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           )}
 
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

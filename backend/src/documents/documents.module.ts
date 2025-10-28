@@ -5,6 +5,7 @@ import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesModule } from '../files/files.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SimilarityModule } from '../similarity/similarity.module';
 import { AdminDocumentsController } from './admin-documents.controller';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
@@ -20,6 +21,7 @@ import { ConfigModule } from '@nestjs/config';
     CaslModule,
     AIModule,
     NotificationsModule,
+    SimilarityModule,
   ],
   controllers: [DocumentsController, AdminDocumentsController],
   providers: [

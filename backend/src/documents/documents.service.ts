@@ -1,25 +1,24 @@
-import { randomBytes } from 'crypto';
-import { AIService } from '../ai/ai.service';
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { SystemSettingsService } from '../common/system-settings.service';
-import { FilesService } from '../files/files.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { ShareDocumentDto } from './dto/share-document.dto';
-import { NotificationsService } from '@/notifications/notifications.service';
+import * as archiver from 'archiver'
+import { randomBytes } from 'crypto'
+
+import { NotificationsService } from '@/notifications/notifications.service'
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  DocumentModerationStatus,
-  DocumentShareLink,
-  Prisma,
-} from '@prisma/client';
-import * as archiver from 'archiver';
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { DocumentModerationStatus, DocumentShareLink, Prisma } from '@prisma/client'
+
+import { AIService } from '../ai/ai.service'
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { SystemSettingsService } from '../common/system-settings.service'
+import { FilesService } from '../files/files.service'
+import { PrismaService } from '../prisma/prisma.service'
+import { SimilarityJobService } from '../similarity/similarity-job.service'
+import { CreateDocumentDto } from './dto/create-document.dto'
+import { ShareDocumentDto } from './dto/share-document.dto'
 
 @Injectable()
 export class DocumentsService {
@@ -33,6 +32,7 @@ export class DocumentsService {
     private aiService: AIService,
     private notifications: NotificationsService,
     private systemSettings: SystemSettingsService,
+    private similarityJobService: SimilarityJobService,
   ) {}
 
   /**
@@ -254,6 +254,20 @@ export class DocumentsService {
         } catch (error) {
           this.logger.warn(
             `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
+          );
+        }
+      }
+
+      // Queue similarity detection for background processing
+      if (wantsPublic) {
+        try {
+          await this.similarityJobService.queueSimilarityDetection(document.id);
+          this.logger.log(
+            `Queued similarity detection for document ${document.id}`,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to queue similarity detection for document ${document.id}: ${error.message}`,
           );
         }
       }

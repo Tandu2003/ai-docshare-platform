@@ -266,11 +266,11 @@ export class CloudflareR2Service {
       let key = url.pathname.substring(1); // Remove leading slash
 
       // Remove bucket name and any prefixes to get just the S3 key
-      if (key.includes('/')) {
-        const parts = key.split('/');
-        // Skip bucket name, keep the rest
-        key = parts.slice(1).join('/');
-      }
+      // if (key.includes('/')) {
+      //   const parts = key.split('/');
+      //   // Skip bucket name, keep the rest
+      //   key = parts.slice(1).join('/');
+      // }
 
       this.logger.log(`Extracted key from URL: ${storageUrl} -> ${key}`);
       return key;

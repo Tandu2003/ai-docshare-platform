@@ -67,6 +67,8 @@ model User {
   CommentLike        CommentLike[]
   ActivityLog        ActivityLog[]
   shareLinks         DocumentShareLink[]    @relation("ShareLinkCreator")
+  // New similarity relation
+  processedSimilarities DocumentSimilarity[]
 
   // Indexes
   @@index([email])
@@ -147,6 +149,11 @@ model Document {
   views           View[]
   recommendations RecommendationEngine[]
   shareLink       DocumentShareLink?
+  // New similarity relations
+  embedding        DocumentEmbedding?
+  similarityJobs   SimilarityJob[]
+  sourceSimilarities DocumentSimilarity[] @relation("SourceSimilarity")
+  targetSimilarities DocumentSimilarity[] @relation("TargetSimilarity")
 
   // Indexes
   @@index([uploaderId])
@@ -548,6 +555,78 @@ model File {
   @@index([fileHash])
   @@index([createdAt])
   @@map("files")
+}
+
+// ================================
+// SIMILARITY DETECTION
+// ================================
+
+model DocumentEmbedding {
+  id          String   @id @default(cuid())
+  documentId  String   @unique
+  embedding   Float[]  // Vector embedding array
+  model       String   @default("text-embedding-ada-002") // Embedding model used
+  version     String   @default("1.0") // Model version
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([documentId])
+  @@index([model])
+  @@index([createdAt])
+  @@map("document_embeddings")
+}
+
+model DocumentSimilarity {
+  id                String   @id @default(cuid())
+  sourceDocumentId  String   // Document being analyzed
+  targetDocumentId  String   // Similar document found
+  similarityScore   Float    // Cosine similarity score (0-1)
+  similarityType    String   @default("content") // content, title, description
+  isProcessed       Boolean  @default(false) // Whether admin has reviewed
+  isDuplicate       Boolean? // Admin decision: true/false/null
+  adminNotes        String?  // Admin notes about similarity
+  processedAt       DateTime?
+  processedById     String?  // Admin who processed
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  sourceDocument Document @relation("SourceSimilarity", fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  targetDocument Document @relation("TargetSimilarity", fields: [targetDocumentId], references: [id], onDelete: Cascade)
+  processedBy    User?    @relation(fields: [processedById], references: [id])
+
+  // Constraints
+  @@unique([sourceDocumentId, targetDocumentId])
+  @@index([sourceDocumentId])
+  @@index([targetDocumentId])
+  @@index([similarityScore])
+  @@index([isProcessed])
+  @@index([createdAt])
+  @@map("document_similarities")
+}
+
+model SimilarityJob {
+  id          String   @id @default(cuid())
+  documentId  String
+  status      String   @default("pending") // pending, processing, completed, failed
+  progress    Int      @default(0) // 0-100
+  errorMessage String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("similarity_jobs")
 }
 
 // ================================
