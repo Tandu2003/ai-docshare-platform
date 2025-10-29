@@ -156,4 +156,19 @@ export class AIController {
       fileName.trim(),
     );
   }
+
+  @Get('queue-stats')
+  @CheckPolicy({ action: 'read', subject: 'User' })
+  @ApiOperation({
+    summary: 'Get AI request queue statistics',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Queue statistics retrieved successfully',
+  })
+  async getQueueStats() {
+    this.logger.log('Getting AI request queue statistics');
+
+    return await this.aiService.getQueueStats();
+  }
 }

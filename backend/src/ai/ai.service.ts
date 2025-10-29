@@ -1,8 +1,13 @@
 import { SystemSettingsService } from '../common/system-settings.service';
+import { isRateLimitError } from '../common/utils/retry.util';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DocumentAnalysisResult, GeminiService } from './gemini.service';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 export interface AIAnalysisRequest {
   fileIds: string[];
@@ -144,22 +149,19 @@ export class AIService {
       const processingTime = Date.now() - startTime;
       this.logger.error('Error in AI analysis:', error);
 
-      // Return error with fallback data (Vietnamese)
-      return {
-        success: false,
-        data: {
-          title: 'Lỗi phân tích',
-          description: 'Không thể phân tích nội dung tài liệu.',
-          tags: ['tài liệu'],
-          summary: 'Phân tích thất bại',
-          keyPoints: [],
-          difficulty: 'beginner',
-          language: 'vi',
-          confidence: 0,
-        },
-        processedFiles: 0,
-        processingTime,
-      };
+      // Check if it's a rate limit error and throw appropriate exception
+      if (isRateLimitError(error)) {
+        this.logger.error(
+          'AI analysis failed due to API rate limiting. The service has exhausted its quota.',
+        );
+        throw new ServiceUnavailableException(
+          'Dịch vụ AI hiện đang quá tải. Vui lòng thử lại sau vài phút. ' +
+            'Nếu vấn đề vẫn tiếp diễn, vui lòng liên hệ quản trị viên hệ thống.',
+        );
+      }
+
+      // For other errors, re-throw the original error
+      throw error;
     }
   }
 
@@ -414,6 +416,35 @@ export class AIService {
         files: [],
         count: 0,
         message: 'Error searching your files',
+      };
+    }
+  }
+
+  /**
+   * Get request queue statistics
+   */
+  async getQueueStats() {
+    try {
+      const stats = this.geminiService.getQueueStats();
+
+      return {
+        success: true,
+        ...stats,
+        message:
+          stats.queueLength > 0
+            ? `${stats.queueLength} requests waiting in queue`
+            : 'No requests in queue',
+      };
+    } catch (error) {
+      this.logger.error('Error getting queue stats:', error);
+      return {
+        success: false,
+        queueLength: 0,
+        processing: 0,
+        requestsInInterval: 0,
+        intervalCap: 0,
+        remainingInInterval: 0,
+        message: 'Error retrieving queue statistics',
       };
     }
   }

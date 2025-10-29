@@ -1,7 +1,18 @@
+import { RequestQueue } from '../common/utils/queue.util';
+import {
+  getRetryAfterMs,
+  isRateLimitError,
+  withRetry,
+} from '../common/utils/retry.util';
 import { FilesService } from '../files/files.service';
 import { ContentExtractorService } from './content-extractor.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface DocumentAnalysisResult {
@@ -26,6 +37,7 @@ export interface DocumentAnalysisResult {
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private genAI: GoogleGenerativeAI;
+  private requestQueue: RequestQueue;
 
   constructor(
     private configService: ConfigService,
@@ -38,6 +50,18 @@ export class GeminiService {
       throw new Error('Gemini API key is required');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
+
+    // Initialize request queue with rate limiting
+    // Gemini free tier: ~60 requests/minute, we'll be conservative
+    this.requestQueue = new RequestQueue({
+      concurrency: 1, // Process one at a time
+      interval: 60000, // 1 minute
+      intervalCap: 50, // Max 50 requests per minute (conservative)
+    });
+
+    this.logger.log(
+      'Gemini service initialized with rate limiting (50 req/min)',
+    );
   }
 
   /**
@@ -120,8 +144,66 @@ export class GeminiService {
         }[],
       );
 
-      // Generate content with text prompt only
-      const result = await model.generateContent(prompt);
+      // Log queue stats before adding request
+      const queueStats = this.requestQueue.getStats();
+      if (queueStats.queueLength > 0) {
+        this.logger.log(
+          `Queue status: ${queueStats.queueLength} waiting, ` +
+            `${queueStats.remainingInInterval} requests remaining in current interval`,
+        );
+      }
+
+      // Use queue + retry logic for rate limiting
+      const result = await this.requestQueue.add(async () => {
+        return await withRetry(
+          async () => {
+            this.logger.debug('Attempting to generate content with Gemini...');
+            return await model.generateContent(prompt);
+          },
+          {
+            maxRetries: 5, // Retry up to 5 times
+            initialDelayMs: 2000, // Start with 2 second delay
+            maxDelayMs: 60000, // Max 60 seconds delay
+            backoffMultiplier: 2, // Double delay each time
+            shouldRetry: error => {
+              // Check if it's a retryable error
+              const isRetryable =
+                isRateLimitError(error) ||
+                error.status === 503 ||
+                error.statusCode === 503;
+
+              if (isRetryable) {
+                this.logger.warn(
+                  `Retryable error detected: ${error.message || error.status || error.statusCode}`,
+                );
+              }
+
+              return isRetryable;
+            },
+            onRetry: (error, attempt, delayMs) => {
+              // Check if error has retry-after header
+              const retryAfter = getRetryAfterMs(error);
+
+              this.logger.warn(
+                `Rate limit hit. Retry attempt ${attempt} after ${Math.round(delayMs / 1000)}s delay` +
+                  (retryAfter
+                    ? ` (server suggested ${Math.round(retryAfter / 1000)}s)`
+                    : ''),
+              );
+
+              if (isRateLimitError(error)) {
+                this.logger.warn(
+                  'Gemini API rate limit exceeded. Consider:\n' +
+                    '  1. Reducing request frequency\n' +
+                    '  2. Upgrading your API quota\n' +
+                    '  3. Using a different model with higher limits',
+                );
+              }
+            },
+          },
+        );
+      });
+
       const response = result.response;
       const text = response.text();
 
@@ -129,9 +211,22 @@ export class GeminiService {
 
       return this.parseAnalysisResult(text);
     } catch (error) {
-      this.logger.error('Error analyzing document with Gemini:', error);
+      this.logger.error('Error analyzing document with Gemini:');
+      this.logger.error(error);
+
+      // Provide specific error messages based on error type
+      if (isRateLimitError(error)) {
+        const retryAfter = getRetryAfterMs(error);
+        const waitTime = retryAfter ? Math.ceil(retryAfter / 1000) : 60; // Default to 60s
+
+        throw new ServiceUnavailableException(
+          `Gemini API đã đạt giới hạn yêu cầu. Vui lòng thử lại sau ${waitTime} giây. ` +
+            `Nếu vấn đề vẫn tiếp diễn, hãy liên hệ quản trị viên để tăng hạn mức API.`,
+        );
+      }
+
       throw new BadRequestException(
-        `Failed to analyze document: ${error.message}`,
+        `Không thể phân tích tài liệu: ${error.message}`,
       );
     }
   }
@@ -417,6 +512,13 @@ Please analyze all provided files and provide a consolidated response in valid J
   }
 
   /**
+   * Get request queue statistics
+   */
+  getQueueStats() {
+    return this.requestQueue.getStats();
+  }
+
+  /**
    * Test Gemini connection
    */
   async testConnection(): Promise<boolean> {
@@ -425,9 +527,27 @@ Please analyze all provided files and provide a consolidated response in valid J
         this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
       this.logger.log(`Testing connection with Gemini model: ${modelName}`);
       const model = this.genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(
-        'Say "Hello" if you can read this.',
+
+      // Use retry logic for connection test as well
+      const result = await withRetry(
+        async () => {
+          return await model.generateContent(
+            'Say "Hello" if you can read this.',
+          );
+        },
+        {
+          maxRetries: 3,
+          initialDelayMs: 1000,
+          maxDelayMs: 10000,
+          backoffMultiplier: 2,
+          onRetry: (error, attempt, delayMs) => {
+            this.logger.warn(
+              `Connection test retry ${attempt} after ${Math.round(delayMs / 1000)}s`,
+            );
+          },
+        },
       );
+
       const response = result.response;
       const text = response.text();
 
@@ -435,6 +555,13 @@ Please analyze all provided files and provide a consolidated response in valid J
       return text.toLowerCase().includes('hello');
     } catch (error) {
       this.logger.error('Gemini connection test failed:', error);
+
+      if (isRateLimitError(error)) {
+        this.logger.warn(
+          'Connection test failed due to rate limiting. This may indicate API quota exhaustion.',
+        );
+      }
+
       return false;
     }
   }
