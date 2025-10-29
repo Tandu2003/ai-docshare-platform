@@ -20,7 +20,7 @@ import {
   DocumentShareLink,
   Prisma,
 } from '@prisma/client';
-import * as archiver from 'archiver';
+import archiver from 'archiver';
 
 @Injectable()
 export class DocumentsService {
@@ -768,6 +768,9 @@ export class DocumentsService {
         }),
       ]);
 
+      // Get download cost settings
+      const settings = await this.systemSettings.getPointsSettings();
+
       // Transform the data and add secure URLs
       const transformedDocuments = await Promise.all(
         documents.map(async document => {
@@ -785,6 +788,9 @@ export class DocumentsService {
               userId,
             });
 
+          const isOwner = document.uploaderId === userId;
+          const downloadCost = document.downloadCost || settings.downloadCost;
+
           return {
             id: document.id,
             title: document.title,
@@ -801,6 +807,7 @@ export class DocumentsService {
             category: document.category,
             uploader: document.uploader,
             downloadCount: document.downloadCount,
+            downloadCost: isOwner ? 0 : downloadCost,
             viewCount: document.viewCount,
             averageRating: document.averageRating,
             files: filesWithSecureUrls,
@@ -1009,6 +1016,10 @@ export class DocumentsService {
         },
       );
 
+      // Get download cost from settings or document
+      const settings = await this.systemSettings.getPointsSettings();
+      const downloadCost = document.downloadCost || settings.downloadCost;
+
       const response: any = {
         id: document.id,
         title: document.title,
@@ -1027,6 +1038,7 @@ export class DocumentsService {
         moderatedById: document.moderatedById,
         viewCount: document.viewCount,
         downloadCount: document.downloadCount,
+        downloadCost: isOwner ? 0 : downloadCost, // Owner downloads are free
         averageRating: document.averageRating,
         totalRatings: document.totalRatings,
         createdAt:

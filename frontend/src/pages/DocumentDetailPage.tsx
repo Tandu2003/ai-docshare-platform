@@ -140,8 +140,14 @@ export default function DocumentDetailPage() {
 
     try {
       await triggerFileDownload(documentId, document?.title);
-    } catch (error) {
+      toast.success('Đã tải xuống tài liệu thành công');
+    } catch (error: any) {
       console.error('Failed to download document:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tải xuống tài liệu';
+      toast.error(errorMessage);
     }
   };
 

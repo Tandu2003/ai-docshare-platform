@@ -62,6 +62,7 @@ export interface Document {
   uploaderId: string;
   categoryId: string;
   downloadCount: number;
+  downloadCost?: number; // Points cost to download this document
   viewCount: number;
   averageRating: number;
   totalRatings: number;

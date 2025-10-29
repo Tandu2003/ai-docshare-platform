@@ -1,12 +1,14 @@
+import { SystemSettingsService } from '../common/system-settings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Document, PointTxnReason, PointTxnType } from '@prisma/client';
 
-const UPLOAD_REWARD_DEFAULT = 5;
-
 @Injectable()
 export class PointsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly systemSettings: SystemSettingsService,
+  ) {}
 
   async getBalance(userId: string): Promise<{ balance: number }> {
     const user = await this.prisma.user.findUnique({
@@ -32,7 +34,8 @@ export class PointsService {
   }
 
   async awardOnUpload(userId: string, documentId: string, amount?: number) {
-    const reward = amount ?? UPLOAD_REWARD_DEFAULT;
+    const settings = await this.systemSettings.getPointsSettings();
+    const reward = amount ?? settings.uploadReward;
     return this.prisma.$transaction(async tx => {
       const user = await tx.user.update({
         where: { id: userId },
@@ -61,7 +64,8 @@ export class PointsService {
     bypass?: boolean;
   }) {
     const { userId, document, performedById, bypass } = options;
-    const cost = Math.max(0, document.downloadCost || 1);
+    const settings = await this.systemSettings.getPointsSettings();
+    const cost = Math.max(0, document.downloadCost || settings.downloadCost);
 
     if (bypass) {
       // Log a bypass transaction without deduction
@@ -93,7 +97,9 @@ export class PointsService {
       });
       if (!current) throw new BadRequestException('User not found');
       if (current.pointsBalance < cost) {
-        throw new BadRequestException('Không đủ điểm để tải tài liệu');
+        throw new BadRequestException(
+          `Không đủ điểm để tải tài liệu. Bạn cần ${cost} điểm nhưng chỉ có ${current.pointsBalance} điểm.`,
+        );
       }
       const updated = await tx.user.update({
         where: { id: userId },
