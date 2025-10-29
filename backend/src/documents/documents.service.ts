@@ -269,18 +269,24 @@ export class DocumentsService {
         }
       }
 
-      // Queue similarity detection for background processing
+      // Start similarity detection in background (fire and forget)
       if (wantsPublic) {
-        try {
-          await this.similarityJobService.queueSimilarityDetection(document.id);
-          this.logger.log(
-            `Queued similarity detection for document ${document.id}`,
-          );
-        } catch (error) {
-          this.logger.warn(
-            `Failed to queue similarity detection for document ${document.id}: ${error.message}`,
-          );
-        }
+        // Don't await - let it run in background
+        void this.similarityJobService
+          .queueSimilarityDetection(document.id)
+          .then(() => {
+            // Process immediately instead of waiting for cron
+            void this.similarityJobService.processPendingJobs().catch(err => {
+              this.logger.error(
+                `Failed to process similarity for document ${document.id}: ${err.message}`,
+              );
+            });
+          })
+          .catch(error => {
+            this.logger.warn(
+              `Failed to queue similarity detection for document ${document.id}: ${error.message}`,
+            );
+          });
       }
 
       // Return document with files

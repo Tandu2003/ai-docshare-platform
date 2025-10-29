@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../prisma/prisma.service';
-import { SimilarityService } from './similarity.service';
+import { Injectable, Logger } from '@nestjs/common'
+import { Cron, CronExpression } from '@nestjs/schedule'
+
+import { PrismaService } from '../prisma/prisma.service'
+import { SimilarityService } from './similarity.service'
 
 @Injectable()
 export class SimilarityJobService {
@@ -13,9 +14,8 @@ export class SimilarityJobService {
   ) {}
 
   /**
-   * Process pending similarity jobs every 5 minutes
+   * Process pending similarity jobs immediately (called directly, not via cron)
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
   async processPendingJobs() {
     try {
       this.logger.log('Processing pending similarity jobs');
@@ -32,13 +32,17 @@ export class SimilarityJobService {
 
       this.logger.log(`Found ${pendingJobs.length} pending jobs`);
 
-      for (const job of pendingJobs) {
-        try {
-          await this.similarityService.processSimilarityDetection(job.documentId);
-        } catch (error) {
-          this.logger.error(`Failed to process job ${job.id}:`, error);
-        }
-      }
+      // Process all jobs in parallel (fire and forget)
+      const processPromises = pendingJobs.map(job =>
+        this.similarityService
+          .processSimilarityDetection(job.documentId)
+          .catch(error => {
+            this.logger.error(`Failed to process job ${job.id}:`, error);
+          }),
+      );
+
+      // Don't await - let them process in background
+      void Promise.all(processPromises);
     } catch (error) {
       this.logger.error('Error processing pending jobs:', error);
     }
@@ -82,7 +86,9 @@ export class SimilarityJobService {
       });
 
       if (existingJob) {
-        this.logger.log(`Similarity job already exists for document ${documentId}`);
+        this.logger.log(
+          `Similarity job already exists for document ${documentId}`,
+        );
         return existingJob;
       }
 
@@ -94,10 +100,15 @@ export class SimilarityJobService {
         },
       });
 
-      this.logger.log(`Queued similarity detection job for document ${documentId}`);
+      this.logger.log(
+        `Queued similarity detection job for document ${documentId}`,
+      );
       return job;
     } catch (error) {
-      this.logger.error(`Error queuing similarity detection for ${documentId}:`, error);
+      this.logger.error(
+        `Error queuing similarity detection for ${documentId}:`,
+        error,
+      );
       throw error;
     }
   }
