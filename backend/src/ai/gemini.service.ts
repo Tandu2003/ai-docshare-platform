@@ -1,8 +1,10 @@
-import { FilesService } from '../files/files.service';
-import { ContentExtractorService } from './content-extractor.service';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { FilesService } from '../files/files.service'
+import { ContentExtractorService } from './content-extractor.service'
 
 export interface DocumentAnalysisResult {
   title?: string;
@@ -31,6 +33,7 @@ export class GeminiService {
     private configService: ConfigService,
     private filesService: FilesService,
     private contentExtractor: ContentExtractorService,
+    private r2Service: CloudflareR2Service,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
@@ -54,45 +57,107 @@ export class GeminiService {
       this.logger.log(`Using Gemini model: ${modelName}`);
       const model = this.genAI.getGenerativeModel({ model: modelName });
 
-      // Extract content from files instead of sending files directly
+      // Extract content from files using R2Service directly instead of fetching signed URLs
       const extractedContents = await Promise.all(
         fileUrls.map(async url => {
-          try {
-            // Get file data from URL
-            const response = await fetch(url);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch file: ${response.statusText}`);
+          const maxRetries = 3;
+
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              // Extract storageUrl from signed URL if it's a signed URL
+              // If it's already a storageUrl, use it directly
+              let storageUrl = url;
+
+              // Check if it's a signed URL by looking for query parameters
+              if (url.includes('?X-Amz-')) {
+                // Extract base URL without query params
+                storageUrl = url.split('?')[0];
+              }
+
+              // Get file stream directly from R2
+              const fileStream = await this.r2Service.getFileStream(storageUrl);
+
+              // Convert stream to buffer
+              const chunks: Buffer[] = [];
+              for await (const chunk of fileStream) {
+                chunks.push(chunk);
+              }
+              const buffer = Buffer.concat(chunks);
+
+              // Extract filename from URL for logging
+              const fileName =
+                storageUrl.split('/').pop()?.split('?')[0] || 'unknown';
+
+              // Try to get mimeType from file extension or use default
+              const fileExtension =
+                fileName.split('.').pop()?.toLowerCase() || '';
+              const mimeTypeMap: Record<string, string> = {
+                pdf: 'application/pdf',
+                doc: 'application/msword',
+                docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                xls: 'application/vnd.ms-excel',
+                xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ppt: 'application/vnd.ms-powerpoint',
+                pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                txt: 'text/plain',
+                md: 'text/markdown',
+              };
+              const mimeType =
+                mimeTypeMap[fileExtension] || 'application/octet-stream';
+
+              // Extract text content from file
+              const extractedContent =
+                await this.contentExtractor.extractContent(
+                  buffer,
+                  mimeType,
+                  fileName,
+                );
+
+              this.logger.log(
+                `Extracted ${extractedContent.metadata?.words || 0} words from ${fileName}`,
+              );
+
+              return {
+                fileName,
+                content: extractedContent.text,
+                metadata: extractedContent.metadata,
+              };
+            } catch (error) {
+              const fileName = url.split('/').pop()?.split('?')[0] || 'unknown';
+              const isNetworkError =
+                error.message?.includes('network') ||
+                error.message?.includes('ECONNRESET') ||
+                error.message?.includes('ETIMEDOUT') ||
+                error.message?.includes('ENOTFOUND') ||
+                error.message?.includes('ECONNREFUSED');
+
+              if (attempt < maxRetries && isNetworkError) {
+                const retryDelay = Math.min(
+                  1000 * Math.pow(2, attempt - 1),
+                  5000,
+                ); // Exponential backoff, max 5s
+                this.logger.warn(
+                  `Retry ${attempt}/${maxRetries - 1} for ${fileName} after ${retryDelay}ms. Error: ${error.message}`,
+                );
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                continue;
+              }
+
+              // Log error with more details
+              this.logger.error(
+                `Error processing file ${fileName} (attempt ${attempt}/${maxRetries}):`,
+                {
+                  url: url.substring(0, 100) + '...',
+                  error: error.message,
+                  errorName: error.name,
+                  stack: error.stack,
+                },
+              );
+              break;
             }
-
-            const arrayBuffer = await response.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            const mimeType =
-              response.headers.get('content-type') ||
-              'application/octet-stream';
-
-            // Extract filename from URL for logging
-            const fileName = url.split('/').pop() || 'unknown';
-
-            // Extract text content from file
-            const extractedContent = await this.contentExtractor.extractContent(
-              buffer,
-              mimeType,
-              fileName,
-            );
-
-            this.logger.log(
-              `Extracted ${extractedContent.metadata?.words || 0} words from ${fileName}`,
-            );
-
-            return {
-              fileName,
-              content: extractedContent.text,
-              metadata: extractedContent.metadata,
-            };
-          } catch (error) {
-            this.logger.error(`Error processing file ${url}:`, error);
-            return null;
           }
+
+          return null;
         }),
       );
 
