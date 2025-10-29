@@ -22,14 +22,19 @@ export interface CategoriesResponse {
   categories: string[];
 }
 
+export interface PointsSettings {
+  uploadReward: number;
+  downloadCost: number;
+}
+
 export class SystemSettingsService {
-  private static readonly BASE_URL = '/admin/settings';
+  private static readonly BASE_URL = '/settings';
 
   /**
    * Get all system settings
    */
   static async getAllSettings(): Promise<AllSettingsResponse> {
-    const response = await api.get(`${this.BASE_URL}/all`);
+    const response = await api.get(`${this.BASE_URL}/admin/all`);
     return response.data as AllSettingsResponse;
   }
 
@@ -39,7 +44,7 @@ export class SystemSettingsService {
   static async getSettingsByCategory(
     category: string,
   ): Promise<SystemSettingsResponse> {
-    const response = await api.get(`${this.BASE_URL}`, {
+    const response = await api.get(`${this.BASE_URL}/admin`, {
       params: { category },
     });
     return response.data as SystemSettingsResponse;
@@ -49,7 +54,7 @@ export class SystemSettingsService {
    * Get settings categories
    */
   static async getCategories(): Promise<CategoriesResponse> {
-    const response = await api.get(`${this.BASE_URL}/categories`);
+    const response = await api.get(`${this.BASE_URL}/admin/categories`);
     return response.data as CategoriesResponse;
   }
 
@@ -57,7 +62,7 @@ export class SystemSettingsService {
    * Get AI moderation settings
    */
   static async getAIModerationSettings(): Promise<AISettings> {
-    const response = await api.get(`${this.BASE_URL}`);
+    const response = await api.get(`${this.BASE_URL}/admin`);
     return response.data as AISettings;
   }
 
@@ -65,28 +70,36 @@ export class SystemSettingsService {
    * Update a single setting
    */
   static async updateSetting(setting: SystemSetting): Promise<void> {
-    await api.post(this.BASE_URL, setting);
+    await api.post(`${this.BASE_URL}/admin`, setting);
   }
 
   /**
    * Bulk update settings
    */
   static async updateSettings(settings: SystemSetting[]): Promise<void> {
-    await api.put(this.BASE_URL, settings);
+    await api.put(`${this.BASE_URL}/admin`, settings);
   }
 
   /**
    * Delete a setting
    */
   static async deleteSetting(key: string): Promise<void> {
-    await api.delete(`${this.BASE_URL}/${key}`);
+    await api.delete(`${this.BASE_URL}/admin/${key}`);
   }
 
   /**
    * Initialize default settings
    */
   static async initializeDefaults(): Promise<void> {
-    await api.post(`${this.BASE_URL}/initialize-defaults`);
+    await api.post(`${this.BASE_URL}/admin/initialize-defaults`);
+  }
+
+  /**
+   * Get points settings
+   */
+  static async getPointsSettings(): Promise<PointsSettings> {
+    const response = await api.get(`${this.BASE_URL}/admin/points`);
+    return response.data as PointsSettings;
   }
 
   /**
@@ -148,6 +161,35 @@ export class SystemSettingsService {
         key: 'ai.confidence_threshold',
         value: settings.confidenceThreshold.toString(),
         category: 'ai',
+      });
+    }
+
+    if (systemSettings.length > 0) {
+      await this.updateSettings(systemSettings);
+    }
+  }
+
+  /**
+   * Update points settings
+   */
+  static async updatePointsSettings(
+    settings: Partial<PointsSettings>,
+  ): Promise<void> {
+    const systemSettings: SystemSetting[] = [];
+
+    if (settings.uploadReward !== undefined) {
+      systemSettings.push({
+        key: 'points.upload_reward',
+        value: settings.uploadReward.toString(),
+        category: 'points',
+      });
+    }
+
+    if (settings.downloadCost !== undefined) {
+      systemSettings.push({
+        key: 'points.download_cost',
+        value: settings.downloadCost.toString(),
+        category: 'points',
       });
     }
 

@@ -54,6 +54,33 @@ export class SystemSettingsController {
     }
   }
 
+  @Get('admin/points')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, CaslGuard)
+  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @ApiOperation({ summary: 'Get points settings (admin)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Points settings retrieved successfully',
+  })
+  async getPointsSettings(@Res() res: Response) {
+    try {
+      const settings = await this.settingsService.getPointsSettings();
+
+      return ResponseHelper.success(
+        res,
+        settings,
+        'Points settings retrieved successfully',
+      );
+    } catch {
+      return ResponseHelper.error(
+        res,
+        'Failed to retrieve points settings',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('admin')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, CaslGuard)

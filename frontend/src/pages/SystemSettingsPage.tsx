@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Loader2, RefreshCw, Save, Settings, Sparkles } from 'lucide-react';
+import {
+  Coins,
+  Loader2,
+  RefreshCw,
+  Save,
+  Settings,
+  Sparkles,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -9,7 +16,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { SystemSettingsService } from '@/services/system-settings.service';
+import {
+  PointsSettings,
+  SystemSettingsService,
+} from '@/services/system-settings.service';
 import { AISettings } from '@/types/database.types';
 
 export default function SystemSettingsPage() {
@@ -23,6 +33,11 @@ export default function SystemSettingsPage() {
     confidenceThreshold: 70,
   });
 
+  const [pointsSettings, setPointsSettings] = useState<PointsSettings>({
+    uploadReward: 5,
+    downloadCost: 1,
+  });
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -33,9 +48,13 @@ export default function SystemSettingsPage() {
       // Load AI moderation settings from database
       const aiResponse = await SystemSettingsService.getAIModerationSettings();
       setAiSettings(aiResponse);
+
+      // Load points settings from database
+      const pointsResponse = await SystemSettingsService.getPointsSettings();
+      setPointsSettings(pointsResponse);
     } catch (error) {
-      toast.error('Không thể tải cài đặt AI kiểm duyệt');
-      console.error('Error loading AI moderation settings:', error);
+      toast.error('Không thể tải cài đặt hệ thống');
+      console.error('Error loading system settings:', error);
     } finally {
       setLoading(false);
     }
@@ -45,10 +64,11 @@ export default function SystemSettingsPage() {
     try {
       setSaving(true);
       await SystemSettingsService.updateAISettings(aiSettings);
-      toast.success('Cài đặt AI kiểm duyệt đã được lưu thành công');
+      await SystemSettingsService.updatePointsSettings(pointsSettings);
+      toast.success('Cài đặt hệ thống đã được lưu thành công');
     } catch (error) {
-      toast.error('Không thể lưu cài đặt AI kiểm duyệt');
-      console.error('Error saving AI moderation settings:', error);
+      toast.error('Không thể lưu cài đặt hệ thống');
+      console.error('Error saving system settings:', error);
     } finally {
       setSaving(false);
     }
@@ -58,10 +78,11 @@ export default function SystemSettingsPage() {
     try {
       setSaving(true);
       await SystemSettingsService.initializeDefaults();
-      toast.success('Đã khởi tạo cài đặt AI kiểm duyệt mặc định');
+      await loadSettings();
+      toast.success('Đã khởi tạo cài đặt hệ thống mặc định');
     } catch (error) {
-      toast.error('Không thể khởi tạo cài đặt AI kiểm duyệt mặc định');
-      console.error('Error initializing AI moderation defaults:', error);
+      toast.error('Không thể khởi tạo cài đặt hệ thống mặc định');
+      console.error('Error initializing system defaults:', error);
     } finally {
       setSaving(false);
     }
@@ -97,6 +118,26 @@ export default function SystemSettingsPage() {
     }));
   };
 
+  const handlePointsSettingChange = (
+    field: keyof PointsSettings,
+    value: number,
+  ) => {
+    // Validation
+    if (field === 'uploadReward' && (value < 0 || value > 100)) {
+      toast.error('Điểm thưởng upload phải từ 0 đến 100');
+      return;
+    }
+    if (field === 'downloadCost' && (value < 0 || value > 50)) {
+      toast.error('Chi phí tải xuống phải từ 0 đến 50');
+      return;
+    }
+
+    setPointsSettings(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -115,10 +156,10 @@ export default function SystemSettingsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Cài đặt AI Kiểm duyệt
+              Cài đặt Hệ thống
             </h1>
             <p className="text-muted-foreground">
-              Quản lý cấu hình AI kiểm duyệt tài liệu
+              Quản lý cấu hình hệ thống: AI kiểm duyệt, điểm thưởng, v.v.
             </p>
           </div>
         </div>
@@ -315,6 +356,99 @@ export default function SystemSettingsPage() {
                 <span>50%</span>
                 <span>100%</span>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Points System Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              Cài đặt Hệ thống Điểm
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Upload Reward */}
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-base font-medium">
+                  Điểm thưởng khi tải lên
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  Số điểm người dùng nhận được khi tải lên tài liệu
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={pointsSettings.uploadReward}
+                    onChange={e =>
+                      handlePointsSettingChange(
+                        'uploadReward',
+                        parseInt(e.target.value, 10) || 0,
+                      )
+                    }
+                    className="w-32"
+                  />
+                  <span className="text-muted-foreground text-sm">điểm</span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Khuyến nghị: 5-10 điểm
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Download Cost */}
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-base font-medium">
+                  Chi phí tải xuống
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  Số điểm cần thiết để tải xuống tài liệu
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={pointsSettings.downloadCost}
+                    onChange={e =>
+                      handlePointsSettingChange(
+                        'downloadCost',
+                        parseInt(e.target.value, 10) || 0,
+                      )
+                    }
+                    className="w-32"
+                  />
+                  <span className="text-muted-foreground text-sm">điểm</span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Khuyến nghị: 1-5 điểm
+                </p>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h4 className="mb-2 font-medium">ℹ️ Lưu ý</h4>
+              <ul className="text-muted-foreground space-y-1 text-sm">
+                <li>• Điểm thưởng khuyến khích người dùng đóng góp tài liệu</li>
+                <li>• Chi phí tải xuống giúp đảm bảo tài liệu có giá trị</li>
+                <li>
+                  • Cân bằng hai giá trị này để tạo hệ sinh thái lành mạnh
+                </li>
+              </ul>
             </div>
           </CardContent>
         </Card>
