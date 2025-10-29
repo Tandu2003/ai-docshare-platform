@@ -263,17 +263,11 @@ export class CloudflareR2Service {
 
       // Extract key from full URL
       const url = new URL(storageUrl);
-      let key = url.pathname.substring(1); // Remove leading slash
 
-      // Remove bucket name and any prefixes to get just the S3 key
-      if (key.includes('/')) {
-        const parts = key.split('/');
-        // Skip bucket name, keep the rest
-        key = parts.slice(1).join('/');
-      }
-
-      this.logger.log(`Extracted key from URL: ${storageUrl} -> ${key}`);
-      return key;
+      this.logger.log(
+        `Extracted key from URL: ${storageUrl} -> ${url.pathname.substring(1)}`,
+      );
+      return url.pathname.substring(1);
     } catch (error) {
       this.logger.error('Error extracting key from URL:', error);
       throw new BadRequestException('Định dạng URL lưu trữ không hợp lệ');
