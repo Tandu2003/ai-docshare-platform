@@ -23,7 +23,7 @@ import {
   trackDocumentView,
   triggerFileDownload,
 } from '@/services/document.service';
-import { Document } from '@/services/files.service';
+import { Document } from '@/types/database.types';
 import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
 
 import { Badge } from '../ui/badge';
@@ -49,8 +49,12 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
     try {
       setIsDownloading(true);
       await triggerFileDownload(document.id, document.title);
-    } catch (error) {
-      alert((error as Error).message);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tải xuống tài liệu';
+      alert(errorMessage);
     } finally {
       setIsDownloading(false);
     }
@@ -149,9 +153,12 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
                 <Download
                   className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
                 />
-                {isDownloading && (
+                {isDownloading ? (
                   <span className="ml-2">Đang tải xuống...</span>
-                )}
+                ) : document.downloadCost !== undefined &&
+                  document.downloadCost > 0 ? (
+                  <span className="ml-2">{document.downloadCost} điểm</span>
+                ) : null}
               </Button>
             </TooltipTrigger>
 
@@ -159,7 +166,10 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
               <p>
                 {isDownloading
                   ? 'Đang chuẩn bị tải xuống...'
-                  : 'Tải xuống tất cả'}
+                  : document.downloadCost !== undefined &&
+                      document.downloadCost > 0
+                    ? `Tải xuống (${document.downloadCost} điểm)`
+                    : 'Tải xuống tất cả'}
               </p>
             </TooltipContent>
           </Tooltip>
