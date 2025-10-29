@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Edit, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
+import { Coins, Edit, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
 
 import { PermissionGate } from '@/components/common/permission-gate';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -30,6 +30,7 @@ interface UserTableProps {
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
   onUnDeleteUser: (user: User) => void;
+  onAdjustPoints?: (user: User) => void;
   isLoading?: boolean;
 }
 
@@ -38,6 +39,7 @@ export function UserTable({
   onEditUser,
   onDeleteUser,
   onUnDeleteUser,
+  onAdjustPoints,
   isLoading = false,
 }: UserTableProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -152,6 +154,10 @@ export function UserTable({
                 <div className="text-muted-foreground text-sm">
                   <div>{user._count?.documents || 0} tài liệu</div>
                   <div>{user._count?.downloads || 0} lượt tải</div>
+                  <div className="flex items-center gap-1">
+                    <Coins className="h-3 w-3 text-amber-600" />
+                    <span>{user.pointsBalance ?? 0} điểm</span>
+                  </div>
                 </div>
               </TableCell>
               <TableCell>
@@ -182,6 +188,15 @@ export function UserTable({
                         Chỉnh sửa
                       </DropdownMenuItem>
                     </PermissionGate>
+                    {onAdjustPoints && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onAdjustPoints(user)}>
+                          <Coins className="mr-2 h-4 w-4" />
+                          Điều chỉnh điểm
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <PermissionGate action="delete" subject="User">
                       <DropdownMenuSeparator />
                       {user.isDeleted ? (

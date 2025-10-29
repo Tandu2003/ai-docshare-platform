@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import {
   Bot,
   Calendar,
+  Coins,
   Download,
   Edit,
   Eye,
@@ -40,6 +41,10 @@ import {
   DocumentsService,
   type Document as UserDocument,
 } from '@/services/files.service';
+import {
+  pointsService,
+  type PointTransaction,
+} from '@/services/points.service';
 import { userService } from '@/services/user.service';
 import type { ActivityLog } from '@/types';
 import { formatDate } from '@/utils/date';
@@ -53,6 +58,8 @@ export default function ProfilePage() {
     [],
   );
   const [userActivity, setUserActivity] = useState<ActivityLog[]>([]);
+  const [pointsBalance, setPointsBalance] = useState<number>(0);
+  const [pointTxns, setPointTxns] = useState<PointTransaction[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -77,7 +84,7 @@ export default function ProfilePage() {
         const bookmarks = await getUserBookmarks();
         setUserBookmarks(bookmarks);
 
-        // Get user's activity from real API
+        // Get user's activity
         const activityResponse = await userService.getCurrentUserActivity(
           1,
           10,
@@ -96,6 +103,14 @@ export default function ProfilePage() {
             createdAt: new Date(activity.createdAt),
           }));
         setUserActivity(convertedActivities);
+
+        // Points: balance and last transactions
+        const [balanceRes, txnsRes] = await Promise.all([
+          pointsService.getBalance(),
+          pointsService.getTransactions(1, 10),
+        ]);
+        setPointsBalance(balanceRes.balance);
+        setPointTxns(txnsRes.items);
       } catch (error) {
         console.error('Failed to fetch user data:', error);
       } finally {
@@ -274,101 +289,107 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
+              <Dialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Chỉnh sửa hồ sơ
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+                    <DialogDescription>
+                      Cập nhật thông tin cá nhân của bạn
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="firstName">Tên</Label>
+                        <Input
+                          id="firstName"
+                          value={formData.firstName}
+                          onChange={e =>
+                            setFormData(prev => ({
+                              ...prev,
+                              firstName: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lastName">Họ</Label>
+                        <Input
+                          id="lastName"
+                          value={formData.lastName}
+                          onChange={e =>
+                            setFormData(prev => ({
+                              ...prev,
+                              lastName: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="username">Tên đăng nhập</Label>
+                      <Input
+                        id="username"
+                        value={formData.username}
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            username: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="bio">Tiểu sử</Label>
+                      <Textarea
+                        id="bio"
+                        value={formData.bio}
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            bio: e.target.value,
+                          }))
+                        }
+                        placeholder="Hãy cho chúng tôi biết về bạn..."
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditDialogOpen(false)}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSaveProfile}>Lưu thay đổi</Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Chỉnh sửa hồ sơ
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
-                  <DialogDescription>
-                    Cập nhật thông tin cá nhân của bạn
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">Tên</Label>
-                      <Input
-                        id="firstName"
-                        value={formData.firstName}
-                        onChange={e =>
-                          setFormData(prev => ({
-                            ...prev,
-                            firstName: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Họ</Label>
-                      <Input
-                        id="lastName"
-                        value={formData.lastName}
-                        onChange={e =>
-                          setFormData(prev => ({
-                            ...prev,
-                            lastName: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={e =>
-                        setFormData(prev => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="username">Tên đăng nhập</Label>
-                    <Input
-                      id="username"
-                      value={formData.username}
-                      onChange={e =>
-                        setFormData(prev => ({
-                          ...prev,
-                          username: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bio">Tiểu sử</Label>
-                    <Textarea
-                      id="bio"
-                      value={formData.bio}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, bio: e.target.value }))
-                      }
-                      placeholder="Hãy cho chúng tôi biết về bạn..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditDialogOpen(false)}
-                    >
-                      Hủy
-                    </Button>
-                    <Button onClick={handleSaveProfile}>Lưu thay đổi</Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -424,10 +445,10 @@ export default function ProfilePage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Users className="h-8 w-8 text-orange-500" />
+              <Coins className="h-8 w-8 text-amber-500" />
               <div>
-                <p className="text-2xl font-bold">{stats.bookmarkCount}</p>
-                <p className="text-muted-foreground text-sm">Đánh dấu</p>
+                <p className="text-2xl font-bold">{pointsBalance}</p>
+                <p className="text-muted-foreground text-sm">Điểm</p>
               </div>
             </div>
           </CardContent>
@@ -440,6 +461,7 @@ export default function ProfilePage() {
           <TabsTrigger value="documents">Tài liệu của tôi</TabsTrigger>
           <TabsTrigger value="bookmarks">Đánh dấu</TabsTrigger>
           <TabsTrigger value="activity">Hoạt động</TabsTrigger>
+          <TabsTrigger value="points">Điểm</TabsTrigger>
         </TabsList>
 
         {/* My Documents */}
@@ -524,7 +546,6 @@ export default function ProfilePage() {
                             <Star className="h-4 w-4" />
                             <span>{averageRatingDisplay}</span>
                           </div>
-                          {/* Moderation Info */}
                           {document.moderatedAt && (
                             <div className="flex items-center space-x-1">
                               {document.moderatedById ? (
@@ -539,12 +560,6 @@ export default function ProfilePage() {
                           )}
                           <Badge variant={statusVariant}>{statusLabel}</Badge>
                         </div>
-                        {moderationStatus === 'REJECTED' &&
-                          document.rejectionReason && (
-                            <p className="text-destructive mt-2 text-sm">
-                              Lý do từ chối: {document.rejectionReason}
-                            </p>
-                          )}
                       </div>
                     );
                   })}
@@ -650,7 +665,6 @@ export default function ProfilePage() {
                   {userActivity.slice(0, 10).map(activity => {
                     const Icon = getActivityIcon(activity.action);
                     const colorClass = getActivityColor(activity.action);
-
                     return (
                       <div
                         key={activity.id}
@@ -678,6 +692,59 @@ export default function ProfilePage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Points */}
+        <TabsContent value="points" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Lịch sử điểm</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pointTxns.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  Chưa có giao dịch điểm nào
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {pointTxns.map(tx => (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between rounded-md border p-3"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Coins
+                          className={`h-4 w-4 ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                        />
+                        <div>
+                          <p className="text-sm font-medium">
+                            {tx.reason === 'UPLOAD_REWARD' && 'Thưởng tải lên'}
+                            {tx.reason === 'DOWNLOAD_COST' &&
+                              'Trừ khi tải tài liệu'}
+                            {tx.reason === 'ADMIN_ADJUST' &&
+                              'Điều chỉnh bởi admin'}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {new Date(tx.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`text-sm font-semibold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                        >
+                          {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          Số dư: {tx.balanceAfter}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

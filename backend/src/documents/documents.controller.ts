@@ -150,6 +150,7 @@ export class DocumentsController {
         ipAddress,
         userAgent,
         referrer,
+        downloadDto.apiKey,
       );
 
       return ResponseHelper.success(

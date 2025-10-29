@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/use-permissions';
+import { pointsService } from '@/services/points.service';
 import {
   userService,
   type CreateUserRequest,
@@ -50,6 +51,10 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'active' | 'deleted'>('active');
+
+  const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
+  const [targetPoints, setTargetPoints] = useState<number>(0);
+  const [adjustNote, setAdjustNote] = useState<string>('');
 
   // Kiểm tra quyền truy cập
   if (!canRead('User')) {
@@ -93,21 +98,41 @@ export default function AdminUsersPage() {
   // Load roles from API
   const loadRoles = useCallback(async () => {
     try {
-      const rolesData = await userService.getRoles();
-      setRoles(rolesData);
+      const response = await userService.getRoles();
+      setRoles(response);
     } catch (error) {
       console.error('Failed to load roles:', error);
-      toast.error('Không thể tải danh sách vai trò');
+      toast.error('Không thể tải vai trò người dùng');
     }
   }, []);
 
   useEffect(() => {
-    loadUsers();
+    void loadUsers();
   }, [loadUsers]);
 
   useEffect(() => {
-    loadRoles();
+    void loadRoles();
   }, [loadRoles]);
+
+  const handleOpenAdjustDialog = (user: User) => {
+    setSelectedUser(user);
+    setTargetPoints(user.pointsBalance ?? 0);
+    setAdjustNote('');
+    setIsAdjustDialogOpen(true);
+  };
+
+  const handleConfirmAdjust = async () => {
+    if (!selectedUser) return;
+    try {
+      await pointsService.adminSet(selectedUser.id, targetPoints, adjustNote);
+      toast.success('Đã cập nhật điểm người dùng');
+      setIsAdjustDialogOpen(false);
+      void loadUsers();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.response?.data?.message || 'Cập nhật điểm thất bại');
+    }
+  };
 
   // Handle search change
   const handleSearchChange = (value: string) => {
@@ -365,6 +390,7 @@ export default function AdminUsersPage() {
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
               onUnDeleteUser={handleUnDeleteUser}
+              onAdjustPoints={handleOpenAdjustDialog}
               isLoading={isLoading}
             />
           )}
@@ -437,6 +463,48 @@ export default function AdminUsersPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Set Points Dialog */}
+      <AlertDialog
+        open={isAdjustDialogOpen}
+        onOpenChange={setIsAdjustDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cập nhật điểm người dùng</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedUser ? (
+                <span>
+                  Người dùng: {selectedUser.firstName} {selectedUser.lastName}{' '}
+                  (@{selectedUser.username})
+                </span>
+              ) : (
+                ''
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Số điểm mới</label>
+            <Input
+              type="number"
+              value={targetPoints}
+              onChange={e => setTargetPoints(Number(e.target.value))}
+            />
+            <label className="text-sm font-medium">Ghi chú</label>
+            <Input
+              placeholder="Lý do cập nhật (tùy chọn)"
+              value={adjustNote}
+              onChange={e => setAdjustNote(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAdjust}>
+              Xác nhận
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

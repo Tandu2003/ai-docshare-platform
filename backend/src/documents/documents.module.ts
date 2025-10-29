@@ -9,6 +9,7 @@ import { AdminDocumentsController } from './admin-documents.controller';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { NotificationsModule } from '@/notifications/notifications.module';
+import { PointsModule } from '@/points/points.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
@@ -20,6 +21,7 @@ import { ConfigModule } from '@nestjs/config';
     CaslModule,
     AIModule,
     NotificationsModule,
+    PointsModule,
   ],
   controllers: [DocumentsController, AdminDocumentsController],
   providers: [

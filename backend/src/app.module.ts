@@ -15,6 +15,7 @@ import { DocumentsModule } from '@/documents/documents.module';
 import { FilesModule } from '@/files/files.module';
 import { HealthModule } from '@/health/health.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
+import { PointsModule } from '@/points/points.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { UsersModule } from '@/users/users.module';
 import { Module } from '@nestjs/common';
@@ -38,6 +39,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
     UsersModule,
     NotificationsModule,
     AdminModule,
+    PointsModule,
   ],
   controllers: [],
   providers: [

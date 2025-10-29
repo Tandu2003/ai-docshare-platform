@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
 import { NotificationsService } from '@/notifications/notifications.service';
+import { PointsService } from '@/points/points.service';
 import {
   BadRequestException,
   Injectable,
@@ -33,6 +34,7 @@ export class DocumentsService {
     private aiService: AIService,
     private notifications: NotificationsService,
     private systemSettings: SystemSettingsService,
+    private pointsService: PointsService,
   ) {}
 
   /**
@@ -119,6 +121,15 @@ export class DocumentsService {
       });
 
       this.logger.log(`Document created successfully: ${document.id}`);
+
+      // Award points for uploading a document
+      try {
+        await this.pointsService.awardOnUpload(userId, document.id);
+      } catch (e) {
+        this.logger.warn(
+          `Failed to award points for upload of document ${document.id}: ${e?.message}`,
+        );
+      }
 
       // Create DocumentFile relationships
       const documentFiles = await Promise.all(
@@ -1239,6 +1250,7 @@ export class DocumentsService {
     ipAddress?: string,
     userAgent?: string,
     referrer?: string,
+    apiKey?: string,
   ): Promise<{
     downloadUrl: string;
     fileName: string;
@@ -1267,6 +1279,21 @@ export class DocumentsService {
       }
 
       const isOwner = document.uploaderId === userId;
+      let shareAccessGranted = false;
+      if (apiKey) {
+        try {
+          const link = await this.validateShareLink(documentId, apiKey);
+          if (
+            link &&
+            !link.isRevoked &&
+            link.expiresAt.getTime() > Date.now()
+          ) {
+            shareAccessGranted = true;
+          }
+        } catch {
+          // ignore invalid apiKey here; access checks below will handle
+        }
+      }
 
       if (document.isPublic) {
         if (!document.isApproved && !isOwner) {
@@ -1293,6 +1320,29 @@ export class DocumentsService {
 
       if (!document.files || document.files.length === 0) {
         throw new BadRequestException('Tài liệu không có tệp để tải xuống');
+      }
+
+      // Points deduction logic for non-owner downloads
+      if (userId && !isOwner) {
+        // Determine if user is admin
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, role: { select: { name: true } } },
+        });
+        const isAdmin = user?.role?.name === 'admin';
+        const bypass = Boolean(isAdmin || shareAccessGranted);
+        try {
+          await this.pointsService.spendOnDownload({
+            userId,
+            document: { ...(document as any) },
+            performedById: isAdmin ? userId : undefined,
+            bypass,
+          });
+        } catch (e) {
+          if (!bypass) {
+            throw e;
+          }
+        }
       }
 
       // Create download record and increment counter in a transaction
