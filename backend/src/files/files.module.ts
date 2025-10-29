@@ -11,6 +11,6 @@ import { ConfigModule } from '@nestjs/config';
   imports: [PrismaModule, ConfigModule, CaslModule, NotificationsModule],
   controllers: [FilesController],
   providers: [FilesService, CloudflareR2Service],
-  exports: [FilesService],
+  exports: [FilesService, CloudflareR2Service],
 })
 export class FilesModule {}

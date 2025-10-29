@@ -69,6 +69,10 @@ model User {
   shareLinks         DocumentShareLink[]    @relation("ShareLinkCreator")
   // New similarity relation
   processedSimilarities DocumentSimilarity[]
+  // Points system
+  pointsBalance      Int                    @default(0) @map("points")
+  pointTransactions  PointTransaction[]
+  pointActionsPerformed PointTransaction[]  @relation("PointPerformedBy")
 
   // Indexes
   @@index([email])
@@ -130,6 +134,8 @@ model Document {
   aiModeration     Json?
   tags             String[]                 @default([])
   language         String                   @default("en")
+  // Points system: cost to download this document for non-owner users
+  downloadCost     Int                      @default(1)
   zipFileUrl       String? // Cached ZIP file URL for multi-file documents
   zipFileCreatedAt DateTime? // When the ZIP file was created
   createdAt        DateTime                 @default(now())
@@ -154,6 +160,7 @@ model Document {
   similarityJobs   SimilarityJob[]
   sourceSimilarities DocumentSimilarity[] @relation("SourceSimilarity")
   targetSimilarities DocumentSimilarity[] @relation("TargetSimilarity")
+  pointTransactions PointTransaction[]
 
   // Indexes
   @@index([uploaderId])
@@ -637,4 +644,45 @@ enum DocumentModerationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+// ================================
+// POINTS SYSTEM
+// ================================
+
+enum PointTxnType {
+  EARN
+  SPEND
+  ADJUST
+}
+
+enum PointTxnReason {
+  UPLOAD_REWARD
+  DOWNLOAD_COST
+  ADMIN_ADJUST
+}
+
+model PointTransaction {
+  id             String                 @id @default(cuid())
+  userId         String
+  documentId     String?
+  amount         Int // positive for EARN/ADJUST up, negative for SPEND/ADJUST down
+  type           PointTxnType
+  reason         PointTxnReason
+  balanceAfter   Int
+  note           String?
+  performedById  String?
+  isBypass       Boolean               @default(false) // true if not actually deducted (e.g., admin bypass)
+  createdAt      DateTime              @default(now())
+
+  // Relations
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document       Document?             @relation(fields: [documentId], references: [id])
+  performedBy    User?                 @relation("PointPerformedBy", fields: [performedById], references: [id])
+
+  // Indexes
+  @@index([userId])
+  @@index([documentId])
+  @@index([createdAt])
+  @@map("point_transactions")
 }

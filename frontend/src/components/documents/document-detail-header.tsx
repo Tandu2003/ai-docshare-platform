@@ -166,6 +166,12 @@ export function DocumentDetailHeader({
                   >
                     <Download className="h-4 w-4" />
                     Tải xuống
+                    {document.downloadCost !== undefined &&
+                      document.downloadCost > 0 && (
+                        <span className="ml-1 text-xs">
+                          ({document.downloadCost} điểm)
+                        </span>
+                      )}
                   </Button>
                 </DocumentPermissionGate>
 

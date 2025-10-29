@@ -157,6 +157,16 @@ export class SystemSettingsService {
   }
 
   /**
+   * Get points system settings
+   */
+  async getPointsSettings() {
+    return {
+      uploadReward: await this.getNumericSetting('points.upload_reward', 5),
+      downloadCost: await this.getNumericSetting('points.download_cost', 1),
+    };
+  }
+
+  /**
    * Get all settings categories
    */
   async getSettingsCategories(): Promise<string[]> {
@@ -285,6 +295,21 @@ export class SystemSettingsService {
         category: 'ai',
         isPublic: false,
       },
+      // Points System Settings
+      {
+        key: 'points.upload_reward',
+        value: '5',
+        description: 'Points awarded when user uploads a document',
+        category: 'points',
+        isPublic: true,
+      },
+      {
+        key: 'points.download_cost',
+        value: '1',
+        description: 'Points cost for downloading a document',
+        category: 'points',
+        isPublic: true,
+      },
     ];
 
     for (const setting of defaultSettings) {
@@ -294,6 +319,6 @@ export class SystemSettingsService {
       }
     }
 
-    this.logger.log('Default AI moderation settings initialized');
+    this.logger.log('Default system settings initialized');
   }
 }

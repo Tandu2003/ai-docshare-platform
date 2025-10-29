@@ -41,6 +41,7 @@ export interface DocumentView {
   moderatedById?: string | null;
   viewCount: number;
   downloadCount: number;
+  downloadCost?: number; // Points cost to download this document
   averageRating: number;
   totalRatings: number;
   createdAt: string;

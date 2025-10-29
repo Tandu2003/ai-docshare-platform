@@ -40,8 +40,12 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
     try {
       setIsDownloading(true);
       await triggerFileDownload(document.id, document.title);
-    } catch (error) {
-      alert((error as Error).message);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tải xuống tài liệu';
+      alert(errorMessage);
     } finally {
       setIsDownloading(false);
     }

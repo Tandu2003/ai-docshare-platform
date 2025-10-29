@@ -28,4 +28,12 @@ export class DownloadDocumentDto {
   @IsOptional()
   @IsString()
   referrer?: string;
+
+  @ApiProperty({
+    description: 'Document share API key token to bypass point deduction',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  apiKey?: string;
 }
