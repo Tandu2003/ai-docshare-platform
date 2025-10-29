@@ -1,26 +1,25 @@
-import { randomBytes } from 'crypto';
-import { AIService } from '../ai/ai.service';
-import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { SystemSettingsService } from '../common/system-settings.service';
-import { FilesService } from '../files/files.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { ShareDocumentDto } from './dto/share-document.dto';
-import { NotificationsService } from '@/notifications/notifications.service';
-import { PointsService } from '@/points/points.service';
+import * as archiver from 'archiver'
+import { randomBytes } from 'crypto'
+
+import { NotificationsService } from '@/notifications/notifications.service'
+import { PointsService } from '@/points/points.service'
+import { SimilarityJobService } from '@/similarity/similarity-job.service'
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  DocumentModerationStatus,
-  DocumentShareLink,
-  Prisma,
-} from '@prisma/client';
-import archiver from 'archiver';
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { DocumentModerationStatus, DocumentShareLink, Prisma } from '@prisma/client'
+
+import { AIService } from '../ai/ai.service'
+import { CloudflareR2Service } from '../common/cloudflare-r2.service'
+import { SystemSettingsService } from '../common/system-settings.service'
+import { FilesService } from '../files/files.service'
+import { PrismaService } from '../prisma/prisma.service'
+import { CreateDocumentDto } from './dto/create-document.dto'
+import { ShareDocumentDto } from './dto/share-document.dto'
 
 @Injectable()
 export class DocumentsService {
@@ -34,6 +33,7 @@ export class DocumentsService {
     private aiService: AIService,
     private notifications: NotificationsService,
     private systemSettings: SystemSettingsService,
+    private similarityJobService: SimilarityJobService,
     private pointsService: PointsService,
   ) {}
 
@@ -267,6 +267,26 @@ export class DocumentsService {
             `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
           );
         }
+      }
+
+      // Start similarity detection in background (fire and forget)
+      if (wantsPublic) {
+        // Don't await - let it run in background
+        void this.similarityJobService
+          .queueSimilarityDetection(document.id)
+          .then(() => {
+            // Process immediately instead of waiting for cron
+            void this.similarityJobService.processPendingJobs().catch(err => {
+              this.logger.error(
+                `Failed to process similarity for document ${document.id}: ${err.message}`,
+              );
+            });
+          })
+          .catch(error => {
+            this.logger.warn(
+              `Failed to queue similarity detection for document ${document.id}: ${error.message}`,
+            );
+          });
       }
 
       // Return document with files
