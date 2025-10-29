@@ -49,7 +49,8 @@ export class AbilityFactory {
     // Default permissions for guest users (not logged in)
     can('read', 'Document', { isPublic: true, isApproved: true });
     can('read', 'Category', { isActive: true });
-    can('read', 'File', { isPublic: true });
+    // Files don't have isPublic - they're accessible if user can access the Document
+    // Access control is at Document level, not File level
 
     if (!user || !user.role) {
       return build();
@@ -106,7 +107,8 @@ export class AbilityFactory {
         can('delete', 'Bookmark', { userId: user.id });
         can('download', 'Document', { isPublic: true, isApproved: true });
         can('download', 'Document', { uploaderId: user.id });
-        can('read', 'File', { isPublic: true });
+        // Files are accessible if user can access the Document
+        // No isPublic check on File - access control is at Document level
         can('read', 'File', { uploaderId: user.id });
         // Categories - users chỉ có thể đọc danh mục
         can('read', 'Category');

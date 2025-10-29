@@ -1,16 +1,14 @@
-import * as crypto from 'crypto'
-
-import { NotificationsService } from '@/notifications/notifications.service'
+import * as crypto from 'crypto';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
-} from '@nestjs/common'
-
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { PrismaService } from '../prisma/prisma.service'
+} from '@nestjs/common';
 
 export interface FileUploadResult {
   id: string;
@@ -203,10 +201,30 @@ export class FilesService {
         throw new NotFoundException('Không tìm thấy tệp');
       }
 
-      // Check if user has access to the file
+      // Access control: Check if user has access to any document containing this file
+      // Files themselves are not public/private - Documents are!
+      // If allowSharedAccess is true (e.g., via share link), skip ownership check
       const allowSharedAccess = options.allowSharedAccess ?? false;
-      if (!file.isPublic && !allowSharedAccess && file.uploaderId !== userId) {
-        throw new BadRequestException('Bạn không có quyền truy cập tệp này');
+
+      if (!allowSharedAccess && userId && file.uploaderId !== userId) {
+        // Check if user has access to any document containing this file
+        const accessibleDoc = await this.prisma.documentFile.findFirst({
+          where: {
+            fileId: file.id,
+            document: {
+              OR: [
+                { uploaderId: userId }, // User owns the document
+                { isPublic: true, isApproved: true }, // Document is public and approved
+              ],
+            },
+          },
+        });
+
+        if (!accessibleDoc) {
+          throw new BadRequestException(
+            'Bạn không có quyền truy cập tệp này. Tệp chỉ có thể truy cập thông qua tài liệu mà bạn có quyền xem.',
+          );
+        }
       }
 
       // Generate signed URL with 1 hour expiration
@@ -537,9 +555,26 @@ export class FilesService {
         throw new NotFoundException('Không tìm thấy tệp');
       }
 
-      // Check if user has access to the file
-      if (!file.isPublic && file.uploaderId !== userId) {
-        throw new BadRequestException('Bạn không có quyền truy cập tệp này');
+      // Access control: Check if user has access to any document containing this file
+      // Files themselves are not public/private - Documents are!
+      if (userId && file.uploaderId !== userId) {
+        const accessibleDoc = await this.prisma.documentFile.findFirst({
+          where: {
+            fileId: file.id,
+            document: {
+              OR: [
+                { uploaderId: userId }, // User owns the document
+                { isPublic: true, isApproved: true }, // Document is public and approved
+              ],
+            },
+          },
+        });
+
+        if (!accessibleDoc) {
+          throw new BadRequestException(
+            'Bạn không có quyền truy cập tệp này. Tệp chỉ có thể truy cập thông qua tài liệu mà bạn có quyền xem.',
+          );
+        }
       }
 
       // Find the document that contains this file
