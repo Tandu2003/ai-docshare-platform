@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-
 import {
   AlertTriangle,
   Calendar,
@@ -16,13 +14,14 @@ import {
   Sparkles,
   User,
   XCircle,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -30,35 +29,34 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   approveModerationDocument,
   generateModerationAnalysis,
   getModerationDocument,
   getModerationQueue,
+  getSimilarityResults,
+  processSimilarityDecision,
   rejectModerationDocument,
-} from '@/services/document.service';
+  SimilarityResult,
+} from '@/services/document.service'
+
 import type {
   DocumentModerationStatus,
   ModerationDocument,
@@ -148,6 +146,10 @@ export default function AdminDashboardPage() {
     id: string;
     title: string;
   } | null>(null);
+  const [similarityWarnings, setSimilarityWarnings] = useState<
+    SimilarityResult[]
+  >([]);
+  const [_similarityLoading, setSimilarityLoading] = useState(false);
 
   const summary = useMemo(
     () => queueData?.summary ?? emptySummary,
@@ -188,9 +190,12 @@ export default function AdminDashboardPage() {
     if (selectedDocument) {
       setModerationNotes(selectedDocument.moderationNotes ?? '');
       setPublishPublicly(Boolean(selectedDocument.isPublic));
+      // Load similarity warnings for the selected document
+      loadSimilarityWarnings(selectedDocument.id);
     } else {
       setModerationNotes('');
       setPublishPublicly(true);
+      setSimilarityWarnings([]);
     }
   }, [selectedDocument]);
 
@@ -306,6 +311,42 @@ export default function AdminDashboardPage() {
       toast.error(message);
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const loadSimilarityWarnings = async (documentId: string) => {
+    setSimilarityLoading(true);
+    try {
+      const warnings = await getSimilarityResults(documentId);
+      setSimilarityWarnings(warnings);
+    } catch (error) {
+      console.error('Error loading similarity warnings:', error);
+      toast.error('Không thể tải cảnh báo tương đồng');
+    } finally {
+      setSimilarityLoading(false);
+    }
+  };
+
+  const handleSimilarityDecision = async (
+    similarityId: string,
+    decision: { isDuplicate: boolean; notes?: string },
+  ) => {
+    try {
+      await processSimilarityDecision(similarityId, decision);
+      toast.success(
+        decision.isDuplicate
+          ? 'Đã đánh dấu là trùng lặp'
+          : 'Đã đánh dấu là khác biệt',
+      );
+
+      // Remove the processed warning from the list
+      setSimilarityWarnings(prev =>
+        prev.filter(warning => warning.id !== similarityId),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Không thể xử lý quyết định';
+      toast.error(message);
     }
   };
 
@@ -835,462 +876,640 @@ export default function AdminDashboardPage() {
       </Card>
 
       {/* Detail Dialog */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              {selectedDocument?.title || 'Chi tiết tài liệu'}
-            </DialogTitle>
-            <DialogDescription>
-              Kiểm tra nội dung và đưa ra quyết định duyệt/từ chối tài liệu.
-            </DialogDescription>
-          </DialogHeader>
-
-          {detailLoading ? (
-            <div className="space-y-4 py-4">
-              <Skeleton className="h-5 w-1/2" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : selectedDocument ? (
+      {selectedDocument && (
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="h-[85vh] !max-w-[75%]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {selectedDocument?.title || 'Chi tiết tài liệu'}
+              </DialogTitle>
+              <DialogDescription>
+                Kiểm tra nội dung và đưa ra quyết định duyệt/từ chối tài liệu.
+              </DialogDescription>
+            </DialogHeader>
             <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-6 pr-4">
-                {/* Status Badges */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant={statusBadgeVariant(
-                      selectedDocument.moderationStatus,
-                    )}
-                  >
-                    {statusLabel(selectedDocument.moderationStatus)}
-                  </Badge>
-                  {!selectedDocument.isApproved && (
-                    <Badge variant="secondary">Chưa công khai</Badge>
-                  )}
-                  <Badge variant="outline">
-                    {selectedDocument.category?.name || 'Không có danh mục'}
-                  </Badge>
+              {detailLoading ? (
+                <div className="space-y-4 py-4">
+                  <Skeleton className="h-5 w-1/2" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-24 w-full" />
                 </div>
+              ) : selectedDocument ? (
+                <div className="space-y-6 pr-4">
+                  {/* Status Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant={statusBadgeVariant(
+                        selectedDocument.moderationStatus,
+                      )}
+                    >
+                      {statusLabel(selectedDocument.moderationStatus)}
+                    </Badge>
+                    {!selectedDocument.isApproved && (
+                      <Badge variant="secondary">Chưa công khai</Badge>
+                    )}
+                    <Badge variant="outline">
+                      {selectedDocument.category?.name || 'Không có danh mục'}
+                    </Badge>
+                  </div>
 
-                <Tabs defaultValue="info" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="info">Thông tin</TabsTrigger>
-                    <TabsTrigger value="ai">Phân tích AI</TabsTrigger>
-                    <TabsTrigger value="files">
-                      Tệp ({selectedDocument.files.length})
-                    </TabsTrigger>
-                  </TabsList>
+                  <Tabs defaultValue="info" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="info">Thông tin</TabsTrigger>
+                      <TabsTrigger value="ai">Phân tích AI</TabsTrigger>
+                      <TabsTrigger value="files">
+                        Tệp ({selectedDocument.files.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="similarity">
+                        Tương đồng
+                        {similarityWarnings.length > 0 && (
+                          <Badge
+                            variant="destructive"
+                            className="ml-2 h-5 min-w-5 rounded-full px-1.5 text-xs"
+                          >
+                            {similarityWarnings.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="info" className="space-y-4">
-                    {/* Uploader & Time */}
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-sm font-medium">
-                            Người đăng
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>
-                                {(
-                                  selectedDocument.uploader.firstName?.charAt(
-                                    0,
-                                  ) ||
-                                  selectedDocument.uploader.username?.charAt(
-                                    0,
-                                  ) ||
-                                  'U'
-                                ).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium">
-                                {selectedDocument.uploader.firstName ||
-                                  selectedDocument.uploader.lastName ||
-                                  selectedDocument.uploader.username ||
-                                  'Người dùng'}
-                              </p>
-                              <p className="text-muted-foreground text-xs">
-                                {selectedDocument.uploader.email ||
-                                  'Không có email'}
-                              </p>
+                    <TabsContent value="info" className="space-y-4">
+                      {/* Uploader & Time */}
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">
+                              Người đăng
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarFallback>
+                                  {(
+                                    selectedDocument.uploader.firstName?.charAt(
+                                      0,
+                                    ) ||
+                                    selectedDocument.uploader.username?.charAt(
+                                      0,
+                                    ) ||
+                                    'U'
+                                  ).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium">
+                                  {selectedDocument.uploader.firstName ||
+                                    selectedDocument.uploader.lastName ||
+                                    selectedDocument.uploader.username ||
+                                    'Người dùng'}
+                                </p>
+                                <p className="text-muted-foreground text-xs">
+                                  {selectedDocument.uploader.email ||
+                                    'Không có email'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
 
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-sm font-medium">
-                            Thời gian
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="text-muted-foreground h-4 w-4" />
-                            <span>
-                              Tạo: {formatDateTime(selectedDocument.createdAt)}
-                            </span>
-                          </div>
-                          {selectedDocument.moderatedAt && (
-                            <div className="text-muted-foreground flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">
+                              Thời gian
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="text-muted-foreground h-4 w-4" />
                               <span>
-                                Xử lý:{' '}
-                                {formatDateTime(selectedDocument.moderatedAt)}
+                                Tạo:{' '}
+                                {formatDateTime(selectedDocument.createdAt)}
                               </span>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-2">
-                      <Label>Mô tả</Label>
-                      <Card>
-                        <CardContent className="p-4 text-sm">
-                          {selectedDocument.description ||
-                            'Chưa có mô tả cho tài liệu'}
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Previous Rejection */}
-                    {(selectedDocument.rejectionReason ||
-                      selectedDocument.moderationNotes) && (
-                      <div className="space-y-2">
-                        <Label>Lịch sử kiểm duyệt</Label>
-                        <Card className="border-destructive/50">
-                          <CardContent className="space-y-2 p-4 text-sm">
-                            {selectedDocument.rejectionReason && (
-                              <div>
-                                <span className="text-destructive font-medium">
-                                  Lý do từ chối:
-                                </span>{' '}
-                                {selectedDocument.rejectionReason}
-                              </div>
-                            )}
-                            {selectedDocument.moderationNotes && (
-                              <div>
-                                <span className="font-medium">Ghi chú:</span>{' '}
-                                {selectedDocument.moderationNotes}
+                            {selectedDocument.moderatedAt && (
+                              <div className="text-muted-foreground flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>
+                                  Xử lý:{' '}
+                                  {formatDateTime(selectedDocument.moderatedAt)}
+                                </span>
                               </div>
                             )}
                           </CardContent>
                         </Card>
                       </div>
-                    )}
 
-                    {/* Moderation Notes */}
-                    <div className="space-y-3">
-                      <Label>Ghi chú kiểm duyệt</Label>
-                      <Textarea
-                        placeholder="Ghi chú nội bộ hoặc phản hồi gửi cho người đăng..."
-                        value={moderationNotes}
-                        onChange={event =>
-                          setModerationNotes(event.target.value)
-                        }
-                        rows={3}
-                      />
-                      <Card>
-                        <CardContent className="flex items-center justify-between p-4">
-                          <div className="space-y-0.5">
-                            <Label className="text-sm font-medium">
-                              Công khai sau khi duyệt
-                            </Label>
-                            <p className="text-muted-foreground text-xs">
-                              Nếu tắt, tài liệu sẽ được duyệt nhưng vẫn riêng tư
-                            </p>
-                          </div>
-                          <Switch
-                            checked={publishPublicly}
-                            onCheckedChange={setPublishPublicly}
-                          />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
+                      {/* Description */}
+                      <div className="space-y-2">
+                        <Label>Mô tả</Label>
+                        <Card>
+                          <CardContent className="p-4 text-sm">
+                            {selectedDocument.description ||
+                              'Chưa có mô tả cho tài liệu'}
+                          </CardContent>
+                        </Card>
+                      </div>
 
-                  <TabsContent value="ai" className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="flex items-center gap-2 text-base">
-                        <Sparkles className="h-5 w-5 text-purple-500" />
-                        Phân tích AI
-                      </Label>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleGenerateAi(selectedDocument.id)}
-                        disabled={aiLoading}
-                      >
-                        {aiLoading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="mr-2 h-4 w-4" />
-                        )}
-                        Chạy AI
-                      </Button>
-                    </div>
+                      {/* Previous Rejection */}
+                      {(selectedDocument.rejectionReason ||
+                        selectedDocument.moderationNotes) && (
+                        <div className="space-y-2">
+                          <Label>Lịch sử kiểm duyệt</Label>
+                          <Card className="border-destructive/50">
+                            <CardContent className="space-y-2 p-4 text-sm">
+                              {selectedDocument.rejectionReason && (
+                                <div>
+                                  <span className="text-destructive font-medium">
+                                    Lý do từ chối:
+                                  </span>{' '}
+                                  {selectedDocument.rejectionReason}
+                                </div>
+                              )}
+                              {selectedDocument.moderationNotes && (
+                                <div>
+                                  <span className="font-medium">Ghi chú:</span>{' '}
+                                  {selectedDocument.moderationNotes}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
 
-                    {selectedDocument.aiAnalysis ? (
-                      <div className="space-y-4">
-                        {/* Moderation Score Card */}
-                        <Card className="border-l-4 border-l-blue-500">
-                          <CardContent className="p-4">
-                            <div className="mb-3 flex items-center justify-between">
-                              <h4 className="flex items-center gap-2 font-semibold">
-                                <ShieldCheck className="h-4 w-4" />
-                                Đánh giá an toàn AI
-                              </h4>
-                              <Badge
-                                variant={
-                                  (selectedDocument.aiAnalysis
+                      {/* Moderation Notes */}
+                      <div className="space-y-3">
+                        <Label>Ghi chú kiểm duyệt</Label>
+                        <Textarea
+                          placeholder="Ghi chú nội bộ hoặc phản hồi gửi cho người đăng..."
+                          value={moderationNotes}
+                          onChange={event =>
+                            setModerationNotes(event.target.value)
+                          }
+                          rows={3}
+                        />
+                        <Card>
+                          <CardContent className="flex items-center justify-between p-4">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm font-medium">
+                                Công khai sau khi duyệt
+                              </Label>
+                              <p className="text-muted-foreground text-xs">
+                                Nếu tắt, tài liệu sẽ được duyệt nhưng vẫn riêng
+                                tư
+                              </p>
+                            </div>
+                            <Switch
+                              checked={publishPublicly}
+                              onCheckedChange={setPublishPublicly}
+                            />
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="ai" className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2 text-base">
+                          <Sparkles className="h-5 w-5 text-purple-500" />
+                          Phân tích AI
+                        </Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateAi(selectedDocument.id)}
+                          disabled={aiLoading}
+                        >
+                          {aiLoading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                          )}
+                          Chạy AI
+                        </Button>
+                      </div>
+
+                      {selectedDocument.aiAnalysis ? (
+                        <div className="space-y-4">
+                          {/* Moderation Score Card */}
+                          <Card className="border-l-4 border-l-blue-500">
+                            <CardContent className="p-4">
+                              <div className="mb-3 flex items-center justify-between">
+                                <h4 className="flex items-center gap-2 font-semibold">
+                                  <ShieldCheck className="h-4 w-4" />
+                                  Đánh giá an toàn AI
+                                </h4>
+                                <Badge
+                                  variant={
+                                    (selectedDocument.aiAnalysis
+                                      .recommendedAction || 'review') ===
+                                    'approve'
+                                      ? 'default'
+                                      : (selectedDocument.aiAnalysis
+                                            .recommendedAction || 'review') ===
+                                          'reject'
+                                        ? 'destructive'
+                                        : 'secondary'
+                                  }
+                                >
+                                  {(selectedDocument.aiAnalysis
                                     .recommendedAction || 'review') ===
                                   'approve'
-                                    ? 'default'
+                                    ? 'Khuyến nghị duyệt'
                                     : (selectedDocument.aiAnalysis
                                           .recommendedAction || 'review') ===
                                         'reject'
-                                      ? 'destructive'
-                                      : 'secondary'
-                                }
-                              >
-                                {(selectedDocument.aiAnalysis
-                                  .recommendedAction || 'review') === 'approve'
-                                  ? 'Khuyến nghị duyệt'
-                                  : (selectedDocument.aiAnalysis
-                                        .recommendedAction || 'review') ===
-                                      'reject'
-                                    ? 'Khuyến nghị từ chối'
-                                    : 'Cần xem xét'}
-                              </Badge>
-                            </div>
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">
-                                  Điểm an toàn:
-                                  <span className="ml-1 text-xs text-gray-500">
-                                    (0-100)
-                                  </span>
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-24 rounded-full bg-gray-200">
-                                    <div
-                                      className={`h-2 rounded-full ${
-                                        (selectedDocument.aiAnalysis
-                                          .moderationScore || 0) >= 80
-                                          ? 'bg-green-500'
-                                          : (selectedDocument.aiAnalysis
-                                                .moderationScore || 0) >= 50
-                                            ? 'bg-yellow-500'
-                                            : 'bg-red-500'
-                                      }`}
-                                      style={{
-                                        width: `${selectedDocument.aiAnalysis.moderationScore || 0}%`,
-                                      }}
-                                    />
-                                  </div>
-                                  <span className="text-sm font-bold">
-                                    {selectedDocument.aiAnalysis
-                                      .moderationScore || 0}
-                                    /100
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">
-                                  Trạng thái:
-                                </span>
-                                <Badge
-                                  variant={
-                                    (selectedDocument.aiAnalysis.isSafe ?? true)
-                                      ? 'default'
-                                      : 'destructive'
-                                  }
-                                >
-                                  {(selectedDocument.aiAnalysis.isSafe ?? true)
-                                    ? 'An toàn'
-                                    : 'Không an toàn'}
+                                      ? 'Khuyến nghị từ chối'
+                                      : 'Cần xem xét'}
                                 </Badge>
                               </div>
-                              {selectedDocument.aiAnalysis.safetyFlags &&
-                                selectedDocument.aiAnalysis.safetyFlags.length >
-                                  0 && (
-                                  <div>
-                                    <span className="text-sm font-medium text-red-600">
-                                      Cảnh báo phát hiện:
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium">
+                                    Điểm an toàn:
+                                    <span className="ml-1 text-xs text-gray-500">
+                                      (0-100)
                                     </span>
-                                    <ul className="mt-1 space-y-1">
-                                      {selectedDocument.aiAnalysis.safetyFlags.map(
-                                        (flag, index) => (
-                                          <li
-                                            key={index}
-                                            className="flex items-center gap-1 text-sm text-red-500"
-                                          >
-                                            <XCircle className="h-3 w-3" />
-                                            {flag}
-                                          </li>
-                                        ),
-                                      )}
-                                    </ul>
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-24 rounded-full bg-gray-200">
+                                      <div
+                                        className={`h-2 rounded-full ${
+                                          (selectedDocument.aiAnalysis
+                                            .moderationScore || 0) >= 80
+                                            ? 'bg-green-500'
+                                            : (selectedDocument.aiAnalysis
+                                                  .moderationScore || 0) >= 50
+                                              ? 'bg-yellow-500'
+                                              : 'bg-red-500'
+                                        }`}
+                                        style={{
+                                          width: `${selectedDocument.aiAnalysis.moderationScore || 0}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-sm font-bold">
+                                      {selectedDocument.aiAnalysis
+                                        .moderationScore || 0}
+                                      /100
+                                    </span>
                                   </div>
-                                )}
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Analysis Details Card */}
-                        <Card>
-                          <CardContent className="space-y-4 p-4">
-                            <div>
-                              <h4 className="mb-2 font-semibold">Tóm tắt</h4>
-                              <p className="text-sm">
-                                {selectedDocument.aiAnalysis.summary}
-                              </p>
-                            </div>
-                            {selectedDocument.aiAnalysis.keyPoints?.length ? (
-                              <div>
-                                <h4 className="mb-2 font-semibold">
-                                  Điểm chính
-                                </h4>
-                                <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-                                  {selectedDocument.aiAnalysis.keyPoints.map(
-                                    point => (
-                                      <li key={point}>{point}</li>
-                                    ),
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium">
+                                    Trạng thái:
+                                  </span>
+                                  <Badge
+                                    variant={
+                                      (selectedDocument.aiAnalysis.isSafe ??
+                                      true)
+                                        ? 'default'
+                                        : 'destructive'
+                                    }
+                                  >
+                                    {(selectedDocument.aiAnalysis.isSafe ??
+                                    true)
+                                      ? 'An toàn'
+                                      : 'Không an toàn'}
+                                  </Badge>
+                                </div>
+                                {selectedDocument.aiAnalysis.safetyFlags &&
+                                  selectedDocument.aiAnalysis.safetyFlags
+                                    .length > 0 && (
+                                    <div>
+                                      <span className="text-sm font-medium text-red-600">
+                                        Cảnh báo phát hiện:
+                                      </span>
+                                      <ul className="mt-1 space-y-1">
+                                        {selectedDocument.aiAnalysis.safetyFlags.map(
+                                          (flag, index) => (
+                                            <li
+                                              key={index}
+                                              className="flex items-center gap-1 text-sm text-red-500"
+                                            >
+                                              <XCircle className="h-3 w-3" />
+                                              {flag}
+                                            </li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    </div>
                                   )}
-                                </ul>
                               </div>
-                            ) : null}
-                            <Separator />
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Độ tin cậy tài liệu
-                                <span className="ml-1 text-xs text-gray-400">
-                                  (độ tin cậy nội dung)
+                            </CardContent>
+                          </Card>
+
+                          {/* Analysis Details Card */}
+                          <Card>
+                            <CardContent className="space-y-4 p-4">
+                              <div>
+                                <h4 className="mb-2 font-semibold">Tóm tắt</h4>
+                                <p className="text-sm">
+                                  {selectedDocument.aiAnalysis.summary}
+                                </p>
+                              </div>
+                              {selectedDocument.aiAnalysis.keyPoints?.length ? (
+                                <div>
+                                  <h4 className="mb-2 font-semibold">
+                                    Điểm chính
+                                  </h4>
+                                  <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
+                                    {selectedDocument.aiAnalysis.keyPoints.map(
+                                      point => (
+                                        <li key={point}>{point}</li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              ) : null}
+                              <Separator />
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  Độ tin cậy tài liệu
+                                  <span className="ml-1 text-xs text-gray-400">
+                                    (độ tin cậy nội dung)
+                                  </span>
                                 </span>
-                              </span>
-                              <Badge variant="secondary">
-                                {(
-                                  selectedDocument.aiAnalysis
-                                    .reliabilityScore ?? 0
-                                ).toFixed(0)}
-                                %
-                              </Badge>
+                                <Badge variant="secondary">
+                                  {(
+                                    selectedDocument.aiAnalysis
+                                      .reliabilityScore ?? 0
+                                  ).toFixed(0)}
+                                  %
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ) : (
+                        <Card>
+                          <CardContent className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+                            <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-full">
+                              <Sparkles className="text-muted-foreground h-8 w-8" />
+                            </div>
+                            <div>
+                              <h4 className="mb-1 font-semibold">
+                                Chưa có phân tích
+                              </h4>
+                              <p className="text-muted-foreground text-sm">
+                                Nhấn "Chạy AI" để phân tích tài liệu này
+                              </p>
                             </div>
                           </CardContent>
                         </Card>
-                      </div>
-                    ) : (
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center gap-4 p-12 text-center">
-                          <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-full">
-                            <Sparkles className="text-muted-foreground h-8 w-8" />
-                          </div>
-                          <div>
-                            <h4 className="mb-1 font-semibold">
-                              Chưa có phân tích
-                            </h4>
-                            <p className="text-muted-foreground text-sm">
-                              Nhấn "Chạy AI" để phân tích tài liệu này
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </TabsContent>
+                      )}
+                    </TabsContent>
 
-                  <TabsContent value="files" className="space-y-3">
-                    {selectedDocument.files.map(file => (
-                      <Card key={file.id}>
-                        <CardContent className="flex items-center justify-between p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-muted flex h-10 w-10 items-center justify-center rounded">
-                              <FileText className="h-5 w-5" />
+                    <TabsContent value="files" className="space-y-3">
+                      {selectedDocument.files.map(file => (
+                        <Card key={file.id}>
+                          <CardContent className="flex items-center justify-between p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-muted flex h-10 w-10 items-center justify-center rounded">
+                                <FileText className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {file.originalName}
+                                </p>
+                                <p className="text-muted-foreground text-xs">
+                                  {file.mimeType} •{' '}
+                                  {formatFileSize(file.fileSize)}
+                                </p>
+                              </div>
+                            </div>
+                            {file.secureUrl ? (
+                              <Button asChild size="sm" variant="outline">
+                                <a
+                                  href={file.secureUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  Xem
+                                </a>
+                              </Button>
+                            ) : (
+                              <Badge variant="outline">Không thể xem</Badge>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </TabsContent>
+
+                    <TabsContent value="similarity" className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                        <Label className="text-base font-semibold">
+                          Tài liệu tương đồng
+                        </Label>
+                      </div>
+
+                      {_similarityLoading ? (
+                        <div className="space-y-3 py-4">
+                          {Array.from({ length: 2 }).map((_, index) => (
+                            <Card key={index}>
+                              <CardContent className="p-4">
+                                <Skeleton className="h-5 w-3/4" />
+                                <Skeleton className="mt-2 h-4 w-full" />
+                                <div className="mt-3 flex gap-2">
+                                  <Skeleton className="h-8 w-24" />
+                                  <Skeleton className="h-8 w-24" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : similarityWarnings.length > 0 ? (
+                        <div className="space-y-3">
+                          <p className="text-muted-foreground text-sm">
+                            Tìm thấy {similarityWarnings.length} tài liệu có nội
+                            dung tương đồng. Vui lòng xem xét và đánh dấu là
+                            trùng lặp hoặc khác biệt.
+                          </p>
+
+                          <div className="space-y-2">
+                            {similarityWarnings.map(warning => (
+                              <Card
+                                key={warning.id}
+                                className="border-l-4 border-l-yellow-500"
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <div className="mb-2 flex items-center gap-2">
+                                        <Badge
+                                          variant="outline"
+                                          className="text-yellow-600"
+                                        >
+                                          {(
+                                            warning.similarityScore * 100
+                                          ).toFixed(1)}
+                                          % tương đồng
+                                        </Badge>
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs"
+                                        >
+                                          {warning.similarityType === 'hash'
+                                            ? 'Giống hệt'
+                                            : warning.similarityType === 'text'
+                                              ? 'Nội dung'
+                                              : 'Nội dung'}
+                                        </Badge>
+                                      </div>
+
+                                      <h4 className="mb-2 font-medium text-gray-900">
+                                        {warning.targetDocument.title}
+                                      </h4>
+
+                                      {warning.targetDocument.description && (
+                                        <p className="text-muted-foreground mb-2 line-clamp-2 text-sm">
+                                          {warning.targetDocument.description}
+                                        </p>
+                                      )}
+
+                                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                                        <div className="flex items-center gap-1.5">
+                                          <User className="h-3.5 w-3.5" />
+                                          <span>
+                                            {warning.targetDocument.uploader
+                                              .firstName ||
+                                              warning.targetDocument.uploader
+                                                .lastName ||
+                                              warning.targetDocument.uploader
+                                                .username ||
+                                              'Người dùng'}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <Calendar className="h-3.5 w-3.5" />
+                                          <span>
+                                            {formatDateTime(
+                                              warning.targetDocument.createdAt,
+                                            )}
+                                          </span>
+                                        </div>
+                                        {warning.targetDocument.category && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs"
+                                          >
+                                            {
+                                              warning.targetDocument.category
+                                                .name
+                                            }
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          handleSimilarityDecision(warning.id, {
+                                            isDuplicate: false,
+                                          });
+                                        }}
+                                        className="w-full sm:w-auto"
+                                      >
+                                        <CheckCircle2 className="mr-1 h-4 w-4" />
+                                        Khác biệt
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => {
+                                          handleSimilarityDecision(warning.id, {
+                                            isDuplicate: true,
+                                          });
+                                        }}
+                                        className="w-full sm:w-auto"
+                                      >
+                                        <XCircle className="mr-1 h-4 w-4" />
+                                        Trùng lặp
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <Card>
+                          <CardContent className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+                            <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-full">
+                              <CheckCircle2 className="text-muted-foreground h-8 w-8" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium">
-                                {file.originalName}
-                              </p>
-                              <p className="text-muted-foreground text-xs">
-                                {file.mimeType} •{' '}
-                                {formatFileSize(file.fileSize)}
+                              <h4 className="mb-1 font-semibold">
+                                Không có tài liệu tương đồng
+                              </h4>
+                              <p className="text-muted-foreground text-sm">
+                                Tài liệu này không có nội dung tương đồng với
+                                các tài liệu khác trong hệ thống.
                               </p>
                             </div>
-                          </div>
-                          {file.secureUrl ? (
-                            <Button asChild size="sm" variant="outline">
-                              <a
-                                href={file.secureUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                Xem
-                              </a>
-                            </Button>
-                          ) : (
-                            <Badge variant="outline">Không thể xem</Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </ScrollArea>
-          ) : (
-            <p className="text-muted-foreground py-8 text-center text-sm">
-              Không tìm thấy dữ liệu cho tài liệu này.
-            </p>
-          )}
-
-          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setDetailOpen(false)}
-              disabled={processing}
-            >
-              Đóng
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() =>
-                selectedDocument &&
-                startReject({
-                  id: selectedDocument.id,
-                  title: selectedDocument.title,
-                })
-              }
-              disabled={processing || !selectedDocument}
-            >
-              <XCircle className="mr-2 h-4 w-4" />
-              Từ chối
-            </Button>
-            <Button
-              onClick={() =>
-                selectedDocument &&
-                handleApprove(selectedDocument.id, {
-                  notes: moderationNotes || undefined,
-                  publish: publishPublicly,
-                })
-              }
-              disabled={processing || !selectedDocument}
-            >
-              {processing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          </CardContent>
+                        </Card>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                </div>
               ) : (
-                <CheckCircle2 className="mr-2 h-4 w-4" />
+                <p className="text-muted-foreground py-8 text-center text-sm">
+                  Không tìm thấy dữ liệu cho tài liệu này.
+                </p>
               )}
-              Duyệt tài liệu
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </ScrollArea>
+
+            <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDetailOpen(false)}
+                disabled={processing}
+              >
+                Đóng
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  selectedDocument &&
+                  startReject({
+                    id: selectedDocument.id,
+                    title: selectedDocument.title,
+                  })
+                }
+                disabled={processing || !selectedDocument}
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                Từ chối
+              </Button>
+              <Button
+                onClick={() =>
+                  selectedDocument &&
+                  handleApprove(selectedDocument.id, {
+                    notes: moderationNotes || undefined,
+                    publish: publishPublicly,
+                  })
+                }
+                disabled={processing || !selectedDocument}
+              >
+                {processing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                )}
+                Duyệt tài liệu
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>

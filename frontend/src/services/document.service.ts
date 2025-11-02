@@ -6,10 +6,10 @@ import type {
   ModerationQueueParams,
   ModerationQueueResponse,
 } from '@/types';
-import { apiClient } from '@/utils/api-client';
+import { apiClient } from '@/utils/api-client'
 
-import { DocumentsService, FilesService } from './files.service';
-import { UploadedFile } from './upload.service';
+import { DocumentsService, FilesService } from './files.service'
+import { UploadedFile } from './upload.service'
 
 export interface PaginatedDocuments {
   files: UploadedFile[];
@@ -601,3 +601,99 @@ export const triggerFileDownload = async (
 
 // Re-export new services for easy access
 export { DocumentsService, FilesService };
+
+// ================================
+// SIMILARITY DETECTION SERVICES
+// ================================
+
+export interface SimilarityResult {
+  id: string;
+  targetDocument: {
+    id: string;
+    title: string;
+    description?: string;
+    uploader: {
+      id: string;
+      username: string;
+      firstName?: string;
+      lastName?: string;
+    };
+    category: {
+      id: string;
+      name: string;
+    };
+    createdAt: string;
+  };
+  similarityScore: number;
+  similarityType: string;
+  createdAt: string;
+}
+
+/**
+ * Get similarity results for moderation
+ */
+export const getSimilarityResults = async (
+  documentId: string,
+): Promise<SimilarityResult[]> => {
+  const response = await apiClient.get<SimilarityResult[]>(
+    `/similarity/results/${documentId}`,
+  );
+
+  if (!response) {
+    throw new Error('Không có dữ liệu trả về từ API');
+  }
+
+  return response;
+};
+
+/**
+ * Process admin decision on similarity
+ */
+export const processSimilarityDecision = async (
+  similarityId: string,
+  decision: { isDuplicate: boolean; notes?: string },
+): Promise<void> => {
+  const response = await apiClient.put<void>(
+    `/similarity/decision/${similarityId}`,
+    decision,
+  );
+
+  if (!response.success) {
+    throw new Error(response.message || 'Không thể xử lý quyết định');
+  }
+};
+
+/**
+ * Queue similarity detection for a document
+ */
+export const queueSimilarityDetection = async (
+  documentId: string,
+): Promise<{ id: string; status: string }> => {
+  const response = await apiClient.post<{ id: string; status: string }>(
+    `/similarity/detect/${documentId}`,
+  );
+
+  if (!response.data) {
+    throw new Error('Không có dữ liệu trả về từ API');
+  }
+
+  return response.data;
+};
+
+/**
+ * Generate embedding for a document
+ */
+export const generateDocumentEmbedding = async (
+  documentId: string,
+): Promise<{ success: boolean; embeddingLength: number }> => {
+  const response = await apiClient.post<{
+    success: boolean;
+    embeddingLength: number;
+  }>(`/similarity/embedding/${documentId}`);
+
+  if (!response.data) {
+    throw new Error('Không có dữ liệu trả về từ API');
+  }
+
+  return response.data;
+};

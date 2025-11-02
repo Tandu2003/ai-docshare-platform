@@ -50,7 +50,7 @@ export class GeminiService {
     fileUrls: string[],
   ): Promise<DocumentAnalysisResult> {
     try {
-      this.logger.log(`Analyzing ${fileUrls.length} files with Gemini`);
+      this.logger.log(`Analyzing ${fileUrls[0]} files with Gemini`);
 
       const modelName =
         this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
