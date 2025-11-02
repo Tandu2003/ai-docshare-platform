@@ -33,7 +33,7 @@ async function bootstrap() {
         callback(null, true);
         return;
       }
-      
+
       // In production, check against allowed origins
       const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
         'http://localhost:3000',
@@ -41,7 +41,7 @@ async function bootstrap() {
         'https://localhost:3000',
         'https://localhost:5173',
       ];
-      
+
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {

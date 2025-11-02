@@ -1,6 +1,6 @@
 import type { DocumentModerationStatus } from '@/types';
-import { ApiResponse } from '@/types/api.types'
-import { apiClient } from '@/utils/api-client'
+import { ApiResponse } from '@/types/api.types';
+import { apiClient } from '@/utils/api-client';
 
 export interface FileUploadResult {
   id: string;
@@ -57,6 +57,7 @@ export interface Document {
   language: string;
   createdAt: string;
   updatedAt: string;
+  similarityScore?: number; // Vector search similarity score (0-1)
   uploader?: {
     id: string;
     username: string;
@@ -88,6 +89,7 @@ export interface PaginatedDocuments {
   total: number;
   page: number;
   limit: number;
+  searchMethod?: 'hybrid';
 }
 
 export class FilesService {
@@ -147,8 +149,11 @@ export class FilesService {
         },
       );
 
-      // Return the full response since the backend already returns ApiResponse format
-      return response;
+      if (!response.data) {
+        throw new Error('Không có dữ liệu trả về từ API');
+      }
+
+      return response.data;
     } catch (error: any) {
       console.error('Failed to upload avatar:', error);
       throw new Error(error.message || 'Không thể tải lên ảnh đại diện');
@@ -213,6 +218,53 @@ export class DocumentsService {
     } catch (error) {
       console.error('Failed to get public documents:', error);
       throw new Error('Không thể lấy tài liệu công khai');
+    }
+  }
+
+  /**
+   * Search documents using vector/traditional/hybrid search
+   */
+  static async searchDocuments(
+    query: string,
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      categoryId?: string;
+      tags?: string[];
+      language?: string;
+    },
+  ): Promise<PaginatedDocuments> {
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      if (filters?.categoryId) {
+        params.append('categoryId', filters.categoryId);
+      }
+
+      if (filters?.tags && filters.tags.length > 0) {
+        params.append('tags', filters.tags.join(','));
+      }
+
+      if (filters?.language) {
+        params.append('language', filters.language);
+      }
+
+      const response = await apiClient.get<PaginatedDocuments>(
+        `/documents/search?${params.toString()}`,
+      );
+
+      if (!response.data) {
+        throw new Error('Không có dữ liệu trả về từ API');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to search documents:', error);
+      throw new Error('Không thể tìm kiếm tài liệu');
     }
   }
 

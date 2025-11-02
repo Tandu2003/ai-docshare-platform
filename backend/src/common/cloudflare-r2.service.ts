@@ -1,16 +1,15 @@
-import * as crypto from 'crypto'
-import { Readable } from 'stream'
-import { v4 as uuidv4 } from 'uuid'
-
+import * as crypto from 'crypto';
+import { Readable } from 'stream';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
-} from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class CloudflareR2Service {

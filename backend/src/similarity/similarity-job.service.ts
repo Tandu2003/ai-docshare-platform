@@ -1,8 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { Cron, CronExpression } from '@nestjs/schedule'
-
-import { PrismaService } from '../prisma/prisma.service'
-import { SimilarityService } from './similarity.service'
+import { PrismaService } from '../prisma/prisma.service';
+import { SimilarityService } from './similarity.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SimilarityJobService {

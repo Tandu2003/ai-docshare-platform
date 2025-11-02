@@ -602,13 +602,16 @@ export class FilesService {
       });
 
       // Emit realtime view event (to uploader room if available)
-      this.notifications.emitToUploaderOfDocument(file.uploaderId, {
-        type: 'view',
-        documentId: documentFile.document.id,
-        fileId,
-        userId,
-        count: 1,
-      });
+      await this.notifications.emitToUploaderOfDocument(
+        file?.uploaderId ?? userId ?? '',
+        {
+          type: 'view',
+          documentId: documentFile.document.id,
+          fileId,
+          userId,
+          count: 1,
+        },
+      );
 
       this.logger.log(
         `View count incremented successfully for file ${fileId} via document ${documentFile.document.id}`,

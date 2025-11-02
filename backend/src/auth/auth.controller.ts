@@ -1,7 +1,18 @@
-import { Request, Response } from 'express'
-
-import { Public } from '@/auth/decorators/public.decorator'
-import { ResponseHelper } from '@/common'
+import { AuthService } from './auth.service';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  UpdateProfileDto,
+  VerifyEmailDto,
+} from './dto';
+import { JwtAuthGuard } from './guards';
+import { AuthUser } from './interfaces';
+import { Public } from '@/auth/decorators/public.decorator';
+import { ResponseHelper } from '@/common';
 import {
   Body,
   Controller,
@@ -13,22 +24,9 @@ import {
   Req,
   Res,
   UseGuards,
-} from '@nestjs/common'
-import { Throttle } from '@nestjs/throttler'
-
-import { AuthService } from './auth.service'
-import {
-  ChangePasswordDto,
-  ForgotPasswordDto,
-  LoginDto,
-  RegisterDto,
-  ResendVerificationDto,
-  ResetPasswordDto,
-  UpdateProfileDto,
-  VerifyEmailDto,
-} from './dto'
-import { JwtAuthGuard } from './guards'
-import { AuthUser } from './interfaces'
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {

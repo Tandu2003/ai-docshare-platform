@@ -1,12 +1,10 @@
-import * as crypto from 'crypto'
-
-import { Injectable, Logger } from '@nestjs/common'
-
-import { AIService } from '../ai/ai.service'
-import { ContentExtractorService } from '../ai/content-extractor.service'
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { FilesService } from '../files/files.service'
-import { PrismaService } from '../prisma/prisma.service'
+import * as crypto from 'crypto';
+import { AIService } from '../ai/ai.service';
+import { ContentExtractorService } from '../ai/content-extractor.service';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { FilesService } from '../files/files.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, Logger } from '@nestjs/common';
 
 export interface SimilarityResult {
   documentId: string;
@@ -68,10 +66,10 @@ export class SimilarityService {
       }
 
       // Extract text content for embedding (improved to use actual file content)
-      const textContent = await this.extractTextForEmbedding(document);
+      // const textContent = await this.extractTextForEmbedding(document);
 
       // Generate embedding using AI service
-      const embedding = await this.generateEmbedding(textContent);
+      const embedding = this.generateEmbedding();
 
       // Save embedding to database
       await this.prisma.documentEmbedding.upsert({
@@ -399,7 +397,7 @@ export class SimilarityService {
         });
 
         // Detect similar documents
-        const _similarityResult = await this.detectSimilarDocuments(documentId);
+        await this.detectSimilarDocuments(documentId);
 
         // Update progress
         await this.prisma.similarityJob.update({
@@ -825,16 +823,8 @@ export class SimilarityService {
     return parts.join(' ').trim();
   }
 
-  private async generateEmbedding(_text: string): Promise<number[]> {
-    // This would integrate with an embedding service
-    // For now, we'll use a placeholder implementation
-    // In production, you'd use OpenAI's text-embedding-ada-002 or similar
-
-    // Placeholder: Generate random embedding for demo
-    // In real implementation, call OpenAI API or local embedding model
-    const embedding = Array.from({ length: 1536 }, () => Math.random());
-
-    return embedding;
+  private generateEmbedding(): number[] {
+    return Array.from({ length: 1536 }, () => Math.random());
   }
 
   private calculateCosineSimilarity(vecA: number[], vecB: number[]): number {

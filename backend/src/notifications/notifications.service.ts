@@ -40,7 +40,7 @@ export class NotificationsService {
     try {
       this.gateway.server.emit('notification', event);
     } catch (err) {
-      this.logger.error('Failed to emit notification', err as any);
+      this.logger.error('Failed to emit notification', err);
     }
   }
 
@@ -52,7 +52,7 @@ export class NotificationsService {
       // Gửi qua WebSocket
       this.gateway.server.to(`user:${userId}`).emit('notification', event);
     } catch (err) {
-      this.logger.error('Failed to emit notification to user', err as any);
+      this.logger.error('Failed to emit notification to user', err);
     }
   }
 

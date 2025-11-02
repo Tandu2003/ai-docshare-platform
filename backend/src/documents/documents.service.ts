@@ -1,25 +1,32 @@
-import * as archiver from 'archiver'
-import { randomBytes } from 'crypto'
-
-import { NotificationsService } from '@/notifications/notifications.service'
-import { PointsService } from '@/points/points.service'
-import { SimilarityJobService } from '@/similarity/similarity-job.service'
+import { randomBytes } from 'crypto';
+import { AIService } from '../ai/ai.service';
+import { EmbeddingService } from '../ai/embedding.service';
+import {
+  HybridSearchResult,
+  VectorSearchService,
+} from '../ai/vector-search.service';
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { SystemSettingsService } from '../common/system-settings.service';
+import { FilesService } from '../files/files.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { ShareDocumentDto } from './dto/share-document.dto';
+import { NotificationsService } from '@/notifications/notifications.service';
+import { PointsService } from '@/points/points.service';
+import { SimilarityJobService } from '@/similarity/similarity-job.service';
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
-} from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
-import { DocumentModerationStatus, DocumentShareLink, Prisma } from '@prisma/client'
-
-import { AIService } from '../ai/ai.service'
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { SystemSettingsService } from '../common/system-settings.service'
-import { FilesService } from '../files/files.service'
-import { PrismaService } from '../prisma/prisma.service'
-import { CreateDocumentDto } from './dto/create-document.dto'
-import { ShareDocumentDto } from './dto/share-document.dto'
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import {
+  DocumentModerationStatus,
+  DocumentShareLink,
+  Prisma,
+} from '@prisma/client';
+import * as archiver from 'archiver';
 
 @Injectable()
 export class DocumentsService {
@@ -31,6 +38,8 @@ export class DocumentsService {
     private r2Service: CloudflareR2Service,
     private configService: ConfigService,
     private aiService: AIService,
+    private embeddingService: EmbeddingService,
+    private vectorSearchService: VectorSearchService,
     private notifications: NotificationsService,
     private systemSettings: SystemSettingsService,
     private similarityJobService: SimilarityJobService,
@@ -287,6 +296,16 @@ export class DocumentsService {
               `Failed to queue similarity detection for document ${document.id}: ${error.message}`,
             );
           });
+      }
+
+      // Generate document embedding for vector search (in background)
+      // Only for approved/public documents to enable vector search
+      if (document.isApproved && wantsPublic) {
+        void this.generateDocumentEmbedding(document.id).catch(error => {
+          this.logger.warn(
+            `Failed to generate embedding for document ${document.id}: ${error.message}`,
+          );
+        });
       }
 
       // Return document with files
@@ -2483,6 +2502,291 @@ export class DocumentsService {
     } catch (error) {
       this.logger.error('Error tracking download:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Search documents using vector search
+   */
+  async searchDocuments(
+    query: string,
+    page: number = 1,
+    limit: number = 10,
+    userId?: string,
+    userRole?: string,
+    filters?: {
+      categoryId?: string;
+      tags?: string[];
+      language?: string;
+    },
+  ) {
+    try {
+      const normalizedQuery = query.trim();
+      const skip = (page - 1) * limit;
+      const searchStrategy: 'hybrid' = 'hybrid';
+
+      this.logger.log(
+        `Searching documents: "${normalizedQuery.substring(0, 50)}..." (method: ${searchStrategy})`,
+      );
+
+      const fetchLimit = Math.max(limit, Math.min(limit * (page + 1), 100));
+
+      const vectorFilters: {
+        categoryId?: string;
+        tags?: string[];
+        language?: string;
+        isPublic?: boolean;
+        isApproved?: boolean;
+      } = {
+        categoryId: filters?.categoryId,
+        tags: filters?.tags,
+        language: filters?.language,
+        isApproved: true,
+      };
+
+      if (userRole !== 'admin') {
+        vectorFilters.isPublic = true;
+      }
+
+      let searchResults: HybridSearchResult[] =
+        await this.vectorSearchService.hybridSearch({
+          query: normalizedQuery,
+          userId,
+          userRole,
+          limit: fetchLimit,
+          threshold: 0.4,
+          filters: vectorFilters,
+        });
+
+      if (searchResults.length === 0) {
+        this.logger.warn(
+          'Hybrid search returned no results; falling back to keyword search.',
+        );
+
+        const fallbackResults =
+          await this.vectorSearchService.keywordSearch({
+            query: normalizedQuery,
+            limit: fetchLimit,
+            filters: vectorFilters,
+          });
+
+        searchResults = fallbackResults.map(result => ({
+          documentId: result.documentId,
+          textScore: result.textScore,
+          combinedScore: result.textScore,
+        }));
+      }
+
+      const documentIds = searchResults
+        .slice(skip, skip + limit)
+        .map(result => result.documentId);
+
+      if (documentIds.length === 0) {
+        return {
+          documents: [],
+          total: searchResults.length,
+          page,
+          limit,
+          searchMethod: searchStrategy,
+        };
+      }
+
+      const documentWhere: Prisma.DocumentWhereInput = {
+        id: {
+          in: documentIds,
+        },
+        isApproved: true,
+        moderationStatus: DocumentModerationStatus.APPROVED,
+      };
+
+      if (userRole !== 'admin') {
+        documentWhere.isPublic = true;
+      }
+
+      if (filters?.categoryId) {
+        documentWhere.categoryId = filters.categoryId;
+      }
+
+      if (filters?.language) {
+        documentWhere.language = filters.language;
+      }
+
+      if (filters?.tags && filters.tags.length > 0) {
+        documentWhere.tags = {
+          hasSome: filters.tags,
+        };
+      }
+
+      const documents = await this.prisma.document.findMany({
+        where: documentWhere,
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+          category: true,
+          uploader: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      const orderedDocuments = documentIds
+        .map(id => documents.find(doc => doc.id === id))
+        .filter((doc): doc is typeof documents[number] => doc !== undefined);
+
+      const settings = await this.systemSettings.getPointsSettings();
+
+      const transformedDocuments = await Promise.all(
+        orderedDocuments.map(async document => {
+          const filesData = document.files.map(df => ({
+            id: df.file.id,
+            originalName: df.file.originalName,
+            fileName: df.file.fileName,
+            mimeType: df.file.mimeType,
+            fileSize: df.file.fileSize,
+            order: df.order,
+          }));
+
+          const filesWithSecureUrls =
+            await this.filesService.addSecureUrlsToFiles(filesData, {
+              userId,
+            });
+
+          const isOwner = document.uploaderId === userId;
+          const downloadCost = document.downloadCost || settings.downloadCost;
+
+          const searchResult = searchResults.find(
+            r => r.documentId === document.id,
+          );
+          const similarityScore = searchResult?.combinedScore;
+
+          return {
+            id: document.id,
+            title: document.title,
+            description: document.description,
+            isPublic: document.isPublic,
+            isApproved: document.isApproved,
+            moderationStatus: document.moderationStatus,
+            tags: document.tags,
+            language: document.language,
+            createdAt: document.createdAt,
+            updatedAt: document.updatedAt,
+            uploaderId: document.uploaderId,
+            categoryId: document.categoryId,
+            category: document.category,
+            uploader: document.uploader,
+            downloadCount: document.downloadCount,
+            downloadCost: isOwner ? 0 : downloadCost,
+            viewCount: document.viewCount,
+            averageRating: document.averageRating,
+            files: filesWithSecureUrls,
+            similarityScore,
+          };
+        }),
+      );
+
+      return {
+        documents: transformedDocuments,
+        total: searchResults.length,
+        page,
+        limit,
+        searchMethod: searchStrategy,
+      };
+    } catch (error) {
+      this.logger.error('Error searching documents:', error);
+      throw new InternalServerErrorException('Không thể tìm kiếm tài liệu');
+    }
+  }
+
+  /**
+   * Generate and save document embedding for vector search
+   */
+  private async generateDocumentEmbedding(documentId: string): Promise<void> {
+    try {
+      this.logger.log(`Generating embedding for document ${documentId}`);
+
+      // Get document with files and AI analysis
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+          aiAnalysis: true,
+        },
+      });
+
+      if (!document) {
+        this.logger.warn(
+          `Document ${documentId} not found for embedding generation`,
+        );
+        return;
+      }
+
+      // Build text content for embedding
+      // Priority: AI analysis summary > description > title + tags
+      let textContent = '';
+
+      if (document.aiAnalysis?.summary) {
+        textContent = document.aiAnalysis.summary;
+      } else if (document.description) {
+        textContent = document.description;
+      } else {
+        textContent = `${document.title} ${document.tags.join(' ')}`;
+      }
+
+      // Add title and tags for better context
+      textContent = `${document.title} ${textContent} ${document.tags.join(' ')}`;
+
+      if (!textContent || textContent.trim().length === 0) {
+        this.logger.warn(
+          `No text content available for embedding document ${documentId}`,
+        );
+        return;
+      }
+
+      // Generate embedding
+      const embedding = await this.embeddingService.generateEmbedding(
+        textContent.trim(),
+      );
+
+      // Save embedding to database
+      await this.prisma.documentEmbedding.upsert({
+        where: { documentId },
+        update: {
+          embedding,
+          updatedAt: new Date(),
+        },
+        create: {
+          documentId,
+          embedding,
+        },
+      });
+
+      this.logger.log(
+        `Embedding generated and saved for document ${documentId} (dimension: ${embedding.length})`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error generating embedding for document ${documentId}:`,
+        error.message,
+      );
+      // Don't throw - embedding generation is not critical for document creation
     }
   }
 }

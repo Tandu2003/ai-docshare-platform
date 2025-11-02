@@ -1,8 +1,17 @@
-import { Controller, Get, Post, Put, Param, Body, UseGuards, Request } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
-import { SimilarityService } from './similarity.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SimilarityJobService } from './similarity-job.service';
+import { SimilarityService } from './similarity.service';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 
 @Controller('similarity')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -25,7 +34,9 @@ export class SimilarityController {
    */
   @Get('results/:documentId')
   async getSimilarityResults(@Param('documentId') documentId: string) {
-    return await this.similarityService.getSimilarityResultsForModeration(documentId);
+    return await this.similarityService.getSimilarityResultsForModeration(
+      documentId,
+    );
   }
 
   /**
@@ -50,7 +61,8 @@ export class SimilarityController {
    */
   @Post('embedding/:documentId')
   async generateEmbedding(@Param('documentId') documentId: string) {
-    const embedding = await this.similarityService.generateDocumentEmbedding(documentId);
+    const embedding =
+      await this.similarityService.generateDocumentEmbedding(documentId);
     return { success: true, embeddingLength: embedding.length };
   }
 }

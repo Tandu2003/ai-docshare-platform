@@ -293,6 +293,80 @@ export class DocumentsController {
     }
   }
 
+  @Get('search')
+  @UseGuards(OptionalJwtAuthGuard)
+  @Public()
+  @ApiOperation({
+    summary: 'Search documents using hybrid AI search',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Kết quả tìm kiếm tài liệu',
+  })
+  async searchDocuments(
+    @Query('q') query: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('method') method: string = 'hybrid',
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query('categoryId') categoryId?: string,
+    @Query('tags') tags?: string,
+    @Query('language') language?: string,
+  ) {
+    try {
+      if (!query || query.trim().length === 0) {
+        return ResponseHelper.error(
+          res,
+          'Query không được để trống',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
+      const normalizedMethod = method?.toLowerCase();
+
+      if (normalizedMethod && normalizedMethod !== 'hybrid') {
+        this.logger.warn(
+          `Search method "${method}" is deprecated. Falling back to hybrid search.`,
+        );
+      }
+
+      // Get user ID and role if authenticated
+      const userId = (req as any).user?.id;
+      const userRole = (req as any).user?.role?.name;
+
+      const tagsArray = tags ? tags.split(',').map(t => t.trim()) : undefined;
+
+      const result = await this.documentsService.searchDocuments(
+        query.trim(),
+        pageNum,
+        limitNum,
+        userId,
+        userRole,
+        {
+          categoryId,
+          tags: tagsArray,
+          language,
+        },
+      );
+
+      return ResponseHelper.success(
+        res,
+        result,
+        'Tìm kiếm tài liệu thành công',
+      );
+    } catch (error) {
+      this.logger.error('Error searching documents:', error);
+      return ResponseHelper.error(
+        res,
+        'Đã xảy ra lỗi khi tìm kiếm tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('public')
   @ApiOperation({ summary: 'Get public documents with pagination' })
   @ApiResponse({

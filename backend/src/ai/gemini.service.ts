@@ -1,10 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
-
-import { CloudflareR2Service } from '../common/cloudflare-r2.service'
-import { FilesService } from '../files/files.service'
-import { ContentExtractorService } from './content-extractor.service'
+import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { FilesService } from '../files/files.service';
+import { ContentExtractorService } from './content-extractor.service';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 export interface DocumentAnalysisResult {
   title?: string;

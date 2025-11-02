@@ -1,0 +1,768 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { EmbeddingService } from './embedding.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { DocumentModerationStatus, Prisma } from '@prisma/client';
+
+export interface VectorSearchOptions {
+  query: string;
+  userId?: string;
+  userRole?: string;
+  limit?: number;
+  threshold?: number; // Minimum similarity score (0-1)
+  recordHistory?: boolean;
+  filters?: {
+    categoryId?: string;
+    tags?: string[];
+    language?: string;
+    isPublic?: boolean;
+    isApproved?: boolean;
+  };
+}
+
+export interface VectorSearchResult {
+  documentId: string;
+  similarityScore: number;
+}
+
+export interface HybridSearchResult {
+  documentId: string;
+  vectorScore?: number;
+  textScore?: number;
+  combinedScore: number;
+}
+
+@Injectable()
+export class VectorSearchService {
+  private readonly logger = new Logger(VectorSearchService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private embeddingService: EmbeddingService,
+  ) {}
+
+  private prepareQueryVariants(query: string) {
+    const trimmed = query.trim();
+
+    if (!trimmed) {
+      return {
+        trimmed: '',
+        normalized: '',
+        lowerTrimmed: '',
+        lowerNormalized: '',
+        condensedTrimmed: '',
+        condensedNormalized: '',
+        tokens: [] as string[],
+        lowerTokens: [] as string[],
+        embeddingText: '',
+      };
+    }
+
+    const whitespaceNormalized = trimmed.replace(/\s+/g, ' ');
+
+    const punctuationAsSpace = trimmed
+      .replace(/[\u2013\u2014]/g, ' ')
+      .replace(/["'`’“”]/g, ' ')
+      .replace(/[\p{P}\p{S}]+/gu, ' ');
+
+    const tokens = punctuationAsSpace
+      .split(/\s+/)
+      .map(token => token.trim())
+      .filter(token => token.length > 0);
+
+    const lowerTokens = tokens.map(token => token.toLowerCase());
+
+    const expandedTokens: string[] = [];
+    const addToken = (token: string) => {
+      if (!token) return;
+      const trimmedToken = token.trim();
+      if (!trimmedToken) return;
+      if (!expandedTokens.includes(trimmedToken)) {
+        expandedTokens.push(trimmedToken);
+      }
+    };
+
+    const suffixHeuristics = ['js', 'ts', 'py', 'rb', 'go', 'net', 'sql', 'db'];
+
+    lowerTokens.forEach(token => {
+      if (!token) return;
+      addToken(token);
+
+      suffixHeuristics.forEach(suffix => {
+        if (token.endsWith(suffix) && token.length > suffix.length) {
+          addToken(token.slice(0, -suffix.length));
+          addToken(suffix);
+        }
+      });
+
+      const alphaNumericSplit = token
+        .replace(/([0-9]+)([a-z]+)/gi, '$1 $2')
+        .replace(/([a-z]+)([0-9]+)/gi, '$1 $2');
+      alphaNumericSplit.split(/\s+/).forEach(part => {
+        if (part && part !== token) {
+          addToken(part);
+        }
+      });
+    });
+
+    const uniqueLowerTokens = expandedTokens;
+
+    const normalized = uniqueLowerTokens.join(' ');
+    const lowerTrimmed = trimmed.toLowerCase();
+    const lowerNormalized = normalized.toLowerCase();
+    const condensedTrimmed = lowerTrimmed.replace(/[^\p{L}\p{N}]/gu, '');
+    const condensedNormalized = lowerNormalized.replace(/[^\p{L}\p{N}]/gu, '');
+
+    const embeddingText = normalized || whitespaceNormalized || trimmed;
+
+    return {
+      trimmed,
+      normalized,
+      lowerTrimmed,
+      lowerNormalized,
+      condensedTrimmed,
+      condensedNormalized,
+      tokens,
+      lowerTokens: uniqueLowerTokens,
+      embeddingText,
+    };
+  }
+
+  /**
+   * Perform vector similarity search using pgvector
+   */
+  async vectorSearch(
+    options: VectorSearchOptions,
+  ): Promise<VectorSearchResult[]> {
+    try {
+      const { query, limit = 10, threshold = 0.5, filters = {} } = options;
+
+      const variants = this.prepareQueryVariants(query);
+      const embeddingInput = variants.embeddingText || query;
+
+      this.logger.log(
+        `Performing vector search for query: "${variants.trimmed.substring(0, 50)}..."`,
+      );
+
+      // Generate query embedding
+      const queryEmbedding =
+        await this.embeddingService.generateEmbedding(embeddingInput);
+
+      // Build base WHERE clause for document filters
+      const documentFilters: any = {
+        isApproved: filters.isApproved ?? true,
+        moderationStatus: DocumentModerationStatus.APPROVED,
+      };
+
+      if (filters.isPublic !== undefined) {
+        documentFilters.isPublic = filters.isPublic;
+      }
+
+      if (filters.categoryId) {
+        documentFilters.categoryId = filters.categoryId;
+      }
+
+      if (filters.tags && filters.tags.length > 0) {
+        documentFilters.tags = {
+          hasSome: filters.tags,
+        };
+      }
+
+      if (filters.language) {
+        documentFilters.language = filters.language;
+      }
+
+      // Get documents with embeddings that match filters
+      // We need to use raw SQL for pgvector operators
+      const documentsWithFilters = await this.prisma.document.findMany({
+        where: documentFilters,
+        select: {
+          id: true,
+        },
+      });
+
+      if (documentsWithFilters.length === 0) {
+        this.logger.log('No documents match filters');
+        return [];
+      }
+
+      const documentIds = documentsWithFilters.map(d => d.id);
+
+      // Perform vector similarity search using raw SQL
+      // pgvector uses <=> operator for cosine distance
+      // We convert distance to similarity: similarity = 1 - distance
+      // Convert queryEmbedding array to PostgreSQL vector format
+      const embeddingString = `[${queryEmbedding.join(',')}]`;
+
+      let searchResults: VectorSearchResult[] = [];
+
+      try {
+        const results = await this.prisma.$queryRaw<
+          Array<{
+            documentId: string;
+            similarityScore: number;
+          }>
+        >`
+					SELECT
+						de."documentId" AS "documentId",
+						1 - (de.embedding <=> ${embeddingString}::vector) AS "similarityScore"
+					FROM document_embeddings de
+					WHERE
+						de."documentId" = ANY(${documentIds}::text[])
+						AND 1 - (de.embedding <=> ${embeddingString}::vector) >= ${threshold}
+					ORDER BY de.embedding <=> ${embeddingString}::vector
+					LIMIT ${limit}
+				`;
+
+        searchResults = results.map(result => ({
+          documentId: result.documentId,
+          similarityScore: Number(result.similarityScore),
+        }));
+      } catch (error) {
+        // Fallback if pgvector extension (vector type) is not available
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.meta?.code === '42704'
+        ) {
+          this.logger.warn(
+            'pgvector extension not available. Falling back to in-memory similarity computation.',
+          );
+          searchResults = await this.computeSimilarityFallback(
+            queryEmbedding,
+            documentIds,
+            threshold,
+            limit,
+          );
+        } else {
+          throw error;
+        }
+      }
+
+      this.logger.log(`Vector search found ${searchResults.length} results`);
+
+      // Save search history
+      if (options.userId && options.recordHistory !== false) {
+        await this.saveSearchHistory(options, queryEmbedding, searchResults);
+      }
+
+      return searchResults;
+    } catch (error) {
+      this.logger.error('Error performing vector search:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fallback similarity calculation in application layer when pgvector is unavailable.
+   */
+  private async computeSimilarityFallback(
+    queryEmbedding: number[],
+    documentIds: string[],
+    threshold: number,
+    limit: number,
+  ): Promise<VectorSearchResult[]> {
+    const embeddings = await this.prisma.documentEmbedding.findMany({
+      where: {
+        documentId: {
+          in: documentIds,
+        },
+      },
+      select: {
+        documentId: true,
+        embedding: true,
+      },
+    });
+
+    const results: VectorSearchResult[] = [];
+
+    embeddings.forEach(item => {
+      if (!item.embedding || item.embedding.length === 0) {
+        return;
+      }
+
+      const similarity = this.cosineSimilarity(queryEmbedding, item.embedding);
+      if (Number.isFinite(similarity) && similarity >= threshold) {
+        results.push({
+          documentId: item.documentId,
+          similarityScore: similarity,
+        });
+      }
+    });
+
+    return results
+      .sort((a, b) => b.similarityScore - a.similarityScore)
+      .slice(0, limit);
+  }
+
+  private cosineSimilarity(vectorA: number[], vectorB: number[]): number {
+    if (vectorA.length !== vectorB.length || vectorA.length === 0) {
+      return 0;
+    }
+
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+      const a = vectorA[i];
+      const b = vectorB[i];
+      dotProduct += a * b;
+      magnitudeA += a * a;
+      magnitudeB += b * b;
+    }
+
+    const denominator = Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB);
+    if (denominator === 0) {
+      return 0;
+    }
+    return dotProduct / denominator;
+  }
+
+  /**
+   * Perform hybrid search (combine vector + traditional text search)
+   */
+  async hybridSearch(
+    options: VectorSearchOptions,
+    vectorWeight = 0.7,
+  ): Promise<HybridSearchResult[]> {
+    try {
+      const { query, limit = 10 } = options;
+      const variants = this.prepareQueryVariants(query);
+
+      this.logger.log(
+        `Performing hybrid search for: "${variants.trimmed.substring(0, 50)}..."`,
+      );
+
+      // Perform both searches in parallel
+      const [vectorResults, textResults] = await Promise.all([
+        this.vectorSearch({
+          ...options,
+          query: variants.embeddingText || variants.trimmed,
+          limit: limit * 2, // Get more results for better combination
+          recordHistory: false,
+        }),
+        this.keywordSearch({
+          ...options,
+          query: variants.trimmed,
+        }),
+      ]);
+
+      // Combine results
+      const combinedMap = new Map<string, HybridSearchResult>();
+
+      // Add vector results
+      vectorResults.forEach(result => {
+        combinedMap.set(result.documentId, {
+          documentId: result.documentId,
+          vectorScore: result.similarityScore,
+          combinedScore: result.similarityScore * vectorWeight,
+        });
+      });
+
+      // Add/update with text results
+      textResults.forEach(result => {
+        const existing = combinedMap.get(result.documentId);
+        if (existing) {
+          existing.textScore = result.textScore;
+          existing.combinedScore =
+            existing.vectorScore! * vectorWeight +
+            result.textScore * (1 - vectorWeight);
+        } else {
+          combinedMap.set(result.documentId, {
+            documentId: result.documentId,
+            textScore: result.textScore,
+            combinedScore: result.textScore * (1 - vectorWeight),
+          });
+        }
+      });
+
+      // Sort by combined score and limit
+      const combinedResults = Array.from(combinedMap.values())
+        .sort((a, b) => b.combinedScore - a.combinedScore)
+        .slice(0, limit);
+
+      // Save search history
+      if (options.userId) {
+        const historyEmbeddingQuery =
+          variants.embeddingText || variants.trimmed || query;
+        const queryEmbedding = await this.embeddingService.generateEmbedding(
+          historyEmbeddingQuery,
+        );
+        const highestScore = combinedResults[0]?.combinedScore || 0;
+
+        await this.saveSearchHistory(
+          {
+            ...options,
+            query: variants.trimmed,
+            // Mark as hybrid
+          },
+          queryEmbedding,
+          combinedResults.map(r => ({
+            documentId: r.documentId,
+            similarityScore: r.combinedScore,
+          })),
+          'hybrid',
+          highestScore,
+        );
+      }
+
+      return combinedResults;
+    } catch (error) {
+      this.logger.error('Error performing hybrid search:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Traditional text-based search (for hybrid search)
+   */
+  /**
+   * Perform keyword-based search using Prisma filters.
+   * Exposed for services that need plain text fallback.
+   */
+  async keywordSearch(
+    options: VectorSearchOptions,
+  ): Promise<Array<{ documentId: string; textScore: number }>> {
+    const { query, limit = 10, filters = {} } = options;
+
+    const variants = this.prepareQueryVariants(query);
+    const lowerQuery = variants.lowerTrimmed;
+    const lowerQueryWithoutPunctuation =
+      variants.lowerNormalized || variants.lowerTrimmed;
+    const hasLowerQuery = lowerQuery.length > 0;
+    const hasLowerNormalized = lowerQueryWithoutPunctuation.length > 0;
+    const tokens = variants.lowerTokens;
+
+    const baseFilters: Prisma.DocumentWhereInput = {
+      isApproved: filters.isApproved ?? true,
+      moderationStatus: DocumentModerationStatus.APPROVED,
+    };
+
+    if (filters.isPublic !== undefined) {
+      baseFilters.isPublic = filters.isPublic;
+    }
+
+    if (filters.categoryId) {
+      baseFilters.categoryId = filters.categoryId;
+    }
+
+    if (filters.language) {
+      baseFilters.language = filters.language;
+    }
+
+    if (filters.tags && filters.tags.length > 0) {
+      baseFilters.tags = {
+        hasSome: filters.tags,
+      };
+    }
+
+    const orConditions: Prisma.DocumentWhereInput[] = [];
+
+    const pushContainsConditions = (value: string) => {
+      if (!value) return;
+
+      orConditions.push(
+        {
+          title: {
+            contains: value,
+            mode: 'insensitive',
+          },
+        },
+        {
+          description: {
+            contains: value,
+            mode: 'insensitive',
+          },
+        },
+        {
+          aiAnalysis: {
+            is: {
+              summary: {
+                contains: value,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+      );
+    };
+
+    pushContainsConditions(variants.lowerTrimmed);
+    if (
+      variants.lowerNormalized &&
+      variants.lowerNormalized !== variants.lowerTrimmed
+    ) {
+      pushContainsConditions(variants.lowerNormalized);
+    }
+
+    tokens.forEach(token => {
+      if (!token) return;
+      pushContainsConditions(token);
+    });
+
+    const documentFilters: Prisma.DocumentWhereInput = {
+      ...baseFilters,
+      ...(orConditions.length > 0 ? { OR: orConditions } : {}),
+    };
+
+    let documents = await this.prisma.document.findMany({
+      where: documentFilters,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        tags: true,
+        aiAnalysis: {
+          select: {
+            summary: true,
+            keyPoints: true,
+            suggestedTags: true,
+          },
+        },
+      },
+      take: limit * 3,
+    });
+
+    if (documents.length === 0) {
+      documents = await this.prisma.document.findMany({
+        where: baseFilters,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          tags: true,
+          aiAnalysis: {
+            select: {
+              summary: true,
+              keyPoints: true,
+              suggestedTags: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+        take: Math.min(limit * 5, 100),
+      });
+    }
+
+    const condensed = (value: string) =>
+      value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+    const condensedQuery = variants.condensedTrimmed;
+    const condensedQueryWithoutPunctuation = variants.condensedNormalized;
+
+    const tokenCoverage = (source: string) => {
+      if (tokens.length === 0) return 0;
+      const lowerSource = source.toLowerCase();
+      return (
+        tokens.filter(token => lowerSource.includes(token)).length /
+        tokens.length
+      );
+    };
+
+    const results = documents.map(doc => {
+      const titleLower = doc.title.toLowerCase();
+      const descriptionLower = doc.description?.toLowerCase() ?? '';
+      const summaryLower = doc.aiAnalysis?.summary?.toLowerCase() ?? '';
+      const keyPointsLower =
+        doc.aiAnalysis?.keyPoints?.map(point => point.toLowerCase()) ?? [];
+      const suggestedTagsLower =
+        doc.aiAnalysis?.suggestedTags?.map(tag => tag.toLowerCase()) ?? [];
+      const tagsLower = doc.tags.map(tag => tag.toLowerCase());
+
+      const tagsCombined = tagsLower.join(' ');
+      const keyPointsCombined = keyPointsLower.join(' ');
+      const suggestedCombined = suggestedTagsLower.join(' ');
+
+      const titleScore = Math.max(
+        hasLowerQuery && titleLower.includes(lowerQuery) ? 1 : 0,
+        hasLowerNormalized && titleLower.includes(lowerQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        condensedQuery.length > 0 &&
+          condensed(doc.title).includes(condensedQuery)
+          ? 1
+          : 0,
+        condensedQueryWithoutPunctuation.length > 0 &&
+          condensed(doc.title).includes(condensedQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        tokenCoverage(doc.title),
+      );
+
+      const descriptionScore = Math.max(
+        hasLowerQuery && descriptionLower.includes(lowerQuery) ? 1 : 0,
+        hasLowerNormalized &&
+          descriptionLower.includes(lowerQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        condensedQuery.length > 0 &&
+          condensed(descriptionLower).includes(condensedQuery)
+          ? 1
+          : 0,
+        condensedQueryWithoutPunctuation.length > 0 &&
+          condensed(descriptionLower).includes(condensedQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        tokenCoverage(descriptionLower),
+      );
+
+      const summaryScore = Math.max(
+        hasLowerQuery && summaryLower.includes(lowerQuery) ? 1 : 0,
+        hasLowerNormalized &&
+          summaryLower.includes(lowerQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        condensedQuery.length > 0 &&
+          condensed(summaryLower).includes(condensedQuery)
+          ? 1
+          : 0,
+        condensedQueryWithoutPunctuation.length > 0 &&
+          condensed(summaryLower).includes(condensedQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        tokenCoverage(summaryLower),
+      );
+
+      const tagScore = Math.max(
+        hasLowerQuery && tagsCombined.includes(lowerQuery) ? 1 : 0,
+        hasLowerNormalized &&
+          tagsCombined.includes(lowerQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        condensedQuery.length > 0 &&
+          condensed(tagsCombined).includes(condensedQuery)
+          ? 1
+          : 0,
+        condensedQueryWithoutPunctuation.length > 0 &&
+          condensed(tagsCombined).includes(condensedQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        tokenCoverage(tagsCombined),
+      );
+
+      const keyPointScore = Math.max(
+        hasLowerQuery && keyPointsCombined.includes(lowerQuery) ? 1 : 0,
+        hasLowerNormalized &&
+          keyPointsCombined.includes(lowerQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        condensedQuery.length > 0 &&
+          condensed(keyPointsCombined).includes(condensedQuery)
+          ? 1
+          : 0,
+        condensedQueryWithoutPunctuation.length > 0 &&
+          condensed(keyPointsCombined).includes(
+            condensedQueryWithoutPunctuation,
+          )
+          ? 1
+          : 0,
+        tokenCoverage(keyPointsCombined),
+      );
+
+      const suggestedTagScore = Math.max(
+        hasLowerQuery && suggestedCombined.includes(lowerQuery) ? 1 : 0,
+        hasLowerNormalized &&
+          suggestedCombined.includes(lowerQueryWithoutPunctuation)
+          ? 1
+          : 0,
+        condensedQuery.length > 0 &&
+          condensed(suggestedCombined).includes(condensedQuery)
+          ? 1
+          : 0,
+        condensedQueryWithoutPunctuation.length > 0 &&
+          condensed(suggestedCombined).includes(
+            condensedQueryWithoutPunctuation,
+          )
+          ? 1
+          : 0,
+        tokenCoverage(suggestedCombined),
+      );
+
+      const textScore = Math.min(
+        1,
+        titleScore * 0.35 +
+          descriptionScore * 0.2 +
+          summaryScore * 0.25 +
+          keyPointScore * 0.1 +
+          tagScore * 0.05 +
+          suggestedTagScore * 0.05,
+      );
+
+      return {
+        documentId: doc.id,
+        textScore,
+      };
+    });
+
+    return results
+      .filter(r => r.textScore > 0)
+      .sort((a, b) => b.textScore - a.textScore)
+      .slice(0, limit);
+  }
+
+  /**
+   * Save search history with embedding
+   */
+  private async saveSearchHistory(
+    options: VectorSearchOptions,
+    queryEmbedding: number[],
+    results: VectorSearchResult[],
+    searchMethod = 'vector',
+    highestScore?: number,
+  ): Promise<void> {
+    try {
+      if (!options.userId) return;
+
+      await this.prisma.searchHistory.create({
+        data: {
+          userId: options.userId,
+          query: options.query,
+          queryEmbedding: queryEmbedding,
+          searchMethod,
+          vectorScore: highestScore || results[0]?.similarityScore || null,
+          resultsCount: results.length,
+          filters: options.filters || {},
+        },
+      });
+
+      this.logger.log(`Saved search history for user ${options.userId}`);
+    } catch (error) {
+      this.logger.error('Error saving search history:', error);
+      // Don't throw - search history is not critical
+    }
+  }
+
+  /**
+   * Get documents by IDs with full details
+   */
+  async getDocumentsByIds(documentIds: string[]): Promise<any[]> {
+    const documents = await this.prisma.document.findMany({
+      where: {
+        id: {
+          in: documentIds,
+        },
+      },
+      include: {
+        files: {
+          include: {
+            file: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
+        },
+        category: true,
+        uploader: {
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    return documents;
+  }
+}

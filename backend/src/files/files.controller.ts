@@ -126,11 +126,18 @@ export class FilesController {
     const userId = req.user.id;
 
     if (!files || files.length === 0) {
-      return ResponseHelper.error(res, 'Không có tệp ảnh được cung cấp', HttpStatus.BAD_REQUEST);
+      return ResponseHelper.error(
+        res,
+        'Không có tệp ảnh được cung cấp',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     try {
-      const uploadResult = await this.filesService.uploadAvatar(files[0], userId);
+      const uploadResult = await this.filesService.uploadAvatar(
+        files[0],
+        userId,
+      );
 
       return ResponseHelper.success(
         res,

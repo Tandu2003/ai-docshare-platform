@@ -4,6 +4,7 @@ import {
   Download,
   Eye,
   FileText,
+  Loader2,
   Lock,
   Star,
 } from 'lucide-react';
@@ -205,6 +206,13 @@ export function DocumentGrid({
           </Card>
         ))}
       </div>
+
+      {isLoading && documents.length > 0 && (
+        <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Đang tải kết quả tìm kiếm...</span>
+        </div>
+      )}
 
       {/* Load More Button */}
       {hasMore && onLoadMore && (

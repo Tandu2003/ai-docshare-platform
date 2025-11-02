@@ -1,19 +1,4 @@
-import * as bcrypt from 'bcrypt'
-import * as crypto from 'crypto'
-
-import { AuthenticationError } from '@/common/errors'
-import { MailService } from '@/mail/mail.service'
-import { PrismaService } from '@/prisma/prisma.service'
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
-import { JwtService } from '@nestjs/jwt'
-
+import * as crypto from 'crypto';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -23,8 +8,21 @@ import {
   ResetPasswordDto,
   UpdateProfileDto,
   VerifyEmailDto,
-} from './dto'
-import { AuthTokens, AuthUser, JwtPayload, LoginResponse } from './interfaces'
+} from './dto';
+import { AuthTokens, AuthUser, JwtPayload, LoginResponse } from './interfaces';
+import { AuthenticationError } from '@/common/errors';
+import { MailService } from '@/mail/mail.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {

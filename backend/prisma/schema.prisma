@@ -350,6 +350,10 @@ model SearchHistory {
   resultsCount      Int      @default(0)
   clickedDocumentId String?
   searchVector      String? // For search analytics
+  // Vector search enhancements
+  queryEmbedding    Float[] // Embedding vector of the search query for vector search
+  searchMethod      String   @default("traditional") // "traditional", "vector", "hybrid"
+  vectorScore       Float? // Highest similarity score from vector search (if used)
   sessionId         String?
   ipAddress         String?
   userAgent         String?
@@ -365,6 +369,7 @@ model SearchHistory {
   @@index([searchedAt])
   @@index([clickedDocumentId])
   @@index([sessionId])
+  @@index([searchMethod])
   @@map("search_history")
 }
 
@@ -571,7 +576,7 @@ model File {
 model DocumentEmbedding {
   id          String   @id @default(cuid())
   documentId  String   @unique
-  embedding   Float[]  // Vector embedding array
+  embedding   Float[]  // Vector embedding array - for vector search, requires pgvector extension and HNSW/IVFFlat index
   model       String   @default("text-embedding-ada-002") // Embedding model used
   version     String   @default("1.0") // Model version
   createdAt   DateTime @default(now())
@@ -581,6 +586,9 @@ model DocumentEmbedding {
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   // Indexes
+  // NOTE: Vector index must be created manually via SQL migration:
+  // CREATE EXTENSION IF NOT EXISTS vector;
+  // CREATE INDEX ON document_embeddings USING hnsw (embedding vector_cosine_ops);
   @@index([documentId])
   @@index([model])
   @@index([createdAt])
