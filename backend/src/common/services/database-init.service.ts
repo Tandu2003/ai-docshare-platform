@@ -24,7 +24,6 @@ export class DatabaseInitService implements OnModuleInit {
   }
 
   private async initializeRoles() {
-    // Delegate to RoleService to seed structured Permission[] for CASL
     await this.roleService.initializeDefaultRoles();
   }
 }

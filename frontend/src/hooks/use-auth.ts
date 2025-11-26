@@ -50,7 +50,7 @@ export const useAuth = () => {
     return result;
   }, [dispatch]);
 
-  // Permission helpers - now using CASL
+  // Simple role helpers
   const hasPermission = useCallback(
     (action: string, subject: string, conditions?: any): boolean => {
       if (!user?.role?.permissions) return false;

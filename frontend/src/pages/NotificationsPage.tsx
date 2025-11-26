@@ -53,7 +53,7 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
-        const res = await getMyNotifications({ page: 1, limit: 50 });
+        const res = (await getMyNotifications({ page: 1, limit: 50 })) as any;
         console.log('📊 Fetched notifications:', res);
         console.log('📊 Response structure:', {
           hasData: 'data' in res,
@@ -64,7 +64,7 @@ export default function NotificationsPage() {
         });
 
         // Handle API response structure: {success: true, data: [...], meta: {...}}
-        let notificationsData = [];
+        let notificationsData: Notification[] = [];
         if (res && res.data && Array.isArray(res.data)) {
           notificationsData = res.data;
         } else if (Array.isArray(res)) {

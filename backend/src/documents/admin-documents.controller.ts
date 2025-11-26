@@ -1,5 +1,5 @@
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CaslGuard, CheckPolicy } from '../common/casl';
+import { AdminOnly, RoleGuard } from '../common/authorization';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { DocumentsService } from './documents.service';
 import { ApproveDocumentDto } from './dto/approve-document.dto';
@@ -36,12 +36,12 @@ interface AuthenticatedRequest extends Request {
 @ApiTags('Admin Documents')
 @ApiBearerAuth()
 @Controller('admin/documents')
-@UseGuards(JwtAuthGuard, CaslGuard)
+@AdminOnly()
+@UseGuards(JwtAuthGuard, RoleGuard)
 export class AdminDocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Get('pending')
-  @CheckPolicy({ action: 'moderate', subject: 'Document' })
   @ApiOperation({ summary: 'Danh sách tài liệu chờ duyệt' })
   async getModerationQueue(
     @Query() query: ModerationQueueQueryDto,
@@ -82,7 +82,6 @@ export class AdminDocumentsController {
   }
 
   @Get(':documentId')
-  @CheckPolicy({ action: 'moderate', subject: 'Document' })
   @ApiOperation({ summary: 'Chi tiết tài liệu để kiểm duyệt' })
   async getDocumentForModeration(
     @Param('documentId') documentId: string,
@@ -110,7 +109,6 @@ export class AdminDocumentsController {
   }
 
   @Post(':documentId/approve')
-  @CheckPolicy({ action: 'approve', subject: 'Document' })
   @ApiOperation({ summary: 'Duyệt và xuất bản tài liệu' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Tài liệu đã được duyệt' })
   async approveDocument(
@@ -146,7 +144,6 @@ export class AdminDocumentsController {
   }
 
   @Post(':documentId/reject')
-  @CheckPolicy({ action: 'approve', subject: 'Document' })
   @ApiOperation({ summary: 'Từ chối tài liệu' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -181,7 +178,6 @@ export class AdminDocumentsController {
   }
 
   @Post(':documentId/analyze')
-  @CheckPolicy({ action: 'moderate', subject: 'Document' })
   @ApiOperation({ summary: 'Phân tích AI hỗ trợ kiểm duyệt' })
   async generateAIModeration(
     @Param('documentId') documentId: string,

@@ -1,5 +1,5 @@
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CaslGuard, CheckPolicy } from '../common/casl';
+import { AdminOnly, RoleGuard } from '../common/authorization';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import {
   SystemSettingsService,
@@ -56,8 +56,8 @@ export class SystemSettingsController {
 
   @Get('admin/points')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Get points settings (admin)' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -83,8 +83,8 @@ export class SystemSettingsController {
 
   @Get('admin')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Get AI moderation settings' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -110,8 +110,8 @@ export class SystemSettingsController {
 
   @Post('admin')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'update', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Update system setting' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -140,8 +140,8 @@ export class SystemSettingsController {
 
   @Get('admin/all')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Get all system settings' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -167,8 +167,8 @@ export class SystemSettingsController {
 
   @Get('admin/categories')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Get system settings categories' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -194,8 +194,8 @@ export class SystemSettingsController {
 
   @Put('admin')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'update', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Bulk update system settings' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -224,8 +224,8 @@ export class SystemSettingsController {
 
   @Delete('admin/:key')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'delete', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Delete system setting' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -251,8 +251,8 @@ export class SystemSettingsController {
 
   @Post('admin/initialize-defaults')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, CaslGuard)
-  @CheckPolicy({ action: 'create', subject: 'SystemSetting' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
   @ApiOperation({ summary: 'Initialize default system settings' })
   @ApiResponse({
     status: HttpStatus.OK,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Coins, Edit, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
 
-import { PermissionGate } from '@/components/common/permission-gate';
+import { AdminOnly } from '@/components/common/permission-gate';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -182,22 +182,22 @@ export function UserTable({
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <PermissionGate action="update" subject="User">
+                    <AdminOnly>
                       <DropdownMenuItem onClick={() => onEditUser(user)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Chỉnh sửa
                       </DropdownMenuItem>
-                    </PermissionGate>
+                    </AdminOnly>
                     {onAdjustPoints && (
-                      <>
+                      <AdminOnly>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onAdjustPoints(user)}>
                           <Coins className="mr-2 h-4 w-4" />
                           Điều chỉnh điểm
                         </DropdownMenuItem>
-                      </>
+                      </AdminOnly>
                     )}
-                    <PermissionGate action="delete" subject="User">
+                    <AdminOnly>
                       <DropdownMenuSeparator />
                       {user.isDeleted ? (
                         <DropdownMenuItem
@@ -216,7 +216,7 @@ export function UserTable({
                           Xóa
                         </DropdownMenuItem>
                       )}
-                    </PermissionGate>
+                    </AdminOnly>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

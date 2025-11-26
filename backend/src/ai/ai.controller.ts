@@ -1,5 +1,4 @@
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CheckPolicy } from '../common/casl/casl.decorator';
 import { AIAnalysisRequest, AIAnalysisResponse, AIService } from './ai.service';
 import { AnalyzeDocumentDto } from './dto';
 import {
@@ -39,7 +38,6 @@ export class AIController {
   constructor(private readonly aiService: AIService) {}
 
   @Post('analyze-document')
-  @CheckPolicy({ action: 'read', subject: 'Document' })
   @ApiOperation({
     summary: 'Analyze document files using AI to generate metadata',
   })
@@ -64,7 +62,6 @@ export class AIController {
   }
 
   @Get('analysis/:documentId')
-  @CheckPolicy({ action: 'read', subject: 'Document' })
   @ApiOperation({ summary: 'Get AI analysis for a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -77,7 +74,6 @@ export class AIController {
   }
 
   @Post('apply-moderation/:documentId')
-  @CheckPolicy({ action: 'update', subject: 'Document' })
   @ApiOperation({ summary: 'Apply AI moderation settings to a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -98,7 +94,6 @@ export class AIController {
   }
 
   @Get('test-connection')
-  @CheckPolicy({ action: 'read', subject: 'User' })
   @ApiOperation({ summary: 'Test AI service connections' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -111,7 +106,6 @@ export class AIController {
   }
 
   @Get('my-files')
-  @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({
     summary: 'Get files that belong to the current user for AI analysis',
   })
@@ -126,7 +120,6 @@ export class AIController {
   }
 
   @Get('my-files/search')
-  @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({
     summary: 'Search user files by name for AI analysis',
   })

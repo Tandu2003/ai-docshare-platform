@@ -1,321 +1,117 @@
-# Hướng dẫn sử dụng hệ thống phân quyền
+# Hướng dẫn phân quyền đơn giản (RBAC)
 
-## Tổng quan
+Hệ thống hiện tại chỉ sử dụng 2 vai trò: `admin` và `user`. Việc kiểm tra quyền giờ đây dựa hoàn toàn vào vai trò và ownership (quyền sở hữu dữ liệu).
 
-Hệ thống phân quyền sử dụng CASL (Code Access Security Library) để quản lý quyền truy cập dựa trên vai trò (roles) và hành động (actions). Hệ thống hiện tại hỗ trợ 2 vai trò chính:
+## 1. Vai trò (Roles)
 
-- **admin**: Có toàn quyền quản lý hệ thống
-- **user**: Có quyền hạn cơ bản để sử dụng các tính năng
+- `admin`: Toàn quyền trên hệ thống.
+- `user`: Quyền thao tác trên dữ liệu của chính mình và truy cập nội dung công khai đã được duyệt.
 
-## Cấu trúc phân quyền
+## 2. Nguyên tắc chính
 
-### Actions (Hành động)
-- `create`: Tạo mới
-- `read`: Đọc/xem
-- `update`: Cập nhật
-- `delete`: Xóa
-- `manage`: Quản lý toàn bộ
-- `upload`: Tải lên
-- `download`: Tải xuống
-- `share`: Chia sẻ
-- `comment`: Bình luận
-- `rate`: Đánh giá
-- `bookmark`: Đánh dấu
+1. Mỗi request cần JWT hợp lệ (trừ các endpoint public).
+2. Các endpoint quản trị (bắt đầu bằng `/admin` hoặc liên quan cài đặt hệ thống) yêu cầu vai trò `admin` thông qua `@AdminOnly()` và `RoleGuard`.
+3. Các thao tác tạo/cập nhật/xóa ở tài nguyên thuộc về người dùng phải kiểm tra `uploaderId === user.id` hoặc `userId === user.id` trong service.
+4. Frontend chỉ dùng logic hiển thị (UI gating); backend luôn là nguồn sự thật.
 
-### Subjects (Đối tượng)
-- `User`: Người dùng
-- `Document`: Tài liệu
-- `File`: Tệp tin
-- `Category`: Danh mục
-- `Comment`: Bình luận
-- `Rating`: Đánh giá
-- `Bookmark`: Đánh dấu
-- `Notification`: Thông báo
-- `SystemSetting`: Cài đặt hệ thống
-- `all`: Tất cả
+## 3. Backend Usage
 
-## Quyền hạn theo vai trò
-
-### Admin
-- Có toàn quyền (`manage: all`)
-- Có thể thực hiện tất cả hành động trên tất cả đối tượng
-- Có thể truy cập trang quản trị
-- Có thể quản lý người dùng
-- Có thể xem thống kê hệ thống
-
-### User
-- **Documents**: 
-  - Đọc tài liệu public đã được duyệt
-  - Đọc tài liệu của chính mình
-  - Tạo, cập nhật, xóa tài liệu của chính mình
-  - Tải xuống tài liệu public hoặc của chính mình
-  - Chia sẻ tài liệu của chính mình
-- **Files**: 
-  - Tải lên tệp tin
-  - Đọc tệp tin public
-  - Đọc tệp tin của chính mình
-- **Comments**: 
-  - Tạo bình luận
-  - Cập nhật, xóa bình luận của chính mình
-- **Ratings**: 
-  - Tạo, cập nhật đánh giá
-- **Bookmarks**: 
-  - Tạo, đọc, xóa đánh dấu của chính mình
-- **Notifications**: 
-  - Đọc, cập nhật, xóa thông báo của chính mình
-- **User**: 
-  - Đọc, cập nhật thông tin của chính mình
-
-## Sử dụng trong Backend
-
-### 1. Decorators
+### Decorators & Guards
 
 ```typescript
-import { CheckPolicy, AdminOnly, Roles } from '@/common/casl';
+import { AdminOnly, Roles } from '@/common/authorization';
+import { RoleGuard } from '@/common/authorization';
+import { JwtAuthGuard } from '@/auth/guards';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, CaslGuard)
+@UseGuards(JwtAuthGuard, RoleGuard)
 export class UsersController {
   @Get()
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getUsers() {
-    // Chỉ admin mới có thể truy cập
-  }
-
-  @Post()
-  @Roles('admin', 'user')
-  @CheckPolicy({ action: 'create', subject: 'Document' })
-  async createDocument() {
-    // Admin và user đều có thể tạo document
+    /* ... */
   }
 }
 ```
 
-### 2. Guards
+### Ví dụ kiểm tra ownership trong service
 
 ```typescript
-// Sử dụng CaslGuard cho kiểm tra permissions
-@UseGuards(JwtAuthGuard, CaslGuard)
-
-// Sử dụng RoleGuard cho kiểm tra roles
-@UseGuards(JwtAuthGuard, RoleGuard)
-```
-
-### 3. Kiểm tra quyền trong service
-
-```typescript
-import { AbilityFactory } from '@/common/casl';
-
-@Injectable()
-export class DocumentService {
-  constructor(private abilityFactory: AbilityFactory) {}
-
-  async deleteDocument(documentId: string, user: any) {
-    const ability = this.abilityFactory.createForUser(user);
-    
-    if (!ability.can('delete', 'Document', { uploaderId: user.id })) {
-      throw new ForbiddenException('Không có quyền xóa tài liệu này');
-    }
-    
-    // Thực hiện xóa document
-  }
+async deleteDocument(id: string, userId: string) {
+  const doc = await this.prisma.document.findUnique({ where: { id } });
+  if (!doc) throw new NotFoundException('Document không tồn tại');
+  if (doc.uploaderId !== userId) throw new ForbiddenException('Không có quyền');
+  await this.prisma.document.delete({ where: { id } });
 }
 ```
 
-## Sử dụng trong Frontend
+## 4. Frontend Usage
 
-### 1. Hooks
+### Hook `usePermissions`
+
+Không còn `can(action, subject)` tổng quát. Thay vào đó là các hàm tiện ích:
 
 ```typescript
-import { usePermissions } from '@/hooks/use-permissions';
-
-function MyComponent() {
-  const { 
-    canRead, 
-    canCreate, 
-    canUpdate, 
-    canDelete,
-    isAdmin,
-    canViewDocument,
-    canEditDocument 
-  } = usePermissions();
-
-  // Kiểm tra quyền cơ bản
-  if (canRead('Document')) {
-    // Hiển thị danh sách documents
-  }
-
-  // Kiểm tra quyền với điều kiện
-  if (canViewDocument(document)) {
-    // Hiển thị document
-  }
-
-  // Kiểm tra vai trò
-  if (isAdmin()) {
-    // Hiển thị admin features
-  }
-}
+const {
+  isAdmin,
+  canViewDocument,
+  canEditDocument,
+  canDeleteDocument,
+  canDownloadDocument,
+  canShareDocument,
+  canEditComment,
+  canDeleteComment,
+} = usePermissions();
 ```
 
-### 2. Permission Gates
+### Ví dụ UI
 
-```typescript
-import { 
-  PermissionGate, 
-  AdminOnly, 
-  DocumentPermissionGate 
-} from '@/components/common/permission-gate';
-
-function DocumentCard({ document }) {
-  return (
-    <div>
-      <h3>{document.title}</h3>
-      
-      {/* Chỉ hiển thị nút download nếu có quyền */}
-      <DocumentPermissionGate 
-        document={document} 
-        action="download"
-      >
-        <Button>Download</Button>
-      </DocumentPermissionGate>
-
-      {/* Chỉ admin mới thấy nút xóa */}
-      <AdminOnly>
-        <Button variant="destructive">Delete</Button>
-      </AdminOnly>
-    </div>
+```tsx
+{
+  isAdmin() && <AdminPanel />;
+}
+{
+  canEditDocument(document) && <Button>Sửa</Button>;
+}
+{
+  canDeleteComment(comment) && (
+    <Button variant="destructive">Xóa bình luận</Button>
   );
 }
 ```
 
-### 3. Protected Routes
+## 5. Quyền chi tiết theo vai trò
 
-```typescript
-import { ProtectedRoute } from '@/components/layout/protected-route';
+### Admin
 
-function App() {
-  return (
-    <Routes>
-      {/* Yêu cầu đăng nhập */}
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        } 
-      />
+| Tài nguyên | Quyền                                                      |
+| ---------- | ---------------------------------------------------------- |
+| Tất cả     | Toàn quyền (đọc / tạo / cập nhật / xóa / duyệt / cấu hình) |
 
-      {/* Yêu cầu quyền cụ thể */}
-      <Route 
-        path="/admin" 
-        element={
-          <ProtectedRoute
-            requiredPermissions={[
-              { action: 'read', subject: 'User' }
-            ]}
-          >
-            <AdminPage />
-          </ProtectedRoute>
-        } 
-      />
+### User
 
-      {/* Yêu cầu vai trò */}
-      <Route 
-        path="/admin/users" 
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <AdminUsersPage />
-          </ProtectedRoute>
-        } 
-      />
-    </Routes>
-  );
-}
-```
+| Tài nguyên   | Quyền                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| Document     | Tạo mới; đọc public + approved; đọc/cập nhật/xóa/chia sẻ của mình; tải xuống public hoặc của mình |
+| File         | Tải lên; đọc file thuộc document mà họ được phép xem                                              |
+| Comment      | Tạo; sửa/xóa của mình; xem tất cả comment thuộc document được phép                                |
+| Rating       | Tạo/cập nhật đánh giá của mình                                                                    |
+| Bookmark     | Tạo/xóa/xem của mình                                                                              |
+| Notification | Đọc/cập nhật/xóa của mình                                                                         |
+| User         | Đọc/cập nhật hồ sơ của mình                                                                       |
 
-## Các component có sẵn
+## 6. Best Practices
 
-### Permission Gates
-- `PermissionGate`: Kiểm tra quyền cơ bản
-- `RoleGate`: Kiểm tra vai trò
-- `AdminOnly`: Chỉ hiển thị cho admin
-- `UserOnly`: Chỉ hiển thị cho user
-- `DocumentPermissionGate`: Kiểm tra quyền với document
-- `CommentPermissionGate`: Kiểm tra quyền với comment
-- `BookmarkPermissionGate`: Kiểm tra quyền với bookmark
+1. Luôn kiểm tra role ở controller cho các route admin.
+2. Luôn kiểm tra ownership trong service (đừng tin dữ liệu từ client).
+3. Log các hành động nhạy cảm (xóa, duyệt, cấu hình hệ thống).
+4. Giữ UI đơn giản: phân nhánh theo `isAdmin()` và các helper khác.
+5. Không để lộ thao tác admin ở frontend nếu không phải admin.
 
-### Utility Components
-- `UnauthorizedMessage`: Hiển thị thông báo không có quyền
-- `ProtectedRoute`: Bảo vệ routes
+## 7. Mở rộng trong tương lai
 
-## Best Practices
+Nếu sau này cần nhiều vai trò/phân quyền phức tạp hơn: có thể tái cấu trúc sang bảng `permissions` và ánh xạ role-permission, hoặc sử dụng các thư viện phân quyền khi thật sự cần. Hiện tại thiết kế tối ưu cho tốc độ và đơn giản.
 
-### 1. Backend
-- Luôn sử dụng `@CheckPolicy` decorator cho các endpoints quan trọng
-- Sử dụng `CaslGuard` để tự động kiểm tra permissions
-- Kiểm tra quyền trong service layer khi cần thiết
-- Sử dụng conditions để kiểm tra quyền dựa trên dữ liệu
+---
 
-### 2. Frontend
-- Sử dụng `usePermissions` hook thay vì kiểm tra role trực tiếp
-- Sử dụng Permission Gates để conditional rendering
-- Luôn có fallback UI khi user không có quyền
-- Sử dụng `ProtectedRoute` cho các trang quan trọng
-
-### 3. Security
-- Không bao giờ tin tưởng frontend permissions
-- Luôn validate permissions ở backend
-- Sử dụng conditions để đảm bảo user chỉ có thể thao tác với dữ liệu của mình
-- Log các hoạt động quan trọng để audit
-
-## Ví dụ thực tế
-
-### Tạo document mới
-```typescript
-// Backend
-@Post('documents')
-@CheckPolicy({ action: 'create', subject: 'Document' })
-async createDocument(@Body() dto: CreateDocumentDto, @Req() req) {
-  // User có thể tạo document
-}
-
-// Frontend
-function CreateDocumentButton() {
-  const { canCreate } = usePermissions();
-  
-  if (!canCreate('Document')) {
-    return null; // Không hiển thị nút
-  }
-  
-  return <Button onClick={createDocument}>Tạo tài liệu</Button>;
-}
-```
-
-### Xóa document
-```typescript
-// Backend
-@Delete('documents/:id')
-@CheckPolicy({ action: 'delete', subject: 'Document' })
-async deleteDocument(@Param('id') id: string, @Req() req) {
-  // Kiểm tra thêm trong service
-  const document = await this.documentService.findById(id);
-  if (document.uploaderId !== req.user.id && req.user.role.name !== 'admin') {
-    throw new ForbiddenException('Không có quyền xóa tài liệu này');
-  }
-}
-
-// Frontend
-function DocumentActions({ document }) {
-  const { canDeleteDocument } = usePermissions();
-  
-  return (
-    <DocumentPermissionGate document={document} action="delete">
-      <Button variant="destructive">Xóa</Button>
-    </DocumentPermissionGate>
-  );
-}
-```
-
-Hệ thống phân quyền này đảm bảo tính bảo mật và dễ sử dụng, cho phép kiểm soát chặt chẽ quyền truy cập của người dùng trong ứng dụng.
+Hệ thống RBAC đơn giản này đáp ứng nhu cầu hiện tại (2 vai trò) với chi phí bảo trì thấp và rõ ràng.

@@ -2,7 +2,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { FilesService } from './files.service';
-import { CheckPolicy } from '@/common/casl';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
@@ -49,7 +48,6 @@ export class FilesController {
   ) {}
 
   @Post('upload')
-  @CheckPolicy({ action: 'upload', subject: 'File' })
   @ApiOperation({ summary: 'Upload files to storage' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
@@ -161,7 +159,6 @@ export class FilesController {
   }
 
   @Get(':fileId/secure-url')
-  @CheckPolicy({ action: 'read', subject: 'File' })
   @ApiOperation({ summary: 'Get secure access URL for a file' })
   @ApiResponse({
     status: HttpStatus.OK,

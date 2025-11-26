@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { usePermissions } from '@/hooks/use-permissions';
+import { useAuth } from '@/hooks';
 import { pointsService } from '@/services/points.service';
 import {
   userService,
@@ -32,7 +32,7 @@ import {
 } from '@/services/user.service';
 
 export default function AdminUsersPage() {
-  const { canRead, canCreate } = usePermissions();
+  const { isAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -56,8 +56,8 @@ export default function AdminUsersPage() {
   const [targetPoints, setTargetPoints] = useState<number>(0);
   const [adjustNote, setAdjustNote] = useState<string>('');
 
-  // Kiểm tra quyền truy cập
-  if (!canRead('User')) {
+  // Kiểm tra quyền truy cập (chỉ admin)
+  if (!isAdmin()) {
     return (
       <div className="container mx-auto p-6">
         <UnauthorizedMessage
@@ -237,7 +237,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {canCreate('User') && viewMode === 'active' && (
+          {isAdmin() && viewMode === 'active' && (
             <Button onClick={handleCreateUser} disabled={isLoading}>
               <Plus className="mr-2 h-4 w-4" />
               Thêm người dùng

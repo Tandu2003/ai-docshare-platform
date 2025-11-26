@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   createCategory as createCategoryApi,
   deleteCategory as deleteCategoryApi,
@@ -51,13 +51,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Kiểm tra quyền của user
-  const {
-    canCreateCategory,
-    canUpdateCategory,
-    canDeleteCategory,
-    canManageCategories,
-  } = usePermissions();
+  const { isAdmin } = usePermissions();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] =
@@ -89,8 +83,7 @@ export default function CategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      // Sử dụng endpoint phù hợp dựa trên quyền
-      const data = canManageCategories
+      const data = isAdmin()
         ? await fetchCategoriesApi()
         : await fetchPublicCategoriesApi();
       setCategories(sortCategories(data));
@@ -104,7 +97,7 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [sortCategories, canManageCategories]);
+  }, [sortCategories, isAdmin]);
 
   useEffect(() => {
     void loadCategories();
@@ -282,7 +275,7 @@ export default function CategoriesPage() {
             Quản lý danh mục tài liệu và tổ chức của chúng
           </p>
         </div>
-        {canCreateCategory && (
+        {isAdmin() && (
           <Dialog
             open={isCreateDialogOpen}
             onOpenChange={open => {
@@ -474,7 +467,7 @@ export default function CategoriesPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
-                    {canUpdateCategory && (
+                    {isAdmin() && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -483,7 +476,7 @@ export default function CategoriesPage() {
                         <Edit className="h-4 w-4" />
                       </Button>
                     )}
-                    {canDeleteCategory && (
+                    {isAdmin() && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -565,7 +558,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Edit Dialog */}
-      {canUpdateCategory && (
+      {isAdmin() && (
         <Dialog
           open={isEditDialogOpen}
           onOpenChange={open => {

@@ -1,6 +1,6 @@
 import { JwtAuthGuard } from './guards';
 import { RoleService } from './role.service';
-import { CheckPolicy, Permission } from '@/common/casl';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
 import {
   Body,
   Controller,
@@ -12,25 +12,29 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+interface Permission {
+  action: string;
+  subject: string;
+  conditions?: Record<string, any>;
+}
+
 @Controller('roles')
-@UseGuards(JwtAuthGuard)
+@AdminOnly()
+@UseGuards(JwtAuthGuard, RoleGuard)
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Get()
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
   async getAllRoles() {
     return this.roleService.getAllRoles();
   }
 
   @Get('defaults')
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
   getDefaultRoles() {
     return this.roleService.getDefaultRoles();
   }
 
   @Post()
-  @CheckPolicy({ action: 'create', subject: 'SystemSetting' })
   async createRole(
     @Body()
     body: {
@@ -44,7 +48,6 @@ export class RoleController {
   }
 
   @Put(':roleId/permissions')
-  @CheckPolicy({ action: 'update', subject: 'SystemSetting' })
   async updateRolePermissions(
     @Param('roleId') roleId: string,
     @Body() body: { permissions: Permission[] },
@@ -54,7 +57,6 @@ export class RoleController {
   }
 
   @Post(':roleId/assign/:userId')
-  @CheckPolicy({ action: 'update', subject: 'User' })
   async assignRoleToUser(
     @Param('roleId') roleId: string,
     @Param('userId') userId: string,
@@ -63,13 +65,11 @@ export class RoleController {
   }
 
   @Get('user/:userId')
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getUserRole(@Param('userId') userId: string) {
     return this.roleService.getUserRole(userId);
   }
 
   @Post('initialize')
-  @CheckPolicy({ action: 'create', subject: 'SystemSetting' })
   async initializeDefaultRoles() {
     await this.roleService.initializeDefaultRoles();
     return { message: 'Default roles initialized successfully' };

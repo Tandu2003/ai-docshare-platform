@@ -1,6 +1,6 @@
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminOnly, CaslGuard, CheckPolicy } from '@/common/casl';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
 import { ResponseHelper } from '@/common/helpers/response.helper';
 import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import {
@@ -13,13 +13,13 @@ import { Request, Response } from 'express';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, CaslGuard)
+@UseGuards(JwtAuthGuard, RoleGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @AdminOnly()
   @ApiOperation({ summary: 'Get dashboard overview stats (Admin only)' })
   async getDashboardOverview(@Req() _req: Request, @Res() res: Response) {
     const dashboard = await this.analyticsService.getDashboardOverview();
@@ -40,7 +40,6 @@ export class AnalyticsController {
 
   @Get()
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
   @ApiOperation({ summary: 'Get platform analytics' })
   @ApiQuery({
     name: 'range',
@@ -57,7 +56,6 @@ export class AnalyticsController {
   }
 
   @Get('trending')
-  @CheckPolicy({ action: 'read', subject: 'Document' })
   @ApiOperation({ summary: 'Get trending documents' })
   @ApiQuery({
     name: 'range',
@@ -74,7 +72,6 @@ export class AnalyticsController {
   }
 
   @Get('top-rated')
-  @CheckPolicy({ action: 'read', subject: 'Document' })
   @ApiOperation({ summary: 'Get top rated documents' })
   @ApiQuery({
     name: 'range',
@@ -109,7 +106,7 @@ export class AnalyticsController {
   }
 
   @Get('reports/daily')
-  @CheckPolicy({ action: 'read', subject: 'SystemSetting' })
+  @AdminOnly()
   @ApiOperation({ summary: 'Daily counts: uploads/downloads/views' })
   @ApiQuery({ name: 'range', required: false, description: '7d, 30d, 90d, 1y' })
   async getDailyReport(
@@ -122,7 +119,7 @@ export class AnalyticsController {
   }
 
   @Get('reports/top')
-  @CheckPolicy({ action: 'read', subject: 'Document' })
+  @AdminOnly()
   @ApiOperation({ summary: 'Top downloads/views' })
   @ApiQuery({ name: 'metric', required: true, description: 'downloads|views' })
   @ApiQuery({ name: 'range', required: false, description: '7d, 30d, 90d, 1y' })

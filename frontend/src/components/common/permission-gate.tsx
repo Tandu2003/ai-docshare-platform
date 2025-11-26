@@ -4,33 +4,21 @@ import { usePermissions } from '@/hooks/use-permissions';
 
 interface PermissionGateProps {
   children: ReactNode;
-  action: string;
-  subject: string;
-  conditions?: any;
+  action?: string; // kept for backward compatibility (ignored in simplified RBAC)
+  subject?: string; // kept for backward compatibility (ignored)
   fallback?: ReactNode;
 }
 
+// Simplified generic gate: with only two roles (admin/user) we default to admin-only
+// for any explicit gating previously done via action/subject. If more granular
+// ownership checks are needed, use the specific *PermissionGate components below.
 export function PermissionGate({
   children,
-  action,
-  subject,
-  conditions,
   fallback = null,
 }: PermissionGateProps) {
-  const { can } = usePermissions();
-
-  if (!can) {
-    console.warn('PermissionGate: can function not available');
-    return <>{fallback}</>;
-  }
-
-  const hasPermission = can(action, subject, conditions);
-
-  if (hasPermission) {
-    return <>{children}</>;
-  }
-
-  return <>{fallback}</>;
+  const { isAdmin } = usePermissions();
+  const hasPermission = isAdmin();
+  return <>{hasPermission ? children : fallback}</>;
 }
 
 interface RoleGateProps {

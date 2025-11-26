@@ -1,4 +1,4 @@
-import { ROLES_KEY } from './role.decorator';
+import { ROLES_KEY } from './roles.decorator';
 import {
   CanActivate,
   ExecutionContext,

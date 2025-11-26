@@ -1,11 +1,10 @@
-import { CaslModule } from '../common/casl/casl.module';
 import { SystemSettingsController } from '../common/system-settings.controller';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { Module } from '@nestjs/common';
 
 @Module({
-  imports: [PrismaModule, CaslModule],
+  imports: [PrismaModule],
   controllers: [SystemSettingsController],
   providers: [SystemSettingsService],
   exports: [SystemSettingsService],

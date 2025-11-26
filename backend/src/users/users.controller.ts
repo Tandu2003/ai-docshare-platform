@@ -9,7 +9,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '@/auth/guards';
 import { AuthUser } from '@/auth/interfaces';
 import { ResponseHelper } from '@/common';
-import { AdminOnly, CaslGuard, CheckPolicy } from '@/common/casl';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
 import {
   Body,
   Controller,
@@ -28,13 +28,12 @@ import {
 import { Request, Response } from 'express';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, CaslGuard)
+@UseGuards(JwtAuthGuard, RoleGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getUsers(
     @Query() query: GetUsersQueryDto,
     @Req() request: Request & { user: AuthUser },
@@ -51,7 +50,6 @@ export class UsersController {
 
   @Get(':id')
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getUserById(
     @Param('id') id: string,
     @Req() request: Request & { user: AuthUser },
@@ -68,7 +66,6 @@ export class UsersController {
 
   @Post()
   @AdminOnly()
-  @CheckPolicy({ action: 'create', subject: 'User' })
   @HttpCode(HttpStatus.CREATED)
   async createUser(
     @Body() createUserDto: CreateUserDto,
@@ -82,7 +79,6 @@ export class UsersController {
 
   @Patch(':id')
   @AdminOnly()
-  @CheckPolicy({ action: 'update', subject: 'User' })
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -96,7 +92,6 @@ export class UsersController {
 
   @Patch(':id/role')
   @AdminOnly()
-  @CheckPolicy({ action: 'update', subject: 'User' })
   async updateUserRole(
     @Param('id') id: string,
     @Body() updateUserRoleDto: UpdateUserRoleDto,
@@ -117,7 +112,6 @@ export class UsersController {
 
   @Patch(':id/status')
   @AdminOnly()
-  @CheckPolicy({ action: 'update', subject: 'User' })
   async updateUserStatus(
     @Param('id') id: string,
     @Body() updateUserStatusDto: UpdateUserStatusDto,
@@ -138,7 +132,6 @@ export class UsersController {
 
   @Delete(':id')
   @AdminOnly()
-  @CheckPolicy({ action: 'delete', subject: 'User' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(
     @Param('id') id: string,
@@ -152,7 +145,6 @@ export class UsersController {
 
   @Patch(':id/undelete')
   @AdminOnly()
-  @CheckPolicy({ action: 'update', subject: 'User' })
   @HttpCode(HttpStatus.OK)
   async unDeleteUser(
     @Param('id') id: string,
@@ -166,7 +158,6 @@ export class UsersController {
 
   @Get(':id/activity')
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getUserActivity(
     @Param('id') id: string,
     @Query('page') page: number = 1,
@@ -185,7 +176,6 @@ export class UsersController {
 
   @Get(':id/statistics')
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getUserStatistics(
     @Param('id') id: string,
     @Req() request: Request & { user: AuthUser },
@@ -202,7 +192,6 @@ export class UsersController {
 
   @Get('roles/list')
   @AdminOnly()
-  @CheckPolicy({ action: 'read', subject: 'User' })
   async getRoles(
     @Req() request: Request & { user: AuthUser },
     @Res() response: Response,

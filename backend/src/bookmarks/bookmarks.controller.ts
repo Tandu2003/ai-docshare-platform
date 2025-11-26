@@ -1,7 +1,7 @@
 import { ResponseHelper } from '../common/helpers/response.helper';
 import { BookmarksService } from './bookmarks.service';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
-import { CheckPolicy } from '@/common/casl';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -15,6 +15,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -29,13 +30,13 @@ interface AuthenticatedRequest extends Request {
 @ApiTags('Bookmarks')
 @ApiBearerAuth()
 @Controller('bookmarks')
+@UseGuards(JwtAuthGuard)
 export class BookmarksController {
   private readonly logger = new Logger(BookmarksController.name);
 
   constructor(private readonly bookmarksService: BookmarksService) {}
 
   @Get('stats')
-  @CheckPolicy({ action: 'read', subject: 'Bookmark' })
   @ApiOperation({
     summary: 'Get bookmark statistics for the authenticated user',
   })
@@ -77,7 +78,6 @@ export class BookmarksController {
   }
 
   @Post()
-  @CheckPolicy({ action: 'create', subject: 'Bookmark' })
   @ApiOperation({ summary: 'Create a bookmark for a document' })
   async createBookmark(
     @Req() req: AuthenticatedRequest,
@@ -129,7 +129,6 @@ export class BookmarksController {
   }
 
   @Delete(':bookmarkId')
-  @CheckPolicy({ action: 'delete', subject: 'Bookmark' })
   @ApiOperation({ summary: 'Delete a bookmark' })
   async deleteBookmark(
     @Req() req: AuthenticatedRequest,
@@ -168,7 +167,6 @@ export class BookmarksController {
   }
 
   @Get()
-  @CheckPolicy({ action: 'read', subject: 'Bookmark' })
   @ApiOperation({ summary: 'Get bookmarks for the authenticated user' })
   async getBookmarks(
     @Req() req: AuthenticatedRequest,

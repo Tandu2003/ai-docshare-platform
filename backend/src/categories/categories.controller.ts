@@ -1,7 +1,8 @@
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CheckPolicy } from '@/common/casl';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
 import { ResponseHelper } from '@/common/helpers/response.helper';
 import {
   Body,
@@ -17,6 +18,7 @@ import {
   Query,
   Request,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -41,7 +43,6 @@ export class CategoriesController {
     required: false,
     description: 'Include inactive categories (default: true)',
   })
-  @CheckPolicy({ action: 'read', subject: 'Category' })
   async getCategories(
     @Query('includeInactive') includeInactive: string,
     @Res() res: Response,
@@ -90,7 +91,8 @@ export class CategoriesController {
   }
 
   @Post()
-  @CheckPolicy({ action: 'create', subject: 'Category' })
+  @AdminOnly()
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @ApiOperation({ summary: 'Create category' })
   async createCategory(
     @Body() dto: CreateCategoryDto,
@@ -123,7 +125,8 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @CheckPolicy({ action: 'update', subject: 'Category' })
+  @AdminOnly()
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @ApiOperation({ summary: 'Update category' })
   async updateCategory(
     @Param('id') id: string,
@@ -157,7 +160,8 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @CheckPolicy({ action: 'delete', subject: 'Category' })
+  @AdminOnly()
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @ApiOperation({ summary: 'Delete category' })
   async deleteCategory(
     @Param('id') id: string,

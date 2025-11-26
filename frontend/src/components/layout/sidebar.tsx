@@ -45,7 +45,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks';
-import { usePermissions } from '@/hooks/use-permissions';
 import { getSocket } from '@/lib/socket';
 import { cn } from '@/lib/utils';
 import {
@@ -70,8 +69,7 @@ interface NavItem {
 export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { canRead } = usePermissions();
+  const { user, logout, isAdmin } = useAuth();
   const [bookmarkStats, setBookmarkStats] = useState<BookmarkStats | null>(
     null,
   );
@@ -242,12 +240,13 @@ export function Sidebar({ className }: SidebarProps) {
   const renderNavSection = (title: string, items: NavItem[]) => {
     // Filter items based on permissions
     const filteredItems = items.filter(item => {
-      // Check if item requires specific permissions
-      if (item.href === '/analytics') {
-        return canRead('SystemSetting');
-      }
-      if (item.href === '/moderation' || item.href === '/admin/users') {
-        return user?.role?.name === 'admin';
+      // Admin-only sections under simplified RBAC
+      if (
+        item.href === '/analytics' ||
+        item.href === '/moderation' ||
+        item.href === '/admin/users'
+      ) {
+        return isAdmin();
       }
       return true; // Show all other items
     });

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { useAppDispatch, useAppSelector } from '@/hooks';
-import { CaslProvider } from '@/lib/casl';
+import { useAppDispatch } from '@/hooks';
 import { store } from '@/store';
 import {
   clearAccessToken,
@@ -19,7 +18,6 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({
   children,
 }) => {
   const dispatch = useAppDispatch();
-  const user = useAppSelector(state => state.auth.user);
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
@@ -72,5 +70,5 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({
     );
   }
 
-  return <CaslProvider user={user}>{children}</CaslProvider>;
+  return <>{children}</>;
 };

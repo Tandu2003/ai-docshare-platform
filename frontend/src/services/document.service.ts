@@ -6,10 +6,10 @@ import type {
   ModerationQueueParams,
   ModerationQueueResponse,
 } from '@/types';
-import { apiClient } from '@/utils/api-client'
+import { apiClient } from '@/utils/api-client';
 
-import { DocumentsService, FilesService } from './files.service'
-import { UploadedFile } from './upload.service'
+import { DocumentsService, FilesService } from './files.service';
+import { UploadedFile } from './upload.service';
 
 export interface PaginatedDocuments {
   files: UploadedFile[];
@@ -639,11 +639,11 @@ export const getSimilarityResults = async (
     `/similarity/results/${documentId}`,
   );
 
-  if (!response) {
+  if (!response.data) {
     throw new Error('Không có dữ liệu trả về từ API');
   }
 
-  return response;
+  return response.data;
 };
 
 /**

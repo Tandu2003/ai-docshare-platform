@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { RoleController } from './role.controller';
 import { RoleService } from './role.service';
 import { JwtStrategy } from './strategies';
-import { CaslModule } from '@/common/casl/casl.module';
+import { AuthorizationModule } from '@/common/authorization';
 import { MailModule } from '@/mail/mail.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
@@ -48,7 +48,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     }),
     PrismaModule,
     MailModule,
-    CaslModule,
+    AuthorizationModule,
   ],
   controllers: [AuthController, RoleController],
   providers: [AuthService, JwtStrategy, RoleService],

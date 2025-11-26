@@ -1,6 +1,16 @@
-import { Permission, RolePermissions } from '@/common/casl';
 import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
+
+export interface Permission {
+  action: string;
+  subject: string;
+  conditions?: Record<string, any>;
+}
+
+export interface RolePermissions {
+  role: string;
+  permissions: Permission[];
+}
 
 @Injectable()
 export class RoleService {

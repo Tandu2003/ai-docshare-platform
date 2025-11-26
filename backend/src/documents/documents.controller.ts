@@ -11,7 +11,7 @@ import { SetRatingDto } from './dto/set-rating.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
-import { CaslGuard, CheckPolicy } from '@/common/casl';
+import { RoleGuard } from '@/common/authorization';
 import {
   BadRequestException,
   Body,
@@ -44,7 +44,6 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('Documents')
 @Controller('documents')
-@UseGuards(JwtAuthGuard, CaslGuard)
 @ApiBearerAuth()
 export class DocumentsController {
   private readonly logger = new Logger(DocumentsController.name);
@@ -55,7 +54,7 @@ export class DocumentsController {
   ) {}
 
   @Post('create')
-  @CheckPolicy({ action: 'create', subject: 'Document' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a document from uploaded files' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -108,7 +107,6 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':documentId/download')
-  @CheckPolicy({ action: 'download', subject: 'Document' })
   @ApiOperation({ summary: 'Download all files of a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -178,7 +176,6 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':documentId/download-url')
-  @CheckPolicy({ action: 'download', subject: 'Document' })
   @ApiOperation({ summary: 'Get download URL for a document without tracking' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -226,7 +223,6 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':documentId/track-download')
-  @CheckPolicy({ action: 'download', subject: 'Document' })
   @ApiOperation({ summary: 'Track download completion' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -521,7 +517,7 @@ export class DocumentsController {
   }
 
   @Post(':documentId/comments')
-  @CheckPolicy({ action: 'create', subject: 'Comment' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Add a comment to a document' })
   async addComment(
     @Param('documentId') documentId: string,
@@ -558,7 +554,7 @@ export class DocumentsController {
   }
 
   @Post(':documentId/comments/:commentId/like')
-  @CheckPolicy({ action: 'create', subject: 'Comment' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Like a comment' })
   async likeComment(
     @Param('documentId') documentId: string,
@@ -595,7 +591,7 @@ export class DocumentsController {
   }
 
   @Post(':documentId/comments/:commentId')
-  @CheckPolicy({ action: 'update', subject: 'Comment' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Edit a comment' })
   async editComment(
     @Param('documentId') documentId: string,
@@ -634,7 +630,7 @@ export class DocumentsController {
   }
 
   @Delete(':documentId/comments/:commentId')
-  @CheckPolicy({ action: 'delete', subject: 'Comment' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete a comment' })
   async deleteComment(
     @Param('documentId') documentId: string,
@@ -670,7 +666,6 @@ export class DocumentsController {
    * Ratings endpoints
    */
   @Get(':documentId/rating')
-  @CheckPolicy({ action: 'read', subject: 'Rating' })
   @ApiOperation({ summary: 'Get current user rating for a document' })
   async getUserRating(
     @Param('documentId') documentId: string,
@@ -701,7 +696,7 @@ export class DocumentsController {
   }
 
   @Post(':documentId/rating')
-  @CheckPolicy({ action: 'create', subject: 'Rating' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Set current user rating for a document' })
   async setUserRating(
     @Param('documentId') documentId: string,
@@ -738,7 +733,7 @@ export class DocumentsController {
   }
 
   @Post(':documentId/share-link')
-  @CheckPolicy({ action: 'share', subject: 'Document' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create or update a share link for a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -787,7 +782,7 @@ export class DocumentsController {
   }
 
   @Delete(':documentId/share-link')
-  @CheckPolicy({ action: 'share', subject: 'Document' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Revoke a document share link' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -931,7 +926,7 @@ export class DocumentsController {
   }
 
   @Delete(':documentId')
-  @CheckPolicy({ action: 'delete', subject: 'Document' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete a document' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -975,7 +970,7 @@ export class DocumentsController {
   }
 
   @Get('files/:fileId/secure-url')
-  @CheckPolicy({ action: 'read', subject: 'File' })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get secure URL for file access' })
   @ApiResponse({
     status: HttpStatus.OK,

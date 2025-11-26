@@ -167,9 +167,7 @@ export const router = createBrowserRouter([
       {
         path: 'analytics',
         element: (
-          <ProtectedRoute
-            requiredPermissions={[{ action: 'read', subject: 'SystemSetting' }]}
-          >
+          <ProtectedRoute requiredRole="admin">
             <AnalyticsPage />
           </ProtectedRoute>
         ),
@@ -185,9 +183,7 @@ export const router = createBrowserRouter([
       {
         path: 'moderation',
         element: (
-          <ProtectedRoute
-            requiredPermissions={[{ action: 'read', subject: 'User' }]}
-          >
+          <ProtectedRoute requiredRole="admin">
             <AdminDashboardPage />
           </ProtectedRoute>
         ),
@@ -195,9 +191,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin/users',
         element: (
-          <ProtectedRoute
-            requiredPermissions={[{ action: 'read', subject: 'User' }]}
-          >
+          <ProtectedRoute requiredRole="admin">
             <AdminUsersPage />
           </ProtectedRoute>
         ),
@@ -205,9 +199,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin/settings',
         element: (
-          <ProtectedRoute
-            requiredPermissions={[{ action: 'read', subject: 'SystemSetting' }]}
-          >
+          <ProtectedRoute requiredRole="admin">
             <SystemSettingsPage />
           </ProtectedRoute>
         ),

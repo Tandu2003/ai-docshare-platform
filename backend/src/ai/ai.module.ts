@@ -1,4 +1,3 @@
-import { CaslModule } from '../common/casl/casl.module';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesModule } from '../files/files.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -12,7 +11,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, FilesModule, CaslModule],
+  imports: [ConfigModule, PrismaModule, FilesModule],
   controllers: [AIController],
   providers: [
     AIService,

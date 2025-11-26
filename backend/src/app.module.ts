@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '@/auth/guards';
 import { BookmarksModule } from '@/bookmarks/bookmarks.module';
 import { CategoriesModule } from '@/categories/categories.module';
 import { DatabaseInitService, GlobalExceptionFilter } from '@/common';
-import { CaslGuard, CaslModule } from '@/common/casl';
+import { AuthorizationModule } from '@/common/authorization';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { ConfigModule } from '@/config/config.module';
 import { DocumentsModule } from '@/documents/documents.module';
@@ -30,7 +30,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     PrismaModule,
     HealthModule,
     AuthModule,
-    CaslModule,
+    AuthorizationModule,
     AIModule,
     // UploadModule,
     // DocumentModule,
@@ -52,15 +52,10 @@ import { ScheduleModule } from '@nestjs/schedule';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
-    // Global JWT Guard must run BEFORE CASL so request.user is set
+    // Global JWT Guard
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
-    },
-    // Global CASL Guard as provider
-    {
-      provide: APP_GUARD,
-      useClass: CaslGuard,
     },
     // Database initialization service
     DatabaseInitService,
