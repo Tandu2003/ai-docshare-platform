@@ -1,6 +1,7 @@
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmbeddingService } from './embedding.service';
 import { DocumentAnalysisResult, GeminiService } from './gemini.service';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -25,6 +26,7 @@ export class AIService {
     private filesService: FilesService,
     private geminiService: GeminiService,
     private systemSettings: SystemSettingsService,
+    private embeddingService: EmbeddingService,
   ) {}
 
   /**
@@ -207,10 +209,110 @@ export class AIService {
       });
 
       this.logger.log(`AI analysis saved for document: ${documentId}`);
+
+      // Generate and save embedding for the document
+      await this.generateAndSaveEmbedding(documentId);
     } catch (error) {
       this.logger.error('Error saving AI analysis:', error);
       throw error;
     }
+  }
+
+  /**
+   * Generate and save embedding for a document
+   * This is automatically called when document content changes
+   */
+  async generateAndSaveEmbedding(documentId: string): Promise<void> {
+    try {
+      this.logger.log(`Generating embedding for document: ${documentId}`);
+
+      // Get document with AI analysis
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          aiAnalysis: true,
+        },
+      });
+
+      if (!document) {
+        throw new Error(`Document ${documentId} not found`);
+      }
+
+      // Create embedding text from document content
+      const embeddingParts: string[] = [];
+
+      if (document.title) {
+        embeddingParts.push(`Title: ${document.title}`);
+      }
+
+      if (document.description) {
+        embeddingParts.push(`Description: ${document.description}`);
+      }
+
+      if (document.tags && document.tags.length > 0) {
+        embeddingParts.push(`Tags: ${document.tags.join(', ')}`);
+      }
+
+      if (document.aiAnalysis) {
+        if (document.aiAnalysis.summary) {
+          embeddingParts.push(`Summary: ${document.aiAnalysis.summary}`);
+        }
+
+        if (
+          document.aiAnalysis.keyPoints &&
+          document.aiAnalysis.keyPoints.length > 0
+        ) {
+          embeddingParts.push(
+            `Key Points: ${document.aiAnalysis.keyPoints.join('; ')}`,
+          );
+        }
+      }
+
+      const embeddingText = embeddingParts.join('\n\n');
+
+      if (!embeddingText.trim()) {
+        this.logger.warn(
+          `Document ${documentId} has no content for embedding. Skipping...`,
+        );
+        return;
+      }
+
+      // Generate embedding
+      const embedding =
+        await this.embeddingService.generateEmbedding(embeddingText);
+
+      // Save to database (upsert)
+      await this.prisma.documentEmbedding.upsert({
+        where: { documentId },
+        create: {
+          documentId,
+          embedding,
+          model: 'text-embedding-004',
+          version: '1.0',
+        },
+        update: {
+          embedding,
+          model: 'text-embedding-004',
+          version: '1.0',
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Embedding generated and saved for document: ${documentId}`,
+      );
+    } catch (error) {
+      this.logger.error('Error generating embedding:', error);
+      // Don't throw - embedding generation is not critical for document creation
+    }
+  }
+
+  /**
+   * Regenerate embedding for a document (when content is updated)
+   */
+  async regenerateEmbedding(documentId: string): Promise<void> {
+    this.logger.log(`Regenerating embedding for document: ${documentId}`);
+    await this.generateAndSaveEmbedding(documentId);
   }
 
   /**

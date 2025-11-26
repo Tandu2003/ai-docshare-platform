@@ -31,9 +31,29 @@ export interface HybridSearchResult {
   combinedScore: number;
 }
 
+export interface SearchMetrics {
+  totalSearches: number;
+  vectorSearches: number;
+  keywordSearches: number;
+  hybridSearches: number;
+  averageLatency: number;
+  cacheHits: number;
+}
+
 @Injectable()
 export class VectorSearchService {
   private readonly logger = new Logger(VectorSearchService.name);
+  private readonly searchCache = new Map<string, any>();
+  private readonly maxCacheSize = 500;
+  private readonly cacheTTL = 5 * 60 * 1000; // 5 minutes
+  private metrics: SearchMetrics = {
+    totalSearches: 0,
+    vectorSearches: 0,
+    keywordSearches: 0,
+    hybridSearches: 0,
+    averageLatency: 0,
+    cacheHits: 0,
+  };
 
   constructor(
     private prisma: PrismaService,
@@ -133,8 +153,21 @@ export class VectorSearchService {
   async vectorSearch(
     options: VectorSearchOptions,
   ): Promise<VectorSearchResult[]> {
+    const startTime = Date.now();
+    this.metrics.totalSearches++;
+    this.metrics.vectorSearches++;
+
     try {
       const { query, limit = 10, threshold = 0.5, filters = {} } = options;
+
+      // Check cache first
+      const cacheKey = this.getSearchCacheKey('vector', options);
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        this.metrics.cacheHits++;
+        this.logger.debug(`Cache hit for vector search: ${query}`);
+        return cached;
+      }
 
       const variants = this.prepareQueryVariants(query);
       const embeddingInput = variants.embeddingText || query;
@@ -239,10 +272,18 @@ export class VectorSearchService {
 
       this.logger.log(`Vector search found ${searchResults.length} results`);
 
+      // Cache the results
+      this.cacheResults(cacheKey, searchResults);
+
       // Save search history
       if (options.userId && options.recordHistory !== false) {
         await this.saveSearchHistory(options, queryEmbedding, searchResults);
       }
+
+      // Update metrics
+      const latency = Date.now() - startTime;
+      this.updateMetrics(latency);
+      this.logger.log(`Vector search completed in ${latency}ms`);
 
       return searchResults;
     } catch (error) {
@@ -324,8 +365,22 @@ export class VectorSearchService {
     options: VectorSearchOptions,
     vectorWeight = 0.7,
   ): Promise<HybridSearchResult[]> {
+    const startTime = Date.now();
+    this.metrics.totalSearches++;
+    this.metrics.hybridSearches++;
+
     try {
       const { query, limit = 10 } = options;
+
+      // Check cache first
+      const cacheKey = this.getSearchCacheKey('hybrid', options);
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        this.metrics.cacheHits++;
+        this.logger.debug(`Cache hit for hybrid search: ${query}`);
+        return cached;
+      }
+
       const variants = this.prepareQueryVariants(query);
 
       this.logger.log(
@@ -380,6 +435,9 @@ export class VectorSearchService {
         .sort((a, b) => b.combinedScore - a.combinedScore)
         .slice(0, limit);
 
+      // Cache the results
+      this.cacheResults(cacheKey, combinedResults);
+
       // Save search history
       if (options.userId) {
         const historyEmbeddingQuery =
@@ -405,6 +463,11 @@ export class VectorSearchService {
         );
       }
 
+      // Update metrics
+      const latency = Date.now() - startTime;
+      this.updateMetrics(latency);
+      this.logger.log(`Hybrid search completed in ${latency}ms`);
+
       return combinedResults;
     } catch (error) {
       this.logger.error('Error performing hybrid search:', error);
@@ -422,6 +485,9 @@ export class VectorSearchService {
   async keywordSearch(
     options: VectorSearchOptions,
   ): Promise<Array<{ documentId: string; textScore: number }>> {
+    this.metrics.totalSearches++;
+    this.metrics.keywordSearches++;
+
     const { query, limit = 10, filters = {} } = options;
 
     const variants = this.prepareQueryVariants(query);
@@ -730,6 +796,74 @@ export class VectorSearchService {
       this.logger.error('Error saving search history:', error);
       // Don't throw - search history is not critical
     }
+  }
+
+  /**
+   * Get search cache key
+   */
+  private getSearchCacheKey(
+    type: string,
+    options: VectorSearchOptions,
+  ): string {
+    const filterStr = JSON.stringify(options.filters || {});
+    return `${type}:${options.query}:${filterStr}:${options.limit || 10}:${options.threshold || 0.5}`;
+  }
+
+  /**
+   * Get results from cache
+   */
+  private getFromCache(key: string): any | null {
+    const cached = this.searchCache.get(key);
+    if (!cached) return null;
+
+    // Check if cache entry has expired
+    if (Date.now() - cached.timestamp > this.cacheTTL) {
+      this.searchCache.delete(key);
+      return null;
+    }
+
+    return cached.data;
+  }
+
+  /**
+   * Cache search results
+   */
+  private cacheResults(key: string, data: any): void {
+    // Implement LRU-like behavior
+    if (this.searchCache.size >= this.maxCacheSize) {
+      const firstKey = this.searchCache.keys().next().value;
+      this.searchCache.delete(firstKey);
+    }
+
+    this.searchCache.set(key, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Update search metrics
+   */
+  private updateMetrics(latency: number): void {
+    const totalSearches = this.metrics.totalSearches;
+    this.metrics.averageLatency =
+      (this.metrics.averageLatency * (totalSearches - 1) + latency) /
+      totalSearches;
+  }
+
+  /**
+   * Get search metrics
+   */
+  getMetrics(): SearchMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Clear search cache
+   */
+  clearCache(): void {
+    this.searchCache.clear();
+    this.logger.log('Search cache cleared');
   }
 
   /**
