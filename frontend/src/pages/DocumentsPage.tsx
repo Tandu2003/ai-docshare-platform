@@ -1,25 +1,53 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useSearchParams } from 'react-router-dom';
+
 import { DocumentGrid } from '@/components/documents/document-grid';
 import { DocumentSearch } from '@/components/documents/document-search';
 import { DocumentsService, type Document } from '@/services/files.service';
 import type { SearchFilters } from '@/types';
 
+// Helper to parse filters from URL
+function parseFiltersFromUrl(searchParams: URLSearchParams): SearchFilters {
+  return {
+    query: searchParams.get('q') || undefined,
+    categoryId: searchParams.get('categoryId') || undefined,
+    tags: searchParams.get('tags')?.split(',').filter(Boolean) || undefined,
+    language: searchParams.get('language') || undefined,
+    sortBy:
+      (searchParams.get('sortBy') as SearchFilters['sortBy']) || 'createdAt',
+    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+  };
+}
+
+// Helper to sync filters to URL
+function syncFiltersToUrl(filters: SearchFilters): URLSearchParams {
+  const params = new URLSearchParams();
+
+  if (filters.query) params.set('q', filters.query);
+  if (filters.categoryId) params.set('categoryId', filters.categoryId);
+  if (filters.tags && filters.tags.length > 0)
+    params.set('tags', filters.tags.join(','));
+  if (filters.language) params.set('language', filters.language);
+  if (filters.sortBy && filters.sortBy !== 'createdAt')
+    params.set('sortBy', filters.sortBy);
+  if (filters.sortOrder && filters.sortOrder !== 'desc')
+    params.set('sortOrder', filters.sortOrder);
+
+  return params;
+}
+
 export default function DocumentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Search filters state
-  const [filters, setFilters] = useState<SearchFilters>({
-    query: undefined,
-    categoryId: undefined,
-    tags: undefined,
-    language: undefined,
-    sortBy: 'relevance',
-    sortOrder: 'desc',
-  });
+  // Initialize filters from URL
+  const [filters, setFilters] = useState<SearchFilters>(() =>
+    parseFiltersFromUrl(searchParams),
+  );
 
   const fetchDocuments = useCallback(
     async (pageNum = 1, reset = false, currentFilters?: SearchFilters) => {
@@ -39,6 +67,8 @@ export default function DocumentsPage() {
               categoryId: activeFilters.categoryId,
               tags: activeFilters.tags,
               language: activeFilters.language,
+              sortBy: activeFilters.sortBy,
+              sortOrder: activeFilters.sortOrder,
             },
           );
 
@@ -52,10 +82,15 @@ export default function DocumentsPage() {
           const totalPages = Math.ceil(response.total / 12);
           setHasMore(pageNum < totalPages);
         } else {
-          // No search query, fetch public documents normally
+          // No search query, fetch public documents with filters
           const response = await DocumentsService.getPublicDocuments(
             pageNum,
             12,
+            {
+              categoryId: activeFilters.categoryId,
+              sortBy: activeFilters.sortBy,
+              sortOrder: activeFilters.sortOrder,
+            },
           );
 
           if (reset) {
@@ -90,10 +125,18 @@ export default function DocumentsPage() {
   const handleSearch = useCallback(
     (nextFilters: SearchFilters) => {
       setPage(1);
+      // Update URL with new filters
+      setSearchParams(syncFiltersToUrl(nextFilters));
       fetchDocuments(1, true, nextFilters);
     },
-    [fetchDocuments],
+    [fetchDocuments, setSearchParams],
   );
+
+  // Sync filters when URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const urlFilters = parseFiltersFromUrl(searchParams);
+    setFilters(urlFilters);
+  }, [searchParams]);
 
   useEffect(() => {
     // Load initial documents

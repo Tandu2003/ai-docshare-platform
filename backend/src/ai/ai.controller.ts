@@ -2,6 +2,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIAnalysisRequest, AIAnalysisResponse, AIService } from './ai.service';
 import { AnalyzeDocumentDto } from './dto';
 import {
+  EmbeddingMigrationService,
+  EmbeddingMigrationStatus,
+  RegenerationProgress,
+} from './embedding-migration.service';
+import { EmbeddingMetrics, EmbeddingService } from './embedding.service';
+import { SearchMetrics, VectorSearchService } from './vector-search.service';
+import {
   Body,
   Controller,
   Get,
@@ -35,7 +42,12 @@ interface AuthenticatedRequest extends Request {
 export class AIController {
   private readonly logger = new Logger(AIController.name);
 
-  constructor(private readonly aiService: AIService) {}
+  constructor(
+    private readonly aiService: AIService,
+    private readonly embeddingService: EmbeddingService,
+    private readonly embeddingMigrationService: EmbeddingMigrationService,
+    private readonly vectorSearchService: VectorSearchService,
+  ) {}
 
   @Post('analyze-document')
   @ApiOperation({
@@ -148,5 +160,135 @@ export class AIController {
       req.user.id,
       fileName.trim(),
     );
+  }
+
+  @Post('documents/:documentId/regenerate-embedding')
+  @ApiOperation({
+    summary: 'Regenerate embedding for a document',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Embedding regenerated successfully',
+  })
+  async regenerateEmbedding(
+    @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    this.logger.log(
+      `Regenerating embedding for document ${documentId} by user ${req.user.id}`,
+    );
+
+    try {
+      await this.aiService.regenerateEmbedding(documentId);
+
+      return {
+        success: true,
+        documentId,
+        embeddingDimension: this.embeddingService.getEmbeddingDimension(),
+        message: 'Embedding regenerated successfully',
+      };
+    } catch (error: any) {
+      this.logger.error('Error regenerating embedding:', error);
+      return {
+        success: false,
+        documentId,
+        message: `Failed to regenerate embedding: ${error.message}`,
+      };
+    }
+  }
+
+  @Get('search/metrics')
+  @ApiOperation({
+    summary: 'Get embedding and search metrics',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Metrics retrieved successfully',
+  })
+  async getMetrics(): Promise<{
+    embedding: EmbeddingMetrics;
+    search: SearchMetrics;
+  }> {
+    this.logger.log('Getting embedding and search metrics');
+
+    return {
+      embedding: this.embeddingService.getMetrics(),
+      search: this.vectorSearchService.getMetrics(),
+    };
+  }
+
+  @Post('search/clear-cache')
+  @ApiOperation({
+    summary: 'Clear embedding and search caches',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Caches cleared successfully',
+  })
+  async clearCaches() {
+    this.logger.log('Clearing embedding and search caches');
+
+    this.embeddingService.clearCache();
+    this.vectorSearchService.clearCache();
+
+    return {
+      success: true,
+      message: 'All caches cleared successfully',
+    };
+  }
+
+  @Get('embeddings/status')
+  @ApiOperation({
+    summary: 'Get embedding model status and migration info',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Embedding model status retrieved successfully',
+  })
+  async getEmbeddingModelStatus(): Promise<EmbeddingMigrationStatus> {
+    this.logger.log('Getting embedding model status');
+    return await this.embeddingMigrationService.getEmbeddingModelStatus();
+  }
+
+  @Get('embeddings/regeneration-progress')
+  @ApiOperation({
+    summary: 'Get current embedding regeneration progress',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Regeneration progress retrieved successfully',
+  })
+  getRegenerationProgress(): {
+    isRunning: boolean;
+    progress: RegenerationProgress;
+  } {
+    this.logger.log('Getting embedding regeneration progress');
+    return this.embeddingMigrationService.getRegenerationProgress();
+  }
+
+  @Post('embeddings/regenerate-outdated')
+  @ApiOperation({
+    summary: 'Regenerate all outdated embeddings (different model)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Regeneration started successfully',
+  })
+  async regenerateOutdatedEmbeddings() {
+    this.logger.log('Starting regeneration of outdated embeddings');
+    return await this.embeddingMigrationService.regenerateAllEmbeddings();
+  }
+
+  @Post('embeddings/force-regenerate-all')
+  @ApiOperation({
+    summary: 'Force regenerate ALL embeddings regardless of model',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Force regeneration started successfully',
+  })
+  async forceRegenerateAllEmbeddings() {
+    this.logger.log('Starting force regeneration of all embeddings');
+    return await this.embeddingMigrationService.forceRegenerateAllEmbeddings();
   }
 }

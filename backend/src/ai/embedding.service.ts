@@ -1,6 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, TaskType } from '@google/generative-ai';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+export interface EmbeddingMetrics {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  averageLatency: number;
+  cacheHits: number;
+}
 
 @Injectable()
 export class EmbeddingService {
@@ -8,6 +16,15 @@ export class EmbeddingService {
   private readonly apiKey: string | null;
   private readonly model: string;
   private genAI: GoogleGenerativeAI | null = null;
+  private readonly embeddingCache = new Map<string, number[]>();
+  private readonly maxCacheSize = 1000;
+  private metrics: EmbeddingMetrics = {
+    totalRequests: 0,
+    successfulRequests: 0,
+    failedRequests: 0,
+    averageLatency: 0,
+    cacheHits: 0,
+  };
 
   constructor(private configService: ConfigService) {
     // Use Gemini API key for embeddings
@@ -19,7 +36,9 @@ export class EmbeddingService {
     if (this.apiKey) {
       try {
         this.genAI = new GoogleGenerativeAI(this.apiKey);
-        this.logger.log('Gemini API initialized for embeddings');
+        this.logger.log(
+          `Gemini API initialized for embeddings with model: ${this.model}`,
+        );
       } catch (error: any) {
         this.logger.error('Failed to initialize Gemini API:', error.message);
       }
@@ -35,13 +54,25 @@ export class EmbeddingService {
    * Returns 768-dimensional vector (text-embedding-004 default)
    */
   async generateEmbedding(text: string): Promise<number[]> {
+    const startTime = Date.now();
+    this.metrics.totalRequests++;
+
     try {
       if (!text || text.trim().length === 0) {
         throw new Error('Text cannot be empty');
       }
 
-      // Truncate text if too long (Google models typically support up to 2048 tokens)
-      const maxLength = 8000; // Safe limit
+      // Check cache first
+      const cacheKey = this.getCacheKey(text);
+      const cached = this.embeddingCache.get(cacheKey);
+      if (cached) {
+        this.metrics.cacheHits++;
+        this.logger.debug(`Cache hit for text: ${text.substring(0, 50)}...`);
+        return cached;
+      }
+
+      // Truncate text if too long (text-embedding-004 supports up to 2048 tokens)
+      const maxLength = 8000; // Safe character limit (~2048 tokens)
       const truncatedText =
         text.length > maxLength ? text.substring(0, maxLength) : text;
 
@@ -51,21 +82,29 @@ export class EmbeddingService {
         return this.generatePlaceholderEmbedding(truncatedText);
       }
 
-      // Use Gemini to generate semantic embedding
-      // Gemini doesn't have direct embeddings API, so we use semantic analysis
-      const embedding = await this.generateEmbeddingViaGemini(truncatedText);
+      // Use real Google Generative AI embedding API with retry logic
+      const embedding = await this.generateEmbeddingWithRetry(truncatedText, 3);
 
       if (!Array.isArray(embedding) || embedding.length === 0) {
         throw new Error('Invalid embedding response format');
       }
 
+      // Cache the result
+      this.cacheEmbedding(cacheKey, embedding);
+
+      // Update metrics
+      const latency = Date.now() - startTime;
+      this.updateMetrics(latency, true);
+
       this.logger.log(
-        `Generated embedding of dimension ${embedding.length} for text (${truncatedText.length} chars)`,
+        `Generated embedding of dimension ${embedding.length} for text (${truncatedText.length} chars) in ${latency}ms`,
       );
 
       return embedding;
     } catch (error: any) {
+      this.metrics.failedRequests++;
       this.logger.error('Error generating embedding:', error.message);
+
       // Fallback to placeholder on error
       this.logger.warn('Falling back to placeholder embedding');
       return this.generatePlaceholderEmbedding(text);
@@ -73,44 +112,74 @@ export class EmbeddingService {
   }
 
   /**
-   * Generate embedding vector using Gemini model
-   * Uses Gemini to analyze text and create semantic vector representation
-   *
-   * This method uses Gemini's understanding to extract semantic meaning
-   * and convert it to a consistent vector representation for similarity search
+   * Generate embedding using real Google Generative AI embedding API with retry
    */
-  private async generateEmbeddingViaGemini(text: string): Promise<number[]> {
+  private async generateEmbeddingWithRetry(
+    text: string,
+    maxRetries = 3,
+  ): Promise<number[]> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.generateRealEmbedding(text);
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if it's a rate limit error
+        const isRateLimitError =
+          error.message?.includes('429') ||
+          error.message?.includes('rate limit') ||
+          error.message?.includes('quota');
+
+        // Check if it's a network error
+        const isNetworkError =
+          error.message?.includes('network') ||
+          error.message?.includes('ECONNRESET') ||
+          error.message?.includes('ETIMEDOUT');
+
+        if (attempt < maxRetries && (isRateLimitError || isNetworkError)) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delayMs = Math.pow(2, attempt - 1) * 1000;
+          this.logger.warn(
+            `Embedding API error (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying in ${delayMs}ms...`,
+          );
+          await this.sleep(delayMs);
+          continue;
+        }
+
+        // Don't retry for other types of errors
+        break;
+      }
+    }
+
+    throw lastError || new Error('Failed to generate embedding after retries');
+  }
+
+  /**
+   * Generate embedding using the actual Google embedContent API
+   */
+  private async generateRealEmbedding(text: string): Promise<number[]> {
+    if (!this.genAI) {
+      throw new Error('Gemini API not initialized');
+    }
+
     try {
-      if (!this.genAI) {
-        throw new Error('Gemini API not initialized');
+      // Use the embedContent method with text-embedding-004 model
+      const model = this.genAI.getGenerativeModel({ model: this.model });
+
+      // Call embedContent API
+      const result = await model.embedContent(text);
+
+      // Extract embedding values from response
+      if (result.embedding && Array.isArray(result.embedding.values)) {
+        return result.embedding.values;
       }
 
-      // Use Gemini to extract semantic features from text
-      const model = this.genAI.getGenerativeModel({
-        model:
-          this.configService.get<string>('GEMINI_MODEL_NAME') ||
-          'gemini-2.0-flash',
-      });
-
-      // Create a concise prompt to extract semantic essence
-      // Limit text to avoid token limits (Gemini 2.0 Flash supports up to ~32k tokens)
-      const textForAnalysis = text.substring(0, 5000);
-      const prompt = `Analyze the semantic meaning of this text and extract its key concepts, topics, and meaning in a structured way. Be concise. Text: "${textForAnalysis}"`;
-
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const responseText = response.text();
-
-      // Combine original text and Gemini analysis to create a rich semantic hash
-      // This ensures similar texts produce similar embeddings
-      const combinedText = `${text.substring(0, 2000)}\n${responseText.substring(0, 1000)}`;
-      const semanticHash = this.createSemanticHash(combinedText);
-
-      // Generate 768-dimensional vector (standard embedding dimension)
-      return this.hashToEmbedding(semanticHash, 768);
+      throw new Error('Invalid embedding response structure');
     } catch (error: any) {
       this.logger.error(
-        'Error generating embedding via Gemini:',
+        `Error generating real embedding with ${this.model}:`,
         error.message,
       );
       throw error;
@@ -118,38 +187,19 @@ export class EmbeddingService {
   }
 
   /**
-   * Create a semantic hash from text
+   * Sleep utility for retry delays
    */
-  private createSemanticHash(text: string): number {
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      const char = text.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash);
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
-   * Convert hash to embedding-like vector
+   * Generate embeddings for multiple texts in batch with concurrency control
    */
-  private hashToEmbedding(hash: number, dimension: number): number[] {
-    const embedding = Array.from({ length: dimension }, (_, i) => {
-      const seed = (hash + i * 7919) % 1000000; // Use prime for better distribution
-      return (Math.sin(seed) * 0.5 + 0.5) / 10;
-    });
-
-    // Normalize to unit length
-    const magnitude = Math.sqrt(
-      embedding.reduce((sum, val) => sum + val * val, 0),
-    );
-    return embedding.map(val => val / magnitude);
-  }
-
-  /**
-   * Generate embeddings for multiple texts in batch
-   */
-  async generateEmbeddingsBatch(texts: string[]): Promise<number[][]> {
+  async generateEmbeddingsBatch(
+    texts: string[],
+    concurrency = 5,
+  ): Promise<number[][]> {
     try {
       if (!this.apiKey || !this.genAI) {
         this.logger.warn(
@@ -158,25 +208,87 @@ export class EmbeddingService {
         return texts.map(text => this.generatePlaceholderEmbedding(text));
       }
 
-      // Truncate texts
-      const truncatedTexts = texts.map(text =>
-        text.length > 8000 ? text.substring(0, 8000) : text,
+      this.logger.log(
+        `Generating embeddings for ${texts.length} texts with concurrency ${concurrency}`,
       );
 
-      // Generate embeddings in parallel (Google API handles individual requests)
-      // For better performance, we can batch if API supports it
-      const embeddings = await Promise.all(
-        truncatedTexts.map(text => this.generateEmbedding(text)),
-      );
+      // Process in batches with concurrency limit
+      const results: number[][] = [];
+      for (let i = 0; i < texts.length; i += concurrency) {
+        const batch = texts.slice(i, i + concurrency);
+        const batchResults = await Promise.all(
+          batch.map(text => this.generateEmbedding(text)),
+        );
+        results.push(...batchResults);
 
-      this.logger.log(`Generated ${embeddings.length} embeddings in batch`);
+        this.logger.log(
+          `Processed batch ${Math.floor(i / concurrency) + 1}/${Math.ceil(texts.length / concurrency)} (${results.length}/${texts.length} embeddings)`,
+        );
 
-      return embeddings;
+        // Small delay between batches to avoid rate limiting
+        if (i + concurrency < texts.length) {
+          await this.sleep(500);
+        }
+      }
+
+      this.logger.log(`Generated ${results.length} embeddings in batch`);
+
+      return results;
     } catch (error: any) {
       this.logger.error('Error generating batch embeddings:', error.message);
       // Fallback to individual placeholders
       return texts.map(text => this.generatePlaceholderEmbedding(text));
     }
+  }
+
+  /**
+   * Get cache key for text
+   */
+  private getCacheKey(text: string): string {
+    // Create a simple hash for cache key
+    return `${this.simpleHash(text.substring(0, 500))}`;
+  }
+
+  /**
+   * Cache embedding result
+   */
+  private cacheEmbedding(key: string, embedding: number[]): void {
+    // Implement LRU-like behavior: remove oldest if cache is full
+    if (this.embeddingCache.size >= this.maxCacheSize) {
+      const firstKey = this.embeddingCache.keys().next().value;
+      this.embeddingCache.delete(firstKey);
+    }
+    this.embeddingCache.set(key, embedding);
+  }
+
+  /**
+   * Update metrics
+   */
+  private updateMetrics(latency: number, success: boolean): void {
+    if (success) {
+      this.metrics.successfulRequests++;
+    }
+
+    // Update average latency (moving average)
+    const totalSuccessful = this.metrics.successfulRequests;
+    this.metrics.averageLatency =
+      (this.metrics.averageLatency * (totalSuccessful - 1) + latency) /
+      totalSuccessful;
+  }
+
+  /**
+   * Get embedding metrics
+   */
+  getMetrics(): EmbeddingMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Clear embedding cache
+   */
+  clearCache(): void {
+    this.embeddingCache.clear();
+    this.logger.log('Embedding cache cleared');
   }
 
   /**
@@ -221,5 +333,73 @@ export class EmbeddingService {
   getEmbeddingDimension(): number {
     // Google's text-embedding-004 uses 768 dimensions
     return 768;
+  }
+
+  /**
+   * Get the current embedding model name
+   */
+  getModelName(): string {
+    return this.model;
+  }
+
+  /**
+   * Generate embedding vector strictly - throws error instead of falling back to placeholder
+   * Use this for migration to ensure we only save real embeddings
+   */
+  async generateEmbeddingStrict(text: string): Promise<number[]> {
+    const startTime = Date.now();
+    this.metrics.totalRequests++;
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('Text cannot be empty');
+    }
+
+    // Check cache first
+    const cacheKey = this.getCacheKey(text);
+    const cached = this.embeddingCache.get(cacheKey);
+    if (cached) {
+      this.metrics.cacheHits++;
+      this.logger.debug(`Cache hit for text: ${text.substring(0, 50)}...`);
+      return cached;
+    }
+
+    // Truncate text if too long
+    const maxLength = 8000;
+    const truncatedText =
+      text.length > maxLength ? text.substring(0, maxLength) : text;
+
+    // If no API key, throw error instead of using placeholder
+    if (!this.apiKey || !this.genAI) {
+      throw new Error(
+        'Cannot generate real embedding: GEMINI_API_KEY not configured',
+      );
+    }
+
+    // Use real Google Generative AI embedding API with retry logic
+    const embedding = await this.generateEmbeddingWithRetry(truncatedText, 3);
+
+    if (!Array.isArray(embedding) || embedding.length === 0) {
+      throw new Error('Invalid embedding response format');
+    }
+
+    // Cache the result
+    this.cacheEmbedding(cacheKey, embedding);
+
+    // Update metrics
+    const latency = Date.now() - startTime;
+    this.updateMetrics(latency, true);
+
+    this.logger.log(
+      `Generated strict embedding of dimension ${embedding.length} for text (${truncatedText.length} chars) in ${latency}ms`,
+    );
+
+    return embedding;
+  }
+
+  /**
+   * Check if the embedding service is properly configured with a valid API key
+   */
+  isConfigured(): boolean {
+    return !!(this.apiKey && this.genAI);
   }
 }

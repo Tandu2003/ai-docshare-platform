@@ -635,15 +635,30 @@ export interface SimilarityResult {
 export const getSimilarityResults = async (
   documentId: string,
 ): Promise<SimilarityResult[]> => {
-  const response = await apiClient.get<SimilarityResult[]>(
-    `/similarity/results/${documentId}`,
-  );
+  try {
+    const response = await apiClient.get<SimilarityResult[]>(
+      `/similarity/results/${documentId}`,
+    );
 
-  if (!response.data) {
-    throw new Error('Không có dữ liệu trả về từ API');
+    // ApiClient wraps response in { success, data, message }
+    // The actual array is in response.data
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    // If response itself is array (shouldn't happen with apiClient but just in case)
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    // Return empty array if no data
+    console.warn('No similarity results found for document:', documentId);
+    return [];
+  } catch (error) {
+    console.error('Error fetching similarity results:', error);
+    // Return empty array instead of throwing to prevent UI crash
+    return [];
   }
-
-  return response.data;
 };
 
 /**

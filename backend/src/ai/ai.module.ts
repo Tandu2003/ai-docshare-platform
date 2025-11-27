@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
 import { ContentExtractorService } from './content-extractor.service';
+import { EmbeddingMigrationService } from './embedding-migration.service';
 import { EmbeddingService } from './embedding.service';
 import { GeminiService } from './gemini.service';
 import { VectorSearchService } from './vector-search.service';
@@ -19,6 +20,7 @@ import { ConfigModule } from '@nestjs/config';
     GeminiService,
     ContentExtractorService,
     EmbeddingService,
+    EmbeddingMigrationService,
     VectorSearchService,
     SystemSettingsService,
   ],
@@ -27,6 +29,7 @@ import { ConfigModule } from '@nestjs/config';
     GeminiService,
     ContentExtractorService,
     EmbeddingService,
+    EmbeddingMigrationService,
     VectorSearchService,
   ],
 })

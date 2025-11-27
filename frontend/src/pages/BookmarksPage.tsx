@@ -9,7 +9,7 @@ import {
   Search,
   Star,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -36,14 +36,54 @@ import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
 export default function BookmarksPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get initial values from URL
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get('q') || '',
+  );
   const [sortBy, setSortBy] = useState<
     'recent' | 'title' | 'rating' | 'downloads'
-  >('recent');
+  >(() => (searchParams.get('sortBy') as any) || 'recent');
   const [isLoading, setIsLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<BookmarkWithDocument[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRemovingId, setIsRemovingId] = useState<string | null>(null);
+
+  // Update URL when filters change
+  const updateUrlParams = useCallback(
+    (query: string, sort: string) => {
+      const newParams = new URLSearchParams();
+      if (query) newParams.set('q', query);
+      if (sort !== 'recent') newParams.set('sortBy', sort);
+      setSearchParams(newParams);
+    },
+    [setSearchParams],
+  );
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      updateUrlParams(value, sortBy);
+    },
+    [sortBy, updateUrlParams],
+  );
+
+  const handleSortChange = useCallback(
+    (value: typeof sortBy) => {
+      setSortBy(value);
+      updateUrlParams(searchQuery, value);
+    },
+    [searchQuery, updateUrlParams],
+  );
+
+  // Sync state from URL on mount
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    const sort = (searchParams.get('sortBy') as typeof sortBy) || 'recent';
+    setSearchQuery(q);
+    setSortBy(sort);
+  }, [searchParams]);
 
   const loadBookmarks = useCallback(async () => {
     try {
@@ -161,13 +201,13 @@ export default function BookmarksPage() {
               <Input
                 placeholder="Tìm kiếm theo tiêu đề, mô tả hoặc thẻ..."
                 value={searchQuery}
-                onChange={event => setSearchQuery(event.target.value)}
+                onChange={event => handleSearchChange(event.target.value)}
                 className="w-full"
               />
             </div>
             <Select
               value={sortBy}
-              onValueChange={value => setSortBy(value as typeof sortBy)}
+              onValueChange={value => handleSortChange(value as typeof sortBy)}
             >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Sắp xếp theo" />

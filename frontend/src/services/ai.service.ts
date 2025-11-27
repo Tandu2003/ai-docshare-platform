@@ -288,4 +288,24 @@ export class AIService {
 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
+
+  /**
+   * Get vector search info badge text
+   */
+  static getVectorSearchInfo(): string {
+    return 'Sử dụng AI Embeddings (768 dimensions) với text-embedding-004 model';
+  }
+
+  /**
+   * Check if embedding is supported for document
+   */
+  static isEmbeddingSupported(document: {
+    aiAnalysis?: { summary?: string; keyPoints?: string[] };
+  }): boolean {
+    // Embedding is supported if document has AI analysis with content
+    return !!(
+      document.aiAnalysis &&
+      (document.aiAnalysis.summary || document.aiAnalysis.keyPoints?.length)
+    );
+  }
 }

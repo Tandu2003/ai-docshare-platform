@@ -207,6 +207,11 @@ export class SimilarityService {
 
         // Compare with each document in batch
         for (const targetDocument of targetDocuments) {
+          // Skip if it's the same document
+          if (targetDocument.id === documentId) {
+            continue;
+          }
+
           // Skip if already found as exact match
           if (exactMatches.find(m => m.documentId === targetDocument.id)) {
             continue;
@@ -856,7 +861,19 @@ export class SimilarityService {
     sourceDocumentId: string,
     similarities: Array<{ documentId: string; similarityScore: number }>,
   ) {
-    const similarityData = similarities.map(sim => ({
+    // Filter out any self-references (shouldn't happen but just in case)
+    const filteredSimilarities = similarities.filter(
+      sim => sim.documentId !== sourceDocumentId,
+    );
+
+    if (filteredSimilarities.length === 0) {
+      this.logger.warn(
+        `No valid similarities to save for document ${sourceDocumentId}`,
+      );
+      return;
+    }
+
+    const similarityData = filteredSimilarities.map(sim => ({
       sourceDocumentId,
       targetDocumentId: sim.documentId,
       similarityScore: sim.similarityScore,
