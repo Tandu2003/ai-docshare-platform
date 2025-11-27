@@ -90,6 +90,102 @@ export class CategoriesController {
     }
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Get category detail with documents' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description:
+      'Sort field (createdAt, downloadCount, viewCount, averageRating)',
+  })
+  @ApiQuery({
+    name: 'order',
+    required: false,
+    description: 'Sort order (asc|desc)',
+  })
+  async getCategoryDetail(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Query('page') page = '1',
+    @Query('limit') limit = '12',
+    @Query('sort') sort?: string,
+    @Query('order') order?: 'asc' | 'desc',
+  ) {
+    try {
+      const result = await this.categoriesService.getCategoryWithDocuments({
+        id,
+        page: Number(page) || 1,
+        limit: Number(limit) || 12,
+        sort: sort as any,
+        order: order || 'desc',
+      });
+      return ResponseHelper.success(
+        res,
+        result,
+        'Chi tiết danh mục và danh sách tài liệu',
+      );
+    } catch (error) {
+      this.logger.error(`Error retrieving category ${id} detail`, error);
+      const status =
+        error instanceof HttpException
+          ? error.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      const message =
+        error instanceof HttpException
+          ? error.message
+          : 'Không thể truy xuất chi tiết danh mục';
+      return ResponseHelper.error(res, message, status, error);
+    }
+  }
+
+  @Post('suggest-for-document/:documentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'AI suggests categories for a document' })
+  async suggestCategoriesForDocument(
+    @Param('documentId') documentId: string,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
+    try {
+      const suggestions =
+        await this.categoriesService.suggestCategoriesForDocument(
+          documentId,
+          req.user?.id,
+        );
+      return ResponseHelper.success(
+        res,
+        suggestions,
+        'Gợi ý danh mục cho tài liệu',
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error suggesting categories for document ${documentId}`,
+        error,
+      );
+      const status =
+        error instanceof HttpException
+          ? error.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      const message =
+        error instanceof HttpException
+          ? error.message
+          : 'Không thể gợi ý danh mục';
+      return ResponseHelper.error(res, message, status, error);
+    }
+  }
+
   @Post()
   @AdminOnly()
   @UseGuards(JwtAuthGuard, RoleGuard)

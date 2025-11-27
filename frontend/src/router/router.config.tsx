@@ -17,6 +17,7 @@ import AdminUsersPage from '@/pages/AdminUsersPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import BookmarksPage from '@/pages/BookmarksPage';
 import CategoriesPage from '@/pages/CategoriesPage';
+import CategoryDetailPage from '@/pages/CategoryDetailPage';
 import DocumentDetailPage from '@/pages/DocumentDetailPage';
 import DocumentsPage from '@/pages/DocumentsPage';
 import MyDocumentsPage from '@/pages/MyDocumentsPage';
@@ -143,6 +144,10 @@ export const router = createBrowserRouter([
       {
         path: 'categories',
         element: <CategoriesPage />,
+      },
+      {
+        path: 'categories/:id',
+        element: <CategoryDetailPage />,
       },
       {
         path: 'bookmarks',

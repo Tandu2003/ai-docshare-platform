@@ -35,7 +35,7 @@ export function DocumentGrid({
 }: DocumentGridProps) {
   if (isLoading && documents.length === 0) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="animate-pulse">
@@ -75,7 +75,7 @@ export function DocumentGrid({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {documents.map(document => (
           <Card key={document.id} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-3">

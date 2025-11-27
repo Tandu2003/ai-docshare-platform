@@ -1,3 +1,4 @@
+import { CategoriesModule } from '../categories/categories.module';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesModule } from '../files/files.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -11,7 +12,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, FilesModule],
+  imports: [ConfigModule, PrismaModule, FilesModule, CategoriesModule],
   controllers: [AIController],
   providers: [
     AIService,
