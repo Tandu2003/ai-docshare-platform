@@ -4,12 +4,14 @@ import {
   AlertCircle,
   CheckCircle,
   FileText,
+  FolderTree,
   Plus,
   Upload,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { CategorySelector } from '@/components/categories/CategorySelector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,6 +56,7 @@ interface FileWithMetadata {
 interface DocumentData {
   title?: string;
   description?: string;
+  categoryId?: string;
   isPublic: boolean;
   language: string;
   tags: string[];
@@ -76,6 +79,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     isPublic: true,
     language: 'en',
     tags: [],
+    categoryId: undefined,
   });
   const [userEditedLanguage, setUserEditedLanguage] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -355,6 +359,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             description: prev.description || analysisResult.description || '',
             tags: prev.tags.length > 0 ? prev.tags : analysisResult.tags || [],
             language: resolvedLanguage,
+            // Auto-select category if AI suggests one and user hasn't selected
+            categoryId:
+              prev.categoryId ||
+              analysisResult.suggestedCategoryId ||
+              undefined,
           };
         });
 
@@ -451,6 +460,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       return;
     }
 
+    if (!uploadData.categoryId) {
+      toast.error('Vui lòng chọn danh mục cho tài liệu');
+      onUploadError?.('Vui lòng chọn danh mục cho tài liệu');
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -459,6 +474,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         title: uploadData.title,
         description: uploadData.description,
         fileIds: uploadedFiles.map(f => f.fileId!),
+        categoryId: uploadData.categoryId,
         isPublic: uploadData.isPublic,
         tags: uploadData.tags,
         language: uploadData.language,
@@ -471,7 +487,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       // Reset form after successful document creation
       setFiles([]);
-      setUploadData({ isPublic: true, language: 'en', tags: [] });
+      setUploadData({
+        isPublic: true,
+        language: 'en',
+        tags: [],
+        categoryId: undefined,
+      });
       setAiAnalysis({ isAnalyzing: false, analysisResult: null, error: null });
       setUserEditedLanguage(false);
     } catch (error) {
@@ -673,6 +694,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     {Math.round(aiAnalysis.analysisResult.confidence * 100)}%
                   </p>
                 )}
+                {aiAnalysis.analysisResult.suggestedCategoryName && (
+                  <p className="text-sm">
+                    <strong>Danh mục gợi ý:</strong>{' '}
+                    {aiAnalysis.analysisResult.suggestedCategoryName}
+                    {aiAnalysis.analysisResult.categoryConfidence && (
+                      <span className="text-muted-foreground ml-1">
+                        (
+                        {Math.round(
+                          aiAnalysis.analysisResult.categoryConfidence * 100,
+                        )}
+                        % chắc chắn)
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </AlertDescription>
           </Alert>
@@ -768,6 +804,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 </div>
               )}
           </div>
+        </div>
+
+        {/* Category Selection */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <FolderTree className="h-4 w-4" />
+            Danh mục *
+          </Label>
+          <CategorySelector
+            value={uploadData.categoryId}
+            onChange={categoryId =>
+              setUploadData((prev: DocumentData) => ({
+                ...prev,
+                categoryId,
+              }))
+            }
+            disabled={uploading}
+            showAiSuggestions={false}
+            required
+          />
         </div>
 
         {/* Tags */}
@@ -874,6 +930,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             files.length === 0 ||
             !files.some(f => f.uploaded) ||
             !uploadData.title?.trim() ||
+            !uploadData.categoryId ||
             uploading
           }
           className="w-full"

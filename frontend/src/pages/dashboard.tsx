@@ -123,7 +123,7 @@ export const DashboardPage: React.FC = () => {
       {!isAdmin && <UserDashboard stats={stats} />}
 
       {/* Common sections for both admin and user */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {/* Recent Documents - Show for everyone */}
         <div className="lg:col-span-2">
           <RecentDocuments
@@ -142,7 +142,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Activity Feed - Show for everyone */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <div className="md:col-span-2">
           <ActivityFeed activities={stats.userActivity} isLoading={loading} />
         </div>

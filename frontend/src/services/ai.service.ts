@@ -9,6 +9,10 @@ export interface DocumentAnalysisResult {
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   language?: string;
   confidence?: number;
+  // AI suggested category
+  suggestedCategoryId?: string | null;
+  suggestedCategoryName?: string | null;
+  categoryConfidence?: number;
 }
 
 export interface AIAnalysisResponse {

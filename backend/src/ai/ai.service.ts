@@ -1,3 +1,4 @@
+import { CategoriesService } from '../categories/categories.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,7 +12,11 @@ export interface AIAnalysisRequest {
 
 export interface AIAnalysisResponse {
   success: boolean;
-  data: DocumentAnalysisResult;
+  data: DocumentAnalysisResult & {
+    suggestedCategoryId?: string | null;
+    suggestedCategoryName?: string | null;
+    categoryConfidence?: number;
+  };
   processedFiles: number;
   processingTime: number;
 }
@@ -25,6 +30,7 @@ export class AIService {
     private filesService: FilesService,
     private geminiService: GeminiService,
     private systemSettings: SystemSettingsService,
+    private categoriesService: CategoriesService,
   ) {}
 
   /**
@@ -130,13 +136,33 @@ export class AIService {
       const analysisResult =
         await this.geminiService.analyzeDocumentFromFiles(validUrls);
 
+      // Suggest best category based on analysis content
+      this.logger.log('Suggesting best category based on analysis result...');
+      const categorySuggestion =
+        await this.categoriesService.suggestBestCategoryFromContent({
+          title: analysisResult.title,
+          description: analysisResult.description,
+          tags: analysisResult.tags,
+          summary: analysisResult.summary,
+          keyPoints: analysisResult.keyPoints,
+        });
+
+      this.logger.log(
+        `Category suggestion: ${categorySuggestion.categoryName} (${categorySuggestion.categoryId}) with confidence ${categorySuggestion.confidence}`,
+      );
+
       const processingTime = Date.now() - startTime;
 
       this.logger.log(`AI analysis completed in ${processingTime}ms`);
 
       return {
         success: true,
-        data: analysisResult,
+        data: {
+          ...analysisResult,
+          suggestedCategoryId: categorySuggestion.categoryId,
+          suggestedCategoryName: categorySuggestion.categoryName,
+          categoryConfidence: categorySuggestion.confidence,
+        },
         processedFiles: validUrls.length,
         processingTime,
       };
@@ -156,6 +182,9 @@ export class AIService {
           difficulty: 'beginner',
           language: 'vi',
           confidence: 0,
+          suggestedCategoryId: null,
+          suggestedCategoryName: null,
+          categoryConfidence: 0,
         },
         processedFiles: 0,
         processingTime,

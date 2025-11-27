@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Download, Edit, Eye, FolderOpen, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowRight,
+  Download,
+  Edit,
+  Eye,
+  FolderOpen,
+  Grid3X3,
+  LayoutGrid,
+  List,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -36,6 +48,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   createCategory as createCategoryApi,
@@ -46,10 +59,13 @@ import {
 } from '@/services/category.service';
 import type { CategoryWithStats } from '@/types';
 
+type ViewMode = 'grid' | 'list' | 'compact';
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const { isAdmin } = usePermissions();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -234,6 +250,11 @@ export default function CategoriesPage() {
     '🌐',
   ];
 
+  // Filter categories: Admin sees all, users only see categories with documents
+  const displayCategories = isAdmin()
+    ? categories
+    : categories.filter(cat => cat.documentCount > 0);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -244,7 +265,7 @@ export default function CategoriesPage() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="animate-pulse">
@@ -441,15 +462,208 @@ export default function CategoriesPage() {
         </Alert>
       )}
 
-      {/* Categories Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {categories.map(category => {
+      {/* View Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="text-muted-foreground text-sm">
+          {displayCategories.length} danh mục
+          {!isAdmin() && categories.length !== displayCategories.length && (
+            <span className="ml-1">
+              (ẩn {categories.length - displayCategories.length} danh mục trống)
+            </span>
+          )}
+        </div>
+        <ToggleGroup
+          type="single"
+          value={viewMode}
+          onValueChange={value => value && setViewMode(value as ViewMode)}
+          className="rounded-md border"
+        >
+          <ToggleGroupItem
+            value="grid"
+            aria-label="Grid view"
+            title="Dạng lưới"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="list"
+            aria-label="List view"
+            title="Dạng danh sách"
+          >
+            <List className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="compact"
+            aria-label="Compact view"
+            title="Dạng thu gọn"
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {/* Categories Grid/List/Compact */}
+      <div
+        className={
+          viewMode === 'grid'
+            ? 'grid gap-6 md:grid-cols-2'
+            : viewMode === 'list'
+              ? 'flex flex-col gap-4'
+              : 'grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+        }
+      >
+        {displayCategories.map(category => {
           const parentCategory = category.parentId
             ? getParentCategory(category.parentId)
             : null;
           const categoryColor = category.color ?? '#3b82f6';
           const categoryIcon = category.icon ?? '📁';
 
+          // Compact view - minimal card
+          if (viewMode === 'compact') {
+            return (
+              <Link
+                key={category.id}
+                to={`/categories/${category.id}`}
+                className="group"
+              >
+                <Card className="hover:border-primary/50 h-full transition-colors">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{categoryIcon}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="group-hover:text-primary truncate font-medium transition-colors">
+                          {category.name}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {category.documentCount} tài liệu
+                        </p>
+                      </div>
+                    </div>
+                    {isAdmin() && !category.isActive && (
+                      <Badge variant="secondary" className="mt-2 text-xs">
+                        Không hoạt động
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          }
+
+          // List view - horizontal layout
+          if (viewMode === 'list') {
+            return (
+              <Card
+                key={category.id}
+                className="hover:border-primary/30 transition-colors"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <span className="flex-shrink-0 text-2xl">
+                      {categoryIcon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate font-semibold">
+                          {category.name}
+                        </h3>
+                        {parentCategory && (
+                          <span className="text-muted-foreground text-sm">
+                            ({parentCategory.icon ?? '📁'} {parentCategory.name}
+                            )
+                          </span>
+                        )}
+                      </div>
+                      {category.description && (
+                        <p className="text-muted-foreground mt-1 line-clamp-1 text-sm">
+                          {category.description}
+                        </p>
+                      )}
+                    </div>
+                    <Badge
+                      variant={category.isActive ? 'default' : 'secondary'}
+                      className="ml-auto flex-shrink-0"
+                    >
+                      {category.isActive ? 'Hoạt động' : 'Ẩn'}
+                    </Badge>
+                    <div className="text-muted-foreground flex flex-shrink-0 items-center gap-6 text-sm">
+                      <div className="flex items-center gap-1">
+                        <FolderOpen className="h-4 w-4" />
+                        <span>{category.documentCount}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="h-4 w-4" />
+                        <span>{category.totalDownloads}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-4 w-4" />
+                        <span>{category.totalViews}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-1">
+                      {isAdmin() && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={e => {
+                              e.preventDefault();
+                              openEditDialog(category);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Xóa danh mục
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Bạn có chắc chắn muốn xóa "{category.name}"?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel
+                                  disabled={deletingId === category.id}
+                                >
+                                  Hủy
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    void handleDeleteCategory(category.id)
+                                  }
+                                  className="bg-red-600 hover:bg-red-700"
+                                  disabled={deletingId === category.id}
+                                >
+                                  {deletingId === category.id
+                                    ? 'Đang xóa...'
+                                    : 'Xóa'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
+                      <Link to={`/categories/${category.id}`}>
+                        <Button variant="outline" size="sm">
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          // Grid view - default full card
           return (
             <Card key={category.id}>
               <CardHeader>
@@ -551,6 +765,15 @@ export default function CategoriesPage() {
                     {category.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
                   </Badge>
                 </div>
+
+                {/* View documents link */}
+                <Link
+                  to={`/categories/${category.id}`}
+                  className="border-input bg-background ring-offset-background hover:bg-accent hover:text-accent-foreground inline-flex w-full items-center justify-center gap-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors"
+                >
+                  Xem tài liệu
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
               </CardContent>
             </Card>
           );

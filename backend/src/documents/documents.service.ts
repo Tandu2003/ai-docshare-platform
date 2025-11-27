@@ -5,6 +5,7 @@ import {
   HybridSearchResult,
   VectorSearchService,
 } from '../ai/vector-search.service';
+import { CategoriesService } from '../categories/categories.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
@@ -44,6 +45,7 @@ export class DocumentsService {
     private systemSettings: SystemSettingsService,
     private similarityJobService: SimilarityJobService,
     private pointsService: PointsService,
+    private categoriesService: CategoriesService,
   ) {}
 
   /**
@@ -86,13 +88,65 @@ export class DocumentsService {
         `Files validated successfully: ${files.map(f => f.originalName).join(', ')}`,
       );
 
-      // Get or create default category
-      const category = categoryId
-        ? await this.prisma.category.findUnique({ where: { id: categoryId } })
+      // Determine category - use AI suggestion if not provided
+      let finalCategoryId = categoryId;
+      let suggestedCategory: {
+        categoryId: string | null;
+        categoryName: string | null;
+        confidence: number;
+        allSuggestions: Array<{
+          id: string;
+          name: string;
+          icon: string | null;
+          color: string | null;
+          parentId: string | null;
+          score: number;
+          confidence: number;
+        }>;
+      } | null = null;
+
+      if (!categoryId && (useAI || aiAnalysis)) {
+        // Nếu không có categoryId và sử dụng AI, gợi ý category dựa trên nội dung
+        this.logger.log(
+          'No category provided, using AI to suggest category...',
+        );
+
+        const contentForSuggestion = {
+          title: aiAnalysis?.title || title,
+          description: aiAnalysis?.description || description,
+          tags: aiAnalysis?.tags || tags,
+          summary: aiAnalysis?.summary,
+          keyPoints: aiAnalysis?.keyPoints,
+        };
+
+        try {
+          suggestedCategory =
+            await this.categoriesService.suggestBestCategoryFromContent(
+              contentForSuggestion,
+            );
+
+          if (suggestedCategory?.categoryId) {
+            finalCategoryId = suggestedCategory.categoryId;
+            this.logger.log(
+              `AI suggested category: ${suggestedCategory.categoryName} (confidence: ${suggestedCategory.confidence}%)`,
+            );
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to get AI category suggestion: ${error.message}`,
+          );
+        }
+      }
+
+      // Get or create default category if still not determined
+      const category = finalCategoryId
+        ? await this.prisma.category.findUnique({
+            where: { id: finalCategoryId },
+          })
         : await this.getOrCreateDefaultCategory();
 
       if (!category) {
-        this.logger.error(`Category not found: ${categoryId}`);
+        this.logger.error(`Category not found: ${finalCategoryId}`);
         throw new BadRequestException('Không tìm thấy danh mục');
       }
 
@@ -198,6 +252,39 @@ export class DocumentsService {
             this.logger.log(
               `AI moderation analysis generated for document ${document.id}`,
             );
+
+            // If category was not specified, try to suggest based on AI analysis
+            if (!categoryId && !suggestedCategory) {
+              try {
+                const aiSuggestion =
+                  await this.categoriesService.suggestBestCategoryFromContent({
+                    title: aiResult.data.title || title,
+                    description: aiResult.data.description || description,
+                    tags: aiResult.data.tags || tags,
+                    summary: aiResult.data.summary,
+                    keyPoints: aiResult.data.keyPoints,
+                  });
+
+                if (
+                  aiSuggestion.categoryId &&
+                  aiSuggestion.categoryId !== category.id
+                ) {
+                  // Update document with suggested category
+                  await this.prisma.document.update({
+                    where: { id: document.id },
+                    data: { categoryId: aiSuggestion.categoryId },
+                  });
+                  this.logger.log(
+                    `Document ${document.id} category updated to AI suggested: ${aiSuggestion.categoryName} (confidence: ${aiSuggestion.confidence}%)`,
+                  );
+                  suggestedCategory = aiSuggestion;
+                }
+              } catch (catError) {
+                this.logger.warn(
+                  `Failed to suggest category for document ${document.id}: ${catError.message}`,
+                );
+              }
+            }
 
             // Apply AI moderation settings based on analysis score
             try {
@@ -312,6 +399,15 @@ export class DocumentsService {
       const result = {
         ...document,
         files: documentFiles.map(df => df.file),
+        // Include AI suggested category info if category was auto-selected
+        aiSuggestedCategory: suggestedCategory
+          ? {
+              categoryId: suggestedCategory.categoryId,
+              categoryName: suggestedCategory.categoryName,
+              confidence: suggestedCategory.confidence,
+              allSuggestions: suggestedCategory.allSuggestions,
+            }
+          : null,
       };
 
       this.logger.log(
@@ -2563,12 +2659,11 @@ export class DocumentsService {
           'Hybrid search returned no results; falling back to keyword search.',
         );
 
-        const fallbackResults =
-          await this.vectorSearchService.keywordSearch({
-            query: normalizedQuery,
-            limit: fetchLimit,
-            filters: vectorFilters,
-          });
+        const fallbackResults = await this.vectorSearchService.keywordSearch({
+          query: normalizedQuery,
+          limit: fetchLimit,
+          filters: vectorFilters,
+        });
 
         searchResults = fallbackResults.map(result => ({
           documentId: result.documentId,
@@ -2642,7 +2737,7 @@ export class DocumentsService {
 
       const orderedDocuments = documentIds
         .map(id => documents.find(doc => doc.id === id))
-        .filter((doc): doc is typeof documents[number] => doc !== undefined);
+        .filter((doc): doc is (typeof documents)[number] => doc !== undefined);
 
       const settings = await this.systemSettings.getPointsSettings();
 

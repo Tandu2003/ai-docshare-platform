@@ -134,7 +134,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
       </div>
 
       {/* System Status */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
