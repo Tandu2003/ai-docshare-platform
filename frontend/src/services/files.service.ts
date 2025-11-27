@@ -199,15 +199,37 @@ export class DocumentsService {
   }
 
   /**
-   * Get public documents with pagination
+   * Get public documents with pagination and filters
    */
   static async getPublicDocuments(
     page: number = 1,
     limit: number = 10,
+    filters?: {
+      categoryId?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    },
   ): Promise<PaginatedDocuments> {
     try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      if (filters?.categoryId) {
+        params.append('categoryId', filters.categoryId);
+      }
+
+      if (filters?.sortBy) {
+        params.append('sortBy', filters.sortBy);
+      }
+
+      if (filters?.sortOrder) {
+        params.append('sortOrder', filters.sortOrder);
+      }
+
       const response = await apiClient.get<PaginatedDocuments>(
-        `/documents/public?page=${page}&limit=${limit}`,
+        `/documents/public?${params.toString()}`,
       );
 
       if (!response.data) {
@@ -232,6 +254,8 @@ export class DocumentsService {
       categoryId?: string;
       tags?: string[];
       language?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     },
   ): Promise<PaginatedDocuments> {
     try {
@@ -251,6 +275,14 @@ export class DocumentsService {
 
       if (filters?.language) {
         params.append('language', filters.language);
+      }
+
+      if (filters?.sortBy) {
+        params.append('sortBy', filters.sortBy);
+      }
+
+      if (filters?.sortOrder) {
+        params.append('sortOrder', filters.sortOrder);
       }
 
       const response = await apiClient.get<PaginatedDocuments>(

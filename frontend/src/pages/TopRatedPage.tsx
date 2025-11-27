@@ -9,7 +9,7 @@ import {
   Star,
   Trophy,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -109,11 +109,45 @@ const DEFAULT_DATA: TopRatedAnalyticsData = {
 };
 
 export default function TopRatedPage() {
-  const [timeRange, setTimeRange] = useState('30d');
-  const [minRatings, setMinRatings] = useState('10');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get initial values from URL
+  const [timeRange, setTimeRange] = useState(
+    () => searchParams.get('range') || '30d',
+  );
+  const [minRatings, setMinRatings] = useState(
+    () => searchParams.get('minRatings') || '10',
+  );
   const [data, setData] = useState<TopRatedAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update URL when filters change
+  const updateUrlParams = useCallback(
+    (range: string, ratings: string) => {
+      const newParams = new URLSearchParams();
+      if (range !== '30d') newParams.set('range', range);
+      if (ratings !== '10') newParams.set('minRatings', ratings);
+      setSearchParams(newParams);
+    },
+    [setSearchParams],
+  );
+
+  const handleTimeRangeChange = useCallback(
+    (value: string) => {
+      setTimeRange(value);
+      updateUrlParams(value, minRatings);
+    },
+    [minRatings, updateUrlParams],
+  );
+
+  const handleMinRatingsChange = useCallback(
+    (value: string) => {
+      setMinRatings(value);
+      updateUrlParams(timeRange, value);
+    },
+    [timeRange, updateUrlParams],
+  );
 
   const loadTopRated = useCallback(
     async (rangeValue: string, minRatingsValue: string) => {
@@ -139,6 +173,14 @@ export default function TopRatedPage() {
     },
     [],
   );
+
+  // Sync state from URL on mount and URL changes
+  useEffect(() => {
+    const range = searchParams.get('range') || '30d';
+    const ratings = searchParams.get('minRatings') || '10';
+    setTimeRange(range);
+    setMinRatings(ratings);
+  }, [searchParams]);
 
   useEffect(() => {
     void loadTopRated(timeRange, minRatings);
@@ -173,7 +215,7 @@ export default function TopRatedPage() {
           <div className="flex gap-2">
             <Select
               value={timeRange}
-              onValueChange={setTimeRange}
+              onValueChange={handleTimeRangeChange}
               disabled={isLoading}
             >
               <SelectTrigger className="w-32">
@@ -189,7 +231,7 @@ export default function TopRatedPage() {
             </Select>
             <Select
               value={minRatings}
-              onValueChange={setMinRatings}
+              onValueChange={handleMinRatingsChange}
               disabled={isLoading}
             >
               <SelectTrigger className="w-40">
@@ -235,7 +277,7 @@ export default function TopRatedPage() {
         <div className="flex gap-2">
           <Select
             value={timeRange}
-            onValueChange={setTimeRange}
+            onValueChange={handleTimeRangeChange}
             disabled={isLoading}
           >
             <SelectTrigger className="w-32">
@@ -251,7 +293,7 @@ export default function TopRatedPage() {
           </Select>
           <Select
             value={minRatings}
-            onValueChange={setMinRatings}
+            onValueChange={handleMinRatingsChange}
             disabled={isLoading}
           >
             <SelectTrigger className="w-40">

@@ -10,7 +10,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -83,10 +83,30 @@ const getInitials = (firstName?: string | null, lastName?: string | null) =>
     .toUpperCase() || 'U';
 
 export default function TrendingPage() {
-  const [timeRange, setTimeRange] = useState('7d');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get initial values from URL
+  const [timeRange, setTimeRange] = useState(
+    () => searchParams.get('range') || '7d',
+  );
   const [data, setData] = useState<TrendingAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync URL when timeRange changes
+  const handleTimeRangeChange = useCallback(
+    (value: string) => {
+      setTimeRange(value);
+      const newParams = new URLSearchParams(searchParams);
+      if (value === '7d') {
+        newParams.delete('range');
+      } else {
+        newParams.set('range', value);
+      }
+      setSearchParams(newParams);
+    },
+    [searchParams, setSearchParams],
+  );
 
   const fetchTrending = useCallback(async (rangeValue: string) => {
     setIsLoading(true);
@@ -103,6 +123,12 @@ export default function TrendingPage() {
       setIsLoading(false);
     }
   }, []);
+
+  // Sync state from URL on mount and URL changes
+  useEffect(() => {
+    const range = searchParams.get('range') || '7d';
+    setTimeRange(range);
+  }, [searchParams]);
 
   useEffect(() => {
     void fetchTrending(timeRange);
@@ -141,7 +167,7 @@ export default function TrendingPage() {
           </div>
           <Select
             value={timeRange}
-            onValueChange={setTimeRange}
+            onValueChange={handleTimeRangeChange}
             disabled={isLoading}
           >
             <SelectTrigger className="w-40">
@@ -187,7 +213,7 @@ export default function TrendingPage() {
         </div>
         <Select
           value={timeRange}
-          onValueChange={setTimeRange}
+          onValueChange={handleTimeRangeChange}
           disabled={isLoading}
         >
           <SelectTrigger className="w-40">

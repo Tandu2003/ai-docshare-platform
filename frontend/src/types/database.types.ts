@@ -407,7 +407,13 @@ export interface DocumentFilters {
 
 export interface SearchFilters extends DocumentFilters {
   query?: string;
-  sortBy?: 'relevance' | 'date' | 'rating' | 'downloads' | 'views';
+  sortBy?:
+    | 'createdAt'
+    | 'downloadCount'
+    | 'viewCount'
+    | 'averageRating'
+    | 'title'
+    | 'relevance';
   sortOrder?: 'asc' | 'desc';
 }
 

@@ -304,11 +304,13 @@ export class DocumentsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('method') method: string = 'hybrid',
+    @Query('categoryId') categoryId: string | undefined,
+    @Query('tags') tags: string | undefined,
+    @Query('language') language: string | undefined,
+    @Query('sortBy') sortBy: string | undefined,
+    @Query('sortOrder') sortOrder: string | undefined,
     @Req() req: Request,
     @Res() res: Response,
-    @Query('categoryId') categoryId?: string,
-    @Query('tags') tags?: string,
-    @Query('language') language?: string,
   ) {
     try {
       if (!query || query.trim().length === 0) {
@@ -335,6 +337,22 @@ export class DocumentsController {
 
       const tagsArray = tags ? tags.split(',').map(t => t.trim()) : undefined;
 
+      // Validate sortBy - only allow specific values
+      const allowedSortBy = [
+        'createdAt',
+        'downloadCount',
+        'viewCount',
+        'averageRating',
+        'title',
+        'relevance',
+      ];
+      const validSortBy = allowedSortBy.includes(sortBy || '')
+        ? sortBy
+        : undefined;
+
+      // Validate sortOrder
+      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
       const result = await this.documentsService.searchDocuments(
         query.trim(),
         pageNum,
@@ -345,6 +363,8 @@ export class DocumentsController {
           categoryId,
           tags: tagsArray,
           language,
+          sortBy: validSortBy,
+          sortOrder: validSortOrder,
         },
       );
 
@@ -364,7 +384,7 @@ export class DocumentsController {
   }
 
   @Get('public')
-  @ApiOperation({ summary: 'Get public documents with pagination' })
+  @ApiOperation({ summary: 'Get public documents with pagination and filters' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Tài liệu công khai đã được truy xuất thành công',
@@ -372,6 +392,9 @@ export class DocumentsController {
   async getPublicDocuments(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('categoryId') categoryId: string | undefined,
+    @Query('sortBy') sortBy: string | undefined,
+    @Query('sortOrder') sortOrder: string | undefined,
     @Req() req: Request,
     @Res() res: Response,
   ) {
@@ -383,11 +406,31 @@ export class DocumentsController {
       const userId = (req as any).user?.id;
       const userRole = (req as any).user?.role?.name;
 
+      // Validate sortBy - only allow specific values
+      const allowedSortBy = [
+        'createdAt',
+        'downloadCount',
+        'viewCount',
+        'averageRating',
+        'title',
+      ];
+      const validSortBy = allowedSortBy.includes(sortBy || '')
+        ? sortBy
+        : 'createdAt';
+
+      // Validate sortOrder
+      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
       const result = await this.documentsService.getPublicDocuments(
         pageNum,
         limitNum,
         userId,
         userRole,
+        {
+          categoryId,
+          sortBy: validSortBy,
+          sortOrder: validSortOrder,
+        },
       );
 
       return ResponseHelper.success(

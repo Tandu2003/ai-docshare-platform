@@ -847,13 +847,18 @@ export class DocumentsService {
   }
 
   /**
-   * Get public documents with pagination
+   * Get public documents with pagination and filters
    */
   async getPublicDocuments(
     page: number = 1,
     limit: number = 10,
     userId?: string,
     userRole?: string,
+    filters?: {
+      categoryId?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    },
   ) {
     try {
       console.log('userId', userId);
@@ -861,14 +866,27 @@ export class DocumentsService {
 
       const skip = (page - 1) * limit;
 
-      this.logger.log(`Getting public documents, page ${page}, limit ${limit}`);
+      this.logger.log(
+        `Getting public documents, page ${page}, limit ${limit}, filters: ${JSON.stringify(filters)}`,
+      );
 
-      // Only return documents that are approved and public
-      const whereCondition = {
+      // Build where condition with filters
+      const whereCondition: any = {
         isPublic: true,
         isApproved: true,
         moderationStatus: DocumentModerationStatus.APPROVED,
       };
+
+      // Apply category filter
+      if (filters?.categoryId) {
+        whereCondition.categoryId = filters.categoryId;
+      }
+
+      // Build orderBy
+      const sortBy = filters?.sortBy || 'createdAt';
+      const sortOrder = filters?.sortOrder || 'desc';
+      const orderBy: any = {};
+      orderBy[sortBy] = sortOrder;
 
       const [documents, total] = await Promise.all([
         this.prisma.document.findMany({
@@ -892,9 +910,7 @@ export class DocumentsService {
               },
             },
           },
-          orderBy: {
-            createdAt: 'desc',
-          },
+          orderBy,
           skip,
           take: limit,
         }),
@@ -2614,6 +2630,8 @@ export class DocumentsService {
       categoryId?: string;
       tags?: string[];
       language?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     },
   ) {
     try {
