@@ -10,6 +10,8 @@ export interface VectorSearchOptions {
   limit?: number;
   threshold?: number; // Minimum similarity score (0-1)
   recordHistory?: boolean;
+  /** Internal flag to prevent double counting metrics when called from hybridSearch */
+  _isInternalCall?: boolean;
   filters?: {
     categoryId?: string;
     tags?: string[];
@@ -154,7 +156,10 @@ export class VectorSearchService {
     options: VectorSearchOptions,
   ): Promise<VectorSearchResult[]> {
     const startTime = Date.now();
-    this.metrics.totalSearches++;
+    // Only increment totalSearches if not an internal call from hybridSearch
+    if (!options._isInternalCall) {
+      this.metrics.totalSearches++;
+    }
     this.metrics.vectorSearches++;
 
     try {
@@ -388,16 +393,19 @@ export class VectorSearchService {
       );
 
       // Perform both searches in parallel
+      // Mark as internal calls to prevent double counting metrics
       const [vectorResults, textResults] = await Promise.all([
         this.vectorSearch({
           ...options,
           query: variants.embeddingText || variants.trimmed,
           limit: limit * 2, // Get more results for better combination
           recordHistory: false,
+          _isInternalCall: true,
         }),
         this.keywordSearch({
           ...options,
           query: variants.trimmed,
+          _isInternalCall: true,
         }),
       ]);
 
@@ -485,7 +493,11 @@ export class VectorSearchService {
   async keywordSearch(
     options: VectorSearchOptions,
   ): Promise<Array<{ documentId: string; textScore: number }>> {
-    this.metrics.totalSearches++;
+    const startTime = Date.now();
+    // Only increment totalSearches if not an internal call from hybridSearch
+    if (!options._isInternalCall) {
+      this.metrics.totalSearches++;
+    }
     this.metrics.keywordSearches++;
 
     const { query, limit = 10, filters = {} } = options;
@@ -760,10 +772,19 @@ export class VectorSearchService {
       };
     });
 
-    return results
+    const filteredResults = results
       .filter(r => r.textScore > 0)
       .sort((a, b) => b.textScore - a.textScore)
       .slice(0, limit);
+
+    // Update metrics with latency
+    const latency = Date.now() - startTime;
+    if (!options._isInternalCall) {
+      this.updateMetrics(latency);
+    }
+    this.logger.log(`Keyword search completed in ${latency}ms`);
+
+    return filteredResults;
   }
 
   /**

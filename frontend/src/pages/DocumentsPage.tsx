@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -43,6 +43,8 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  // Track if we're updating URL programmatically to avoid double fetch
+  const isUpdatingUrl = useRef(false);
 
   // Initialize filters from URL
   const [filters, setFilters] = useState<SearchFilters>(() =>
@@ -125,6 +127,8 @@ export default function DocumentsPage() {
   const handleSearch = useCallback(
     (nextFilters: SearchFilters) => {
       setPage(1);
+      // Mark that we're updating URL programmatically
+      isUpdatingUrl.current = true;
       // Update URL with new filters
       setSearchParams(syncFiltersToUrl(nextFilters));
       fetchDocuments(1, true, nextFilters);
@@ -134,14 +138,20 @@ export default function DocumentsPage() {
 
   // Sync filters when URL changes (e.g., browser back/forward)
   useEffect(() => {
+    // Skip if we're updating URL programmatically (from handleSearch)
+    if (isUpdatingUrl.current) {
+      isUpdatingUrl.current = false;
+      return;
+    }
+
     const urlFilters = parseFiltersFromUrl(searchParams);
     setFilters(urlFilters);
-  }, [searchParams]);
+    // Refetch documents when URL changes (e.g., browser back/forward)
+    setPage(1);
+    fetchDocuments(1, true, urlFilters);
+  }, [searchParams, fetchDocuments]);
 
-  useEffect(() => {
-    // Load initial documents
-    fetchDocuments(1, true);
-  }, []); // Only run on mount
+  // Removed separate mount effect - URL sync effect handles initial load
 
   return (
     <div className="space-y-6">

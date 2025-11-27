@@ -243,10 +243,12 @@ export class EmbeddingService {
 
   /**
    * Get cache key for text
+   * Uses full text hash to avoid collisions between texts with same prefix
    */
   private getCacheKey(text: string): string {
-    // Create a simple hash for cache key
-    return `${this.simpleHash(text.substring(0, 500))}`;
+    // Use full text hash for cache key to avoid collisions
+    // Also include model name in case model changes
+    return `${this.model}:${this.simpleHash(text)}`;
   }
 
   /**
