@@ -334,4 +334,72 @@ export class EmbeddingService {
     // Google's text-embedding-004 uses 768 dimensions
     return 768;
   }
+
+  /**
+   * Get the current embedding model name
+   */
+  getModelName(): string {
+    return this.model;
+  }
+
+  /**
+   * Generate embedding vector strictly - throws error instead of falling back to placeholder
+   * Use this for migration to ensure we only save real embeddings
+   */
+  async generateEmbeddingStrict(text: string): Promise<number[]> {
+    const startTime = Date.now();
+    this.metrics.totalRequests++;
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('Text cannot be empty');
+    }
+
+    // Check cache first
+    const cacheKey = this.getCacheKey(text);
+    const cached = this.embeddingCache.get(cacheKey);
+    if (cached) {
+      this.metrics.cacheHits++;
+      this.logger.debug(`Cache hit for text: ${text.substring(0, 50)}...`);
+      return cached;
+    }
+
+    // Truncate text if too long
+    const maxLength = 8000;
+    const truncatedText =
+      text.length > maxLength ? text.substring(0, maxLength) : text;
+
+    // If no API key, throw error instead of using placeholder
+    if (!this.apiKey || !this.genAI) {
+      throw new Error(
+        'Cannot generate real embedding: GEMINI_API_KEY not configured',
+      );
+    }
+
+    // Use real Google Generative AI embedding API with retry logic
+    const embedding = await this.generateEmbeddingWithRetry(truncatedText, 3);
+
+    if (!Array.isArray(embedding) || embedding.length === 0) {
+      throw new Error('Invalid embedding response format');
+    }
+
+    // Cache the result
+    this.cacheEmbedding(cacheKey, embedding);
+
+    // Update metrics
+    const latency = Date.now() - startTime;
+    this.updateMetrics(latency, true);
+
+    this.logger.log(
+      `Generated strict embedding of dimension ${embedding.length} for text (${truncatedText.length} chars) in ${latency}ms`,
+    );
+
+    return embedding;
+  }
+
+  /**
+   * Check if the embedding service is properly configured with a valid API key
+   */
+  isConfigured(): boolean {
+    return !!(this.apiKey && this.genAI);
+  }
 }

@@ -310,18 +310,21 @@ export class AIService {
       const embedding =
         await this.embeddingService.generateEmbedding(embeddingText);
 
+      // Get current model name from embedding service
+      const currentModel = this.embeddingService.getModelName();
+
       // Save to database (upsert)
       await this.prisma.documentEmbedding.upsert({
         where: { documentId },
         create: {
           documentId,
           embedding,
-          model: 'text-embedding-004',
+          model: currentModel,
           version: '1.0',
         },
         update: {
           embedding,
-          model: 'text-embedding-004',
+          model: currentModel,
           version: '1.0',
           updatedAt: new Date(),
         },

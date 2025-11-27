@@ -1,6 +1,11 @@
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIAnalysisRequest, AIAnalysisResponse, AIService } from './ai.service';
 import { AnalyzeDocumentDto } from './dto';
+import {
+  EmbeddingMigrationService,
+  EmbeddingMigrationStatus,
+  RegenerationProgress,
+} from './embedding-migration.service';
 import { EmbeddingMetrics, EmbeddingService } from './embedding.service';
 import { SearchMetrics, VectorSearchService } from './vector-search.service';
 import {
@@ -40,6 +45,7 @@ export class AIController {
   constructor(
     private readonly aiService: AIService,
     private readonly embeddingService: EmbeddingService,
+    private readonly embeddingMigrationService: EmbeddingMigrationService,
     private readonly vectorSearchService: VectorSearchService,
   ) {}
 
@@ -229,5 +235,60 @@ export class AIController {
       success: true,
       message: 'All caches cleared successfully',
     };
+  }
+
+  @Get('embeddings/status')
+  @ApiOperation({
+    summary: 'Get embedding model status and migration info',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Embedding model status retrieved successfully',
+  })
+  async getEmbeddingModelStatus(): Promise<EmbeddingMigrationStatus> {
+    this.logger.log('Getting embedding model status');
+    return await this.embeddingMigrationService.getEmbeddingModelStatus();
+  }
+
+  @Get('embeddings/regeneration-progress')
+  @ApiOperation({
+    summary: 'Get current embedding regeneration progress',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Regeneration progress retrieved successfully',
+  })
+  getRegenerationProgress(): {
+    isRunning: boolean;
+    progress: RegenerationProgress;
+  } {
+    this.logger.log('Getting embedding regeneration progress');
+    return this.embeddingMigrationService.getRegenerationProgress();
+  }
+
+  @Post('embeddings/regenerate-outdated')
+  @ApiOperation({
+    summary: 'Regenerate all outdated embeddings (different model)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Regeneration started successfully',
+  })
+  async regenerateOutdatedEmbeddings() {
+    this.logger.log('Starting regeneration of outdated embeddings');
+    return await this.embeddingMigrationService.regenerateAllEmbeddings();
+  }
+
+  @Post('embeddings/force-regenerate-all')
+  @ApiOperation({
+    summary: 'Force regenerate ALL embeddings regardless of model',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Force regeneration started successfully',
+  })
+  async forceRegenerateAllEmbeddings() {
+    this.logger.log('Starting force regeneration of all embeddings');
+    return await this.embeddingMigrationService.forceRegenerateAllEmbeddings();
   }
 }
