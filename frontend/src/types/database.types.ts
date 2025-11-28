@@ -64,7 +64,9 @@ export interface Document {
   uploaderId: string;
   categoryId: string;
   downloadCount: number;
-  downloadCost?: number; // Points cost to download this document
+  downloadCost?: number; // Points cost to download this document (0 for owner)
+  originalDownloadCost?: number | null; // Raw value from document (null = system default) - only for owner
+  systemDefaultDownloadCost?: number; // System default download cost - only for owner
   viewCount: number;
   averageRating: number;
   totalRatings: number;

@@ -29,6 +29,17 @@ export interface CreateDocumentData {
   isPublic?: boolean;
   tags?: string[];
   language?: string;
+  downloadCost?: number | null; // null = use system default
+}
+
+export interface UpdateDocumentData {
+  title?: string;
+  description?: string;
+  categoryId?: string;
+  isPublic?: boolean;
+  tags?: string[];
+  language?: string;
+  downloadCost?: number | null; // null = use system default
 }
 
 export interface Document {
@@ -316,6 +327,27 @@ export class DocumentsService {
     } catch (error) {
       console.error('Failed to delete document:', error);
       throw new Error('Không thể xóa tài liệu');
+    }
+  }
+
+  /**
+   * Update a document
+   */
+  static async updateDocument(
+    documentId: string,
+    updateData: UpdateDocumentData,
+  ): Promise<any> {
+    try {
+      const response = await apiClient.patch(
+        `/documents/${documentId}`,
+        updateData,
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to update document:', error);
+      throw new Error(
+        error.response?.data?.message || 'Không thể cập nhật tài liệu',
+      );
     }
   }
 

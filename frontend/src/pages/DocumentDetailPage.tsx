@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { Edit2, Save, X } from 'lucide-react';
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -10,6 +11,7 @@ import { DocumentInlineViewer } from '@/components/documents/document-inline-vie
 import DocumentShareDialog from '@/components/documents/document-share-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
 import {
@@ -20,12 +22,14 @@ import {
 } from '@/services/bookmark.service';
 import { CommentsService } from '@/services/comments.service';
 import {
+  checkDownloadStatus,
   getDocumentById,
   triggerFileDownload,
   type DocumentShareLink,
   type DocumentView,
   type ShareDocumentResponse,
 } from '@/services/document.service';
+import { DocumentsService } from '@/services/files.service';
 import { RatingService } from '@/services/rating.service';
 import type { AIAnalysis, Comment } from '@/types';
 
@@ -44,6 +48,12 @@ export default function DocumentDetailPage() {
   const [isBookmarkActionLoading, setIsBookmarkActionLoading] = useState(false);
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [isCheckingDownloadStatus, setIsCheckingDownloadStatus] =
+    useState(false);
+  const [isEditingDownloadCost, setIsEditingDownloadCost] = useState(false);
+  const [editDownloadCost, setEditDownloadCost] = useState<number | null>(null);
+  const [isSavingDownloadCost, setIsSavingDownloadCost] = useState(false);
 
   const apiKey = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -135,12 +145,58 @@ export default function DocumentDetailPage() {
     void fetchBookmarkStatus();
   }, [documentId, user]);
 
+  // Check if user has already downloaded this document
+  useEffect(() => {
+    const fetchDownloadStatus = async () => {
+      if (!documentId || !user) {
+        setHasDownloaded(false);
+        return;
+      }
+
+      try {
+        setIsCheckingDownloadStatus(true);
+        const { hasDownloaded: downloaded } =
+          await checkDownloadStatus(documentId);
+        setHasDownloaded(downloaded);
+      } catch (error) {
+        console.error('Failed to check download status', error);
+        setHasDownloaded(false);
+      } finally {
+        setIsCheckingDownloadStatus(false);
+      }
+    };
+
+    void fetchDownloadStatus();
+  }, [documentId, user]);
+
   const handleDownload = async () => {
     if (!documentId) return;
 
+    // Track if this is a first-time download (for updating count)
+    const isFirstDownload = !hasDownloaded && !isOwner;
+
     try {
-      await triggerFileDownload(documentId, document?.title);
-      toast.success('Đã tải xuống tài liệu thành công');
+      const result = await triggerFileDownload(documentId, document?.title);
+
+      // Silently update UI state if download was confirmed
+      // No toast shown - file has been fetched to browser, user decides to save or not
+      if (result.confirmed) {
+        setHasDownloaded(true);
+
+        // Update download count in UI if this was a first-time download by non-owner
+        // Backend has already incremented the count in database
+        if (isFirstDownload && document) {
+          setDocument(prev =>
+            prev
+              ? {
+                  ...prev,
+                  downloadCount: prev.downloadCount + 1,
+                }
+              : prev,
+          );
+        }
+      }
+      // Don't show any toast - download is triggered, user will see Save dialog
     } catch (error: any) {
       console.error('Failed to download document:', error);
       const errorMessage =
@@ -358,6 +414,47 @@ export default function DocumentDetailPage() {
     setDocument(prev => (prev ? { ...prev, shareLink: undefined } : prev));
   };
 
+  const handleSaveDownloadCost = async () => {
+    if (!documentId) return;
+
+    try {
+      setIsSavingDownloadCost(true);
+      const updatedDocument = await DocumentsService.updateDocument(
+        documentId,
+        {
+          downloadCost: editDownloadCost,
+        },
+      );
+      // Update local state with new originalDownloadCost
+      setDocument(prev =>
+        prev
+          ? {
+              ...prev,
+              originalDownloadCost:
+                updatedDocument.originalDownloadCost ?? editDownloadCost,
+            }
+          : prev,
+      );
+      setIsEditingDownloadCost(false);
+      toast.success('Đã cập nhật điểm tải xuống');
+    } catch (error: any) {
+      console.error('Failed to update download cost:', error);
+      toast.error(error.message || 'Không thể cập nhật điểm tải xuống');
+    } finally {
+      setIsSavingDownloadCost(false);
+    }
+  };
+
+  const handleCancelEditDownloadCost = () => {
+    setIsEditingDownloadCost(false);
+    setEditDownloadCost(document?.originalDownloadCost ?? null);
+  };
+
+  const handleStartEditDownloadCost = () => {
+    setEditDownloadCost(document?.originalDownloadCost ?? null);
+    setIsEditingDownloadCost(true);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -442,6 +539,9 @@ export default function DocumentDetailPage() {
         isBookmarked={isBookmarked}
         isBookmarking={isBookmarkActionLoading}
         isRatingLoading={isRatingLoading}
+        hasDownloaded={hasDownloaded}
+        isCheckingDownloadStatus={isCheckingDownloadStatus}
+        isOwner={isOwner}
       />
 
       {/* Main Content */}
@@ -503,6 +603,96 @@ export default function DocumentDetailPage() {
                 >
                   Quản lý liên kết chia sẻ
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Download Cost Settings - Owner Only */}
+          {isOwner && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Điểm tải xuống</span>
+                  {!isEditingDownloadCost && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleStartEditDownloadCost}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {isEditingDownloadCost ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={editDownloadCost ?? ''}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setEditDownloadCost(
+                            value === '' ? null : parseInt(value, 10),
+                          );
+                        }}
+                        placeholder="Mặc định hệ thống"
+                        className="w-full"
+                      />
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Để trống để sử dụng cài đặt mặc định của hệ thống.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveDownloadCost}
+                        disabled={isSavingDownloadCost}
+                        className="flex-1"
+                      >
+                        <Save className="mr-1 h-4 w-4" />
+                        {isSavingDownloadCost ? 'Đang lưu...' : 'Lưu'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEditDownloadCost}
+                        disabled={isSavingDownloadCost}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground text-sm">
+                        Chi phí tải xuống
+                      </span>
+                      <span className="font-medium">
+                        {document.originalDownloadCost !== undefined &&
+                        document.originalDownloadCost !== null
+                          ? `${document.originalDownloadCost} điểm`
+                          : `${document.systemDefaultDownloadCost ?? 0} điểm (mặc định)`}
+                      </span>
+                    </div>
+                    {document.originalDownloadCost === null ||
+                    document.originalDownloadCost === undefined ? (
+                      <p className="text-muted-foreground text-xs">
+                        Đang sử dụng giá mặc định của hệ thống. Bạn có thể đặt
+                        giá riêng cho tài liệu này.
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground text-xs">
+                        Giá tùy chỉnh. Để trống khi chỉnh sửa để sử dụng mặc
+                        định hệ thống ({document.systemDefaultDownloadCost ?? 0}{' '}
+                        điểm).
+                      </p>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           )}

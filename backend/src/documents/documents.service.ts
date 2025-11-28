@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { Readable } from 'stream';
 import { AIService } from '../ai/ai.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import {
@@ -61,6 +62,7 @@ export class DocumentsService {
         isPublic = false,
         tags = [],
         language = 'en',
+        downloadCost,
         useAI = false,
         aiAnalysis,
       } = createDocumentDto;
@@ -169,6 +171,7 @@ export class DocumentsService {
           moderationStatus,
           tags,
           language,
+          downloadCost: downloadCost !== undefined ? downloadCost : null, // null = use system default
         },
         include: {
           uploader: {
@@ -1167,9 +1170,10 @@ export class DocumentsService {
         },
       );
 
-      // Get download cost from settings or document
+      // Get download cost from document or system settings
       const settings = await this.systemSettings.getPointsSettings();
-      const downloadCost = document.downloadCost || settings.downloadCost;
+      const effectiveDownloadCost =
+        document.downloadCost ?? settings.downloadCost;
 
       const response: any = {
         id: document.id,
@@ -1189,7 +1193,14 @@ export class DocumentsService {
         moderatedById: document.moderatedById,
         viewCount: document.viewCount,
         downloadCount: document.downloadCount,
-        downloadCost: isOwner ? 0 : downloadCost, // Owner downloads are free
+        // For downloaders: show effective cost (0 for owner, actual for others)
+        downloadCost: isOwner ? 0 : effectiveDownloadCost,
+        // For owner: show the raw value from document (null = system default)
+        // This allows owner to see and edit the custom cost setting
+        ...(isOwner && {
+          originalDownloadCost: document.downloadCost, // null = system default, number = custom
+          systemDefaultDownloadCost: settings.downloadCost, // For reference
+        }),
         averageRating: document.averageRating,
         totalRatings: document.totalRatings,
         createdAt:
@@ -1508,39 +1519,10 @@ export class DocumentsService {
         }
       }
 
-      // Create download record and increment counter in a transaction
-      await this.prisma.$transaction(async prisma => {
-        // Log download only if user is authenticated (for now, until prisma client is regenerated)
-        if (userId) {
-          await prisma.download.create({
-            data: {
-              userId,
-              documentId,
-              ipAddress,
-              userAgent,
-              referrer,
-            },
-          });
-        }
-
-        // Increment download count regardless of authentication
-        await prisma.document.update({
-          where: { id: documentId },
-          data: {
-            downloadCount: {
-              increment: 1,
-            },
-          },
-        });
-      });
-
-      // Emit realtime download event to uploader
-      this.notifications.emitToUploaderOfDocument(document.uploaderId, {
-        type: 'download',
-        documentId,
-        userId,
-        count: 1,
-      });
+      // NOTE: Download count is NOT incremented here anymore.
+      // Instead, the frontend should call trackDownload() after the download completes successfully.
+      // This prevents counting downloads that were cancelled or failed.
+      // The download record and count increment will happen in trackDownload() method.
 
       // If single file, return direct download URL
       if (document.files.length === 1) {
@@ -2519,18 +2501,33 @@ export class DocumentsService {
   }
 
   /**
-   * Track download completion (without creating download URL)
+   * Initialize a download - creates a pending download record (success=false)
+   * Called by frontend BEFORE starting the actual download.
+   * Returns a downloadId that must be used to confirm the download later.
+   *
+   * Flow:
+   * 1. Validate document exists and user has permission
+   * 2. Check if user has already downloaded this document successfully
+   * 3. Create pending download record (success=false)
+   * 4. Return downloadId for confirmation
+   *
+   * Note: Points are NOT deducted here. Points will be deducted in confirmDownload()
+   * AFTER the file is actually downloaded successfully. This prevents charging
+   * users for cancelled/failed downloads.
+   *
+   * Note: Download count is NOT incremented here. It will be incremented
+   * only when confirmDownload is called with the downloadId.
    */
-  async trackDownload(
+  async initDownload(
     documentId: string,
     userId?: string,
     ipAddress?: string,
     userAgent?: string,
     referrer?: string,
-  ): Promise<void> {
+  ): Promise<{ downloadId: string; alreadyDownloaded: boolean }> {
     try {
       this.logger.log(
-        `Tracking download completion for document ${documentId} by user ${userId || 'guest'}`,
+        `Initializing download for document ${documentId} by user ${userId || 'guest'}`,
       );
 
       // Verify document exists and user has permission
@@ -2542,6 +2539,7 @@ export class DocumentsService {
           isApproved: true,
           moderationStatus: true,
           uploaderId: true,
+          downloadCost: true,
         },
       });
 
@@ -2574,46 +2572,570 @@ export class DocumentsService {
         }
       }
 
-      // Create download record and increment counter in a transaction
-      await this.prisma.$transaction(async prisma => {
-        // Log download only if user is authenticated
-        if (userId) {
-          await prisma.download.create({
-            data: {
-              userId,
-              documentId,
-              ipAddress,
-              userAgent,
-              referrer,
-            },
-          });
-        }
-
-        // Increment download count regardless of authentication
-        await prisma.document.update({
-          where: { id: documentId },
-          data: {
-            downloadCount: {
-              increment: 1,
-            },
+      // Check if user already has a successful download for this document
+      let hasExistingSuccessfulDownload = false;
+      if (userId) {
+        const existingDownload = await this.prisma.download.findFirst({
+          where: {
+            userId,
+            documentId,
+            success: true,
           },
         });
-      });
+        hasExistingSuccessfulDownload = !!existingDownload;
 
-      // Emit realtime download event to uploader
-      this.notifications.emitToUploaderOfDocument(document.uploaderId, {
-        type: 'download',
-        documentId,
-        userId,
-        count: 1,
+        if (hasExistingSuccessfulDownload) {
+          this.logger.log(
+            `User ${userId} already has a successful download for document ${documentId}, will skip points deduction on confirm`,
+          );
+        }
+      }
+
+      // PRE-CHECK: Verify user has enough points BEFORE allowing download
+      // This prevents users from downloading files they can't afford
+      if (userId && !isOwner && !hasExistingSuccessfulDownload) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            pointsBalance: true,
+            role: { select: { name: true } },
+          },
+        });
+        const isAdmin = user?.role?.name === 'admin';
+
+        if (!isAdmin) {
+          // Get effective download cost
+          const settings = await this.systemSettings.getPointsSettings();
+          const effectiveDownloadCost =
+            document.downloadCost ?? settings.downloadCost;
+
+          if ((user?.pointsBalance ?? 0) < effectiveDownloadCost) {
+            throw new BadRequestException(
+              `Bạn không đủ điểm để tải xuống tài liệu này. Cần ${effectiveDownloadCost} điểm, bạn có ${user?.pointsBalance ?? 0} điểm.`,
+            );
+          }
+        }
+      }
+
+      // NOTE: Points are NOT deducted here.
+      // Points will be deducted in confirmDownload() AFTER the file is actually downloaded.
+      // This prevents charging users for cancelled/failed downloads.
+
+      // Create pending download record (success=false)
+      const download = await this.prisma.download.create({
+        data: {
+          userId: userId || null,
+          documentId,
+          ipAddress,
+          userAgent,
+          referrer,
+          success: false, // Will be set to true when confirmed
+          uploaderRewarded: false,
+        },
       });
 
       this.logger.log(
-        `Successfully tracked download for document ${documentId}`,
+        `Created pending download record ${download.id} for document ${documentId}`,
       );
+
+      return {
+        downloadId: download.id,
+        alreadyDownloaded: hasExistingSuccessfulDownload,
+      };
     } catch (error) {
-      this.logger.error('Error tracking download:', error);
+      this.logger.error('Error initializing download:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Confirm a download - marks the download as successful, deducts points, and increments count
+   * Called by frontend AFTER the file has been successfully fetched/downloaded.
+   *
+   * Flow:
+   * 1. Verify download record exists and belongs to user
+   * 2. Check if download is already confirmed (prevent double counting)
+   * 3. Deduct points from user (only for first successful download)
+   * 4. Mark download as successful
+   * 5. Increment download count (only for first successful download per user)
+   * 6. Award points to uploader
+   * 7. Emit notification
+   */
+  async confirmDownload(
+    downloadId: string,
+    userId?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      this.logger.log(
+        `Confirming download ${downloadId} for user ${userId || 'guest'}`,
+      );
+
+      // Find the download record
+      const download = await this.prisma.download.findUnique({
+        where: { id: downloadId },
+        include: {
+          document: {
+            select: {
+              id: true,
+              uploaderId: true,
+              downloadCost: true,
+            },
+          },
+        },
+      });
+
+      if (!download) {
+        throw new BadRequestException('Không tìm thấy bản ghi tải xuống');
+      }
+
+      // Verify the download belongs to the user (or is a guest download)
+      if (download.userId && download.userId !== userId) {
+        throw new BadRequestException(
+          'Bạn không có quyền xác nhận tải xuống này',
+        );
+      }
+
+      // Check if already confirmed
+      if (download.success) {
+        this.logger.log(`Download ${downloadId} already confirmed, skipping`);
+        return {
+          success: true,
+          message: 'Tải xuống đã được xác nhận trước đó',
+        };
+      }
+
+      const documentId = download.documentId;
+      const isOwner = download.document.uploaderId === userId;
+
+      // Check if user has other successful downloads for this document
+      let hasOtherSuccessfulDownload = false;
+      if (userId) {
+        const otherDownload = await this.prisma.download.findFirst({
+          where: {
+            userId,
+            documentId,
+            success: true,
+            id: { not: downloadId }, // Exclude current download
+          },
+        });
+        hasOtherSuccessfulDownload = !!otherDownload;
+      }
+
+      // Deduct points for non-owner first-time downloads
+      // Points are deducted HERE (in confirmDownload) instead of initDownload
+      // This ensures users are only charged when download actually completes
+      if (userId && !isOwner && !hasOtherSuccessfulDownload) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, role: { select: { name: true } } },
+        });
+        const isAdmin = user?.role?.name === 'admin';
+
+        if (!isAdmin) {
+          try {
+            await this.pointsService.spendOnDownload({
+              userId,
+              document: { ...(download.document as any) },
+              performedById: undefined,
+              bypass: false,
+            });
+            this.logger.log(
+              `Deducted points from user ${userId} for download ${downloadId}`,
+            );
+          } catch (e) {
+            this.logger.error(
+              `Failed to deduct points for download ${downloadId}: ${e.message}`,
+            );
+            throw e; // Re-throw points error to prevent confirming download
+          }
+        }
+      }
+
+      // Update download record and increment count in transaction
+      await this.prisma.$transaction(async prisma => {
+        // Mark download as successful
+        await prisma.download.update({
+          where: { id: downloadId },
+          data: { success: true },
+        });
+
+        // Only increment download count if:
+        // 1. This is NOT the owner (owner downloads don't count)
+        // 2. This is the first successful download for this user
+        if (!isOwner && !hasOtherSuccessfulDownload) {
+          await prisma.document.update({
+            where: { id: documentId },
+            data: {
+              downloadCount: { increment: 1 },
+            },
+          });
+        }
+      });
+
+      // Award uploader points (if not owner and this is first successful download)
+      if (userId && !isOwner && !hasOtherSuccessfulDownload) {
+        try {
+          let effectiveDownloadCost = download.document.downloadCost;
+          if (
+            effectiveDownloadCost === null ||
+            effectiveDownloadCost === undefined
+          ) {
+            const settings = await this.systemSettings.getPointsSettings();
+            effectiveDownloadCost = settings.downloadCost;
+          }
+
+          await this.pointsService.awardUploaderOnDownload(
+            download.document.uploaderId,
+            documentId,
+            userId,
+            downloadId,
+            effectiveDownloadCost,
+          );
+          this.logger.log(
+            `Awarded uploader ${download.document.uploaderId} for download ${downloadId}`,
+          );
+        } catch (awardError) {
+          this.logger.error(
+            `Failed to award uploader for download ${downloadId}: ${awardError.message}`,
+          );
+        }
+      }
+
+      // Emit realtime notification (only if count was incremented - not for owner or re-downloads)
+      if (!isOwner && !hasOtherSuccessfulDownload) {
+        this.notifications.emitToUploaderOfDocument(
+          download.document.uploaderId,
+          {
+            type: 'download',
+            documentId,
+            userId,
+            count: 1,
+          },
+        );
+      }
+
+      this.logger.log(
+        `Successfully confirmed download ${downloadId}${isOwner ? ' (owner download, count not incremented)' : hasOtherSuccessfulDownload ? ' (re-download, count not incremented)' : ''}`,
+      );
+
+      return {
+        success: true,
+        message: hasOtherSuccessfulDownload
+          ? 'Tải xuống đã được xác nhận (tải lại)'
+          : 'Tải xuống đã được xác nhận thành công',
+      };
+    } catch (error) {
+      this.logger.error('Error confirming download:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel/cleanup a pending download - called when download fails or is cancelled
+   * This allows refunding points if needed
+   */
+  async cancelDownload(
+    downloadId: string,
+    userId?: string,
+  ): Promise<{ success: boolean }> {
+    try {
+      this.logger.log(
+        `Cancelling download ${downloadId} for user ${userId || 'guest'}`,
+      );
+
+      const download = await this.prisma.download.findUnique({
+        where: { id: downloadId },
+      });
+
+      if (!download) {
+        // Download not found, maybe already cleaned up
+        return { success: true };
+      }
+
+      // Verify ownership
+      if (download.userId && download.userId !== userId) {
+        throw new BadRequestException('Bạn không có quyền hủy tải xuống này');
+      }
+
+      // Only allow cancelling pending downloads
+      if (download.success) {
+        this.logger.log(
+          `Download ${downloadId} already successful, cannot cancel`,
+        );
+        return { success: false };
+      }
+
+      // Mark as failed (keep record for audit)
+      await this.prisma.download.update({
+        where: { id: downloadId },
+        data: { success: false },
+      });
+
+      // TODO: Implement point refund logic if needed
+      // For now, points are not refunded on cancellation
+
+      this.logger.log(`Download ${downloadId} cancelled`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Error cancelling download:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Prepare streaming download - validates permissions, checks points, creates pending download record
+   * Returns necessary data for streaming and callback functions for success/failure
+   *
+   * Flow:
+   * 1. Validate document exists and user has permission
+   * 2. Check if user has already downloaded this document successfully (skip points deduction if yes)
+   * 3. Deduct points from downloader (if applicable)
+   * 4. Create pending download record (success=false)
+   * 5. Return file stream data and callbacks for onFinish/onError
+   */
+  async prepareStreamingDownload(
+    documentId: string,
+    userId: string,
+    ipAddress?: string,
+    userAgent?: string,
+    referrer?: string,
+    apiKey?: string,
+  ): Promise<{
+    fileStream: Readable;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+    downloadId: string;
+    uploaderId: string;
+    onStreamComplete: () => Promise<void>;
+    onStreamError: () => Promise<void>;
+  }> {
+    try {
+      this.logger.log(
+        `Preparing streaming download for document ${documentId} by user ${userId}`,
+      );
+
+      // Get document with files and downloadCost for reward calculation
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        select: {
+          id: true,
+          title: true,
+          uploaderId: true,
+          isPublic: true,
+          isApproved: true,
+          moderationStatus: true,
+          downloadCost: true, // Include for uploader reward calculation
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const isOwner = document.uploaderId === userId;
+      let shareAccessGranted = false;
+
+      if (apiKey) {
+        try {
+          const link = await this.validateShareLink(documentId, apiKey);
+          if (
+            link &&
+            !link.isRevoked &&
+            link.expiresAt.getTime() > Date.now()
+          ) {
+            shareAccessGranted = true;
+          }
+        } catch {
+          // ignore invalid apiKey
+        }
+      }
+
+      // Check access permissions
+      if (document.isPublic) {
+        if (!document.isApproved && !isOwner) {
+          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
+        }
+        if (
+          document.moderationStatus === DocumentModerationStatus.REJECTED &&
+          !isOwner
+        ) {
+          throw new BadRequestException('Tài liệu đã bị từ chối');
+        }
+      } else {
+        if (!isOwner && !shareAccessGranted) {
+          throw new BadRequestException(
+            'Bạn không có quyền tải xuống tài liệu này',
+          );
+        }
+      }
+
+      if (!document.files || document.files.length === 0) {
+        throw new BadRequestException('Tài liệu không có tệp để tải xuống');
+      }
+
+      // Check if user has already successfully downloaded this document
+      const hasExistingSuccessfulDownload =
+        await this.pointsService.hasSuccessfulDownload(userId, documentId);
+
+      // Points deduction logic for non-owner downloads (only if not already downloaded)
+      if (!isOwner && !hasExistingSuccessfulDownload) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, role: { select: { name: true } } },
+        });
+        const isAdmin = user?.role?.name === 'admin';
+        const bypass = Boolean(isAdmin || shareAccessGranted);
+
+        try {
+          await this.pointsService.spendOnDownload({
+            userId,
+            document: { ...(document as any) },
+            performedById: isAdmin ? userId : undefined,
+            bypass,
+          });
+        } catch (e) {
+          if (!bypass) {
+            throw e;
+          }
+        }
+      } else if (hasExistingSuccessfulDownload) {
+        this.logger.log(
+          `User ${userId} has already downloaded document ${documentId}, skipping points deduction`,
+        );
+      }
+
+      // Create pending download record
+      const download = await this.prisma.download.create({
+        data: {
+          userId,
+          documentId,
+          ipAddress,
+          userAgent,
+          referrer,
+          success: false, // Will be set to true on res.finish
+          uploaderRewarded: false,
+        },
+      });
+
+      // Get the file to stream (single file only for now - ZIP streaming requires different approach)
+      if (document.files.length > 1) {
+        // For multiple files, fall back to ZIP download (existing behavior)
+        // Clean up the download record we just created
+        await this.prisma.download.delete({ where: { id: download.id } });
+        throw new BadRequestException(
+          'Streaming download chỉ hỗ trợ tài liệu đơn tệp. Sử dụng endpoint download thông thường cho tài liệu nhiều tệp.',
+        );
+      }
+
+      const file = document.files[0].file;
+      const fileStream = await this.r2Service.getFileStream(file.storageUrl);
+
+      const uploaderId = document.uploaderId;
+      const downloadId = download.id;
+
+      // Callback for when stream completes successfully (res.finish)
+      const onStreamComplete = async () => {
+        try {
+          this.logger.log(
+            `Stream completed for download ${downloadId}, marking as successful`,
+          );
+
+          // Update download count
+          await this.prisma.document.update({
+            where: { id: documentId },
+            data: {
+              downloadCount: { increment: 1 },
+            },
+          });
+
+          // Award uploader (handles duplicate check internally)
+          // Pass effective downloadCost so uploader receives same amount as downloader paid
+          // We already have document.downloadCost from the initial query
+          let effectiveDownloadCost = document.downloadCost;
+          if (
+            effectiveDownloadCost === null ||
+            effectiveDownloadCost === undefined
+          ) {
+            const settings = await this.systemSettings.getPointsSettings();
+            effectiveDownloadCost = settings.downloadCost;
+          }
+          await this.pointsService.awardUploaderOnDownload(
+            uploaderId,
+            documentId,
+            userId,
+            downloadId,
+            effectiveDownloadCost,
+          );
+
+          // Emit realtime download event to uploader
+          this.notifications.emitToUploaderOfDocument(uploaderId, {
+            type: 'download',
+            documentId,
+            userId,
+            count: 1,
+          });
+
+          this.logger.log(
+            `Download ${downloadId} marked as successful, uploader rewarded`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Error in onStreamComplete for download ${downloadId}: ${error.message}`,
+          );
+        }
+      };
+
+      // Callback for when stream fails or is aborted
+      const onStreamError = async () => {
+        try {
+          this.logger.log(
+            `Stream failed/aborted for download ${downloadId}, cleaning up`,
+          );
+
+          // Mark download as failed (don't delete to keep audit trail)
+          await this.prisma.download.update({
+            where: { id: downloadId },
+            data: { success: false },
+          });
+
+          // Note: We don't refund points here because points were deducted before streaming started
+          // This is a design decision - if user wants refund for failed downloads,
+          // we'd need a different approach (deduct after success)
+        } catch (error) {
+          this.logger.error(
+            `Error in onStreamError for download ${downloadId}: ${error.message}`,
+          );
+        }
+      };
+
+      return {
+        fileStream,
+        fileName: file.originalName,
+        mimeType: file.mimeType,
+        fileSize: Number(file.fileSize),
+        downloadId,
+        uploaderId,
+        onStreamComplete,
+        onStreamError,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error preparing streaming download for document ${documentId}: ${error.message}`,
+      );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Không thể chuẩn bị tải xuống tài liệu',
+      );
     }
   }
 
@@ -2901,5 +3423,179 @@ export class DocumentsService {
       );
       // Don't throw - embedding generation is not critical for document creation
     }
+  }
+
+  /**
+   * Update a document (only by owner or admin)
+   */
+  async updateDocument(
+    documentId: string,
+    userId: string,
+    updateData: {
+      title?: string;
+      description?: string;
+      categoryId?: string;
+      isPublic?: boolean;
+      tags?: string[];
+      language?: string;
+      downloadCost?: number | null;
+    },
+    userRole?: string,
+  ) {
+    try {
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        select: {
+          id: true,
+          uploaderId: true,
+          isPublic: true,
+          moderationStatus: true,
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      const isOwner = document.uploaderId === userId;
+      const isAdmin = userRole === 'admin';
+
+      if (!isOwner && !isAdmin) {
+        throw new BadRequestException(
+          'Bạn không có quyền chỉnh sửa tài liệu này',
+        );
+      }
+
+      // Build update data
+      const dataToUpdate: any = {};
+
+      if (updateData.title !== undefined) {
+        dataToUpdate.title = updateData.title;
+      }
+
+      if (updateData.description !== undefined) {
+        dataToUpdate.description = updateData.description;
+      }
+
+      if (updateData.categoryId !== undefined) {
+        // Verify category exists
+        const category = await this.prisma.category.findUnique({
+          where: { id: updateData.categoryId },
+        });
+        if (!category) {
+          throw new BadRequestException('Không tìm thấy danh mục');
+        }
+        dataToUpdate.categoryId = updateData.categoryId;
+      }
+
+      if (updateData.tags !== undefined) {
+        dataToUpdate.tags = updateData.tags;
+      }
+
+      if (updateData.language !== undefined) {
+        dataToUpdate.language = updateData.language;
+      }
+
+      // Handle downloadCost - null means use system default
+      if (updateData.downloadCost !== undefined) {
+        dataToUpdate.downloadCost = updateData.downloadCost;
+      }
+
+      // Handle isPublic change - may need re-moderation
+      if (updateData.isPublic !== undefined) {
+        const wasPublic = document.isPublic;
+        const wantsPublic = updateData.isPublic;
+
+        if (!wasPublic && wantsPublic) {
+          // Switching from private to public - needs moderation
+          dataToUpdate.isPublic = true;
+          dataToUpdate.isApproved = false;
+          dataToUpdate.moderationStatus = DocumentModerationStatus.PENDING;
+        } else if (wasPublic && !wantsPublic) {
+          // Switching from public to private
+          dataToUpdate.isPublic = false;
+          dataToUpdate.isApproved = true;
+        }
+      }
+
+      const updatedDocument = await this.prisma.document.update({
+        where: { id: documentId },
+        data: dataToUpdate,
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          category: true,
+          files: {
+            include: {
+              file: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
+      this.logger.log(`Document ${documentId} updated by user ${userId}`);
+
+      // Get system default for reference
+      const settings = await this.systemSettings.getPointsSettings();
+
+      return {
+        id: updatedDocument.id,
+        title: updatedDocument.title,
+        description: updatedDocument.description,
+        isPublic: updatedDocument.isPublic,
+        isApproved: updatedDocument.isApproved,
+        moderationStatus: updatedDocument.moderationStatus,
+        tags: updatedDocument.tags,
+        language: updatedDocument.language,
+        downloadCost: 0, // Owner downloads are free
+        originalDownloadCost: updatedDocument.downloadCost, // Raw value (null = system default)
+        systemDefaultDownloadCost: settings.downloadCost, // For reference
+        createdAt: updatedDocument.createdAt,
+        updatedAt: updatedDocument.updatedAt,
+        uploader: updatedDocument.uploader,
+        category: updatedDocument.category,
+        files: updatedDocument.files.map(df => ({
+          id: df.file.id,
+          originalName: df.file.originalName,
+          fileName: df.file.fileName,
+          mimeType: df.file.mimeType,
+          fileSize: df.file.fileSize,
+          order: df.order,
+        })),
+      };
+    } catch (error) {
+      this.logger.error(`Error updating document ${documentId}:`, error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Không thể cập nhật tài liệu');
+    }
+  }
+
+  /**
+   * Get effective download cost for a document (from document or system default)
+   */
+  async getEffectiveDownloadCost(documentId: string): Promise<number> {
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId },
+      select: { downloadCost: true },
+    });
+
+    if (
+      document?.downloadCost !== null &&
+      document?.downloadCost !== undefined
+    ) {
+      return document.downloadCost;
+    }
+
+    const settings = await this.systemSettings.getPointsSettings();
+    return settings.downloadCost;
   }
 }

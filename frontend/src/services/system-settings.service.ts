@@ -25,6 +25,7 @@ export interface CategoriesResponse {
 export interface PointsSettings {
   uploadReward: number;
   downloadCost: number;
+  // downloadReward đã bị xóa - uploader nhận bằng đúng downloadCost
 }
 
 export class SystemSettingsService {
@@ -189,6 +190,14 @@ export class SystemSettingsService {
       systemSettings.push({
         key: 'points.download_cost',
         value: settings.downloadCost.toString(),
+        category: 'points',
+      });
+    }
+
+    if (settings.downloadReward !== undefined) {
+      systemSettings.push({
+        key: 'points.download_reward',
+        value: settings.downloadReward.toString(),
         category: 'points',
       });
     }

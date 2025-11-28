@@ -725,6 +725,8 @@ export default function ProfilePage() {
                             {tx.reason === 'UPLOAD_REWARD' && 'Thưởng tải lên'}
                             {tx.reason === 'DOWNLOAD_COST' &&
                               'Trừ khi tải tài liệu'}
+                            {tx.reason === 'DOWNLOAD_REWARD' &&
+                              'Thưởng khi có người tải tài liệu của bạn'}
                             {tx.reason === 'ADMIN_ADJUST' &&
                               'Điều chỉnh bởi admin'}
                           </p>

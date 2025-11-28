@@ -134,8 +134,8 @@ model Document {
   aiModeration     Json?
   tags             String[]                 @default([])
   language         String                   @default("en")
-  // Points system: cost to download this document for non-owner users
-  downloadCost     Int                      @default(1)
+  // Points system: cost to download this document for non-owner users (null = use system default)
+  downloadCost     Int?
   zipFileUrl       String? // Cached ZIP file URL for multi-file documents
   zipFileCreatedAt DateTime? // When the ZIP file was created
   createdAt        DateTime                 @default(now())
@@ -471,6 +471,8 @@ model Download {
   ipAddress    String?
   userAgent    String?
   referrer     String?
+  success      Boolean  @default(false) // True only when file stream completed (res.finish)
+  uploaderRewarded Boolean @default(false) // True if uploader received points for this download
   downloadedAt DateTime @default(now())
 
   // Relations
@@ -482,6 +484,9 @@ model Download {
   @@index([documentId])
   @@index([downloadedAt])
   @@index([ipAddress])
+  @@index([success])
+  // Composite index for checking if user already has successful download for a document
+  @@index([userId, documentId, success])
   @@map("downloads")
 }
 
@@ -667,6 +672,7 @@ enum PointTxnType {
 enum PointTxnReason {
   UPLOAD_REWARD
   DOWNLOAD_COST
+  DOWNLOAD_REWARD // Reward for uploader when someone downloads their document
   ADMIN_ADJUST
 }
 

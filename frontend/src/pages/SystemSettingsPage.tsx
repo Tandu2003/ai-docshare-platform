@@ -409,10 +409,11 @@ export default function SystemSettingsPage() {
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label className="text-base font-medium">
-                  Chi phí tải xuống
+                  Chi phí tải xuống (mặc định)
                 </Label>
                 <p className="text-muted-foreground text-sm">
-                  Số điểm cần thiết để tải xuống tài liệu
+                  Số điểm mặc định khi tải tài liệu. Người tải trả bao nhiêu =
+                  Uploader nhận bấy nhiêu.
                 </p>
               </div>
 
@@ -434,19 +435,35 @@ export default function SystemSettingsPage() {
                   <span className="text-muted-foreground text-sm">điểm</span>
                 </div>
                 <p className="text-muted-foreground text-xs">
-                  Khuyến nghị: 1-5 điểm
+                  Khuyến nghị: 1-5 điểm. Uploader có thể đặt giá riêng cho từng
+                  tài liệu.
                 </p>
               </div>
             </div>
 
             {/* Info Box */}
             <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="mb-2 font-medium">ℹ️ Lưu ý</h4>
+              <h4 className="mb-2 font-medium">ℹ️ Cách thức hoạt động</h4>
               <ul className="text-muted-foreground space-y-1 text-sm">
-                <li>• Điểm thưởng khuyến khích người dùng đóng góp tài liệu</li>
-                <li>• Chi phí tải xuống giúp đảm bảo tài liệu có giá trị</li>
                 <li>
-                  • Cân bằng hai giá trị này để tạo hệ sinh thái lành mạnh
+                  • <strong>Điểm thưởng upload:</strong> Người dùng nhận điểm
+                  khi tải lên tài liệu mới
+                </li>
+                <li>
+                  • <strong>Chi phí tải xuống = Điểm uploader nhận:</strong>{' '}
+                  Người tải trả bao nhiêu điểm thì người upload nhận bấy nhiêu
+                </li>
+                <li>
+                  • <strong>Tải lại miễn phí:</strong> Sau khi đã tải thành
+                  công, các lần tải sau không mất điểm
+                </li>
+                <li>
+                  • <strong>Uploader tùy chỉnh:</strong> Uploader có thể đặt giá
+                  riêng cho tài liệu của mình
+                </li>
+                <li>
+                  • <strong>Tính chính xác:</strong> Chỉ tính điểm khi file được
+                  tải hoàn tất thực sự
                 </li>
               </ul>
             </div>

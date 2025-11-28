@@ -60,6 +60,7 @@ interface DocumentData {
   isPublic: boolean;
   language: string;
   tags: string[];
+  downloadCost?: number | null; // null = use system default
 }
 
 interface AIAnalysisState {
@@ -80,6 +81,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     language: 'en',
     tags: [],
     categoryId: undefined,
+    downloadCost: null, // null = use system default
   });
   const [userEditedLanguage, setUserEditedLanguage] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -478,6 +480,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         isPublic: uploadData.isPublic,
         tags: uploadData.tags,
         language: uploadData.language,
+        downloadCost: uploadData.downloadCost,
       };
 
       const document = await DocumentsService.createDocument(documentData);
@@ -492,6 +495,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         language: 'en',
         tags: [],
         categoryId: undefined,
+        downloadCost: null,
       });
       setAiAnalysis({ isAnalyzing: false, analysisResult: null, error: null });
       setUserEditedLanguage(false);
@@ -921,6 +925,48 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               nhập
             </p>
           </div>
+        </div>
+
+        {/* Download Cost Setting */}
+        <div className="space-y-2">
+          <Label htmlFor="downloadCost">Điểm tải xuống (tùy chọn)</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="downloadCost"
+              type="number"
+              min={0}
+              value={uploadData.downloadCost ?? ''}
+              onChange={e => {
+                const value = e.target.value;
+                setUploadData((prev: DocumentData) => ({
+                  ...prev,
+                  downloadCost: value === '' ? null : parseInt(value, 10),
+                }));
+              }}
+              placeholder="Để trống = dùng mặc định hệ thống"
+              className="w-80"
+            />
+            {uploadData.downloadCost !== null && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setUploadData((prev: DocumentData) => ({
+                    ...prev,
+                    downloadCost: null,
+                  }))
+                }
+                className="text-xs"
+              >
+                Đặt lại mặc định
+              </Button>
+            )}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Số điểm người dùng cần để tải tài liệu này. Để trống sẽ dùng cài đặt
+            mặc định của admin.
+          </p>
         </div>
 
         {/* Create Document Button */}

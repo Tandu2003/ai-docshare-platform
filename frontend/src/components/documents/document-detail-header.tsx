@@ -3,8 +3,10 @@ import {
   Bookmark,
   BookmarkCheck,
   Bot,
+  Check,
   Download,
   Eye,
+  RefreshCw,
   Share2,
   Star,
   User,
@@ -32,6 +34,9 @@ interface DocumentDetailHeaderProps {
   isBookmarked?: boolean;
   isBookmarking?: boolean;
   isRatingLoading?: boolean;
+  hasDownloaded?: boolean; // Whether user has already downloaded this document successfully
+  isCheckingDownloadStatus?: boolean;
+  isOwner?: boolean; // Whether current user is the document owner
 }
 
 export function DocumentDetailHeader({
@@ -44,6 +49,9 @@ export function DocumentDetailHeader({
   isBookmarked = false,
   isBookmarking = false,
   isRatingLoading = false,
+  hasDownloaded = false,
+  isCheckingDownloadStatus = false,
+  isOwner = false,
 }: DocumentDetailHeaderProps) {
   return (
     <div className="space-y-6">
@@ -163,15 +171,36 @@ export function DocumentDetailHeader({
                   <Button
                     onClick={onDownload}
                     className="flex items-center gap-2"
+                    disabled={isCheckingDownloadStatus}
                   >
-                    <Download className="h-4 w-4" />
-                    Tải xuống
-                    {document.downloadCost !== undefined &&
-                      document.downloadCost > 0 && (
-                        <span className="ml-1 text-xs">
-                          ({document.downloadCost} điểm)
+                    {isCheckingDownloadStatus ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : hasDownloaded && !isOwner ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isOwner ? (
+                      // Owner: just show "Tải xuống" without price
+                      'Tải xuống'
+                    ) : hasDownloaded ? (
+                      <>
+                        Tải lại
+                        <span className="ml-1 text-xs text-green-300">
+                          (Miễn phí)
                         </span>
-                      )}
+                      </>
+                    ) : (
+                      <>
+                        Tải xuống
+                        {document.downloadCost !== undefined &&
+                          document.downloadCost > 0 && (
+                            <span className="ml-1 text-xs">
+                              ({document.downloadCost} điểm)
+                            </span>
+                          )}
+                      </>
+                    )}
                   </Button>
                 </DocumentPermissionGate>
 

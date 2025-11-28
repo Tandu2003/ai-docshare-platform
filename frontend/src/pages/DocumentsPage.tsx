@@ -51,9 +51,13 @@ export default function DocumentsPage() {
     parseFiltersFromUrl(searchParams),
   );
 
+  // Use ref to store filters for fetchDocuments to avoid dependency issues
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
   const fetchDocuments = useCallback(
     async (pageNum = 1, reset = false, currentFilters?: SearchFilters) => {
-      const activeFilters = currentFilters || filters;
+      const activeFilters = currentFilters || filtersRef.current;
       if (reset) {
         setLoading(true);
       }
@@ -115,7 +119,7 @@ export default function DocumentsPage() {
         setLoading(false);
       }
     },
-    [filters],
+    [],
   );
 
   const handleLoadMore = () => {
@@ -127,6 +131,7 @@ export default function DocumentsPage() {
   const handleSearch = useCallback(
     (nextFilters: SearchFilters) => {
       setPage(1);
+      setFilters(nextFilters);
       // Mark that we're updating URL programmatically
       isUpdatingUrl.current = true;
       // Update URL with new filters
@@ -149,7 +154,8 @@ export default function DocumentsPage() {
     // Refetch documents when URL changes (e.g., browser back/forward)
     setPage(1);
     fetchDocuments(1, true, urlFilters);
-  }, [searchParams, fetchDocuments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Removed separate mount effect - URL sync effect handles initial load
 

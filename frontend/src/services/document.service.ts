@@ -42,6 +42,7 @@ export interface DocumentView {
   viewCount: number;
   downloadCount: number;
   downloadCost?: number; // Points cost to download this document
+  hasDownloaded?: boolean; // Whether current user has already downloaded this document
   averageRating: number;
   totalRatings: number;
   createdAt: string;
@@ -309,7 +310,95 @@ export const getDownloadUrl = async (
 };
 
 /**
- * Track download completion
+ * Initialize a download - creates pending record, deducts points if needed
+ * Returns downloadId that must be used to confirm the download later
+ */
+export const initDownload = async (
+  documentId: string,
+): Promise<{ downloadId: string; alreadyDownloaded: boolean }> => {
+  try {
+    console.log('Initializing download for document:', documentId);
+
+    const response = await apiClient.post<{
+      downloadId: string;
+      alreadyDownloaded: boolean;
+    }>(`/documents/${documentId}/init-download`, {
+      ipAddress: '',
+      userAgent: navigator.userAgent,
+      referrer: window.location.href,
+    });
+
+    if (response?.success && response?.data) {
+      console.log('Download initialized:', response.data);
+      return response.data;
+    }
+
+    throw new Error(response.message || 'Không thể khởi tạo tải xuống');
+  } catch (error: any) {
+    console.error('Failed to initialize download:', error);
+    throw new Error(
+      error.response?.data?.message || 'Không thể khởi tạo tải xuống.',
+    );
+  }
+};
+
+/**
+ * Confirm a download - marks as successful, deducts points, increments count
+ * Call this AFTER the file has been successfully downloaded
+ */
+export const confirmDownload = async (
+  downloadId: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    console.log('Confirming download:', downloadId);
+
+    const response = await apiClient.post<{
+      success: boolean;
+      message: string;
+    }>(`/documents/confirm-download/${downloadId}`);
+
+    if (response?.success) {
+      console.log('Download confirmed successfully:', response.data);
+      return response.data || { success: true, message: 'OK' };
+    }
+
+    // API returned success=false
+    console.warn('Download confirmation failed:', response.message);
+    return { success: false, message: response.message || 'Xác nhận thất bại' };
+  } catch (error: any) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      'Không thể xác nhận tải xuống';
+    console.error('Failed to confirm download:', errorMessage, error);
+    // Return failure info but don't throw - file is already downloaded
+    return { success: false, message: errorMessage };
+  }
+};
+
+/**
+ * Cancel a pending download - call if download fails
+ */
+export const cancelDownload = async (
+  downloadId: string,
+): Promise<{ success: boolean }> => {
+  try {
+    console.log('Cancelling download:', downloadId);
+
+    const response = await apiClient.post<{ success: boolean }>(
+      `/documents/cancel-download/${downloadId}`,
+    );
+
+    return response.data || { success: true };
+  } catch (error: any) {
+    console.error('Failed to cancel download:', error);
+    return { success: false };
+  }
+};
+
+/**
+ * Track download completion (Legacy - uses new init+confirm internally)
+ * @deprecated Use initDownload + confirmDownload for better tracking
  */
 export const trackDownloadCompletion = async (
   documentId: string,
@@ -464,16 +553,69 @@ export const trackDocumentView = async (
 };
 
 /**
- * Trigger actual file download in browser with proper tracking
+ * Check if user has already downloaded a document successfully
+ */
+export const checkDownloadStatus = async (
+  documentId: string,
+): Promise<{ hasDownloaded: boolean }> => {
+  try {
+    const response = await apiClient.get<{ hasDownloaded: boolean }>(
+      `/points/download-status/${documentId}`,
+    );
+
+    console.log('Download status response:', response);
+
+    // Handle both response formats:
+    // 1. Direct data: { hasDownloaded: boolean }
+    // 2. ApiResponse: { success, data: { hasDownloaded }, message }
+    const responseAny = response as any;
+
+    // Check direct hasDownloaded (some endpoints return data directly)
+    if (typeof responseAny?.hasDownloaded === 'boolean') {
+      return { hasDownloaded: responseAny.hasDownloaded };
+    }
+
+    // Check nested data structure (standard ApiResponse)
+    if (
+      responseAny?.data &&
+      typeof responseAny.data.hasDownloaded === 'boolean'
+    ) {
+      return { hasDownloaded: responseAny.data.hasDownloaded };
+    }
+
+    return { hasDownloaded: false };
+  } catch (error) {
+    console.error('Error checking download status:', error);
+    return { hasDownloaded: false };
+  }
+};
+
+/**
+ * Trigger actual file download in browser with proper 2-step tracking
+ * Step 1: initDownload - creates pending download record
+ * Step 2: confirmDownload - marks download as successful, deducts points, increments counter
+ * On failure: cancelDownload - marks download as failed for audit
+ *
+ * @returns Object with confirmed status - true only if download was fully confirmed
  */
 export const triggerFileDownload = async (
   documentId: string,
   documentTitle?: string,
-): Promise<void> => {
+): Promise<{ confirmed: boolean; message: string }> => {
+  let downloadId: string | null = null;
+
   try {
     console.log('Starting download for document:', documentId);
 
-    // Step 1: Get download URL without tracking
+    // Step 1: Initialize download tracking (creates pending record, deducts points)
+    const initResult = await initDownload(documentId);
+    downloadId = initResult.downloadId;
+    console.log('Download initialized:', {
+      downloadId,
+      alreadyDownloaded: initResult.alreadyDownloaded,
+    });
+
+    // Step 2: Get download URL
     const downloadData = await getDownloadUrl(documentId);
     console.log('Download data received:', downloadData);
 
@@ -523,11 +665,7 @@ export const triggerFileDownload = async (
         throw new Error('Tệp tải xuống trống');
       }
 
-      // Step 2: Track download completion since we successfully got the file
-      console.log('File downloaded successfully, tracking completion...');
-      await trackDownloadCompletion(documentId);
-
-      // Create blob URL and download
+      // Create blob URL and trigger download
       const blobUrl = window.URL.createObjectURL(blob);
       console.log('Blob URL created:', blobUrl);
 
@@ -548,8 +686,22 @@ export const triggerFileDownload = async (
       // Clean up blob URL
       window.URL.revokeObjectURL(blobUrl);
 
-      console.log(`Successfully downloaded ${fileName}`);
-      return;
+      // Step 3: Confirm download completion AFTER successful file transfer
+      // At this point, the file has been successfully fetched and saved to browser
+      console.log('Download successful, confirming completion...');
+      if (downloadId) {
+        const confirmResult = await confirmDownload(downloadId);
+        console.log(`Download confirmed: ${confirmResult.success}`);
+        return {
+          confirmed: confirmResult.success,
+          message: confirmResult.success
+            ? 'Đã tải xuống tài liệu thành công'
+            : confirmResult.message || 'Không thể xác nhận tải xuống',
+        };
+      }
+
+      console.log(`Downloaded ${fileName} but no downloadId to confirm`);
+      return { confirmed: false, message: 'Không có downloadId để xác nhận' };
     } catch (fetchError) {
       console.log('Blob method failed, trying direct download:', fetchError);
 
@@ -560,9 +712,20 @@ export const triggerFileDownload = async (
         if (newWindow) {
           console.log('Successfully opened download in new window');
 
-          // Track download completion for direct download
-          await trackDownloadCompletion(documentId);
-          return;
+          // Confirm download after window opened successfully
+          if (downloadId) {
+            const confirmResult = await confirmDownload(downloadId);
+            return {
+              confirmed: confirmResult.success,
+              message: confirmResult.success
+                ? 'Đã tải xuống tài liệu thành công'
+                : confirmResult.message || 'Không thể xác nhận tải xuống',
+            };
+          }
+          return {
+            confirmed: false,
+            message: 'Không có downloadId để xác nhận',
+          };
         } else {
           console.log('Window.open was blocked, trying direct link');
         }
@@ -588,13 +751,36 @@ export const triggerFileDownload = async (
       link.click();
       document.body.removeChild(link);
 
-      // Track download completion for direct link click
-      await trackDownloadCompletion(documentId);
+      // Confirm download after link click (best effort for fallback method)
+      if (downloadId) {
+        const confirmResult = await confirmDownload(downloadId);
+        console.log(`Attempted direct download of ${fileName}`);
+        return {
+          confirmed: confirmResult.success,
+          message: confirmResult.success
+            ? 'Đã tải xuống tài liệu thành công'
+            : confirmResult.message || 'Không thể xác nhận tải xuống',
+        };
+      }
 
-      console.log(`Attempted direct download of ${fileName}`);
+      console.log(
+        `Attempted direct download of ${fileName} without confirmation`,
+      );
+      return { confirmed: false, message: 'Không có downloadId để xác nhận' };
     }
   } catch (error) {
     console.error('Không thể tải xuống tài liệu', error);
+
+    // Cancel the pending download record if initialization succeeded but download failed
+    if (downloadId) {
+      console.log('Cancelling failed download:', downloadId);
+      try {
+        await cancelDownload(downloadId);
+      } catch (cancelError) {
+        console.error('Failed to cancel download:', cancelError);
+      }
+    }
+
     throw error;
   }
 };

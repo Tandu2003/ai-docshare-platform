@@ -1,9 +1,11 @@
 import {
   IsArray,
   IsBoolean,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 
 export class CreateDocumentDto {
@@ -34,6 +36,11 @@ export class CreateDocumentDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  downloadCost?: number; // Custom download cost (null = use system default)
 
   @IsOptional()
   @IsBoolean()

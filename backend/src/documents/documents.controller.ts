@@ -10,6 +10,7 @@ import { DownloadDocumentDto } from './dto/download-document.dto';
 import { SetRatingDto } from './dto/set-rating.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
 import { RoleGuard } from '@/common/authorization';
 import {
@@ -21,6 +22,7 @@ import {
   HttpStatus,
   Logger,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -222,8 +224,163 @@ export class DocumentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(':documentId/init-download')
+  @ApiOperation({
+    summary: 'Initialize a download',
+    description:
+      'Creates a pending download record. Call this BEFORE starting the actual download. Returns a downloadId that must be used to confirm the download later.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download đã được khởi tạo',
+  })
+  async initDownload(
+    @Param('documentId') documentId: string,
+    @Body() downloadDto: DownloadDocumentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+
+      // Extract IP address from request
+      let ipAddress =
+        downloadDto.ipAddress ||
+        req.ip ||
+        req.connection?.remoteAddress ||
+        req.socket?.remoteAddress ||
+        'unknown';
+
+      if (ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+
+      const userAgent =
+        downloadDto.userAgent || req.get('User-Agent') || 'unknown';
+      const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
+
+      this.logger.log(
+        `Init download for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
+      );
+
+      const result = await this.documentsService.initDownload(
+        documentId,
+        userId,
+        ipAddress,
+        userAgent,
+        referrer,
+      );
+
+      return ResponseHelper.success(res, result, 'Download đã được khởi tạo');
+    } catch (error) {
+      this.logger.error(
+        `Error initializing download for document ${documentId}:`,
+        error,
+      );
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể khởi tạo download',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('confirm-download/:downloadId')
+  @ApiOperation({
+    summary: 'Confirm a download',
+    description:
+      'Confirms that a download has completed successfully. Call this AFTER the file has been downloaded. This increments the download count.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download đã được xác nhận',
+  })
+  async confirmDownload(
+    @Param('downloadId') downloadId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+
+      this.logger.log(`Confirming download ${downloadId} from user ${userId}`);
+
+      const result = await this.documentsService.confirmDownload(
+        downloadId,
+        userId,
+      );
+
+      return ResponseHelper.success(res, result, result.message);
+    } catch (error) {
+      this.logger.error(`Error confirming download ${downloadId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể xác nhận download',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('cancel-download/:downloadId')
+  @ApiOperation({
+    summary: 'Cancel a pending download',
+    description:
+      'Cancels a pending download. Call this if the download fails or is cancelled by the user.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download đã được hủy',
+  })
+  async cancelDownload(
+    @Param('downloadId') downloadId: string,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+
+      this.logger.log(`Cancelling download ${downloadId} from user ${userId}`);
+
+      const result = await this.documentsService.cancelDownload(
+        downloadId,
+        userId,
+      );
+
+      return ResponseHelper.success(res, result, 'Download đã được hủy');
+    } catch (error) {
+      this.logger.error(`Error cancelling download ${downloadId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể hủy download',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':documentId/track-download')
-  @ApiOperation({ summary: 'Track download completion' })
+  @ApiOperation({
+    summary: 'Track download completion (Legacy)',
+    description:
+      'Legacy endpoint. Use init-download + confirm-download for better tracking.',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Download đã được track thành công',
@@ -255,15 +412,22 @@ export class DocumentsController {
       const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
 
       this.logger.log(
-        `Tracking download completion for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
+        `Legacy track download for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
       );
 
-      await this.documentsService.trackDownload(
+      // Use the new two-step process internally
+      const initResult = await this.documentsService.initDownload(
         documentId,
         userId,
         ipAddress,
         userAgent,
         referrer,
+      );
+
+      // Immediately confirm the download (legacy behavior)
+      await this.documentsService.confirmDownload(
+        initResult.downloadId,
+        userId,
       );
 
       return ResponseHelper.success(
@@ -284,6 +448,133 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể track download',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Streaming download endpoint - streams file directly and tracks download via res.finish event
+   * This is the recommended way to track downloads as it ensures the file was actually received by the client
+   *
+   * Flow:
+   * 1. Validate permissions and deduct points (if applicable)
+   * 2. Create pending download record
+   * 3. Stream file to client
+   * 4. On res.finish: mark download as successful, award uploader points
+   * 5. On error/abort: mark download as failed
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get(':documentId/stream')
+  @ApiOperation({
+    summary: 'Stream download a document file',
+    description:
+      'Streams the document file directly to the client. Download is only counted when the stream completes successfully (res.finish). This prevents fake download counts and ensures fair point rewards.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'File streamed successfully',
+  })
+  async streamDownload(
+    @Param('documentId') documentId: string,
+    @Query('apiKey') apiKey: string | undefined,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // Extract request metadata
+      let ipAddress =
+        req.ip ||
+        req.connection?.remoteAddress ||
+        req.socket?.remoteAddress ||
+        'unknown';
+      if (ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+      const userAgent = req.get('User-Agent') || 'unknown';
+      const referrer = req.get('Referer') || 'unknown';
+
+      this.logger.log(
+        `Streaming download request for document ${documentId} from user ${userId}`,
+      );
+
+      // Prepare streaming download (validates permissions, deducts points, creates download record)
+      const streamData = await this.documentsService.prepareStreamingDownload(
+        documentId,
+        userId,
+        ipAddress,
+        userAgent,
+        referrer,
+        apiKey,
+      );
+
+      // Set response headers for file download
+      res.setHeader('Content-Type', streamData.mimeType);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(streamData.fileName)}"`,
+      );
+      res.setHeader('Content-Length', streamData.fileSize);
+      res.setHeader('X-Download-Id', streamData.downloadId);
+
+      // Track when stream completes successfully (all bytes sent to client)
+      res.on('finish', async () => {
+        this.logger.log(
+          `res.finish triggered for download ${streamData.downloadId}`,
+        );
+        await streamData.onStreamComplete();
+      });
+
+      // Track when stream is closed prematurely (client disconnected, network error, etc.)
+      res.on('close', async () => {
+        if (!res.writableEnded) {
+          // Stream was aborted before completion
+          this.logger.log(
+            `res.close (aborted) triggered for download ${streamData.downloadId}`,
+          );
+          await streamData.onStreamError();
+        }
+      });
+
+      // Handle stream errors
+      streamData.fileStream.on('error', async error => {
+        this.logger.error(
+          `Stream error for download ${streamData.downloadId}: ${error.message}`,
+        );
+        await streamData.onStreamError();
+        if (!res.headersSent) {
+          return ResponseHelper.error(
+            res,
+            'Lỗi khi stream file',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+      });
+
+      // Pipe the file stream to response
+      streamData.fileStream.pipe(res);
+    } catch (error) {
+      this.logger.error(
+        `Error streaming download for document ${documentId}:`,
+        error,
+      );
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể tải xuống tài liệu',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -1007,6 +1298,58 @@ export class DocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể xóa tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Patch(':documentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update a document (owner or admin only)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Tài liệu đã được cập nhật thành công',
+  })
+  async updateDocument(
+    @Param('documentId') documentId: string,
+    @Body() updateDocumentDto: UpdateDocumentDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      const userRole = req.user?.role?.name;
+
+      if (!userId) {
+        return ResponseHelper.error(
+          res,
+          'Không được ủy quyền',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const updatedDocument = await this.documentsService.updateDocument(
+        documentId,
+        userId,
+        updateDocumentDto,
+        userRole,
+      );
+
+      return ResponseHelper.success(
+        res,
+        updatedDocument,
+        'Tài liệu đã được cập nhật thành công',
+      );
+    } catch (error) {
+      this.logger.error(`Error updating document ${documentId}:`, error);
+
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể cập nhật tài liệu',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

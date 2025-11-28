@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   Bot,
+  Check,
   Download,
   ExternalLink,
   Eye,
@@ -19,7 +20,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useAuth } from '@/hooks';
 import {
+  checkDownloadStatus,
   trackDocumentView,
   triggerFileDownload,
 } from '@/services/document.service';
@@ -36,19 +39,64 @@ interface DocumentCardProps {
 
 const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [localDownloadCount, setLocalDownloadCount] = useState(
+    document.downloadCount || 0,
+  );
+
+  // Check if current user is the owner
+  const isOwner = user?.id === document.uploader?.id;
 
   const statusInfo = getDocumentStatusInfo(
     document.isApproved,
     document.moderationStatus,
   );
 
+  // Check if user has already downloaded this document
+  useEffect(() => {
+    const fetchDownloadStatus = async () => {
+      if (!document.id || !user) {
+        setHasDownloaded(false);
+        return;
+      }
+
+      try {
+        const { hasDownloaded: downloaded } = await checkDownloadStatus(
+          document.id,
+        );
+        setHasDownloaded(downloaded);
+      } catch (error) {
+        console.error('Failed to check download status', error);
+        setHasDownloaded(false);
+      }
+    };
+
+    void fetchDownloadStatus();
+  }, [document.id, user]);
+
   const onDownload = async () => {
     if (isDownloading) return;
 
+    // Track if this is a first-time download (for updating count)
+    const isFirstDownload = !hasDownloaded && !isOwner;
+
     try {
       setIsDownloading(true);
-      await triggerFileDownload(document.id, document.title);
+      const result = await triggerFileDownload(document.id, document.title);
+
+      // Silently update state if download was confirmed
+      // No notification - file has been fetched, user decides to save or not
+      if (result.confirmed) {
+        setHasDownloaded(true);
+
+        // Update download count in UI if this was a first-time download by non-owner
+        // Backend has already incremented the count in database
+        if (isFirstDownload) {
+          setLocalDownloadCount(prev => prev + 1);
+        }
+      }
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -130,7 +178,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
           </div>
           <div className="flex items-center">
             <Download className="mr-2 h-4 w-4" />
-            <span>{document.downloadCount || 0} downloads</span>
+            <span>{localDownloadCount} downloads</span>
           </div>
         </div>
       </CardContent>
@@ -150,11 +198,19 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="sm" onClick={onDownload} disabled={isDownloading}>
-                <Download
-                  className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
-                />
+                {hasDownloaded ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Download
+                    className={`h-4 w-4 ${isDownloading ? 'animate-spin' : ''}`}
+                  />
+                )}
                 {isDownloading ? (
                   <span className="ml-2">Đang tải xuống...</span>
+                ) : hasDownloaded ? (
+                  <span className="ml-2 text-green-600">
+                    Tải lại (Miễn phí)
+                  </span>
                 ) : document.downloadCost !== undefined &&
                   document.downloadCost > 0 ? (
                   <span className="ml-2">{document.downloadCost} điểm</span>
@@ -166,10 +222,12 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
               <p>
                 {isDownloading
                   ? 'Đang chuẩn bị tải xuống...'
-                  : document.downloadCost !== undefined &&
-                      document.downloadCost > 0
-                    ? `Tải xuống (${document.downloadCost} điểm)`
-                    : 'Tải xuống tất cả'}
+                  : hasDownloaded
+                    ? 'Bạn đã tải tài liệu này - Tải lại miễn phí!'
+                    : document.downloadCost !== undefined &&
+                        document.downloadCost > 0
+                      ? `Tải xuống (${document.downloadCost} điểm)`
+                      : 'Tải xuống tất cả'}
               </p>
             </TooltipContent>
           </Tooltip>

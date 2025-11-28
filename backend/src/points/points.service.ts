@@ -1,10 +1,12 @@
 import { SystemSettingsService } from '../common/system-settings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Document, PointTxnReason, PointTxnType } from '@prisma/client';
 
 @Injectable()
 export class PointsService {
+  private readonly logger = new Logger(PointsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly systemSettings: SystemSettingsService,
@@ -182,5 +184,129 @@ export class PointsService {
       });
       return { balance: updated.pointsBalance };
     });
+  }
+
+  /**
+   * Award points to document uploader when someone successfully downloads their document.
+   * This should only be called once per unique (downloaderId, documentId) pair.
+   *
+   * The reward equals the document's downloadCost (or system default if not set).
+   * This way, uploader receives exactly what the downloader paid.
+   *
+   * Flow:
+   * 1. Check if this downloader has already triggered a reward for this document
+   * 2. If not, award points to the uploader equal to the document's downloadCost
+   * 3. Mark the download as rewarded to prevent double rewards
+   *
+   * @param uploaderId - The user who uploaded the document (receives the reward)
+   * @param documentId - The document being downloaded
+   * @param downloaderId - The user who downloaded the document
+   * @param downloadId - The download record ID to mark as rewarded
+   * @param downloadCost - The actual cost paid by downloader (document.downloadCost or system default)
+   */
+  async awardUploaderOnDownload(
+    uploaderId: string,
+    documentId: string,
+    downloaderId: string,
+    downloadId: string,
+    downloadCost: number,
+  ) {
+    try {
+      // Don't reward if uploader downloads their own document
+      if (uploaderId === downloaderId) {
+        this.logger.log(
+          `Skipping reward: uploader ${uploaderId} downloaded their own document`,
+        );
+        return null;
+      }
+
+      // Reward = what the downloader paid
+      const reward = downloadCost;
+
+      if (reward <= 0) {
+        this.logger.log('Download cost is 0, skipping reward');
+        return null;
+      }
+
+      return this.prisma.$transaction(async tx => {
+        // Check if this user has already generated a reward for this document
+        // (prevents spam clicking from generating multiple rewards)
+        const existingRewardedDownload = await tx.download.findFirst({
+          where: {
+            documentId,
+            userId: downloaderId,
+            success: true,
+            uploaderRewarded: true,
+          },
+        });
+
+        if (existingRewardedDownload) {
+          this.logger.log(
+            `User ${downloaderId} has already generated a reward for document ${documentId}, skipping`,
+          );
+          // Still mark this download as successful but not rewarded (it was already rewarded before)
+          await tx.download.update({
+            where: { id: downloadId },
+            data: { success: true, uploaderRewarded: false },
+          });
+          return null;
+        }
+
+        // Award points to uploader
+        const updatedUploader = await tx.user.update({
+          where: { id: uploaderId },
+          data: { pointsBalance: { increment: reward } },
+          select: { pointsBalance: true },
+        });
+
+        // Create transaction record
+        await tx.pointTransaction.create({
+          data: {
+            userId: uploaderId,
+            documentId,
+            amount: reward,
+            type: PointTxnType.EARN,
+            reason: PointTxnReason.DOWNLOAD_REWARD,
+            balanceAfter: updatedUploader.pointsBalance,
+            note: `Download reward: +${reward} points from user ${downloaderId}`,
+          },
+        });
+
+        // Mark download as successful and rewarded
+        await tx.download.update({
+          where: { id: downloadId },
+          data: { success: true, uploaderRewarded: true },
+        });
+
+        this.logger.log(
+          `Awarded ${reward} points to uploader ${uploaderId} for download by ${downloaderId} on document ${documentId}`,
+        );
+
+        return { balance: updatedUploader.pointsBalance };
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error awarding uploader ${uploaderId} for download: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a user has already successfully downloaded a document
+   * (to determine if they should be charged again or get free re-download)
+   */
+  async hasSuccessfulDownload(
+    userId: string,
+    documentId: string,
+  ): Promise<boolean> {
+    const existingDownload = await this.prisma.download.findFirst({
+      where: {
+        userId,
+        documentId,
+        success: true,
+      },
+    });
+    return !!existingDownload;
   }
 }
