@@ -162,9 +162,11 @@ export function DocumentComments({
                 variant="ghost"
                 size="sm"
                 onClick={() => onLikeComment(comment.id)}
-                className="flex items-center space-x-1"
+                className={`flex items-center space-x-1 ${comment.isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
               >
-                <Heart className="h-3 w-3" />
+                <Heart
+                  className={`h-3 w-3 ${comment.isLiked ? 'fill-current' : ''}`}
+                />
                 <span>{comment.likesCount}</span>
               </Button>
               {!isReply && (

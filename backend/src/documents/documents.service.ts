@@ -429,7 +429,7 @@ export class DocumentsService {
   /**
    * Comments: list for a document
    */
-  async getComments(documentId: string) {
+  async getComments(documentId: string, userId?: string) {
     try {
       const comments = await this.prisma.comment.findMany({
         where: { documentId, isDeleted: false },
@@ -443,6 +443,12 @@ export class DocumentsService {
               avatar: true,
             },
           },
+          likes: userId
+            ? {
+                where: { userId },
+                select: { userId: true },
+              }
+            : false,
           replies: {
             where: { isDeleted: false },
             include: {
@@ -455,13 +461,27 @@ export class DocumentsService {
                   avatar: true,
                 },
               },
+              likes: userId
+                ? {
+                    where: { userId },
+                    select: { userId: true },
+                  }
+                : false,
             },
           },
         },
         orderBy: { createdAt: 'asc' },
       });
 
-      return comments;
+      // Transform to add isLiked field
+      const transformComment = (comment: any) => ({
+        ...comment,
+        isLiked: userId ? comment.likes?.length > 0 : false,
+        likes: undefined,
+        replies: comment.replies?.map(transformComment),
+      });
+
+      return comments.map(transformComment);
     } catch (error) {
       this.logger.error(
         `Error getting comments for document ${documentId}:`,
@@ -480,13 +500,22 @@ export class DocumentsService {
     dto: { content: string; parentId?: string },
   ) {
     try {
-      // ensure document exists
-      const exists = await this.prisma.document.findUnique({
+      // ensure document exists and get uploader info
+      const document = await this.prisma.document.findUnique({
         where: { id: documentId },
-        select: { id: true },
+        select: { id: true, title: true, uploaderId: true },
       });
-      if (!exists) {
+      if (!document) {
         throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      // If this is a reply, get parent comment info
+      let parentComment: { id: string; userId: string } | null = null;
+      if (dto.parentId) {
+        parentComment = await this.prisma.comment.findUnique({
+          where: { id: dto.parentId },
+          select: { id: true, userId: true },
+        });
       }
 
       const comment = await this.prisma.comment.create({
@@ -509,7 +538,68 @@ export class DocumentsService {
         },
       });
 
-      return comment;
+      const commenterName =
+        comment.user.firstName && comment.user.lastName
+          ? `${comment.user.firstName} ${comment.user.lastName}`
+          : comment.user.username;
+
+      const truncatedContent =
+        comment.content.length > 100
+          ? comment.content.substring(0, 100) + '...'
+          : comment.content;
+
+      // If this is a reply, notify the parent comment owner
+      if (dto.parentId && parentComment && parentComment.userId !== userId) {
+        await this.notifications.emitToUser(parentComment.userId, {
+          type: 'reply',
+          documentId,
+          documentTitle: document.title,
+          commentId: comment.id,
+          parentCommentId: dto.parentId,
+          replierName: commenterName,
+          replierId: userId,
+          content: truncatedContent,
+        });
+
+        this.logger.log(
+          `Reply notification sent to comment owner ${parentComment.userId} for document ${documentId}`,
+        );
+      }
+
+      // Send notification to document owner if commenter is not the owner
+      // and it's not a reply to the document owner's comment (to avoid duplicate notifications)
+      const shouldNotifyDocOwner =
+        document.uploaderId &&
+        document.uploaderId !== userId &&
+        (!parentComment || parentComment.userId !== document.uploaderId);
+
+      if (shouldNotifyDocOwner) {
+        await this.notifications.emitToUser(document.uploaderId, {
+          type: 'comment',
+          documentId,
+          documentTitle: document.title,
+          commentId: comment.id,
+          commenterName,
+          commenterId: userId,
+          content: truncatedContent,
+          isReply: !!dto.parentId,
+        });
+
+        this.logger.log(
+          `Comment notification sent to document owner ${document.uploaderId} for document ${documentId}`,
+        );
+      }
+
+      // Broadcast new comment to all viewers of this document
+      const commentWithIsLiked = { ...comment, isLiked: false };
+      this.notifications.emitToDocument(documentId, {
+        type: 'new_comment',
+        documentId,
+        comment: commentWithIsLiked,
+      });
+
+      // Return comment with isLiked set to false (new comment is never liked yet)
+      return commentWithIsLiked;
     } catch (error) {
       this.logger.error(
         `Error adding comment for document ${documentId}:`,
@@ -521,27 +611,100 @@ export class DocumentsService {
   }
 
   /**
-   * Comments: like
+   * Comments: toggle like (like/unlike)
    */
   async likeComment(documentId: string, commentId: string, userId: string) {
     try {
+      // Get comment with user info and document info
       const comment = await this.prisma.comment.findFirst({
         where: { id: commentId, documentId },
+        include: {
+          user: {
+            select: { id: true },
+          },
+          document: {
+            select: { id: true, title: true },
+          },
+        },
       });
       if (!comment) throw new BadRequestException('Không tìm thấy bình luận');
 
-      // upsert like
-      await this.prisma.commentLike.upsert({
+      // Check if user already liked this comment
+      const existingLike = await this.prisma.commentLike.findUnique({
         where: { userId_commentId: { userId, commentId } },
-        update: {},
-        create: { userId, commentId },
       });
 
-      const updated = await this.prisma.comment.update({
-        where: { id: commentId },
-        data: { likesCount: { increment: 1 } },
-      });
-      return updated;
+      if (existingLike) {
+        // Unlike: remove the like
+        await this.prisma.commentLike.delete({
+          where: { userId_commentId: { userId, commentId } },
+        });
+
+        const updated = await this.prisma.comment.update({
+          where: { id: commentId },
+          data: { likesCount: { decrement: 1 } },
+        });
+
+        // Broadcast like update to all viewers
+        this.notifications.emitToDocument(documentId, {
+          type: 'comment_updated',
+          documentId,
+          commentId,
+          likesCount: updated.likesCount,
+          isLiked: false,
+          likerId: userId,
+        });
+
+        return { ...updated, isLiked: false };
+      } else {
+        // Like: create the like
+        await this.prisma.commentLike.create({
+          data: { userId, commentId },
+        });
+
+        const updated = await this.prisma.comment.update({
+          where: { id: commentId },
+          data: { likesCount: { increment: 1 } },
+        });
+
+        // Broadcast like update to all viewers
+        this.notifications.emitToDocument(documentId, {
+          type: 'comment_updated',
+          documentId,
+          commentId,
+          likesCount: updated.likesCount,
+          isLiked: true,
+          likerId: userId,
+        });
+
+        // Send notification to comment owner if liker is not the owner (only on first like)
+        if (comment.userId !== userId) {
+          const liker = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true, firstName: true, lastName: true },
+          });
+
+          const likerName =
+            liker?.firstName && liker?.lastName
+              ? `${liker.firstName} ${liker.lastName}`
+              : liker?.username || 'Người dùng';
+
+          await this.notifications.emitToUser(comment.userId, {
+            type: 'comment_like',
+            documentId,
+            documentTitle: comment.document.title,
+            commentId,
+            likerName,
+            likerId: userId,
+          });
+
+          this.logger.log(
+            `Like notification sent to comment owner ${comment.userId} for comment ${commentId}`,
+          );
+        }
+
+        return { ...updated, isLiked: true };
+      }
     } catch (error) {
       this.logger.error(`Error liking comment ${commentId}:`, error);
       if (error instanceof BadRequestException) throw error;

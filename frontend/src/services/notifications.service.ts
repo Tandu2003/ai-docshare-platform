@@ -17,3 +17,25 @@ export async function getMyNotifications(params: GetNotificationsParams = {}) {
   console.log('🔍 API response.data:', res.data);
   return res.data;
 }
+
+export async function markNotificationAsRead(notificationId: string) {
+  const res = await apiClient.patch(`/notifications/${notificationId}/read`);
+  return res.data;
+}
+
+export async function markAllNotificationsAsRead() {
+  const res = await apiClient.patch('/notifications/read-all');
+  return res.data;
+}
+
+export async function deleteNotification(notificationId: string) {
+  const res = await apiClient.delete(`/notifications/${notificationId}`);
+  return res.data;
+}
+
+export async function deleteNotifications(ids: string[]) {
+  const res = await apiClient.delete('/notifications', {
+    data: { ids },
+  });
+  return res.data;
+}

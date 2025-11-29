@@ -141,6 +141,7 @@ export interface Comment {
   isEdited: boolean;
   isDeleted: boolean;
   likesCount: number;
+  isLiked?: boolean;
   editedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -218,7 +219,17 @@ export interface RecommendationEngine {
 export interface Notification {
   id: string;
   userId: string;
-  type: 'comment' | 'rating' | 'system' | 'document_approved' | 'collaboration';
+  type:
+    | 'comment'
+    | 'rating'
+    | 'system'
+    | 'document_approved'
+    | 'collaboration'
+    | 'reply'
+    | 'comment_like'
+    | 'moderation'
+    | 'view'
+    | 'download';
   title: string;
   message: string;
   data?: Record<string, any>;

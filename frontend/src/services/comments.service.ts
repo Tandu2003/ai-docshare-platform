@@ -34,13 +34,15 @@ export class CommentsService {
   static async likeComment(
     documentId: string,
     commentId: string,
-  ): Promise<void> {
-    const response = await apiClient.post(
-      `/documents/${documentId}/comments/${commentId}/like`,
-    );
-    if (!response.success) {
+  ): Promise<{ likesCount: number; isLiked: boolean }> {
+    const response = await apiClient.post<{
+      likesCount: number;
+      isLiked: boolean;
+    }>(`/documents/${documentId}/comments/${commentId}/like`);
+    if (!response.success || !response.data) {
       throw new Error(response.message || 'Không thể thích bình luận');
     }
+    return response.data;
   }
 
   static async editComment(

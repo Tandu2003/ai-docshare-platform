@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
+import { getSocket, joinDocumentRoom, leaveDocumentRoom } from '@/lib/socket';
 import {
   createBookmark,
   deleteBookmark,
@@ -169,6 +170,135 @@ export default function DocumentDetailPage() {
     void fetchDownloadStatus();
   }, [documentId, user]);
 
+  // Realtime listener for document updates (comments, likes)
+  useEffect(() => {
+    if (!documentId) return;
+
+    let isMounted = true;
+    const socket = getSocket();
+
+    // Function to join document room
+    const joinDocumentRoomSafe = () => {
+      if (!isMounted) return;
+      console.log(
+        '🔌 Joining document room:',
+        documentId,
+        'Socket connected:',
+        socket.connected,
+        'Socket id:',
+        socket.id,
+      );
+      socket.emit('document:join', { documentId });
+    };
+
+    // If already connected, join immediately
+    if (socket.connected) {
+      console.log('🔌 Socket already connected, joining room immediately');
+      joinDocumentRoomSafe();
+    }
+
+    // Always listen for connect event (for initial connect and reconnects)
+    const handleConnect = () => {
+      console.log('🔌 Socket connect event fired, socket id:', socket.id);
+      joinDocumentRoomSafe();
+    };
+
+    socket.on('connect', handleConnect);
+
+    // Define document update event types
+    interface DocumentUpdateEvent {
+      type: 'new_comment' | 'comment_updated' | 'comment_deleted';
+      documentId: string;
+      comment?: Comment;
+      commentId?: string;
+      likesCount?: number;
+      isLiked?: boolean;
+      likerId?: string;
+    }
+
+    const handleDocumentUpdate = (event: DocumentUpdateEvent) => {
+      console.log('📄 Document update received:', event);
+
+      if (event.documentId !== documentId) return;
+
+      switch (event.type) {
+        case 'new_comment':
+          if (event.comment) {
+            // Check if this is a reply (has parentId)
+            if (event.comment.parentId) {
+              // Add reply to parent comment
+              setComments(prev =>
+                prev.map(comment =>
+                  comment.id === event.comment!.parentId
+                    ? {
+                        ...comment,
+                        replies: [...(comment.replies || []), event.comment!],
+                      }
+                    : comment,
+                ),
+              );
+            } else {
+              // Add new top-level comment
+              setComments(prev => [...prev, event.comment!]);
+            }
+          }
+          break;
+
+        case 'comment_updated':
+          if (event.commentId && event.likesCount !== undefined) {
+            // Update like count for the comment
+            // Need to handle nested replies too
+            const updateLikeCount = (comments: Comment[]): Comment[] => {
+              return comments.map(comment => {
+                if (comment.id === event.commentId) {
+                  return {
+                    ...comment,
+                    likesCount: event.likesCount!,
+                    // Only update isLiked if the current user is the one who liked/unliked
+                    isLiked:
+                      event.likerId === user?.id
+                        ? event.isLiked
+                        : comment.isLiked,
+                  };
+                }
+                if (comment.replies && comment.replies.length > 0) {
+                  return {
+                    ...comment,
+                    replies: updateLikeCount(comment.replies),
+                  };
+                }
+                return comment;
+              });
+            };
+
+            setComments(prev => updateLikeCount(prev));
+          }
+          break;
+
+        case 'comment_deleted':
+          if (event.commentId) {
+            setComments(prev =>
+              prev.filter(comment => comment.id !== event.commentId),
+            );
+          }
+          break;
+      }
+    };
+
+    socket.on('document:update', handleDocumentUpdate);
+
+    // Cleanup
+    return () => {
+      isMounted = false;
+      socket.off('connect', handleConnect);
+      socket.off('document:update', handleDocumentUpdate);
+      if (socket.connected) {
+        socket.emit('document:leave', { documentId });
+        console.log('🔌 Emitted document:leave for:', documentId);
+      }
+    };
+  }, [documentId, user?.id]);
+
   const handleDownload = async () => {
     if (!documentId) return;
 
@@ -323,21 +453,8 @@ export default function DocumentDetailPage() {
     if (!documentId) return;
 
     CommentsService.addComment(documentId, { content, parentId })
-      .then(created => {
-        if (parentId) {
-          setComments(prev =>
-            prev.map(comment =>
-              comment.id === parentId
-                ? {
-                    ...comment,
-                    replies: [...(comment.replies || []), created],
-                  }
-                : comment,
-            ),
-          );
-        } else {
-          setComments(prev => [...prev, created]);
-        }
+      .then(() => {
+        // Comment will be added via realtime event (document:update)
         toast.success('Đã thêm bình luận');
       })
       .catch(err => {
@@ -346,7 +463,7 @@ export default function DocumentDetailPage() {
       });
   };
 
-  const handleLikeComment = (commentId: string) => {
+  const handleLikeComment = async (commentId: string) => {
     if (!user) {
       toast.error('Bạn cần đăng nhập để thích bình luận');
       return;
@@ -354,17 +471,76 @@ export default function DocumentDetailPage() {
 
     if (!documentId) return;
 
+    // Helper function to update comment in nested structure
+    const updateCommentLike = (
+      comments: Comment[],
+      targetId: string,
+      likesCount: number,
+      isLiked: boolean,
+    ): Comment[] => {
+      return comments.map(comment => {
+        if (comment.id === targetId) {
+          return { ...comment, likesCount, isLiked };
+        }
+        if (comment.replies && comment.replies.length > 0) {
+          return {
+            ...comment,
+            replies: updateCommentLike(
+              comment.replies,
+              targetId,
+              likesCount,
+              isLiked,
+            ),
+          };
+        }
+        return comment;
+      });
+    };
+
+    // Optimistic update
+    const findComment = (
+      comments: Comment[],
+      targetId: string,
+    ): Comment | undefined => {
+      for (const comment of comments) {
+        if (comment.id === targetId) return comment;
+        if (comment.replies) {
+          const found = findComment(comment.replies, targetId);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+
+    const currentComment = findComment(comments, commentId);
+    const currentlyLiked = currentComment?.isLiked || false;
+    const optimisticLikesCount = currentlyLiked
+      ? (currentComment?.likesCount || 1) - 1
+      : (currentComment?.likesCount || 0) + 1;
+
     setComments(prev =>
-      prev.map(comment =>
-        comment.id === commentId
-          ? { ...comment, likesCount: comment.likesCount + 1 }
-          : comment,
-      ),
+      updateCommentLike(prev, commentId, optimisticLikesCount, !currentlyLiked),
     );
-    CommentsService.likeComment(documentId, commentId).catch(err => {
-      console.error('Failed to like comment', err);
-      toast.error('Không thể thích bình luận');
-    });
+
+    try {
+      const result = await CommentsService.likeComment(documentId, commentId);
+      // Update with actual server response
+      setComments(prev =>
+        updateCommentLike(prev, commentId, result.likesCount, result.isLiked),
+      );
+    } catch (err) {
+      console.error('Failed to toggle like comment', err);
+      toast.error('Không thể thực hiện hành động');
+      // Revert optimistic update
+      setComments(prev =>
+        updateCommentLike(
+          prev,
+          commentId,
+          currentComment?.likesCount || 0,
+          currentlyLiked,
+        ),
+      );
+    }
   };
 
   const handleEditComment = (commentId: string, content: string) => {

@@ -1,12 +1,16 @@
-import { Logger } from '@nestjs/common';
+import { Logger, OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
+  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
@@ -38,7 +42,11 @@ import { Server } from 'socket.io';
   namespace: '/realtime',
 })
 export class NotificationsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleInit
 {
   private readonly logger = new Logger(NotificationsGateway.name);
 
@@ -47,24 +55,141 @@ export class NotificationsGateway
 
   constructor(private readonly jwtService: JwtService) {}
 
-  handleConnection(socket: any) {
-    this.logger.log(`Client connected: ${socket.id}`);
-    try {
-      const token = socket.handshake?.auth?.token || null;
-      if (token) {
-        const payload: any = this.jwtService.verify(token);
-        const userId = payload?.sub || payload?.id;
-        if (userId) {
-          socket.join(`user:${userId}`);
-          this.logger.log(`Socket ${socket.id} joined room user:${userId}`);
-        }
+  onModuleInit() {
+    this.logger.log('NotificationsGateway module initialized');
+  }
+
+  afterInit(server: Server) {
+    this.logger.log('WebSocket Gateway initialized on namespace /realtime');
+    this.logger.log(`Server instance available: ${!!server}`);
+  }
+
+  handleConnection(socket: Socket) {
+    this.logger.log(
+      `Client connected: ${socket.id} from ${socket.handshake.address}`,
+    );
+    this.logger.log(
+      `Connection headers: ${JSON.stringify(socket.handshake.headers.origin)}`,
+    );
+    this.authenticateSocket(socket);
+  }
+
+  handleDisconnect(socket: Socket) {
+    this.logger.log(`Client disconnected: ${socket.id}`);
+  }
+
+  /**
+   * Handle auth update from client when token is refreshed or user logs in
+   */
+  @SubscribeMessage('auth:update')
+  handleAuthUpdate(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { token: string },
+  ): void {
+    this.logger.log(`Auth update received from socket: ${socket.id}`);
+
+    // Leave all user rooms first
+    const rooms = Array.from(socket.rooms);
+    rooms.forEach(room => {
+      if (room.startsWith('user:')) {
+        socket.leave(room);
+        this.logger.log(`Socket ${socket.id} left room ${room}`);
       }
-    } catch (error) {
-      this.logger.warn(`Socket ${socket.id} auth failed:`, error);
+    });
+
+    // Re-authenticate with new token
+    if (data.token) {
+      this.authenticateSocketWithToken(socket, data.token);
     }
   }
 
-  handleDisconnect(socket: any) {
-    this.logger.log(`Client disconnected: ${socket.id}`);
+  /**
+   * Handle ping from client for connection testing
+   */
+  @SubscribeMessage('ping')
+  handlePing(@ConnectedSocket() socket: Socket): {
+    event: string;
+    data: { timestamp: number };
+  } {
+    this.logger.debug(`Ping received from socket: ${socket.id}`);
+    return {
+      event: 'pong',
+      data: { timestamp: Date.now() },
+    };
+  }
+
+  /**
+   * Handle joining a document room for realtime updates
+   */
+  @SubscribeMessage('document:join')
+  handleDocumentJoin(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { documentId: string },
+  ): void {
+    if (data.documentId) {
+      const room = `document:${data.documentId}`;
+      socket.join(room);
+      this.logger.log(`Socket ${socket.id} joined room ${room}`);
+    }
+  }
+
+  /**
+   * Handle leaving a document room
+   */
+  @SubscribeMessage('document:leave')
+  handleDocumentLeave(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { documentId: string },
+  ): void {
+    if (data.documentId) {
+      const room = `document:${data.documentId}`;
+      socket.leave(room);
+      this.logger.log(`Socket ${socket.id} left room ${room}`);
+    }
+  }
+
+  /**
+   * Authenticate socket using token from handshake
+   */
+  private authenticateSocket(socket: Socket): void {
+    try {
+      const token = socket.handshake?.auth?.token || null;
+      if (token) {
+        this.authenticateSocketWithToken(socket, token);
+      } else {
+        this.logger.warn(`Socket ${socket.id} connected without token`);
+        socket.emit('auth:failed', { message: 'No token provided' });
+      }
+    } catch (error) {
+      this.logger.warn(`Socket ${socket.id} auth failed:`, error);
+      socket.emit('auth:failed', { message: 'Authentication failed' });
+    }
+  }
+
+  /**
+   * Authenticate socket with a specific token
+   */
+  private authenticateSocketWithToken(socket: Socket, token: string): void {
+    try {
+      const payload: any = this.jwtService.verify(token);
+      const userId = payload?.sub || payload?.id;
+
+      if (userId) {
+        socket.join(`user:${userId}`);
+        this.logger.log(`Socket ${socket.id} joined room user:${userId}`);
+        socket.emit('auth:success', { userId });
+      } else {
+        this.logger.warn(`Socket ${socket.id} token has no user ID`);
+        socket.emit('auth:failed', { message: 'Invalid token payload' });
+      }
+    } catch (error: any) {
+      this.logger.warn(
+        `Socket ${socket.id} token verification failed:`,
+        error.message,
+      );
+      socket.emit('auth:failed', {
+        message: error.message || 'Token verification failed',
+      });
+    }
   }
 }

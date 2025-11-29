@@ -1,10 +1,24 @@
+import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -17,6 +31,7 @@ export class NotificationsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   @ApiOperation({ summary: 'Get notifications for current user' })
@@ -77,6 +92,149 @@ export class NotificationsController {
       success: true,
       message: 'Test notification sent and saved to database',
       userId,
+    };
+  }
+
+  @ApiOperation({ summary: 'Get WebSocket status' })
+  @Get('ws-status')
+  async getWebSocketStatus(@Req() req: any) {
+    const userId = req.user.id;
+    const room = `user:${userId}`;
+
+    const server = this.notificationsGateway.server;
+    const allSockets = server?.sockets?.sockets;
+    const totalConnections = allSockets?.size ?? 0;
+
+    // Check sockets in user's room
+    const roomSockets = server?.sockets?.adapter?.rooms?.get(room);
+    const userConnections = roomSockets?.size ?? 0;
+
+    // Get list of rooms for debugging
+    const allRooms = server?.sockets?.adapter?.rooms
+      ? Array.from(server.sockets.adapter.rooms.keys()).filter(r =>
+          r.startsWith('user:'),
+        )
+      : [];
+
+    return {
+      success: true,
+      data: {
+        userId,
+        room,
+        totalConnections,
+        userConnections,
+        isUserConnected: userConnections > 0,
+        allUserRooms: allRooms,
+        serverAvailable: !!server,
+      },
+    };
+  }
+
+  @ApiOperation({ summary: 'Mark a notification as read' })
+  @ApiParam({ name: 'id', description: 'Notification ID' })
+  @Patch(':id/read')
+  async markAsRead(@Req() req: any, @Param('id') id: string) {
+    const userId = req.user.id as string;
+
+    const notification = await this.prisma.notification.findFirst({
+      where: { id, userId },
+    });
+
+    if (!notification) {
+      return {
+        success: false,
+        message: 'Notification not found',
+      };
+    }
+
+    await this.prisma.notification.update({
+      where: { id },
+      data: { isRead: true, readAt: new Date() },
+    });
+
+    return {
+      success: true,
+      message: 'Notification marked as read',
+    };
+  }
+
+  @ApiOperation({ summary: 'Mark all notifications as read' })
+  @Patch('read-all')
+  async markAllAsRead(@Req() req: any) {
+    const userId = req.user.id as string;
+
+    await this.prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+
+    return {
+      success: true,
+      message: 'All notifications marked as read',
+    };
+  }
+
+  @ApiOperation({ summary: 'Delete a notification' })
+  @ApiParam({ name: 'id', description: 'Notification ID' })
+  @Delete(':id')
+  async deleteNotification(@Req() req: any, @Param('id') id: string) {
+    const userId = req.user.id as string;
+
+    const notification = await this.prisma.notification.findFirst({
+      where: { id, userId },
+    });
+
+    if (!notification) {
+      return {
+        success: false,
+        message: 'Notification not found',
+      };
+    }
+
+    await this.prisma.notification.delete({
+      where: { id },
+    });
+
+    return {
+      success: true,
+      message: 'Notification deleted',
+    };
+  }
+
+  @ApiOperation({ summary: 'Delete multiple notifications' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        ids: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+    },
+  })
+  @Delete()
+  async deleteNotifications(@Req() req: any, @Body('ids') ids: string[]) {
+    const userId = req.user.id as string;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return {
+        success: false,
+        message: 'No notification IDs provided',
+      };
+    }
+
+    const result = await this.prisma.notification.deleteMany({
+      where: {
+        id: { in: ids },
+        userId,
+      },
+    });
+
+    return {
+      success: true,
+      message: `${result.count} notifications deleted`,
+      deletedCount: result.count,
     };
   }
 }

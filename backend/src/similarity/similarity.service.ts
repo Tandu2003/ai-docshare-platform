@@ -829,7 +829,8 @@ export class SimilarityService {
   }
 
   private generateEmbedding(): number[] {
-    return Array.from({ length: 1536 }, () => Math.random());
+    // Use 768 dimensions to match text-embedding-004 model
+    return Array.from({ length: 768 }, () => Math.random());
   }
 
   private calculateCosineSimilarity(vecA: number[], vecB: number[]): number {

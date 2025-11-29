@@ -832,10 +832,15 @@ export class DocumentsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Danh sách bình luận' })
   async getComments(
     @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ) {
     try {
-      const comments = await this.documentsService.getComments(documentId);
+      const userId = req.user?.id;
+      const comments = await this.documentsService.getComments(
+        documentId,
+        userId,
+      );
       return ResponseHelper.success(res, comments, 'Lấy bình luận thành công');
     } catch (error) {
       this.logger.error(

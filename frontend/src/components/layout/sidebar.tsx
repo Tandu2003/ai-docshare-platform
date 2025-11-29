@@ -105,6 +105,8 @@ export function Sidebar({ className }: SidebarProps) {
 
   // Load unread notifications count and subscribe to realtime increases
   useEffect(() => {
+    if (!user) return;
+
     const loadUnread = async () => {
       try {
         const res = await getMyNotifications({
@@ -121,13 +123,17 @@ export function Sidebar({ className }: SidebarProps) {
 
     void loadUnread();
 
+    // Subscribe to realtime notification events
     const socket = getSocket();
-    const onNotif = () => setUnreadCount(prev => prev + 1);
-    socket.on('notification', onNotif);
-    return () => {
-      socket.off('notification', onNotif);
+    const handleNotification = () => {
+      setUnreadCount(prev => prev + 1);
     };
-  }, []);
+    socket.on('notification', handleNotification);
+
+    return () => {
+      socket.off('notification', handleNotification);
+    };
+  }, [user]);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {

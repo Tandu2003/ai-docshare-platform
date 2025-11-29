@@ -1,12 +1,10 @@
-import { useEffect } from 'react';
-
 import { Provider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
-import { toast, Toaster } from 'sonner';
+import { Toaster } from 'sonner';
 
 import { AuthInitializer } from '@/components/auth';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { getSocket } from '@/lib/socket';
+import { SocketProvider } from '@/components/SocketProvider';
 
 import '@/index.css';
 
@@ -18,33 +16,13 @@ import { setStore } from '@/utils/auth.service';
 setStore(store);
 
 function App() {
-  useEffect(() => {
-    const socket = getSocket();
-    const handler = (event: any) => {
-      console.log('🔔 Received notification:', event);
-      if (event?.type === 'view') {
-        toast.info('Có lượt xem mới cho tài liệu');
-      } else if (event?.type === 'download') {
-        toast.success('Có lượt tải xuống mới cho tài liệu');
-      } else if (event?.type === 'moderation') {
-        if (event.status === 'approved') {
-          toast.success('Tài liệu của bạn đã được duyệt');
-        } else {
-          toast.error('Tài liệu của bạn đã bị từ chối');
-        }
-      }
-    };
-    socket.on('notification', handler);
-    return () => {
-      socket.off('notification', handler);
-    };
-  }, []);
-
   return (
     <ErrorBoundary>
       <Provider store={store}>
         <AuthInitializer>
-          <RouterProvider router={router} />
+          <SocketProvider>
+            <RouterProvider router={router} />
+          </SocketProvider>
           <Toaster position="top-right" richColors />
         </AuthInitializer>
       </Provider>

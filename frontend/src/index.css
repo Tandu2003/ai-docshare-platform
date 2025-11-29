@@ -121,3 +121,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  [data-sonner-toast] {
+    @apply !w-100 !max-w-100;
+  }
+}

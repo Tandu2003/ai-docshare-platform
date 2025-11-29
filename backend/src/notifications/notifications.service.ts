@@ -25,7 +25,71 @@ export interface ModerationEvent {
   reason?: string | null;
 }
 
-type NotificationEvent = ViewEvent | DownloadEvent | ModerationEvent;
+export interface CommentEvent {
+  type: 'comment';
+  documentId: string;
+  documentTitle: string;
+  commentId: string;
+  commenterName: string;
+  commenterId: string;
+  content: string;
+  isReply?: boolean;
+}
+
+export interface ReplyEvent {
+  type: 'reply';
+  documentId: string;
+  documentTitle: string;
+  commentId: string;
+  parentCommentId: string;
+  replierName: string;
+  replierId: string;
+  content: string;
+}
+
+export interface CommentLikeEvent {
+  type: 'comment_like';
+  documentId: string;
+  documentTitle: string;
+  commentId: string;
+  likerName: string;
+  likerId: string;
+}
+
+// Document realtime events (broadcast to all viewers)
+export interface NewCommentEvent {
+  type: 'new_comment';
+  documentId: string;
+  comment: any; // Full comment object
+}
+
+export interface CommentUpdatedEvent {
+  type: 'comment_updated';
+  documentId: string;
+  commentId: string;
+  likesCount: number;
+  isLiked?: boolean;
+  likerId?: string;
+}
+
+export interface CommentDeletedEvent {
+  type: 'comment_deleted';
+  documentId: string;
+  commentId: string;
+}
+
+type NotificationEvent =
+  | ViewEvent
+  | DownloadEvent
+  | ModerationEvent
+  | CommentEvent
+  | ReplyEvent
+  | CommentLikeEvent;
+
+type DocumentRealtimeEvent =
+  | NewCommentEvent
+  | CommentUpdatedEvent
+  | CommentDeletedEvent;
 
 @Injectable()
 export class NotificationsService {
@@ -38,9 +102,39 @@ export class NotificationsService {
 
   emit(event: NotificationEvent): void {
     try {
-      this.gateway.server.emit('notification', event);
+      const sockets = this.gateway.server?.sockets;
+      this.logger.log(
+        `Broadcasting notification to all clients. Connected clients: ${sockets?.sockets?.size ?? 0}`,
+      );
+      this.gateway.server?.emit('notification', event);
+      this.logger.log(`Notification broadcasted: ${JSON.stringify(event)}`);
     } catch (err) {
       this.logger.error('Failed to emit notification', err);
+    }
+  }
+
+  /**
+   * Emit realtime event to all viewers of a specific document
+   * This is used for broadcasting comments, likes, etc. to everyone viewing the document
+   */
+  emitToDocument(documentId: string, event: DocumentRealtimeEvent): void {
+    try {
+      const room = `document:${documentId}`;
+      const socketsInRoom =
+        this.gateway.server?.sockets?.adapter?.rooms?.get(room);
+      const socketCount = socketsInRoom?.size ?? 0;
+
+      this.logger.log(
+        `Emitting document event to room ${room}. Sockets in room: ${socketCount}`,
+      );
+
+      this.gateway.server?.to(room).emit('document:update', event);
+
+      this.logger.log(
+        `Document event sent to ${room}: ${JSON.stringify(event)}`,
+      );
+    } catch (err) {
+      this.logger.error('Failed to emit document event', err);
     }
   }
 
@@ -49,8 +143,22 @@ export class NotificationsService {
       // Lưu notification vào database
       await this.saveNotificationToDatabase(userId, event);
 
+      // Check how many sockets are in the user's room
+      const room = `user:${userId}`;
+      const socketsInRoom =
+        this.gateway.server?.sockets?.adapter?.rooms?.get(room);
+      const socketCount = socketsInRoom?.size ?? 0;
+
+      this.logger.log(
+        `Emitting notification to room ${room}. Sockets in room: ${socketCount}`,
+      );
+
       // Gửi qua WebSocket
-      this.gateway.server.to(`user:${userId}`).emit('notification', event);
+      this.gateway.server?.to(room).emit('notification', event);
+
+      this.logger.log(
+        `Notification sent to user ${userId}: ${JSON.stringify(event)}`,
+      );
     } catch (err) {
       this.logger.error('Failed to emit notification to user', err);
     }
@@ -88,6 +196,18 @@ export class NotificationsService {
         case 'download':
           title = 'Lượt tải xuống mới';
           message = 'Tài liệu vừa có lượt tải xuống mới.';
+          break;
+        case 'comment':
+          title = 'Bình luận mới';
+          message = `${event.commenterName} đã bình luận trên tài liệu "${event.documentTitle}"`;
+          break;
+        case 'reply':
+          title = 'Trả lời bình luận';
+          message = `${event.replierName} đã trả lời bình luận của bạn trên tài liệu "${event.documentTitle}"`;
+          break;
+        case 'comment_like':
+          title = 'Lượt thích bình luận';
+          message = `${event.likerName} đã thích bình luận của bạn trên tài liệu "${event.documentTitle}"`;
           break;
         default:
           title = 'Thông báo hệ thống';

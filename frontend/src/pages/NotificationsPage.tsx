@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   Bell,
   Check,
   CheckCheck,
   CheckCircle,
+  ExternalLink,
   Filter,
+  Heart,
   MessageCircle,
+  Reply,
   Settings,
   Star,
   Trash2,
   Users,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   AlertDialog,
@@ -36,11 +40,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks';
 import { getSocket } from '@/lib/socket';
-import { getMyNotifications } from '@/services/notifications.service';
+import {
+  deleteNotification,
+  deleteNotifications,
+  getMyNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from '@/services/notifications.service';
 import type { Notification } from '@/types';
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -54,14 +66,6 @@ export default function NotificationsPage() {
       setLoading(true);
       try {
         const res = (await getMyNotifications({ page: 1, limit: 50 })) as any;
-        console.log('📊 Fetched notifications:', res);
-        console.log('📊 Response structure:', {
-          hasData: 'data' in res,
-          hasSuccess: 'success' in res,
-          dataType: typeof res.data,
-          dataLength: Array.isArray(res.data) ? res.data.length : 'not array',
-          fullResponse: res,
-        });
 
         // Handle API response structure: {success: true, data: [...], meta: {...}}
         let notificationsData: Notification[] = [];
@@ -71,15 +75,6 @@ export default function NotificationsPage() {
           notificationsData = res;
         }
 
-        console.log('📊 Final notifications data:', notificationsData);
-        console.log('📊 First notification structure:', notificationsData[0]);
-        if (notificationsData[0]) {
-          console.log(
-            '📊 First notification createdAt:',
-            notificationsData[0].createdAt,
-            typeof notificationsData[0].createdAt,
-          );
-        }
         setNotifications(notificationsData);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
@@ -89,129 +84,165 @@ export default function NotificationsPage() {
     };
 
     fetchNotifications();
+  }, []);
 
-    // Realtime: subscribe to socket notifications
-    const socket = getSocket();
-    const handler = (event: any) => {
-      const now = new Date();
-      let type: Notification['type'] = 'system';
-      let title = 'Thông báo hệ thống';
-      let message = 'Có cập nhật mới.';
+  // Handle realtime notifications
+  const handleRealtimeNotification = useCallback((event: any) => {
+    const now = new Date();
+    let type: Notification['type'] = 'system';
+    let title = 'Thông báo hệ thống';
+    let message = 'Có cập nhật mới.';
 
-      if (event?.type === 'view') {
+    if (event?.type === 'view') {
+      type = 'system';
+      title = 'Lượt xem mới';
+      message = 'Tài liệu vừa có lượt xem mới.';
+    } else if (event?.type === 'download') {
+      type = 'system';
+      title = 'Lượt tải xuống mới';
+      message = 'Tài liệu vừa có lượt tải xuống mới.';
+    } else if (event?.type === 'moderation') {
+      if (event.status === 'approved') {
+        type = 'document_approved';
+        title = 'Tài liệu đã được duyệt';
+        message = 'Tài liệu của bạn đã được duyệt và công khai.';
+      } else {
         type = 'system';
-        title = 'Lượt xem mới';
-        message = 'Tài liệu vừa có lượt xem mới.';
-      } else if (event?.type === 'download') {
-        type = 'system';
-        title = 'Lượt tải xuống mới';
-        message = 'Tài liệu vừa có lượt tải xuống mới.';
-      } else if (event?.type === 'moderation') {
-        if (event.status === 'approved') {
-          type = 'document_approved';
-          title = 'Tài liệu đã được duyệt';
-          message = 'Tài liệu của bạn đã được duyệt và công khai.';
-        } else {
-          type = 'system';
-          title = 'Tài liệu bị từ chối';
-          message = 'Tài liệu của bạn đã bị từ chối kiểm duyệt.';
-        }
+        title = 'Tài liệu bị từ chối';
+        message = 'Tài liệu của bạn đã bị từ chối kiểm duyệt.';
       }
+    } else if (event?.type === 'comment') {
+      type = 'comment';
+      title = 'Bình luận mới';
+      message = `${event.commenterName} đã bình luận trên tài liệu "${event.documentTitle}"`;
+    } else if (event?.type === 'reply') {
+      type = 'comment';
+      title = 'Trả lời bình luận';
+      message = `${event.replierName} đã trả lời bình luận của bạn`;
+    } else if (event?.type === 'comment_like') {
+      type = 'comment';
+      title = 'Thích bình luận';
+      message = `${event.likerName} đã thích bình luận của bạn`;
+    }
 
-      const newNotif: Notification = {
-        id: crypto.randomUUID(),
-        userId: 'me',
-        type,
-        title,
-        message,
-        data: event || {},
-        isRead: false,
+    const newNotif: Notification = {
+      id: crypto.randomUUID(),
+      userId: 'me',
+      type,
+      title,
+      message,
+      data: event || {},
+      isRead: false,
+      createdAt: now,
+      user: {
+        id: 'me',
+        email: '',
+        username: 'me',
+        password: '',
+        firstName: '',
+        lastName: '',
+        roleId: 'user',
+        isVerified: true,
+        isActive: true,
         createdAt: now,
-        user: {
-          id: 'me',
-          email: '',
-          username: 'me',
-          password: '',
-          firstName: '',
-          lastName: '',
-          roleId: 'user',
-          isVerified: true,
+        updatedAt: now,
+        role: {
+          id: 'user',
+          name: 'User',
+          description: 'User',
+          permissions: [],
           isActive: true,
           createdAt: now,
           updatedAt: now,
-          role: {
-            id: 'user',
-            name: 'User',
-            description: 'User',
-            permissions: [],
-            isActive: true,
-            createdAt: now,
-            updatedAt: now,
-          },
         },
-      } as Notification;
+      },
+    } as Notification;
 
-      setNotifications(prev => [newNotif, ...prev]);
-    };
-
-    socket.on('notification', handler);
-    return () => {
-      socket.off('notification', handler);
-    };
+    setNotifications(prev => [newNotif, ...prev]);
   }, []);
 
-  const filteredNotifications = notifications.filter(notification => {
-    const matchesFilter =
-      filter === 'all' ||
-      (filter === 'unread' && !notification.isRead) ||
-      (filter === 'read' && notification.isRead);
+  // Subscribe to realtime notifications
+  const { isAuthenticated } = useAuth();
 
-    const matchesType =
-      typeFilter === 'all' || notification.type === typeFilter;
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-    console.log('🔍 Filtering notification:', {
-      id: notification.id,
-      type: notification.type,
-      isRead: notification.isRead,
-      filter,
-      typeFilter,
-      matchesFilter,
-      matchesType,
-      finalMatch: matchesFilter && matchesType,
+    const socket = getSocket();
+    socket.on('notification', handleRealtimeNotification);
+
+    return () => {
+      socket.off('notification', handleRealtimeNotification);
+    };
+  }, [isAuthenticated, handleRealtimeNotification]);
+
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter(notification => {
+      const matchesFilter =
+        filter === 'all' ||
+        (filter === 'unread' && !notification.isRead) ||
+        (filter === 'read' && notification.isRead);
+
+      const matchesType =
+        typeFilter === 'all' || notification.type === typeFilter;
+
+      return matchesFilter && matchesType;
     });
-
-    return matchesFilter && matchesType;
-  });
+  }, [notifications, filter, typeFilter]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const handleMarkAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId
-          ? { ...notif, isRead: true, readAt: new Date() }
-          : notif,
-      ),
-    );
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(notif =>
+          notif.id === notificationId
+            ? { ...notif, isRead: true, readAt: new Date() }
+            : notif,
+        ),
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        !notif.isRead ? { ...notif, isRead: true, readAt: new Date() } : notif,
-      ),
-    );
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(prev =>
+        prev.map(notif =>
+          !notif.isRead
+            ? { ...notif, isRead: true, readAt: new Date() }
+            : notif,
+        ),
+      );
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
   };
 
-  const handleDeleteNotification = (notificationId: string) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await deleteNotification(notificationId);
+      setNotifications(prev =>
+        prev.filter(notif => notif.id !== notificationId),
+      );
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
   };
 
-  const handleDeleteSelected = () => {
-    setNotifications(prev =>
-      prev.filter(notif => !selectedNotifications.includes(notif.id)),
-    );
-    setSelectedNotifications([]);
+  const handleDeleteSelected = async () => {
+    try {
+      if (selectedNotifications.length === 0) return;
+      await deleteNotifications(selectedNotifications);
+      setNotifications(prev =>
+        prev.filter(notif => !selectedNotifications.includes(notif.id)),
+      );
+      setSelectedNotifications([]);
+    } catch (error) {
+      console.error('Failed to delete selected notifications:', error);
+    }
   };
 
   const handleSelectNotification = (
@@ -239,6 +270,10 @@ export default function NotificationsPage() {
     switch (type) {
       case 'comment':
         return <MessageCircle className="h-4 w-4" />;
+      case 'reply':
+        return <Reply className="h-4 w-4" />;
+      case 'comment_like':
+        return <Heart className="h-4 w-4" />;
       case 'rating':
         return <Star className="h-4 w-4" />;
       case 'system':
@@ -257,6 +292,10 @@ export default function NotificationsPage() {
     switch (type) {
       case 'comment':
         return 'bg-blue-500';
+      case 'reply':
+        return 'bg-indigo-500';
+      case 'comment_like':
+        return 'bg-red-500';
       case 'rating':
         return 'bg-yellow-500';
       case 'system':
@@ -409,6 +448,8 @@ export default function NotificationsPage() {
               <SelectContent>
                 <SelectItem value="all">Tất cả loại</SelectItem>
                 <SelectItem value="comment">Bình luận</SelectItem>
+                <SelectItem value="reply">Trả lời</SelectItem>
+                <SelectItem value="comment_like">Thích bình luận</SelectItem>
                 <SelectItem value="rating">Đánh giá</SelectItem>
                 <SelectItem value="system">Hệ thống</SelectItem>
                 <SelectItem value="document_approved">Duyệt</SelectItem>
@@ -453,100 +494,142 @@ export default function NotificationsPage() {
               </span>
             </div>
 
-            {filteredNotifications.map(notification => (
-              <Card
-                key={notification.id}
-                className={
-                  !notification.isRead ? 'border-primary/20 bg-primary/5' : ''
+            {filteredNotifications.map(notification => {
+              const documentId = notification.data?.documentId;
+              const handleNavigate = () => {
+                if (documentId) {
+                  if (!notification.isRead) {
+                    handleMarkAsRead(notification.id);
+                  }
+                  navigate(`/documents/${documentId}`);
                 }
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={selectedNotifications.includes(notification.id)}
-                      onCheckedChange={checked =>
-                        handleSelectNotification(
+              };
+
+              return (
+                <Card
+                  key={notification.id}
+                  className={`${
+                    !notification.isRead ? 'border-primary/20 bg-primary/5' : ''
+                  } ${documentId ? 'hover:bg-muted/50 cursor-pointer transition-colors' : ''}`}
+                  onClick={documentId ? handleNavigate : undefined}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        checked={selectedNotifications.includes(
                           notification.id,
-                          checked as boolean,
-                        )
-                      }
-                    />
-                    <div
-                      className={`rounded-full p-2 ${getNotificationColor(notification.type)} flex items-center justify-center`}
-                    >
-                      <span className="text-white">
-                        {getNotificationIcon(notification.type)}
-                      </span>
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{notification.title}</h4>
-                          <p className="text-muted-foreground text-sm">
-                            {notification.message}
-                          </p>
-                        </div>
-                        <div className="ml-4 flex items-center space-x-2">
-                          {!notification.isRead && (
-                            <Badge variant="default" className="text-xs">
-                              Mới
-                            </Badge>
-                          )}
-                          <Badge
-                            variant="outline"
-                            className="text-xs capitalize"
-                          >
-                            {notification.type.replace('_', ' ')}
-                          </Badge>
-                          <span className="text-muted-foreground text-xs">
-                            {formatTimeAgo(notification.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {!notification.isRead && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkAsRead(notification.id)}
-                          >
-                            <Check className="mr-1 h-3 w-3" />
-                            Đánh dấu đã đọc
-                          </Button>
                         )}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-3 w-3" />
+                        onCheckedChange={checked =>
+                          handleSelectNotification(
+                            notification.id,
+                            checked as boolean,
+                          )
+                        }
+                        onClick={e => e.stopPropagation()}
+                      />
+                      <div
+                        className={`rounded-full p-2 ${getNotificationColor(notification.type)} flex items-center justify-center`}
+                      >
+                        <span className="text-white">
+                          {getNotificationIcon(notification.type)}
+                        </span>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium">
+                              {notification.title}
+                            </h4>
+                            <p className="text-muted-foreground text-sm">
+                              {notification.message}
+                            </p>
+                          </div>
+                          <div className="ml-4 flex items-center space-x-2">
+                            {!notification.isRead && (
+                              <Badge variant="default" className="text-xs">
+                                Mới
+                              </Badge>
+                            )}
+                            <Badge
+                              variant="outline"
+                              className="text-xs capitalize"
+                            >
+                              {notification.type.replace('_', ' ')}
+                            </Badge>
+                            <span className="text-muted-foreground text-xs">
+                              {formatTimeAgo(notification.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {documentId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleNavigate();
+                              }}
+                            >
+                              <ExternalLink className="mr-1 h-3 w-3" />
+                              Xem
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Xóa thông báo</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Bạn có chắc chắn muốn xóa thông báo này? Hành
-                                động này không thể hoàn tác.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Hủy</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handleDeleteNotification(notification.id)
-                                }
-                                className="bg-red-600 hover:bg-red-700"
+                          )}
+                          {!notification.isRead && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleMarkAsRead(notification.id);
+                              }}
+                            >
+                              <Check className="mr-1 h-3 w-3" />
+                              Đánh dấu đã đọc
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={e => e.stopPropagation()}
                               >
-                                Xóa
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Xóa thông báo
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Bạn có chắc chắn muốn xóa thông báo này? Hành
+                                  động này không thể hoàn tác.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleDeleteNotification(notification.id)
+                                  }
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Xóa
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </>
         )}
       </div>
