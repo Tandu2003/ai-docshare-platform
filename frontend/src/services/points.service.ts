@@ -1,17 +1,35 @@
 import { apiClient } from '@/utils/api-client';
 
+export interface PointTransactionDocument {
+  id: string;
+  title: string;
+}
+
+export interface PointTransactionPerformedBy {
+  id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+}
+
 export interface PointTransaction {
   id: string;
   userId: string;
   documentId?: string | null;
   amount: number;
   type: 'EARN' | 'SPEND' | 'ADJUST';
-  reason: 'UPLOAD_REWARD' | 'DOWNLOAD_COST' | 'ADMIN_ADJUST';
+  reason:
+    | 'UPLOAD_REWARD'
+    | 'DOWNLOAD_COST'
+    | 'DOWNLOAD_REWARD'
+    | 'ADMIN_ADJUST';
   balanceAfter: number;
   note?: string | null;
   performedById?: string | null;
   isBypass: boolean;
   createdAt: string;
+  document?: PointTransactionDocument | null;
+  performedBy?: PointTransactionPerformedBy | null;
 }
 
 export interface TransactionsResponse {
@@ -25,18 +43,25 @@ class PointsService {
   private baseUrl = '/points';
 
   async getBalance(): Promise<{ balance: number }> {
-    const res = await apiClient.get(`${this.baseUrl}/balance`);
-    return res.data as any;
+    // apiClient.get already returns response.data, so we return it directly
+    const res = await apiClient.get<{ balance: number }>(
+      `${this.baseUrl}/balance`,
+    );
+    return res as unknown as { balance: number };
   }
 
   async getTransactions(
     page: number = 1,
     limit: number = 10,
   ): Promise<TransactionsResponse> {
-    const res = await apiClient.get(`${this.baseUrl}/transactions`, {
-      params: { page, limit },
-    });
-    return res.data as any;
+    // apiClient.get already returns response.data, so we return it directly
+    const res = await apiClient.get<TransactionsResponse>(
+      `${this.baseUrl}/transactions`,
+      {
+        params: { page, limit },
+      },
+    );
+    return res as unknown as TransactionsResponse;
   }
 
   async adminAdjust(
@@ -44,12 +69,15 @@ class PointsService {
     delta: number,
     note?: string,
   ): Promise<{ balance: number }> {
-    const res = await apiClient.post(`${this.baseUrl}/admin/adjust`, {
-      userId,
-      delta,
-      note,
-    });
-    return res.data as any;
+    const res = await apiClient.post<{ balance: number }>(
+      `${this.baseUrl}/admin/adjust`,
+      {
+        userId,
+        delta,
+        note,
+      },
+    );
+    return res as unknown as { balance: number };
   }
 
   async adminSet(
@@ -57,12 +85,15 @@ class PointsService {
     points: number,
     note?: string,
   ): Promise<{ balance: number }> {
-    const res = await apiClient.post(`${this.baseUrl}/admin/set`, {
-      userId,
-      points,
-      note,
-    });
-    return res.data as any;
+    const res = await apiClient.post<{ balance: number }>(
+      `${this.baseUrl}/admin/set`,
+      {
+        userId,
+        points,
+        note,
+      },
+    );
+    return res as unknown as { balance: number };
   }
 }
 

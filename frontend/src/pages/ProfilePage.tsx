@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 
 import {
+  ArrowDownRight,
+  ArrowUpRight,
   Bot,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Coins,
   Download,
   Edit,
   Eye,
+  FileText,
   Star,
   Upload,
   User,
@@ -49,6 +54,8 @@ import { userService } from '@/services/user.service';
 import type { ActivityLog } from '@/types';
 import { formatDate } from '@/utils/date';
 
+const POINT_TXNS_LIMIT = 10;
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -60,6 +67,9 @@ export default function ProfilePage() {
   const [userActivity, setUserActivity] = useState<ActivityLog[]>([]);
   const [pointsBalance, setPointsBalance] = useState<number>(0);
   const [pointTxns, setPointTxns] = useState<PointTransaction[]>([]);
+  const [pointTxnsPage, setPointTxnsPage] = useState(1);
+  const [pointTxnsTotal, setPointTxnsTotal] = useState(0);
+  const [pointTxnsLoading, setPointTxnsLoading] = useState(true);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -75,6 +85,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true);
+      setPointTxnsLoading(true);
       try {
         // Get user's documents from API
         const userDocsResponse = await DocumentsService.getUserDocuments(1, 20);
@@ -104,24 +115,43 @@ export default function ProfilePage() {
           }));
         setUserActivity(convertedActivities);
 
-        // Points: balance and last transactions
-        const [balanceRes, txnsRes] = await Promise.all([
-          pointsService.getBalance(),
-          pointsService.getTransactions(1, 10),
-        ]);
-        setPointsBalance(balanceRes.balance);
-        setPointTxns(txnsRes.items);
+        // Fetch point transactions
+        const txnsRes = await pointsService.getTransactions(
+          1,
+          POINT_TXNS_LIMIT,
+        );
+        setPointTxns(txnsRes.items || []);
+        setPointTxnsTotal(txnsRes.total || 0);
+        setPointTxnsPage(1);
       } catch (error) {
         console.error('Failed to fetch user data:', error);
       } finally {
         setLoading(false);
+        setPointTxnsLoading(false);
       }
     };
 
     if (user) {
+      // Set points balance from user object (from auth)
+      setPointsBalance(user.pointsBalance ?? 0);
       void fetchUserData();
     }
   }, [user]);
+
+  // Fetch point transactions when page changes
+  const fetchPointTransactions = async (page: number) => {
+    setPointTxnsLoading(true);
+    try {
+      const res = await pointsService.getTransactions(page, POINT_TXNS_LIMIT);
+      setPointTxns(res.items);
+      setPointTxnsTotal(res.total);
+      setPointTxnsPage(page);
+    } catch (error) {
+      console.error('Failed to fetch point transactions:', error);
+    } finally {
+      setPointTxnsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -700,54 +730,188 @@ export default function ProfilePage() {
 
         {/* Points */}
         <TabsContent value="points" className="space-y-4">
+          {/* Points Summary Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Lịch sử điểm</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Coins className="h-5 w-5 text-yellow-500" />
+                Số dư điểm hiện tại
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {pointTxns.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Chưa có giao dịch điểm nào
-                </p>
-              ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-4xl font-bold text-yellow-600">
+                  {pointsBalance.toLocaleString()}
+                </span>
+                <span className="text-muted-foreground text-sm">điểm</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Transaction History Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Lịch sử giao dịch điểm</CardTitle>
+              <span className="text-muted-foreground text-sm">
+                Tổng: {pointTxnsTotal} giao dịch
+              </span>
+            </CardHeader>
+            <CardContent>
+              {pointTxnsLoading ? (
                 <div className="space-y-3">
-                  {pointTxns.map(tx => (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between rounded-md border p-3"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Coins
-                          className={`h-4 w-4 ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {tx.reason === 'UPLOAD_REWARD' && 'Thưởng tải lên'}
-                            {tx.reason === 'DOWNLOAD_COST' &&
-                              'Trừ khi tải tài liệu'}
-                            {tx.reason === 'DOWNLOAD_REWARD' &&
-                              'Thưởng khi có người tải tài liệu của bạn'}
-                            {tx.reason === 'ADMIN_ADJUST' &&
-                              'Điều chỉnh bởi admin'}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {new Date(tx.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`text-sm font-semibold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          Số dư: {tx.balanceAfter}
-                        </p>
-                      </div>
-                    </div>
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-20 w-full" />
                   ))}
                 </div>
+              ) : pointTxns.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Coins className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="text-muted-foreground mb-2 text-lg font-medium">
+                    Chưa có giao dịch điểm nào
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    Lịch sử giao dịch điểm của bạn sẽ xuất hiện ở đây.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {pointTxns.map(tx => {
+                      const isPositive = tx.amount >= 0;
+                      const reasonLabels: Record<string, string> = {
+                        UPLOAD_REWARD: 'Thưởng tải lên tài liệu',
+                        DOWNLOAD_COST: 'Trừ điểm tải tài liệu',
+                        DOWNLOAD_REWARD:
+                          'Thưởng khi có người tải tài liệu của bạn',
+                        ADMIN_ADJUST: 'Điều chỉnh bởi Admin',
+                      };
+                      const reasonIcons: Record<string, React.ReactNode> = {
+                        UPLOAD_REWARD: (
+                          <Upload className="h-4 w-4 text-blue-500" />
+                        ),
+                        DOWNLOAD_COST: (
+                          <Download className="h-4 w-4 text-orange-500" />
+                        ),
+                        DOWNLOAD_REWARD: (
+                          <ArrowDownRight className="h-4 w-4 text-green-500" />
+                        ),
+                        ADMIN_ADJUST: (
+                          <UserCheck className="h-4 w-4 text-purple-500" />
+                        ),
+                      };
+
+                      return (
+                        <div
+                          key={tx.id}
+                          className="bg-muted/30 hover:bg-muted/50 flex items-start justify-between gap-4 rounded-lg border p-4 transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`rounded-full p-2 ${
+                                isPositive
+                                  ? 'bg-green-100 dark:bg-green-900/30'
+                                  : 'bg-red-100 dark:bg-red-900/30'
+                              }`}
+                            >
+                              {isPositive ? (
+                                <ArrowUpRight className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <ArrowDownRight className="h-4 w-4 text-red-600" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                {reasonIcons[tx.reason]}
+                                <p className="text-sm font-medium">
+                                  {reasonLabels[tx.reason] || tx.reason}
+                                </p>
+                              </div>
+                              {tx.document && (
+                                <p className="text-muted-foreground mt-1 flex items-center gap-1 truncate text-xs">
+                                  <FileText className="h-3 w-3 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {tx.document.title}
+                                  </span>
+                                </p>
+                              )}
+                              {tx.note && (
+                                <p className="text-muted-foreground mt-1 text-xs italic">
+                                  {tx.note}
+                                </p>
+                              )}
+                              {tx.performedBy &&
+                                tx.reason === 'ADMIN_ADJUST' && (
+                                  <p className="text-muted-foreground mt-1 text-xs">
+                                    Thực hiện bởi: {tx.performedBy.firstName}{' '}
+                                    {tx.performedBy.lastName}
+                                  </p>
+                                )}
+                              <p className="text-muted-foreground mt-1 text-xs">
+                                {new Date(tx.createdAt).toLocaleString('vi-VN')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p
+                              className={`text-lg font-bold ${
+                                isPositive ? 'text-green-600' : 'text-red-600'
+                              }`}
+                            >
+                              {isPositive ? '+' : ''}
+                              {tx.amount.toLocaleString()}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              Số dư: {tx.balanceAfter.toLocaleString()}
+                            </p>
+                            {tx.isBypass && (
+                              <Badge variant="outline" className="mt-1 text-xs">
+                                Miễn phí
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination */}
+                  {pointTxnsTotal > POINT_TXNS_LIMIT && (
+                    <div className="mt-4 flex items-center justify-between border-t pt-4">
+                      <p className="text-muted-foreground text-sm">
+                        Trang {pointTxnsPage} /{' '}
+                        {Math.ceil(pointTxnsTotal / POINT_TXNS_LIMIT)}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            fetchPointTransactions(pointTxnsPage - 1)
+                          }
+                          disabled={pointTxnsPage <= 1 || pointTxnsLoading}
+                        >
+                          <ChevronLeft className="mr-1 h-4 w-4" />
+                          Trước
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            fetchPointTransactions(pointTxnsPage + 1)
+                          }
+                          disabled={
+                            pointTxnsPage >=
+                              Math.ceil(pointTxnsTotal / POINT_TXNS_LIMIT) ||
+                            pointTxnsLoading
+                          }
+                        >
+                          Sau
+                          <ChevronRight className="ml-1 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

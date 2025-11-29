@@ -164,22 +164,6 @@ export function DocumentInlineViewer({ files }: DocumentInlineViewerProps) {
             {activeFile?.mimeType}
           </p>
         </div>
-        <div className="flex gap-2">
-          {url && (
-            <Button asChild variant="outline" size="sm">
-              <a href={url} target="_blank" rel="noreferrer">
-                Mở tab mới
-              </a>
-            </Button>
-          )}
-          {url && (
-            <Button asChild size="sm">
-              <a href={url} download>
-                Tải xuống
-              </a>
-            </Button>
-          )}
-        </div>
       </div>
     </div>
   );

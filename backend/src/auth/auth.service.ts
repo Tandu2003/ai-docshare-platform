@@ -174,7 +174,24 @@ export class AuthService {
         id: payload.sub,
         isDeleted: false, // Chỉ lấy user chưa bị xóa
       },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        bio: true,
+        website: true,
+        location: true,
+        roleId: true,
+        isVerified: true,
+        isActive: true,
+        isDeleted: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+        pointsBalance: true,
         role: {
           select: {
             id: true,

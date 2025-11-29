@@ -52,6 +52,7 @@ export interface User {
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  pointsBalance: number;
   role: Role;
 }
 

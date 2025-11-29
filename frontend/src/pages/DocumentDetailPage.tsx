@@ -910,20 +910,6 @@ export default function DocumentDetailPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Related Documents */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tài liệu liên quan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <p className="text-muted-foreground text-sm">
-                  Tài liệu liên quan sẽ được hiển thị ở đây khi API hỗ trợ.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

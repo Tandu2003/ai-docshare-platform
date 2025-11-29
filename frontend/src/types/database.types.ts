@@ -35,6 +35,7 @@ export interface User {
   lastLoginAt?: Date;
   resetToken?: string;
   resetExpires?: Date;
+  pointsBalance: number;
   createdAt: Date;
   updatedAt: Date;
   role: Role;

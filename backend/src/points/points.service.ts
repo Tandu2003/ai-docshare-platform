@@ -29,6 +29,22 @@ export class PointsService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: {
+          document: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          performedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+        },
       }),
       this.prisma.pointTransaction.count({ where: { userId } }),
     ]);
