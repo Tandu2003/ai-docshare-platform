@@ -153,6 +153,19 @@ export class SystemSettingsService {
         'ai.confidence_threshold',
         70,
       ),
+      // Similarity moderation settings
+      enableSimilarityCheck: await this.getBooleanSetting(
+        'ai.enable_similarity_check',
+        true,
+      ),
+      similarityAutoRejectThreshold: await this.getNumericSetting(
+        'ai.similarity_auto_reject_threshold',
+        90, // Auto reject if similarity >= 90%
+      ),
+      similarityManualReviewThreshold: await this.getNumericSetting(
+        'ai.similarity_manual_review_threshold',
+        70, // Require manual review if similarity >= 70%
+      ),
     };
   }
 

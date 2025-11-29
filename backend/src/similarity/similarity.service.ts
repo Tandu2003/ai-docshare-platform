@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import { AIService } from '../ai/ai.service';
 import { ContentExtractorService } from '../ai/content-extractor.service';
+import { EmbeddingService } from '../ai/embedding.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,6 +40,7 @@ export class SimilarityService {
     private filesService: FilesService,
     private contentExtractor: ContentExtractorService,
     private r2Service: CloudflareR2Service,
+    private embeddingService: EmbeddingService,
   ) {}
 
   /**
@@ -65,11 +67,53 @@ export class SimilarityService {
         throw new Error(`Document ${documentId} not found`);
       }
 
-      // Extract text content for embedding (improved to use actual file content)
-      // const textContent = await this.extractTextForEmbedding(document);
+      // Extract text content for embedding from actual file content
+      const textContent = await this.extractTextForEmbedding(document);
 
-      // Generate embedding using AI service
-      const embedding = this.generateEmbedding();
+      if (!textContent || textContent.trim().length === 0) {
+        this.logger.warn(
+          `No text content extracted for document ${documentId}, using metadata only`,
+        );
+        // Fallback to metadata-based embedding
+        const metadataText = [
+          document.title,
+          document.description || '',
+          document.tags?.join(' ') || '',
+          document.aiAnalysis?.summary || '',
+          document.aiAnalysis?.keyPoints?.join(' ') || '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+        if (!metadataText.trim()) {
+          throw new Error('No content available to generate embedding');
+        }
+
+        const embedding =
+          await this.embeddingService.generateEmbedding(metadataText);
+
+        // Save embedding to database
+        await this.prisma.documentEmbedding.upsert({
+          where: { documentId },
+          update: {
+            embedding,
+            updatedAt: new Date(),
+          },
+          create: {
+            documentId,
+            embedding,
+          },
+        });
+
+        this.logger.log(
+          `Metadata-based embedding generated for document ${documentId}`,
+        );
+        return embedding;
+      }
+
+      // Generate embedding using real AI embedding service
+      const embedding =
+        await this.embeddingService.generateEmbedding(textContent);
 
       // Save embedding to database
       await this.prisma.documentEmbedding.upsert({
@@ -85,7 +129,7 @@ export class SimilarityService {
       });
 
       this.logger.log(
-        `Embedding generated and saved for document ${documentId}`,
+        `Embedding generated and saved for document ${documentId} (${textContent.length} chars)`,
       );
       return embedding;
     } catch (error) {
@@ -142,11 +186,17 @@ export class SimilarityService {
       );
 
       // Step 3: Get all other documents for comparison (in batches to avoid memory issues)
+      // Compare with ALL approved documents (not just public) to detect duplicates
       // First, get document IDs only (lightweight query)
       const otherDocumentIds = await this.prisma.document.findMany({
         where: {
           id: { not: documentId },
-          isPublic: true,
+          // Compare with approved documents OR public documents
+          OR: [
+            { moderationStatus: 'APPROVED' },
+            { isPublic: true },
+            { isApproved: true },
+          ],
         },
         select: { id: true },
         take: 500, // Limit to 500 documents max to avoid memory issues
@@ -273,7 +323,7 @@ export class SimilarityService {
             );
           }
 
-          // Use embedding similarity as fallback
+          // Use embedding similarity - NOW THE PRIMARY METHOD for content comparison
           let embeddingSimilarity = 0;
           if (sourceEmbedding) {
             const targetEmbedding =
@@ -286,33 +336,47 @@ export class SimilarityService {
                 sourceEmbedding.embedding,
                 targetEmbedding.embedding,
               );
+              this.logger.debug(
+                `Embedding similarity between ${documentId} and ${targetDocument.id}: ${(embeddingSimilarity * 100).toFixed(1)}%`,
+              );
             }
           }
 
           // Calculate combined similarity score
+          // Embedding similarity is now the primary factor since it captures semantic similarity
           const combinedScore = Math.max(
-            hashSimilarity * 0.5 +
-              textSimilarity * 0.4 +
-              embeddingSimilarity * 0.1,
+            hashSimilarity * 0.3 +
+              textSimilarity * 0.2 +
+              embeddingSimilarity * 0.5, // Embedding now has highest weight
             hashSimilarity,
             textSimilarity,
+            embeddingSimilarity, // Also consider pure embedding similarity
           );
 
+          // Lower threshold for embedding similarity since it's semantic
+          // Hash/text >= 85% OR embedding >= 70% (semantic similarity threshold is typically lower)
+          const embeddingThreshold = 0.7; // 70% semantic similarity is significant
           if (
             combinedScore >= this.SIMILARITY_THRESHOLD ||
-            hashSimilarity > 0.5
+            hashSimilarity > 0.5 ||
+            embeddingSimilarity >= embeddingThreshold
           ) {
+            const finalScore = Math.max(combinedScore, embeddingSimilarity);
             similarities.push({
               documentId: targetDocument.id,
-              similarityScore: combinedScore,
+              similarityScore: finalScore,
               similarityType:
                 hashSimilarity === 1.0
                   ? 'hash'
-                  : textSimilarity > embeddingSimilarity
-                    ? 'text'
-                    : 'content',
+                  : embeddingSimilarity > textSimilarity
+                    ? 'content'
+                    : 'text',
               document: targetDocument,
             });
+
+            this.logger.log(
+              `Similar document found: ${targetDocument.id} - hash: ${(hashSimilarity * 100).toFixed(1)}%, text: ${(textSimilarity * 100).toFixed(1)}%, embedding: ${(embeddingSimilarity * 100).toFixed(1)}%, final: ${(finalScore * 100).toFixed(1)}%`,
+            );
           }
         }
 
@@ -828,14 +892,14 @@ export class SimilarityService {
     return parts.join(' ').trim();
   }
 
-  private generateEmbedding(): number[] {
-    // Use 768 dimensions to match text-embedding-004 model
-    return Array.from({ length: 768 }, () => Math.random());
-  }
-
   private calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
+    // Handle vector length mismatch gracefully - return 0 similarity
+    // This can happen when old embeddings have different dimensions than new ones
     if (vecA.length !== vecB.length) {
-      throw new Error('Vectors must have the same length');
+      this.logger.warn(
+        `Vector length mismatch: ${vecA.length} vs ${vecB.length}. Returning 0 similarity.`,
+      );
+      return 0;
     }
 
     let dotProduct = 0;

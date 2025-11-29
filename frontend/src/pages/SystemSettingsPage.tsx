@@ -31,6 +31,10 @@ export default function SystemSettingsPage() {
     enableContentAnalysis: true,
     enableSmartTags: true,
     confidenceThreshold: 70,
+    // Similarity settings
+    enableSimilarityCheck: true,
+    similarityAutoRejectThreshold: 90,
+    similarityManualReviewThreshold: 70,
   });
 
   const [pointsSettings, setPointsSettings] = useState<PointsSettings>({
@@ -356,6 +360,95 @@ export default function SystemSettingsPage() {
                 <span>50%</span>
                 <span>100%</span>
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Similarity Check Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-base font-medium">
+                    Kiểm tra tài liệu tương đồng
+                  </Label>
+                  <p className="text-muted-foreground text-sm">
+                    Kiểm tra và xử lý tài liệu có độ tương đồng cao với tài liệu
+                    đã có
+                  </p>
+                </div>
+                <Switch
+                  checked={aiSettings.enableSimilarityCheck}
+                  onCheckedChange={checked =>
+                    handleAISettingChange('enableSimilarityCheck', checked)
+                  }
+                />
+              </div>
+
+              {aiSettings.enableSimilarityCheck && (
+                <div className="border-muted space-y-4 border-l-2 pl-4">
+                  {/* Auto Reject Threshold */}
+                  <div className="space-y-2">
+                    <Label htmlFor="similarity-reject-threshold">
+                      Ngưỡng tự động từ chối (
+                      {aiSettings.similarityAutoRejectThreshold}%)
+                    </Label>
+                    <p className="text-muted-foreground text-xs">
+                      Tài liệu có độ tương đồng ≥ ngưỡng này sẽ bị tự động từ
+                      chối
+                    </p>
+                    <Input
+                      id="similarity-reject-threshold"
+                      type="range"
+                      min="50"
+                      max="100"
+                      value={aiSettings.similarityAutoRejectThreshold}
+                      onChange={e =>
+                        handleAISettingChange(
+                          'similarityAutoRejectThreshold',
+                          parseInt(e.target.value, 10),
+                        )
+                      }
+                      className="w-full"
+                    />
+                    <div className="text-muted-foreground flex justify-between text-xs">
+                      <span>50%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Manual Review Threshold */}
+                  <div className="space-y-2">
+                    <Label htmlFor="similarity-review-threshold">
+                      Ngưỡng xem xét thủ công (
+                      {aiSettings.similarityManualReviewThreshold}%)
+                    </Label>
+                    <p className="text-muted-foreground text-xs">
+                      Tài liệu có độ tương đồng ≥ ngưỡng này sẽ cần xem xét thủ
+                      công (không tự động duyệt)
+                    </p>
+                    <Input
+                      id="similarity-review-threshold"
+                      type="range"
+                      min="30"
+                      max={aiSettings.similarityAutoRejectThreshold - 1}
+                      value={aiSettings.similarityManualReviewThreshold}
+                      onChange={e =>
+                        handleAISettingChange(
+                          'similarityManualReviewThreshold',
+                          parseInt(e.target.value, 10),
+                        )
+                      }
+                      className="w-full"
+                    />
+                    <div className="text-muted-foreground flex justify-between text-xs">
+                      <span>30%</span>
+                      <span>
+                        {aiSettings.similarityAutoRejectThreshold - 1}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

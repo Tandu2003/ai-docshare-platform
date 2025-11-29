@@ -165,6 +165,31 @@ export class SystemSettingsService {
       });
     }
 
+    // Similarity settings
+    if (settings.enableSimilarityCheck !== undefined) {
+      systemSettings.push({
+        key: 'ai.enable_similarity_check',
+        value: settings.enableSimilarityCheck.toString(),
+        category: 'ai',
+      });
+    }
+
+    if (settings.similarityAutoRejectThreshold !== undefined) {
+      systemSettings.push({
+        key: 'ai.similarity_auto_reject_threshold',
+        value: settings.similarityAutoRejectThreshold.toString(),
+        category: 'ai',
+      });
+    }
+
+    if (settings.similarityManualReviewThreshold !== undefined) {
+      systemSettings.push({
+        key: 'ai.similarity_manual_review_threshold',
+        value: settings.similarityManualReviewThreshold.toString(),
+        category: 'ai',
+      });
+    }
+
     if (systemSettings.length > 0) {
       await this.updateSettings(systemSettings);
     }

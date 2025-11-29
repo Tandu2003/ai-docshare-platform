@@ -31,7 +31,7 @@ export class SimilarityJobService {
 
       this.logger.log(`Found ${pendingJobs.length} pending jobs`);
 
-      // Process all jobs in parallel (fire and forget)
+      // Process all jobs in parallel and WAIT for completion
       const processPromises = pendingJobs.map(job =>
         this.similarityService
           .processSimilarityDetection(job.documentId)
@@ -40,8 +40,11 @@ export class SimilarityJobService {
           }),
       );
 
-      // Don't await - let them process in background
-      void Promise.all(processPromises);
+      // MUST await - similarity results must be saved before moderation check
+      await Promise.all(processPromises);
+      this.logger.log(
+        `Completed processing ${pendingJobs.length} similarity jobs`,
+      );
     } catch (error) {
       this.logger.error('Error processing pending jobs:', error);
     }
@@ -109,6 +112,31 @@ export class SimilarityJobService {
         error,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Run similarity detection immediately for a specific document (synchronous)
+   * This is used when we need results before moderation decision
+   */
+  async runSimilarityDetectionSync(documentId: string): Promise<void> {
+    try {
+      this.logger.log(
+        `Running synchronous similarity detection for document ${documentId}`,
+      );
+
+      // Process directly without job queue
+      await this.similarityService.processSimilarityDetection(documentId);
+
+      this.logger.log(
+        `Synchronous similarity detection completed for document ${documentId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error in synchronous similarity detection for ${documentId}:`,
+        error,
+      );
+      // Don't throw - just log the error, moderation should continue
     }
   }
 }

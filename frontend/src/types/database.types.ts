@@ -309,6 +309,10 @@ export interface AISettings {
   enableContentAnalysis: boolean;
   enableSmartTags: boolean;
   confidenceThreshold: number;
+  // Similarity moderation settings
+  enableSimilarityCheck: boolean;
+  similarityAutoRejectThreshold: number;
+  similarityManualReviewThreshold: number;
 }
 
 export interface GeneralSettings {

@@ -242,6 +242,85 @@ export class DocumentsService {
             },
           });
           this.logger.log(`AI analysis saved for document ${document.id}`);
+
+          // When AI analysis is provided, run similarity detection and apply moderation
+          if (wantsPublic) {
+            try {
+              // Run similarity detection SYNCHRONOUSLY first - results must be saved before moderation
+              await this.similarityJobService.runSimilarityDetectionSync(
+                document.id,
+              );
+              this.logger.log(
+                `Similarity detection completed for document ${document.id}`,
+              );
+            } catch (simError) {
+              this.logger.warn(
+                `Similarity detection failed for document ${document.id}: ${simError.message}`,
+              );
+            }
+
+            // Apply AI moderation (will also check similarity)
+            try {
+              const moderationScore = aiAnalysis.confidence || 50;
+              const moderationResult =
+                await this.aiService.applyModerationSettings(
+                  document.id,
+                  moderationScore,
+                );
+
+              this.logger.log(
+                `AI moderation applied for document ${document.id}: ${moderationResult.status} (${moderationResult.action})`,
+              );
+
+              // Update document status if auto-approved or auto-rejected
+              if (
+                moderationResult.status === 'approved' ||
+                moderationResult.status === 'rejected'
+              ) {
+                const isApproved = moderationResult.status === 'approved';
+                const moderatedAt = new Date();
+                const moderationNotes = `AI Tự động ${moderationResult.action === 'auto_approved' ? 'phê duyệt' : 'từ chối'}: Điểm ${moderationScore}% - ${moderationResult.reason || 'Không có lý do'}`;
+
+                await this.prisma.document.update({
+                  where: { id: document.id },
+                  data: {
+                    moderationStatus:
+                      moderationResult.status === 'approved'
+                        ? 'APPROVED'
+                        : 'REJECTED',
+                    isApproved,
+                    moderatedAt,
+                    moderationNotes,
+                  },
+                });
+
+                // Send notification
+                try {
+                  await this.notifications.emitToUploaderOfDocument(
+                    document.uploaderId,
+                    {
+                      type: 'moderation',
+                      documentId: document.id,
+                      status:
+                        moderationResult.status === 'approved'
+                          ? 'approved'
+                          : 'rejected',
+                      notes: moderationNotes,
+                      reason: moderationResult.reason,
+                    },
+                  );
+                } catch (notificationError) {
+                  this.logger.warn(
+                    `Failed to send moderation notification: ${notificationError.message}`,
+                  );
+                }
+              }
+            } catch (moderationError) {
+              this.logger.warn(
+                `Failed to apply AI moderation: ${moderationError.message}`,
+              );
+            }
+          }
         } catch (error) {
           this.logger.warn(`Failed to save AI analysis: ${error.message}`);
         }
@@ -295,8 +374,27 @@ export class DocumentsService {
             }
 
             // Apply AI moderation settings based on analysis score
+            // Note: This will also check similarity if enableSimilarityCheck is enabled
             try {
               const moderationScore = aiResult.data.moderationScore || 50; // Default score if not provided
+
+              // Run similarity detection SYNCHRONOUSLY before applying moderation
+              // This ensures similarity data is available for moderation decision
+              if (wantsPublic) {
+                try {
+                  await this.similarityJobService.runSimilarityDetectionSync(
+                    document.id,
+                  );
+                  this.logger.log(
+                    `Similarity detection completed for document ${document.id}`,
+                  );
+                } catch (simError) {
+                  this.logger.warn(
+                    `Similarity detection failed for document ${document.id}: ${simError.message}`,
+                  );
+                }
+              }
+
               const moderationResult =
                 await this.aiService.applyModerationSettings(
                   document.id,
@@ -371,26 +469,6 @@ export class DocumentsService {
             `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
           );
         }
-      }
-
-      // Start similarity detection in background (fire and forget)
-      if (wantsPublic) {
-        // Don't await - let it run in background
-        void this.similarityJobService
-          .queueSimilarityDetection(document.id)
-          .then(() => {
-            // Process immediately instead of waiting for cron
-            void this.similarityJobService.processPendingJobs().catch(err => {
-              this.logger.error(
-                `Failed to process similarity for document ${document.id}: ${err.message}`,
-              );
-            });
-          })
-          .catch(error => {
-            this.logger.warn(
-              `Failed to queue similarity detection for document ${document.id}: ${error.message}`,
-            );
-          });
       }
 
       // Generate document embedding for vector search (in background)
@@ -2210,7 +2288,7 @@ export class DocumentsService {
   }
 
   /**
-   * Check if document should be auto-approved or auto-rejected based on AI analysis
+   * Check if document should be auto-approved or auto-rejected based on AI analysis and similarity
    */
   async checkAutoModeration(documentId: string): Promise<{
     shouldAutoApprove: boolean;
@@ -2219,6 +2297,28 @@ export class DocumentsService {
   }> {
     try {
       const aiSettings = await this.systemSettings.getAIModerationSettings();
+
+      // Check similarity first if enabled
+      if (aiSettings.enableSimilarityCheck) {
+        const similarityCheck = await this.checkSimilarityForModeration(
+          documentId,
+          aiSettings,
+        );
+        if (similarityCheck.shouldAutoReject) {
+          return {
+            shouldAutoApprove: false,
+            shouldAutoReject: true,
+            reason: similarityCheck.reason,
+          };
+        }
+        if (similarityCheck.requiresManualReview) {
+          return {
+            shouldAutoApprove: false,
+            shouldAutoReject: false,
+            reason: similarityCheck.reason,
+          };
+        }
+      }
 
       const analysis = await this.prisma.aIAnalysis.findUnique({
         where: { documentId },
@@ -2281,6 +2381,94 @@ export class DocumentsService {
         shouldAutoApprove: false,
         shouldAutoReject: false,
         reason: 'Error checking auto moderation',
+      };
+    }
+  }
+
+  /**
+   * Check similarity for moderation decisions
+   */
+  private async checkSimilarityForModeration(
+    documentId: string,
+    aiSettings: {
+      similarityAutoRejectThreshold: number;
+      similarityManualReviewThreshold: number;
+    },
+  ): Promise<{
+    shouldAutoReject: boolean;
+    requiresManualReview: boolean;
+    reason?: string;
+    highestSimilarity?: number;
+    similarDocumentId?: string;
+  }> {
+    try {
+      // Get highest similarity score for this document
+      const highestSimilarity = await this.prisma.documentSimilarity.findFirst({
+        where: {
+          sourceDocumentId: documentId,
+        },
+        orderBy: {
+          similarityScore: 'desc',
+        },
+        include: {
+          targetDocument: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      if (!highestSimilarity) {
+        return {
+          shouldAutoReject: false,
+          requiresManualReview: false,
+          reason: 'No similar documents found',
+        };
+      }
+
+      const similarityPercent = Math.round(
+        highestSimilarity.similarityScore * 100,
+      );
+
+      // Auto-reject if similarity is above auto-reject threshold
+      if (similarityPercent >= aiSettings.similarityAutoRejectThreshold) {
+        return {
+          shouldAutoReject: true,
+          requiresManualReview: false,
+          reason: `Tài liệu tương đồng ${similarityPercent}% với "${highestSimilarity.targetDocument.title}" - vượt ngưỡng tự động từ chối ${aiSettings.similarityAutoRejectThreshold}%`,
+          highestSimilarity: similarityPercent,
+          similarDocumentId: highestSimilarity.targetDocumentId,
+        };
+      }
+
+      // Require manual review if similarity is above manual review threshold
+      if (similarityPercent >= aiSettings.similarityManualReviewThreshold) {
+        return {
+          shouldAutoReject: false,
+          requiresManualReview: true,
+          reason: `Tài liệu tương đồng ${similarityPercent}% với "${highestSimilarity.targetDocument.title}" - cần xem xét thủ công (ngưỡng ${aiSettings.similarityManualReviewThreshold}%)`,
+          highestSimilarity: similarityPercent,
+          similarDocumentId: highestSimilarity.targetDocumentId,
+        };
+      }
+
+      return {
+        shouldAutoReject: false,
+        requiresManualReview: false,
+        reason: `Độ tương đồng ${similarityPercent}% nằm trong giới hạn cho phép`,
+        highestSimilarity: similarityPercent,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking similarity for moderation for document ${documentId}:`,
+        error,
+      );
+      return {
+        shouldAutoReject: false,
+        requiresManualReview: false,
+        reason: 'Error checking similarity',
       };
     }
   }

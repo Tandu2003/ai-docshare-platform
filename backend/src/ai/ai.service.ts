@@ -382,6 +382,37 @@ export class AIService {
         };
       }
 
+      // Check similarity first if enabled
+      if (settings.enableSimilarityCheck) {
+        const similarityCheck =
+          await this.checkSimilarityForModeration(documentId);
+        if (similarityCheck.shouldReject) {
+          await this.prisma.document.update({
+            where: { id: documentId },
+            data: { moderationStatus: 'REJECTED' },
+          });
+
+          this.logger.log(
+            `Document ${documentId} auto-rejected due to similarity: ${similarityCheck.reason}`,
+          );
+
+          return {
+            status: 'rejected',
+            action: 'auto_rejected',
+            reason: similarityCheck.reason,
+          };
+        }
+
+        // If requires manual review due to similarity, don't auto-approve
+        if (similarityCheck.requiresManualReview) {
+          return {
+            status: 'pending',
+            action: 'manual_review',
+            reason: similarityCheck.reason,
+          };
+        }
+      }
+
       // Check confidence threshold
       if (moderationScore < settings.confidenceThreshold) {
         return {
@@ -445,6 +476,80 @@ export class AIService {
         status: 'pending',
         action: 'manual_review',
         reason: 'Error in moderation processing',
+      };
+    }
+  }
+
+  /**
+   * Check similarity for moderation decisions
+   */
+  private async checkSimilarityForModeration(documentId: string): Promise<{
+    shouldReject: boolean;
+    requiresManualReview: boolean;
+    reason?: string;
+  }> {
+    try {
+      const settings = await this.systemSettings.getAIModerationSettings();
+
+      // Get highest similarity score for this document
+      const highestSimilarity = await this.prisma.documentSimilarity.findFirst({
+        where: {
+          sourceDocumentId: documentId,
+        },
+        orderBy: {
+          similarityScore: 'desc',
+        },
+        include: {
+          targetDocument: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      if (!highestSimilarity) {
+        return {
+          shouldReject: false,
+          requiresManualReview: false,
+        };
+      }
+
+      const similarityPercent = Math.round(
+        highestSimilarity.similarityScore * 100,
+      );
+
+      // Auto-reject if similarity is above auto-reject threshold
+      if (similarityPercent >= settings.similarityAutoRejectThreshold) {
+        return {
+          shouldReject: true,
+          requiresManualReview: false,
+          reason: `Tài liệu tương đồng ${similarityPercent}% với "${highestSimilarity.targetDocument.title}" - vượt ngưỡng tự động từ chối ${settings.similarityAutoRejectThreshold}%`,
+        };
+      }
+
+      // Require manual review if similarity is above manual review threshold
+      if (similarityPercent >= settings.similarityManualReviewThreshold) {
+        return {
+          shouldReject: false,
+          requiresManualReview: true,
+          reason: `Tài liệu tương đồng ${similarityPercent}% với "${highestSimilarity.targetDocument.title}" - cần xem xét thủ công`,
+        };
+      }
+
+      return {
+        shouldReject: false,
+        requiresManualReview: false,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking similarity for document ${documentId}:`,
+        error,
+      );
+      return {
+        shouldReject: false,
+        requiresManualReview: false,
       };
     }
   }

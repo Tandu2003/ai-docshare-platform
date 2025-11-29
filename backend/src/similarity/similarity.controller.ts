@@ -65,4 +65,26 @@ export class SimilarityController {
       await this.similarityService.generateDocumentEmbedding(documentId);
     return { success: true, embeddingLength: embedding.length };
   }
+
+  /**
+   * Process all pending similarity jobs (admin only)
+   */
+  @Post('process-pending')
+  async processPendingJobs() {
+    await this.similarityJobService.processPendingJobs();
+    return { success: true, message: 'Started processing pending jobs' };
+  }
+
+  /**
+   * Run similarity detection synchronously for a document (admin only)
+   */
+  @Post('detect-sync/:documentId')
+  async detectSyncSimilarity(@Param('documentId') documentId: string) {
+    await this.similarityJobService.runSimilarityDetectionSync(documentId);
+    const results =
+      await this.similarityService.getSimilarityResultsForModeration(
+        documentId,
+      );
+    return { success: true, results };
+  }
 }
