@@ -8,13 +8,19 @@ import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis'
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
 import { DocumentInlineViewer } from '@/components/documents/document-inline-viewer';
+import { DocumentPreviewViewer } from '@/components/documents/document-preview-viewer';
 import DocumentShareDialog from '@/components/documents/document-share-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks';
-import { getSocket, joinDocumentRoom, leaveDocumentRoom } from '@/lib/socket';
+import {
+  joinDocumentRoom as _joinDocumentRoom,
+  leaveDocumentRoom as _leaveDocumentRoom,
+  getSocket,
+} from '@/lib/socket';
 import {
   createBookmark,
   deleteBookmark,
@@ -729,7 +735,40 @@ export default function DocumentDetailPage() {
               <CardTitle>Nội dung tài liệu</CardTitle>
             </CardHeader>
             <CardContent>
-              <DocumentInlineViewer files={document.files} />
+              {/* For non-owners: Show preview images only */}
+              {/* For owners: Show tabs to switch between preview and full viewer */}
+              {isOwner ? (
+                <Tabs defaultValue="preview" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                    <TabsTrigger value="full">Xem đầy đủ</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="preview">
+                    <DocumentPreviewViewer
+                      documentId={document.id}
+                      previews={document.previews}
+                      previewStatus={document.previewStatus}
+                      previewCount={document.previewCount}
+                      isOwner={isOwner}
+                      hasAccess={true}
+                      apiKey={apiKey}
+                    />
+                  </TabsContent>
+                  <TabsContent value="full">
+                    <DocumentInlineViewer files={document.files} />
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <DocumentPreviewViewer
+                  documentId={document.id}
+                  previews={document.previews}
+                  previewStatus={document.previewStatus}
+                  previewCount={document.previewCount}
+                  isOwner={false}
+                  hasAccess={true}
+                  apiKey={apiKey}
+                />
+              )}
             </CardContent>
           </Card>
 

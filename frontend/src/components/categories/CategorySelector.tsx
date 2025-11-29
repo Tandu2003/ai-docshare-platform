@@ -44,7 +44,7 @@ export function CategorySelector({
   disabled = false,
   showAiSuggestions = true,
   className,
-  required = false,
+  required: _required = false,
 }: CategorySelectorProps) {
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);

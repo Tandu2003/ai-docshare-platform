@@ -16,6 +16,7 @@ import { FilesModule } from '@/files/files.module';
 import { HealthModule } from '@/health/health.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
 import { PointsModule } from '@/points/points.module';
+import { PreviewModule } from '@/preview/preview.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { SimilarityModule } from '@/similarity/similarity.module';
 import { UsersModule } from '@/users/users.module';
@@ -44,6 +45,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AdminModule,
     SimilarityModule,
     PointsModule,
+    PreviewModule,
   ],
   controllers: [],
   providers: [

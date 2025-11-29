@@ -194,13 +194,7 @@ export class SystemSettingsService {
       });
     }
 
-    if (settings.downloadReward !== undefined) {
-      systemSettings.push({
-        key: 'points.download_reward',
-        value: settings.downloadReward.toString(),
-        category: 'points',
-      });
-    }
+    // downloadReward đã bị xóa - uploader nhận bằng đúng downloadCost
 
     if (systemSettings.length > 0) {
       await this.updateSettings(systemSettings);

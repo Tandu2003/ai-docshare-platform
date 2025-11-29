@@ -142,6 +142,7 @@ export default function NotificationsPage() {
         firstName: '',
         lastName: '',
         roleId: 'user',
+        pointsBalance: 0,
         isVerified: true,
         isActive: true,
         createdAt: now,

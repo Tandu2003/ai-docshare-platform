@@ -138,6 +138,9 @@ model Document {
   downloadCost     Int?
   zipFileUrl       String? // Cached ZIP file URL for multi-file documents
   zipFileCreatedAt DateTime? // When the ZIP file was created
+  // Preview system: tracks if previews have been generated
+  previewStatus    PreviewStatus            @default(PENDING)
+  previewError     String? // Error message if preview generation failed
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 
@@ -155,6 +158,7 @@ model Document {
   views           View[]
   recommendations RecommendationEngine[]
   shareLink       DocumentShareLink?
+  previews        DocumentPreview[] // Preview images for document pages
   // New similarity relations
   embedding        DocumentEmbedding?
   similarityJobs   SimilarityJob[]
@@ -175,6 +179,7 @@ model Document {
   @@index([viewCount])
   @@index([createdAt])
   @@index([tags])
+  @@index([previewStatus])
   @@map("documents")
 }
 
@@ -212,6 +217,41 @@ model DocumentShareLink {
 
   @@index([expiresAt])
   @@map("document_share_links")
+}
+
+// ================================
+// DOCUMENT PREVIEW SYSTEM
+// ================================
+
+model DocumentPreview {
+  id          String   @id @default(cuid())
+  documentId  String
+  pageNumber  Int      // Page number (1-based, typically 1-3)
+  previewPath String   // Storage path/URL for preview image (JPEG/PNG)
+  mimeType    String   @default("image/jpeg") // image/jpeg or image/png
+  fileSize    Int      @default(0) // Preview image size in bytes
+  width       Int?     // Image width in pixels
+  height      Int?     // Image height in pixels
+  status      PreviewStatus @default(PENDING) // Generation status
+  errorMessage String? // Error message if generation failed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Constraints - one preview per page per document
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+  @@index([status])
+  @@map("document_previews")
+}
+
+enum PreviewStatus {
+  PENDING     // Waiting to be generated
+  PROCESSING  // Currently being generated
+  COMPLETED   // Successfully generated
+  FAILED      // Generation failed
 }
 
 // ================================

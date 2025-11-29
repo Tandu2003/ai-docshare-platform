@@ -24,6 +24,18 @@ export interface DocumentShareLink {
   isRevoked?: boolean;
 }
 
+export interface DocumentPreview {
+  id: string;
+  documentId: string;
+  pageNumber: number;
+  previewUrl: string;
+  mimeType: string;
+  width?: number;
+  height?: number;
+}
+
+export type PreviewStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
 export interface DocumentView {
   id: string;
   title: string;
@@ -42,6 +54,8 @@ export interface DocumentView {
   viewCount: number;
   downloadCount: number;
   downloadCost?: number; // Points cost to download this document
+  originalDownloadCost?: number | null; // Original/custom download cost set by uploader
+  systemDefaultDownloadCost?: number; // System default download cost
   hasDownloaded?: boolean; // Whether current user has already downloaded this document
   averageRating: number;
   totalRatings: number;
@@ -71,6 +85,10 @@ export interface DocumentView {
     secureUrl?: string; // Temporary secure URL with expiration
     expiresAt?: string; // When the secure URL expires
   }[];
+  // Preview system
+  previews?: DocumentPreview[];
+  previewStatus?: PreviewStatus;
+  previewCount?: number;
   stats: {
     ratingsCount: number;
     commentsCount: number;

@@ -10,6 +10,7 @@ import { CategoriesService } from '../categories/categories.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
+import { PreviewService } from '../preview/preview.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
@@ -18,6 +19,8 @@ import { PointsService } from '@/points/points.service';
 import { SimilarityJobService } from '@/similarity/similarity-job.service';
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -47,6 +50,8 @@ export class DocumentsService {
     private similarityJobService: SimilarityJobService,
     private pointsService: PointsService,
     private categoriesService: CategoriesService,
+    @Inject(forwardRef(() => PreviewService))
+    private previewService: PreviewService,
   ) {}
 
   /**
@@ -397,6 +402,13 @@ export class DocumentsService {
           );
         });
       }
+
+      // Generate document previews in background (first 3 pages as images)
+      void this.previewService.generatePreviews(document.id).catch(error => {
+        this.logger.warn(
+          `Failed to generate previews for document ${document.id}: ${error.message}`,
+        );
+      });
 
       // Return document with files
       const result = {
@@ -1381,6 +1393,26 @@ export class DocumentsService {
         },
         aiAnalysis: (document as any).aiAnalysis || null,
       };
+
+      // Add preview information
+      try {
+        const previews = await this.previewService.getDocumentPreviews(
+          documentId,
+          userId,
+        );
+        const previewStatus =
+          await this.previewService.getPreviewStatus(documentId);
+        response.previews = previews;
+        response.previewStatus = previewStatus.status;
+        response.previewCount = previewStatus.previewCount;
+      } catch (previewError) {
+        this.logger.warn(
+          `Could not get previews for document ${documentId}: ${previewError.message}`,
+        );
+        response.previews = [];
+        response.previewStatus = 'PENDING';
+        response.previewCount = 0;
+      }
 
       if (isOwner && document.shareLink) {
         response.shareLink = {
