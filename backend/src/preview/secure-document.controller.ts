@@ -25,9 +25,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
   user?: {
     id: string;
     [key: string]: any;
@@ -67,7 +67,7 @@ export class SecureDocumentController {
     @Param('documentId') documentId: string,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -138,7 +138,7 @@ export class SecureDocumentController {
   async generateDownloadToken(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -213,7 +213,7 @@ export class SecureDocumentController {
   async streamWithToken(
     @Param('token') token: string,
     @Query('fileIndex') fileIndexStr: string | undefined,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       // Validate token
@@ -237,17 +237,17 @@ export class SecureDocumentController {
         );
 
       // Set response headers
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader(
+      res.header('Content-Type', mimeType);
+      res.header(
         'Content-Disposition',
         `attachment; filename="${encodeURIComponent(fileName)}"`,
       );
       if (fileSize > 0) {
-        res.setHeader('Content-Length', fileSize);
+        res.header('Content-Length', fileSize.toString());
       }
 
       // Stream to response
-      stream.pipe(res);
+      return res.send(stream);
     } catch (error) {
       this.logger.error(`Error streaming with token:`, error);
 
@@ -295,7 +295,7 @@ export class SecureDocumentController {
     @Param('fileIndex', ParseIntPipe) fileIndex: number,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -314,17 +314,17 @@ export class SecureDocumentController {
         );
 
       // Set response headers
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader(
+      res.header('Content-Type', mimeType);
+      res.header(
         'Content-Disposition',
         `attachment; filename="${encodeURIComponent(fileName)}"`,
       );
       if (fileSize > 0) {
-        res.setHeader('Content-Length', fileSize);
+        res.header('Content-Length', fileSize.toString());
       }
 
       // Stream to response
-      stream.pipe(res);
+      return res.send(stream);
     } catch (error) {
       this.logger.error(`Error streaming document ${documentId}:`, error);
 
@@ -371,7 +371,7 @@ export class SecureDocumentController {
     @Query('apiKey') apiKey: string | undefined,
     @Query('level') level: 'preview' | 'download' | 'full' | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;

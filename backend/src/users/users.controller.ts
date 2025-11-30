@@ -25,7 +25,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -36,8 +36,8 @@ export class UsersController {
   @AdminOnly()
   async getUsers(
     @Query() query: GetUsersQueryDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.getUsers(query);
 
@@ -52,8 +52,8 @@ export class UsersController {
   @AdminOnly()
   async getUserById(
     @Param('id') id: string,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.getUserById(id);
 
@@ -69,8 +69,8 @@ export class UsersController {
   @HttpCode(HttpStatus.CREATED)
   async createUser(
     @Body() createUserDto: CreateUserDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.createUser(createUserDto);
 
@@ -82,8 +82,8 @@ export class UsersController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.updateUser(id, updateUserDto);
 
@@ -95,8 +95,8 @@ export class UsersController {
   async updateUserRole(
     @Param('id') id: string,
     @Body() updateUserRoleDto: UpdateUserRoleDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.updateUserRole(
       id,
@@ -115,8 +115,8 @@ export class UsersController {
   async updateUserStatus(
     @Param('id') id: string,
     @Body() updateUserStatusDto: UpdateUserStatusDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.updateUserStatus(
       id,
@@ -135,8 +135,8 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(
     @Param('id') id: string,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     await this.usersService.deleteUser(id);
 
@@ -148,8 +148,8 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async unDeleteUser(
     @Param('id') id: string,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     await this.usersService.unDeleteUser(id);
 
@@ -162,8 +162,8 @@ export class UsersController {
     @Param('id') id: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.getUserActivity(id, page, limit);
 
@@ -178,8 +178,8 @@ export class UsersController {
   @AdminOnly()
   async getUserStatistics(
     @Param('id') id: string,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.getUserStatistics(id);
 
@@ -193,8 +193,8 @@ export class UsersController {
   @Get('roles/list')
   @AdminOnly()
   async getRoles(
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: FastifyRequest & { user: AuthUser },
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.usersService.getRoles();
 

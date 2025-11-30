@@ -26,7 +26,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
+
+interface AuthenticatedRequest extends FastifyRequest {
+  user: AuthUser;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -38,7 +42,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async register(
     @Body() registerDto: RegisterDto,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.register(registerDto);
 
@@ -56,7 +60,7 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   async login(
     @Body() loginDto: LoginDto,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.login(loginDto);
 
@@ -79,10 +83,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 requests per minute
   async refreshToken(
-    @Req() request: Request,
-    @Res() response: Response,
+    @Req() request: FastifyRequest,
+    @Res() response: FastifyReply,
   ): Promise<void> {
-    const refreshToken = request.cookies?.refreshToken;
+    const refreshToken = (request as any).cookies?.refreshToken;
 
     if (!refreshToken) {
       ResponseHelper.error(
@@ -108,7 +112,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  logout(@Res() response: Response): void {
+  logout(@Res() response: FastifyReply): void {
     // Clear refresh token cookie
     response.clearCookie('refreshToken', {
       httpOnly: true,
@@ -123,8 +127,8 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: AuthenticatedRequest,
+    @Res() response: FastifyReply,
   ): void {
     const { password, ...userWithoutPassword } = request.user as any;
     void password;
@@ -142,7 +146,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async verifyEmail(
     @Body() verifyEmailDto: VerifyEmailDto,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.verifyEmail(verifyEmailDto);
 
@@ -159,7 +163,7 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
   async resendVerification(
     @Body() resendDto: ResendVerificationDto,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.resendVerification(resendDto);
 
@@ -172,7 +176,7 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.forgotPassword(forgotPasswordDto);
 
@@ -188,7 +192,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
-    @Res() response: Response,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.resetPassword(resetPasswordDto);
 
@@ -200,8 +204,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async updateProfile(
     @Body() updateProfileDto: UpdateProfileDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: AuthenticatedRequest,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.updateProfile(
       request.user.id,
@@ -216,8 +220,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @Body() changePasswordDto: ChangePasswordDto,
-    @Req() request: Request & { user: AuthUser },
-    @Res() response: Response,
+    @Req() request: AuthenticatedRequest,
+    @Res() response: FastifyReply,
   ): Promise<void> {
     const result = await this.authService.changePassword(
       request.user.id,
@@ -230,16 +234,16 @@ export class AuthController {
   // Private helper methods
 
   private setRefreshTokenCookie(
-    response: Response,
+    response: FastifyReply,
     refreshToken: string,
   ): void {
     const isProduction = process.env.NODE_ENV === 'production';
 
-    response.cookie('refreshToken', refreshToken, {
+    response.setCookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       path: '/',
     });
   }

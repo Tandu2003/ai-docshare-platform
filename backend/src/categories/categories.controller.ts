@@ -26,7 +26,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 @ApiTags('Categories')
 @ApiBearerAuth()
@@ -45,7 +45,7 @@ export class CategoriesController {
   })
   async getCategories(
     @Query('includeInactive') includeInactive: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const include =
@@ -71,7 +71,7 @@ export class CategoriesController {
 
   @Get('public')
   @ApiOperation({ summary: 'Get public categories (active only)' })
-  async getPublicCategories(@Res() res: Response) {
+  async getPublicCategories(@Res() res: FastifyReply) {
     try {
       const categories = await this.categoriesService.findAll(false);
       return ResponseHelper.success(
@@ -117,7 +117,7 @@ export class CategoriesController {
   })
   async getCategoryDetail(
     @Param('id') id: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Query('page') page = '1',
     @Query('limit') limit = '12',
     @Query('sort') sort?: string,
@@ -155,7 +155,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'AI suggests categories for a document' })
   async suggestCategoriesForDocument(
     @Param('documentId') documentId: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Request() req: any,
   ) {
     try {
@@ -192,7 +192,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Create category' })
   async createCategory(
     @Body() dto: CreateCategoryDto,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Request() req: any,
   ) {
     try {
@@ -227,7 +227,7 @@ export class CategoriesController {
   async updateCategory(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Request() req: any,
   ) {
     try {
@@ -261,7 +261,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Delete category' })
   async deleteCategory(
     @Param('id') id: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Request() req: any,
   ) {
     try {

@@ -4,7 +4,7 @@ import {
   BaseMeta,
   PaginationMeta,
 } from '../interfaces/api-response.interface';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 export class ResponseHelper {
   /**
@@ -44,11 +44,11 @@ export class ResponseHelper {
    * Success response
    */
   static success<T>(
-    res: Response,
+    res: FastifyReply,
     data?: T,
     message: string = HTTP_MESSAGES.SUCCESS,
     statusCode: number = HTTP_STATUS.OK,
-  ): Response<ApiResponse<T>> {
+  ): FastifyReply {
     // Convert BigInt values to strings to make them JSON-serializable
     const safeData = this.convertBigIntsToString(data);
 
@@ -59,17 +59,17 @@ export class ResponseHelper {
       meta: this.createBaseMeta(),
     };
 
-    return res.status(statusCode).json(response);
+    return res.status(statusCode).send(response);
   }
 
   /**
    * Created response
    */
   static created<T>(
-    res: Response,
+    res: FastifyReply,
     data?: T,
     message: string = HTTP_MESSAGES.CREATED,
-  ): Response<ApiResponse<T>> {
+  ): FastifyReply {
     return this.success(res, data, message, HTTP_STATUS.CREATED);
   }
 
@@ -77,10 +77,10 @@ export class ResponseHelper {
    * Updated response
    */
   static updated<T>(
-    res: Response,
+    res: FastifyReply,
     data?: T,
     message: string = HTTP_MESSAGES.UPDATED,
-  ): Response<ApiResponse<T>> {
+  ): FastifyReply {
     return this.success(res, data, message, HTTP_STATUS.OK);
   }
 
@@ -88,9 +88,9 @@ export class ResponseHelper {
    * Deleted response
    */
   static deleted(
-    res: Response,
+    res: FastifyReply,
     message: string = HTTP_MESSAGES.DELETED,
-  ): Response<ApiResponse> {
+  ): FastifyReply {
     return this.success(res, null, message, HTTP_STATUS.OK);
   }
 
@@ -98,13 +98,13 @@ export class ResponseHelper {
    * Paginated response
    */
   static paginated<T>(
-    res: Response,
+    res: FastifyReply,
     data: T[],
     page: number,
     limit: number,
     total: number,
     message: string = HTTP_MESSAGES.DATA_RETRIEVED,
-  ): Response<ApiResponse<T[]>> {
+  ): FastifyReply {
     const totalPages = Math.ceil(total / limit);
 
     const response: ApiResponse<T[]> = {
@@ -114,18 +114,18 @@ export class ResponseHelper {
       meta: this.createPaginationMeta(page, limit, total, totalPages),
     };
 
-    return res.status(HTTP_STATUS.OK).json(response);
+    return res.status(HTTP_STATUS.OK).send(response);
   }
 
   /**
    * Error response
    */
   static error(
-    res: Response,
+    res: FastifyReply,
     message: string = 'Đã xảy ra lỗi',
     statusCode: number = 500,
     error?: any,
-  ): Response<ApiResponse> {
+  ): FastifyReply {
     const response: ApiResponse = {
       success: false,
       message,
@@ -133,7 +133,7 @@ export class ResponseHelper {
       meta: this.createBaseMeta(),
     };
 
-    return res.status(statusCode).json(response);
+    return res.status(statusCode).send(response);
   }
 
   // Private helper methods

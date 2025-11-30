@@ -18,9 +18,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
   user?: {
     id: string;
     [key: string]: any;
@@ -42,7 +42,7 @@ export class BookmarksController {
   })
   async getBookmarkStats(
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user?.id;
 
@@ -81,7 +81,7 @@ export class BookmarksController {
   @ApiOperation({ summary: 'Create a bookmark for a document' })
   async createBookmark(
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Body() payload: CreateBookmarkDto,
   ) {
     const userId = req.user?.id;
@@ -96,9 +96,10 @@ export class BookmarksController {
     }
 
     // Check if request is from API key share
+    const query = req.query as Record<string, string | undefined>;
     const isFromApiKey =
       req.headers['x-api-key'] !== undefined ||
-      (req.query && req.query.apiKey !== undefined && req.query.apiKey !== '');
+      (query && query.apiKey !== undefined && query.apiKey !== '');
 
     try {
       const bookmark = await this.bookmarksService.createBookmark(userId, {
@@ -132,7 +133,7 @@ export class BookmarksController {
   @ApiOperation({ summary: 'Delete a bookmark' })
   async deleteBookmark(
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Param('bookmarkId') bookmarkId: string,
   ) {
     const userId = req.user?.id;
@@ -170,7 +171,7 @@ export class BookmarksController {
   @ApiOperation({ summary: 'Get bookmarks for the authenticated user' })
   async getBookmarks(
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
     @Query('folderId') folderId?: string,
     @Query('search') search?: string,
     @Query('documentId') documentId?: string,

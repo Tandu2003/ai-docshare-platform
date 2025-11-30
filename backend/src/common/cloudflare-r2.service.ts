@@ -60,7 +60,12 @@ export class CloudflareR2Service {
   }
 
   async uploadFile(
-    file: Express.Multer.File,
+    file: {
+      originalname: string;
+      buffer: Buffer;
+      size: number;
+      mimetype: string;
+    },
     userId: string,
     folder: string = 'uploads',
   ): Promise<{

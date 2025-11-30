@@ -9,7 +9,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -17,7 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+    const response = ctx.getResponse<FastifyReply>();
 
     let statusCode: number;
     let message: string;
@@ -61,6 +61,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       },
     };
 
-    response.status(statusCode).json(errorResponse);
+    response.status(statusCode).send(errorResponse);
   }
 }

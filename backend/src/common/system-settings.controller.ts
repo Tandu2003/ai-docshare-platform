@@ -23,7 +23,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 @ApiTags('System Settings')
 @Controller('settings')
@@ -36,7 +36,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'Points settings retrieved successfully',
   })
-  async getPublicPointsSettings(@Res() res: Response) {
+  async getPublicPointsSettings(@Res() res: FastifyReply) {
     try {
       const settings = await this.settingsService.getPointsSettings();
 
@@ -63,7 +63,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'Points settings retrieved successfully',
   })
-  async getPointsSettings(@Res() res: Response) {
+  async getPointsSettings(@Res() res: FastifyReply) {
     try {
       const settings = await this.settingsService.getPointsSettings();
 
@@ -90,7 +90,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'AI moderation settings retrieved successfully',
   })
-  async getSettings(@Res() res: Response) {
+  async getSettings(@Res() res: FastifyReply) {
     try {
       const settings = await this.settingsService.getAIModerationSettings();
 
@@ -119,7 +119,7 @@ export class SystemSettingsController {
   })
   async updateSetting(
     @Body() setting: SystemSettingValue,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       await this.settingsService.setSetting(setting);
@@ -147,7 +147,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'All system settings retrieved successfully',
   })
-  async getAllSettings(@Res() res: Response) {
+  async getAllSettings(@Res() res: FastifyReply) {
     try {
       const settings = await this.settingsService.getAllSettings();
 
@@ -174,7 +174,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'Settings categories retrieved successfully',
   })
-  async getCategories(@Res() res: Response) {
+  async getCategories(@Res() res: FastifyReply) {
     try {
       const categories = await this.settingsService.getSettingsCategories();
 
@@ -203,7 +203,7 @@ export class SystemSettingsController {
   })
   async updateSettings(
     @Body() settings: SystemSettingValue[],
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       await this.settingsService.updateSettings(settings);
@@ -231,7 +231,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'Setting deleted successfully',
   })
-  async deleteSetting(@Param('key') key: string, @Res() res: Response) {
+  async deleteSetting(@Param('key') key: string, @Res() res: FastifyReply) {
     try {
       await this.settingsService.deleteSetting(key);
 
@@ -258,7 +258,7 @@ export class SystemSettingsController {
     status: HttpStatus.OK,
     description: 'Default settings initialized successfully',
   })
-  async initializeDefaults(@Res() res: Response) {
+  async initializeDefaults(@Res() res: FastifyReply) {
     try {
       await this.settingsService.initializeDefaultSettings();
 

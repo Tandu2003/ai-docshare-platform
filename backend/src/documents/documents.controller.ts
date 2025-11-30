@@ -34,9 +34,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
   user: {
     id: string;
     [key: string]: any;
@@ -64,7 +64,7 @@ export class DocumentsController {
   async createDocument(
     @Body() createDocumentDto: CreateDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user?.id;
     if (!userId) {
@@ -117,7 +117,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() downloadDto: DownloadDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id; // Use optional chaining since user might not be authenticated
@@ -126,7 +126,6 @@ export class DocumentsController {
       let ipAddress =
         downloadDto.ipAddress ||
         req.ip ||
-        req.connection?.remoteAddress ||
         req.socket?.remoteAddress ||
         'unknown';
 
@@ -136,8 +135,9 @@ export class DocumentsController {
       }
 
       const userAgent =
-        downloadDto.userAgent || req.get('User-Agent') || 'unknown';
-      const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
+        downloadDto.userAgent || req.headers['user-agent'] || 'unknown';
+      const referrer =
+        downloadDto.referrer || req.headers['referer'] || 'unknown';
 
       this.logger.log(
         `Download request for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
@@ -185,7 +185,7 @@ export class DocumentsController {
   async getDownloadUrl(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -237,7 +237,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() downloadDto: DownloadDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -246,7 +246,6 @@ export class DocumentsController {
       let ipAddress =
         downloadDto.ipAddress ||
         req.ip ||
-        req.connection?.remoteAddress ||
         req.socket?.remoteAddress ||
         'unknown';
 
@@ -255,8 +254,9 @@ export class DocumentsController {
       }
 
       const userAgent =
-        downloadDto.userAgent || req.get('User-Agent') || 'unknown';
-      const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
+        downloadDto.userAgent || req.headers['user-agent'] || 'unknown';
+      const referrer =
+        downloadDto.referrer || req.headers['referer'] || 'unknown';
 
       this.logger.log(
         `Init download for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
@@ -303,7 +303,7 @@ export class DocumentsController {
   async confirmDownload(
     @Param('downloadId') downloadId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -345,7 +345,7 @@ export class DocumentsController {
   async cancelDownload(
     @Param('downloadId') downloadId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -388,7 +388,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() downloadDto: DownloadDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -397,7 +397,6 @@ export class DocumentsController {
       let ipAddress =
         downloadDto.ipAddress ||
         req.ip ||
-        req.connection?.remoteAddress ||
         req.socket?.remoteAddress ||
         'unknown';
 
@@ -407,8 +406,9 @@ export class DocumentsController {
       }
 
       const userAgent =
-        downloadDto.userAgent || req.get('User-Agent') || 'unknown';
-      const referrer = downloadDto.referrer || req.get('Referer') || 'unknown';
+        downloadDto.userAgent || req.headers['user-agent'] || 'unknown';
+      const referrer =
+        downloadDto.referrer || req.headers['referer'] || 'unknown';
 
       this.logger.log(
         `Legacy track download for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
@@ -478,7 +478,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -491,16 +491,12 @@ export class DocumentsController {
       }
 
       // Extract request metadata
-      let ipAddress =
-        req.ip ||
-        req.connection?.remoteAddress ||
-        req.socket?.remoteAddress ||
-        'unknown';
+      let ipAddress = req.ip || req.socket?.remoteAddress || 'unknown';
       if (ipAddress.startsWith('::ffff:')) {
         ipAddress = ipAddress.substring(7);
       }
-      const userAgent = req.get('User-Agent') || 'unknown';
-      const referrer = req.get('Referer') || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const referrer = req.headers['referer'] || 'unknown';
 
       this.logger.log(
         `Streaming download request for document ${documentId} from user ${userId}`,
@@ -517,16 +513,16 @@ export class DocumentsController {
       );
 
       // Set response headers for file download
-      res.setHeader('Content-Type', streamData.mimeType);
-      res.setHeader(
+      res.header('Content-Type', streamData.mimeType);
+      res.header(
         'Content-Disposition',
         `attachment; filename="${encodeURIComponent(streamData.fileName)}"`,
       );
-      res.setHeader('Content-Length', streamData.fileSize);
-      res.setHeader('X-Download-Id', streamData.downloadId);
+      res.header('Content-Length', streamData.fileSize.toString());
+      res.header('X-Download-Id', streamData.downloadId);
 
       // Track when stream completes successfully (all bytes sent to client)
-      res.on('finish', () => {
+      res.raw.on('finish', () => {
         this.logger.log(
           `res.finish triggered for download ${streamData.downloadId}`,
         );
@@ -534,8 +530,8 @@ export class DocumentsController {
       });
 
       // Track when stream is closed prematurely (client disconnected, network error, etc.)
-      res.on('close', () => {
-        if (!res.writableEnded) {
+      res.raw.on('close', () => {
+        if (!res.raw.writableEnded) {
           // Stream was aborted before completion
           this.logger.log(
             `res.close (aborted) triggered for download ${streamData.downloadId}`,
@@ -550,8 +546,8 @@ export class DocumentsController {
           `Stream error for download ${streamData.downloadId}: ${error.message}`,
         );
         void streamData.onStreamError();
-        if (!res.headersSent) {
-          return ResponseHelper.error(
+        if (!res.sent) {
+          void ResponseHelper.error(
             res,
             'Lỗi khi stream file',
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -560,7 +556,7 @@ export class DocumentsController {
       });
 
       // Pipe the file stream to response
-      streamData.fileStream.pipe(res);
+      return res.send(streamData.fileStream);
     } catch (error) {
       this.logger.error(
         `Error streaming download for document ${documentId}:`,
@@ -599,8 +595,8 @@ export class DocumentsController {
     @Query('language') language: string | undefined,
     @Query('sortBy') sortBy: string | undefined,
     @Query('sortOrder') sortOrder: string | undefined,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     try {
       if (!query || query.trim().length === 0) {
@@ -685,8 +681,8 @@ export class DocumentsController {
     @Query('categoryId') categoryId: string | undefined,
     @Query('sortBy') sortBy: string | undefined,
     @Query('sortOrder') sortOrder: string | undefined,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     try {
       const pageNum = Math.max(1, Number(page) || 1);
@@ -748,7 +744,7 @@ export class DocumentsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user.id;
     const pageNum = Number(page) || 1;
@@ -787,8 +783,8 @@ export class DocumentsController {
   async getDocumentById(
     @Param('documentId') documentId: string,
     @Query('apiKey') apiKey: string | undefined,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     try {
       // Get user ID if authenticated
@@ -832,7 +828,7 @@ export class DocumentsController {
   async getComments(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -861,7 +857,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() dto: CreateCommentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -898,7 +894,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Param('commentId') commentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -936,7 +932,7 @@ export class DocumentsController {
     @Param('commentId') commentId: string,
     @Body() dto: UpdateCommentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -974,7 +970,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Param('commentId') commentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -1008,7 +1004,7 @@ export class DocumentsController {
   async getUserRating(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -1040,7 +1036,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() dto: SetRatingDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -1081,7 +1077,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() shareDocumentDto: ShareDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user?.id;
     if (!userId) {
@@ -1129,7 +1125,7 @@ export class DocumentsController {
   async revokeShareLink(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user?.id;
     if (!userId) {
@@ -1172,19 +1168,15 @@ export class DocumentsController {
   async viewDocument(
     @Param('documentId') documentId: string,
     @Body() viewDocumentDto: ViewDocumentDto,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     try {
       // Get user ID if authenticated (optional)
       const userId = (req as any).user?.id || null;
 
       // Get IP address with multiple fallback methods
-      let ipAddress =
-        req.ip ||
-        req.connection?.remoteAddress ||
-        req.socket?.remoteAddress ||
-        'unknown';
+      let ipAddress = req.ip || req.socket?.remoteAddress || 'unknown';
 
       // Handle x-forwarded-for header (can be array)
       if (!ipAddress || ipAddress === 'unknown') {
@@ -1200,7 +1192,7 @@ export class DocumentsController {
         }
       }
 
-      const userAgent = req.get('User-Agent') || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
       const { referrer } = viewDocumentDto;
 
       this.logger.log(
@@ -1245,7 +1237,7 @@ export class DocumentsController {
     status: HttpStatus.OK,
     description: 'Các loại tệp được phép đã được truy xuất thành công',
   })
-  getAllowedFileTypes(@Res() res: Response) {
+  getAllowedFileTypes(@Res() res: FastifyReply) {
     try {
       const allowedTypes = this.filesService.getAllowedTypes();
       return ResponseHelper.success(
@@ -1273,7 +1265,7 @@ export class DocumentsController {
   async deleteDocument(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -1318,7 +1310,7 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -1369,7 +1361,7 @@ export class DocumentsController {
   async getSecureFileUrl(
     @Param('fileId') fileId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -1414,19 +1406,15 @@ export class DocumentsController {
   })
   async incrementViewCount(
     @Param('fileId') fileId: string,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     try {
       // Get user ID if authenticated (optional)
       const userId = (req as any).user?.id || null;
 
       // Get IP address with multiple fallback methods
-      let ipAddress =
-        req.ip ||
-        req.connection?.remoteAddress ||
-        req.socket?.remoteAddress ||
-        'unknown';
+      let ipAddress = req.ip || req.socket?.remoteAddress || 'unknown';
 
       // Handle x-forwarded-for header (can be array)
       if (!ipAddress || ipAddress === 'unknown') {
@@ -1442,7 +1430,7 @@ export class DocumentsController {
         }
       }
 
-      const userAgent = req.get('User-Agent') || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
 
       this.logger.log(
         `Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`,

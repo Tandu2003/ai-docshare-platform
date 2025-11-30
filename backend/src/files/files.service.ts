@@ -10,6 +10,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+// Common file interface that works with both Express.Multer.File and Fastify multipart
+export interface UploadedFile {
+  originalname: string;
+  filename?: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
+}
+
 export interface FileUploadResult {
   id: string;
   originalName: string;
@@ -34,7 +43,7 @@ export class FilesService {
   /**
    * Upload multiple files to storage and save metadata
    */
-  async uploadFiles(files: Express.Multer.File[], userId: string) {
+  async uploadFiles(files: UploadedFile[], userId: string) {
     try {
       this.logger.log(`Uploading ${files.length} files for user: ${userId}`);
 
@@ -63,7 +72,7 @@ export class FilesService {
   /**
    * Upload single file to storage and save metadata
    */
-  async uploadFile(file: Express.Multer.File, userId: string) {
+  async uploadFile(file: UploadedFile, userId: string) {
     try {
       this.logger.log(
         `Uploading file: ${file.originalname} for user: ${userId}`,
@@ -296,7 +305,7 @@ export class FilesService {
   /**
    * Validate uploaded file
    */
-  private validateFile(file: Express.Multer.File) {
+  private validateFile(file: UploadedFile) {
     this.logger.log(
       `Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`,
     );
@@ -365,7 +374,7 @@ export class FilesService {
   /**
    * Upload avatar for user
    */
-  async uploadAvatar(file: Express.Multer.File, userId: string) {
+  async uploadAvatar(file: UploadedFile, userId: string) {
     try {
       this.logger.log(`Uploading avatar for user: ${userId}`);
 
@@ -442,7 +451,7 @@ export class FilesService {
   /**
    * Validate avatar file
    */
-  private validateAvatarFile(file: Express.Multer.File) {
+  private validateAvatarFile(file: UploadedFile) {
     this.logger.log(
       `Validating avatar: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`,
     );

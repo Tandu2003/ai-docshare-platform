@@ -25,9 +25,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { DocumentModerationStatus } from '@prisma/client';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
   user: {
     id: string;
   };
@@ -45,7 +45,7 @@ export class AdminDocumentsController {
   @ApiOperation({ summary: 'Danh sách tài liệu chờ duyệt' })
   async getModerationQueue(
     @Query() query: ModerationQueueQueryDto,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const page = query.page ? Math.max(1, parseInt(query.page, 10)) : 1;
@@ -85,7 +85,7 @@ export class AdminDocumentsController {
   @ApiOperation({ summary: 'Chi tiết tài liệu để kiểm duyệt' })
   async getDocumentForModeration(
     @Param('documentId') documentId: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const document =
@@ -115,7 +115,7 @@ export class AdminDocumentsController {
     @Param('documentId') documentId: string,
     @Body() body: ApproveDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const adminId = req.user?.id;
@@ -153,7 +153,7 @@ export class AdminDocumentsController {
     @Param('documentId') documentId: string,
     @Body() body: RejectDocumentDto,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const adminId = req.user?.id;
@@ -181,7 +181,7 @@ export class AdminDocumentsController {
   @ApiOperation({ summary: 'Phân tích AI hỗ trợ kiểm duyệt' })
   async generateAIModeration(
     @Param('documentId') documentId: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const result =

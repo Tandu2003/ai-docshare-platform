@@ -1,11 +1,11 @@
 import { success } from '@/common';
 import { Controller, Get, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 @Controller('health')
 export class HealthController {
   @Get()
-  healthCheck(@Res() res: Response) {
+  healthCheck(@Res() res: FastifyReply) {
     return success(
       res,
       {

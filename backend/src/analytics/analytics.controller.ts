@@ -9,7 +9,14 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
+
+interface AuthenticatedRequest extends FastifyRequest {
+  user?: {
+    id: string;
+    [key: string]: any;
+  };
+}
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
@@ -21,15 +28,21 @@ export class AnalyticsController {
   @Get('dashboard')
   @AdminOnly()
   @ApiOperation({ summary: 'Get dashboard overview stats (Admin only)' })
-  async getDashboardOverview(@Req() _req: Request, @Res() res: Response) {
+  async getDashboardOverview(
+    @Req() _req: FastifyRequest,
+    @Res() res: FastifyReply,
+  ) {
     const dashboard = await this.analyticsService.getDashboardOverview();
     return ResponseHelper.success(res, dashboard);
   }
 
   @Get('user-dashboard')
   @ApiOperation({ summary: 'Get user dashboard overview stats' })
-  async getUserDashboardOverview(@Req() req: Request, @Res() res: Response) {
-    const userId = (req as any).user?.id;
+  async getUserDashboardOverview(
+    @Req() req: AuthenticatedRequest,
+    @Res() res: FastifyReply,
+  ) {
+    const userId = req.user?.id;
     if (!userId) {
       return ResponseHelper.error(res, 'User not authenticated', 401);
     }
@@ -48,8 +61,8 @@ export class AnalyticsController {
   })
   async getAnalytics(
     @Query('range') range: string,
-    @Req() _req: Request,
-    @Res() res: Response,
+    @Req() _req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     const analytics = await this.analyticsService.getAnalytics(range);
     return ResponseHelper.success(res, analytics);
@@ -64,8 +77,8 @@ export class AnalyticsController {
   })
   async getTrending(
     @Query('range') range: string,
-    @Req() _req: Request,
-    @Res() res: Response,
+    @Req() _req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     const trending = await this.analyticsService.getTrendingAnalytics(range);
     return ResponseHelper.success(res, trending);
@@ -87,8 +100,8 @@ export class AnalyticsController {
   async getTopRated(
     @Query('range') range: string,
     @Query('minRatings') minRatings: string,
-    @Req() _req: Request,
-    @Res() res: Response,
+    @Req() _req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     let minRatingsValue: number | undefined;
     if (typeof minRatings === 'string' && minRatings.trim().length > 0) {
@@ -111,8 +124,8 @@ export class AnalyticsController {
   @ApiQuery({ name: 'range', required: false, description: '7d, 30d, 90d, 1y' })
   async getDailyReport(
     @Query('range') range: string,
-    @Req() _req: Request,
-    @Res() res: Response,
+    @Req() _req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     const data = await this.analyticsService.getDailyActivity(range);
     return ResponseHelper.success(res, data);
@@ -132,8 +145,8 @@ export class AnalyticsController {
     @Query('metric') metric: 'downloads' | 'views',
     @Query('range') range: string,
     @Query('limit') limit: string,
-    @Req() _req: Request,
-    @Res() res: Response,
+    @Req() _req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     const limitNum = typeof limit === 'string' ? Number(limit) : undefined;
     const data = await this.analyticsService.getTopDocumentsByMetric(

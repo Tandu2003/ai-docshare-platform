@@ -1,6 +1,10 @@
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { ResponseHelper } from '../common/helpers/response.helper';
+import {
+  FastifyFilesInterceptor,
+  MultipartFile,
+} from '../common/interceptors/fastify-file.interceptor';
 import { FilesService } from './files.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -13,11 +17,9 @@ import {
   Post,
   Req,
   Res,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiConsumes,
@@ -25,13 +27,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
   user: {
     id: string;
     [key: string]: any;
   };
+  uploadedFiles?: MultipartFile[];
 }
 
 @ApiTags('Files')
@@ -55,18 +58,16 @@ export class FilesController {
     description: 'Tệp đã được tải lên thành công',
   })
   @UseInterceptors(
-    FilesInterceptor('files', 10, {
-      limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB per file
-      },
+    FastifyFilesInterceptor('files', 10, {
+      maxFileSize: 100 * 1024 * 1024, // 100MB per file
     }),
   )
   async uploadFiles(
-    @UploadedFiles() files: Express.Multer.File[],
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user.id;
+    const files = req.uploadedFiles || [];
 
     const user = await this.prisma.user.findUnique({
       where: {
@@ -110,18 +111,16 @@ export class FilesController {
 
   @Post('upload/avatar')
   @UseInterceptors(
-    FilesInterceptor('avatar', 1, {
-      limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB max for avatars
-      },
+    FastifyFilesInterceptor('avatar', 1, {
+      maxFileSize: 5 * 1024 * 1024, // 5MB max for avatars
     }),
   )
   async uploadAvatar(
-    @UploadedFiles() files: Express.Multer.File[],
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const userId = req.user.id;
+    const files = req.uploadedFiles || [];
 
     if (!files || files.length === 0) {
       return ResponseHelper.error(
@@ -166,8 +165,8 @@ export class FilesController {
   })
   async getSecureFileUrl(
     @Param('fileId') fileId: string,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
   ) {
     try {
       // Get user ID if authenticated

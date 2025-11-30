@@ -1,32 +1,44 @@
 import { AppModule } from '@/app.module';
+import fastifyCookie from '@fastify/cookie';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import fastifyMultipart from '@fastify/multipart';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import * as cookieParser from 'cookie-parser';
-import helmet from 'helmet';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  // Trust proxy to get real IP addresses
-  const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.set('trust proxy', 1);
-
-  // Security middleware
-  app.use(helmet());
-  app.use(cookieParser());
-
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      disableErrorMessages: process.env.NODE_ENV === 'production',
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({
+      trustProxy: true,
     }),
   );
 
-  // Enable CORS
-  app.enableCors({
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+
+  // Security middleware
+  await fastifyInstance.register(helmet, {
+    contentSecurityPolicy: false, // Disable for development, enable in production
+  });
+
+  // Cookie parser
+  await fastifyInstance.register(fastifyCookie);
+
+  // Multipart/form-data support for file uploads
+  await fastifyInstance.register(fastifyMultipart, {
+    limits: {
+      fileSize: 100 * 1024 * 1024, // 100MB
+      files: 10,
+    },
+    attachFieldsToBody: false,
+  });
+
+  // CORS configuration
+  await fastifyInstance.register(cors, {
     origin: (origin, callback) => {
       // Allow all origins in development
       if (process.env.NODE_ENV === 'development') {
@@ -45,7 +57,7 @@ async function bootstrap() {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'), false);
       }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -53,8 +65,18 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      disableErrorMessages: process.env.NODE_ENV === 'production',
+    }),
+  );
+
   const port = process.env.PORT ?? 8080;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 
 bootstrap().catch(error => {

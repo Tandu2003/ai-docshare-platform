@@ -28,9 +28,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
   user?: {
     id: string;
     [key: string]: any;
@@ -68,7 +68,7 @@ export class PreviewController {
     @Param('documentId') documentId: string,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -139,7 +139,7 @@ export class PreviewController {
     @Param('pageNumber', ParseIntPipe) pageNumber: number,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -207,7 +207,7 @@ export class PreviewController {
     @Param('pageNumber', ParseIntPipe) pageNumber: number,
     @Query('apiKey') apiKey: string | undefined,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -230,14 +230,14 @@ export class PreviewController {
         await this.previewService.streamPreviewImage(documentId, pageNumber);
 
       // Set headers
-      res.setHeader('Content-Type', mimeType);
+      res.header('Content-Type', mimeType);
       if (contentLength) {
-        res.setHeader('Content-Length', contentLength);
+        res.header('Content-Length', contentLength.toString());
       }
-      res.setHeader('Cache-Control', 'private, max-age=300'); // 5 minutes cache
+      res.header('Cache-Control', 'private, max-age=300'); // 5 minutes cache
 
-      // Pipe stream to response
-      stream.pipe(res);
+      // Send stream to response
+      return res.send(stream);
     } catch (error) {
       this.logger.error(
         `Error streaming preview for document ${documentId}:`,
@@ -269,7 +269,7 @@ export class PreviewController {
   async getPreviewStatus(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const status = await this.previewService.getPreviewStatus(documentId);
@@ -307,7 +307,7 @@ export class PreviewController {
   async generatePreviews(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -366,7 +366,7 @@ export class PreviewController {
   async regeneratePreviews(
     @Param('documentId') documentId: string,
     @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     try {
       const userId = req.user?.id;
@@ -421,7 +421,7 @@ export class PreviewController {
     status: HttpStatus.OK,
     description: 'Preview status returned',
   })
-  async getAdminPreviewStatus(@Res() res: Response) {
+  async getAdminPreviewStatus(@Res() res: FastifyReply) {
     try {
       const status =
         await this.previewInitializationService.getInitializationStatus();
@@ -451,7 +451,7 @@ export class PreviewController {
     status: HttpStatus.OK,
     description: 'Preview initialization started',
   })
-  initializePreviews(@Res() res: Response) {
+  initializePreviews(@Res() res: FastifyReply) {
     try {
       // Start initialization in background
       void this.previewInitializationService
@@ -484,7 +484,7 @@ export class PreviewController {
     status: HttpStatus.OK,
     description: 'Failed previews regeneration result',
   })
-  async regenerateFailedPreviews(@Res() res: Response) {
+  async regenerateFailedPreviews(@Res() res: FastifyReply) {
     try {
       const result =
         await this.previewInitializationService.regenerateFailedPreviews();
@@ -517,7 +517,7 @@ export class PreviewController {
     status: HttpStatus.OK,
     description: 'All previews regeneration started',
   })
-  regenerateAllPreviews(@Res() res: Response) {
+  regenerateAllPreviews(@Res() res: FastifyReply) {
     try {
       // Start regeneration in background
       void this.previewInitializationService
@@ -546,7 +546,7 @@ export class PreviewController {
   @Post('test/regenerate-all')
   @Public()
   @ApiOperation({ summary: 'TEST: Trigger regenerate all previews (no auth)' })
-  testRegenerateAll(@Res() res: Response) {
+  testRegenerateAll(@Res() res: FastifyReply) {
     try {
       this.logger.log('TEST: Starting regenerate all previews');
       void this.previewInitializationService
