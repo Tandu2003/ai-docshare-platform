@@ -1,19 +1,17 @@
-import { useState } from 'react';
+import { ArrowLeft, Loader2, Mail } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Loader2, Mail } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
-
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -21,13 +19,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  resendVerificationSchema,
-  type ResendVerificationFormData,
-} from '@/schemas';
-import { authService } from '@/utils';
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { ResendVerificationFormData, resendVerificationSchema, type } from '@/schemas'
+import { authService } from '@/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 export function ResendVerificationPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +57,7 @@ export function ResendVerificationPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">
-              AI DocShare Platform
+              DocShare Platform
             </h1>
             <p className="text-gray-600">Email xác thực đã được gửi</p>
           </div>
@@ -105,7 +101,7 @@ export function ResendVerificationPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            AI DocShare Platform
+            DocShare Platform
           </h1>
           <p className="text-gray-600">Gửi lại email xác thực</p>
         </div>

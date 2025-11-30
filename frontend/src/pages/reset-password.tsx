@@ -1,19 +1,17 @@
-import { useState } from 'react';
+import { CheckCircle, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle, Loader2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
-
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -21,10 +19,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { InputPassword } from '@/components/ui/input-password';
-import { resetPasswordSchema, type ResetPasswordFormData } from '@/schemas';
-import { authService } from '@/utils';
+} from '@/components/ui/form'
+import { InputPassword } from '@/components/ui/input-password'
+import { ResetPasswordFormData, resetPasswordSchema, type } from '@/schemas'
+import { authService } from '@/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 export function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +48,7 @@ export function ResetPasswordPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">
-              AI DocShare Platform
+              DocShare Platform
             </h1>
             <p className="text-gray-600">Liên kết đặt lại không hợp lệ</p>
           </div>
@@ -101,7 +100,7 @@ export function ResetPasswordPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">
-              AI DocShare Platform
+              DocShare Platform
             </h1>
             <p className="text-gray-600">Đặt lại mật khẩu thành công</p>
           </div>
@@ -135,7 +134,7 @@ export function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            AI DocShare Platform
+            DocShare Platform
           </h1>
           <p className="text-gray-600">Tạo mật khẩu mới</p>
         </div>

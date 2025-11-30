@@ -1,18 +1,17 @@
-import { useEffect, useState } from 'react';
+import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
-import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
-
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { authService } from '@/utils';
+} from '@/components/ui/card'
+import { authService } from '@/utils'
 
 export function VerifyEmailPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +78,7 @@ export function VerifyEmailPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">
-              AI DocShare Platform
+              DocShare Platform
             </h1>
             <p className="text-gray-600">Đang xác thực email của bạn</p>
           </div>
@@ -111,7 +110,7 @@ export function VerifyEmailPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">
-              AI DocShare Platform
+              DocShare Platform
             </h1>
             <p className="text-gray-600">Xác thực email thành công</p>
           </div>
@@ -147,7 +146,7 @@ export function VerifyEmailPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">
-              AI DocShare Platform
+              DocShare Platform
             </h1>
             <p className="text-gray-600">Xác thực thất bại</p>
           </div>
@@ -183,7 +182,7 @@ export function VerifyEmailPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            AI DocShare Platform
+            DocShare Platform
           </h1>
           <p className="text-gray-600">Đang xử lý yêu cầu của bạn</p>
         </div>

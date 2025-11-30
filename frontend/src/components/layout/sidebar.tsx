@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
-
 import {
   Archive,
   BarChart3,
@@ -17,10 +15,11 @@ import {
   TrendingUp,
   Upload,
   Users,
-} from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+} from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { AdminOnly } from '@/components/common/permission-gate';
+import { AdminOnly } from '@/components/common/permission-gate'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,10 +30,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,18 +41,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks';
-import { getSocket } from '@/lib/socket';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/hooks'
+import { getSocket } from '@/lib/socket'
+import { cn } from '@/lib/utils'
 import {
   BOOKMARKS_UPDATED_EVENT,
   BookmarkStats,
   getBookmarkStats,
-} from '@/services/bookmark.service';
-import { getMyNotifications } from '@/services/notifications.service';
+} from '@/services/bookmark.service'
+import { getMyNotifications } from '@/services/notifications.service'
 
 interface SidebarProps {
   className?: string;
@@ -288,7 +287,7 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex h-16 items-center border-b px-6">
         <Link to="/dashboard" className="flex items-center gap-2">
           <FileText className="text-primary h-6 w-6" />
-          <span className="text-lg font-semibold">AI DocShare</span>
+          <span className="text-lg font-semibold">DocShare</span>
         </Link>
       </div>
 

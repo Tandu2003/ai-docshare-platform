@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 
-import { LoginForm, RegisterForm } from '@/components/auth';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks';
+import { LoginForm, RegisterForm } from '@/components/auth'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks'
 
 export const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -70,7 +70,7 @@ export const AuthPage: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-900">
-            Nền tảng AI DocShare
+            Nền tảng DocShare
           </h1>
           <p className="text-gray-600">
             {isLogin ? 'Đăng nhập vào tài khoản của bạn' : 'Tạo tài khoản mới'}

@@ -1,20 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
-import { AdminOnly } from '@/components/common/permission-gate';
-import { ActivityFeed } from '@/components/dashboard/activity-feed';
-import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
-import { PopularCategories } from '@/components/dashboard/popular-categories';
-import { RecentDocuments } from '@/components/dashboard/recent-documents';
-import { UserDashboard } from '@/components/dashboard/user-dashboard';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LoadingPage } from '@/components/ui/loading-skeleton';
-import { usePermissions } from '@/hooks/use-permissions';
+import { AdminOnly } from '@/components/common/permission-gate'
+import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
+import { PopularCategories } from '@/components/dashboard/popular-categories'
+import { RecentDocuments } from '@/components/dashboard/recent-documents'
+import { UserDashboard } from '@/components/dashboard/user-dashboard'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LoadingPage } from '@/components/ui/loading-skeleton'
+import { usePermissions } from '@/hooks/use-permissions'
 import {
   getDashboardOverview,
   getUserDashboardOverview,
-} from '@/services/dashboard.service';
+} from '@/services/dashboard.service'
+
 import type { DashboardOverview } from '@/types';
 
 export const DashboardPage: React.FC = () => {
@@ -61,7 +62,7 @@ export const DashboardPage: React.FC = () => {
     return (
       <LoadingPage
         title="Bảng điều khiển"
-        description="Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích."
+        description="Chào mừng đến với bảng điều khiển DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem phân tích."
         showStats={true}
         showTable={false}
         showList={false}
@@ -75,8 +76,8 @@ export const DashboardPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển</h1>
           <p className="text-muted-foreground">
-            Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn
-            có thể quản lý tài liệu và xem phân tích. analytics.
+            Chào mừng đến với bảng điều khiển DocShare của bạn. Tại đây bạn có
+            thể quản lý tài liệu và xem phân tích. analytics.
           </p>
         </div>
         <Alert variant="destructive">
@@ -110,8 +111,8 @@ export const DashboardPage: React.FC = () => {
         </h1>
         <p className="text-muted-foreground">
           {isAdmin
-            ? 'Chào mừng đến với bảng điều khiển quản trị AI DocShare. Tại đây bạn có thể quản lý toàn bộ hệ thống, người dùng và xem thống kê chi tiết.'
-            : 'Chào mừng đến với bảng điều khiển AI DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem thông tin cá nhân.'}
+            ? 'Chào mừng đến với bảng điều khiển quản trị DocShare. Tại đây bạn có thể quản lý toàn bộ hệ thống, người dùng và xem thống kê chi tiết.'
+            : 'Chào mừng đến với bảng điều khiển DocShare của bạn. Tại đây bạn có thể quản lý tài liệu và xem thông tin cá nhân.'}
         </p>
       </div>
 
