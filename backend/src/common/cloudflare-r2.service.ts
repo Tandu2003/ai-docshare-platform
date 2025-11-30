@@ -103,15 +103,20 @@ export class CloudflareR2Service {
       this.logger.log(`Generated key: ${key}`);
 
       // Upload to R2
+      // Encode metadata values to handle non-ASCII characters (Vietnamese, etc.)
+      const encodedOriginalName = Buffer.from(file.originalname).toString(
+        'base64',
+      );
+
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
         Body: file.buffer,
         ContentType: file.mimetype,
         Metadata: {
-          originalName: file.originalname,
-          uploadedBy: userId,
-          fileHash,
+          originalname: encodedOriginalName, // Base64 encoded to handle special characters
+          uploadedby: userId,
+          filehash: fileHash,
         },
       });
 
