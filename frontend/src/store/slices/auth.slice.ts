@@ -1,13 +1,9 @@
-import {
-  createAsyncThunk,
-  createSlice,
-  type PayloadAction,
-} from '@reduxjs/toolkit';
-import { toast } from 'sonner';
+import { toast } from 'sonner'
+
+import { authService } from '@/utils'
+import { createAsyncThunk, createSlice, PayloadAction, type } from '@reduxjs/toolkit'
 
 import type { AuthState, LoginDto, RegisterDto, User } from '@/types';
-import { authService } from '@/utils';
-
 // Initial state - Don't set authenticated immediately, let initializeAuth handle it
 const initialState: AuthState = {
   user: null,
@@ -25,7 +21,7 @@ export const registerUser = createAsyncThunk(
       // Use message from API response if available
       const successMessage =
         response.message ||
-        'Đăng ký thành công! Chào mừng bạn đến với DocShare AI!';
+        'Đăng ký thành công! Chào mừng bạn đến với DocShare!';
       toast.success(successMessage);
       // Navigate to dashboard will be handled by component
       return response;
