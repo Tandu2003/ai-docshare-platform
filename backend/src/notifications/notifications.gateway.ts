@@ -71,7 +71,7 @@ export class NotificationsGateway
     this.logger.log(
       `Connection headers: ${JSON.stringify(socket.handshake.headers.origin)}`,
     );
-    this.authenticateSocket(socket);
+    void this.authenticateSocket(socket);
   }
 
   handleDisconnect(socket: Socket) {
@@ -92,14 +92,14 @@ export class NotificationsGateway
     const rooms = Array.from(socket.rooms);
     rooms.forEach(room => {
       if (room.startsWith('user:')) {
-        socket.leave(room);
+        void socket.leave(room);
         this.logger.log(`Socket ${socket.id} left room ${room}`);
       }
     });
 
     // Re-authenticate with new token
     if (data.token) {
-      this.authenticateSocketWithToken(socket, data.token);
+      void this.authenticateSocketWithToken(socket, data.token);
     }
   }
 
@@ -128,7 +128,7 @@ export class NotificationsGateway
   ): void {
     if (data.documentId) {
       const room = `document:${data.documentId}`;
-      socket.join(room);
+      void socket.join(room);
       this.logger.log(`Socket ${socket.id} joined room ${room}`);
     }
   }
@@ -143,7 +143,7 @@ export class NotificationsGateway
   ): void {
     if (data.documentId) {
       const room = `document:${data.documentId}`;
-      socket.leave(room);
+      void socket.leave(room);
       this.logger.log(`Socket ${socket.id} left room ${room}`);
     }
   }
@@ -175,7 +175,7 @@ export class NotificationsGateway
       const userId = payload?.sub || payload?.id;
 
       if (userId) {
-        socket.join(`user:${userId}`);
+        void socket.join(`user:${userId}`);
         this.logger.log(`Socket ${socket.id} joined room user:${userId}`);
         socket.emit('auth:success', { userId });
       } else {

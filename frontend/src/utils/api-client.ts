@@ -168,7 +168,7 @@ class ApiClient {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       this.handleAuthError();
       return null;
     }

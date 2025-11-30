@@ -16,7 +16,7 @@ export class PreviewInitializationService implements OnModuleInit {
     private readonly configService: ConfigService,
   ) {}
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     // Check if auto-initialization is enabled (default: true)
     const autoInit = this.configService.get<boolean>('PREVIEW_AUTO_INIT', true);
 
@@ -28,7 +28,7 @@ export class PreviewInitializationService implements OnModuleInit {
     }
 
     // Run in background to not block server startup
-    this.initializeMissingPreviews().catch(error => {
+    void this.initializeMissingPreviews().catch(error => {
       this.logger.error('Failed to initialize missing previews:', error);
     });
   }

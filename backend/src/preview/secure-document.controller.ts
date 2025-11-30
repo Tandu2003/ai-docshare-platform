@@ -217,8 +217,7 @@ export class SecureDocumentController {
   ) {
     try {
       // Validate token
-      const tokenInfo =
-        await this.secureDocumentService.validateDownloadToken(token);
+      const tokenInfo = this.secureDocumentService.validateDownloadToken(token);
 
       if (!tokenInfo.valid || !tokenInfo.documentId) {
         res

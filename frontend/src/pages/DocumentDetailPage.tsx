@@ -16,11 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks';
-import {
-  joinDocumentRoom as _joinDocumentRoom,
-  leaveDocumentRoom as _leaveDocumentRoom,
-  getSocket,
-} from '@/lib/socket';
+import { getSocket } from '@/lib/socket';
 import {
   createBookmark,
   deleteBookmark,

@@ -40,7 +40,7 @@ export function EmbeddingMetricsCard() {
     try {
       const data = await EmbeddingService.getMetrics();
       setMetrics(data);
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải metrics');
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ export function EmbeddingMetricsCard() {
       toast.success('Đã xóa tất cả cache');
       // Reload metrics after clearing
       await loadMetrics();
-    } catch (error) {
+    } catch {
       toast.error('Không thể xóa cache');
     } finally {
       setClearing(false);

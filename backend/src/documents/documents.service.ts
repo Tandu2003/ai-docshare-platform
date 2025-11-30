@@ -1474,10 +1474,8 @@ export class DocumentsService {
 
       // Add preview information
       try {
-        const previews = await this.previewService.getDocumentPreviews(
-          documentId,
-          userId,
-        );
+        const previews =
+          await this.previewService.getDocumentPreviews(documentId);
         const previewStatus =
           await this.previewService.getPreviewStatus(documentId);
         response.previews = previews;
@@ -2190,12 +2188,15 @@ export class DocumentsService {
       });
 
       // Emit moderation approved event to uploader
-      this.notifications.emitToUploaderOfDocument(updatedDocument.uploaderId, {
-        type: 'moderation',
-        documentId,
-        status: 'approved',
-        notes: options.notes || null,
-      });
+      void this.notifications.emitToUploaderOfDocument(
+        updatedDocument.uploaderId,
+        {
+          type: 'moderation',
+          documentId,
+          status: 'approved',
+          notes: options.notes || null,
+        },
+      );
 
       return updatedDocument;
     } catch (error) {
@@ -2269,13 +2270,16 @@ export class DocumentsService {
       ]);
 
       // Emit moderation rejected event to uploader
-      this.notifications.emitToUploaderOfDocument(updatedDocument.uploaderId, {
-        type: 'moderation',
-        documentId,
-        status: 'rejected',
-        notes: options.notes || null,
-        reason: options.reason,
-      });
+      void this.notifications.emitToUploaderOfDocument(
+        updatedDocument.uploaderId,
+        {
+          type: 'moderation',
+          documentId,
+          status: 'rejected',
+          notes: options.notes || null,
+          reason: options.reason,
+        },
+      );
 
       return updatedDocument;
     } catch (error) {
@@ -3187,7 +3191,7 @@ export class DocumentsService {
 
       // Emit realtime notification (only if count was incremented - not for owner or re-downloads)
       if (!isOwner && !hasOtherSuccessfulDownload) {
-        this.notifications.emitToUploaderOfDocument(
+        void this.notifications.emitToUploaderOfDocument(
           download.document.uploaderId,
           {
             type: 'download',
@@ -3459,7 +3463,7 @@ export class DocumentsService {
           );
 
           // Emit realtime download event to uploader
-          this.notifications.emitToUploaderOfDocument(uploaderId, {
+          void this.notifications.emitToUploaderOfDocument(uploaderId, {
             type: 'download',
             documentId,
             userId,
@@ -3542,7 +3546,7 @@ export class DocumentsService {
     try {
       const normalizedQuery = query.trim();
       const skip = (page - 1) * limit;
-      const searchStrategy: 'hybrid' = 'hybrid';
+      const searchStrategy = 'hybrid' as const;
 
       this.logger.log(
         `Searching documents: "${normalizedQuery.substring(0, 50)}..." (method: ${searchStrategy})`,

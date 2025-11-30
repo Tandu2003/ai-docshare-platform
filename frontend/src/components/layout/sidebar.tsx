@@ -117,7 +117,7 @@ export function Sidebar({ className }: SidebarProps) {
         });
         const total = (res as { meta?: { total: number } })?.meta?.total ?? 0;
         setUnreadCount(total);
-      } catch (err) {
+      } catch {
         // ignore
       }
     };

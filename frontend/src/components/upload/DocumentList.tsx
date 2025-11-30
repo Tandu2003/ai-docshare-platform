@@ -87,6 +87,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   useEffect(() => {
     loadDocuments(1, searchTerm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
 
   useEffect(() => {

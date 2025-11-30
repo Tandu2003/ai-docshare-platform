@@ -7,7 +7,6 @@ import { PreviewInitializationService } from './preview-initialization.service';
 import { PreviewService } from './preview.service';
 import { SecureDocumentService } from './secure-document.service';
 import {
-  BadRequestException,
   Controller,
   Get,
   HttpStatus,
@@ -91,10 +90,8 @@ export class PreviewController {
       }
 
       // Get previews
-      const previews = await this.previewService.getDocumentPreviews(
-        documentId,
-        userId,
-      );
+      const previews =
+        await this.previewService.getDocumentPreviews(documentId);
 
       return ResponseHelper.success(res, {
         documentId,
@@ -454,10 +451,10 @@ export class PreviewController {
     status: HttpStatus.OK,
     description: 'Preview initialization started',
   })
-  async initializePreviews(@Res() res: Response) {
+  initializePreviews(@Res() res: Response) {
     try {
       // Start initialization in background
-      this.previewInitializationService
+      void this.previewInitializationService
         .initializeMissingPreviews()
         .catch(error => {
           this.logger.error('Background preview initialization failed:', error);
@@ -520,12 +517,14 @@ export class PreviewController {
     status: HttpStatus.OK,
     description: 'All previews regeneration started',
   })
-  async regenerateAllPreviews(@Res() res: Response) {
+  regenerateAllPreviews(@Res() res: Response) {
     try {
       // Start regeneration in background
-      this.previewInitializationService.regenerateAllPreviews().catch(error => {
-        this.logger.error('Background preview regeneration failed:', error);
-      });
+      void this.previewInitializationService
+        .regenerateAllPreviews()
+        .catch(error => {
+          this.logger.error('Background preview regeneration failed:', error);
+        });
 
       return ResponseHelper.success(res, {
         message:
@@ -547,12 +546,14 @@ export class PreviewController {
   @Post('test/regenerate-all')
   @Public()
   @ApiOperation({ summary: 'TEST: Trigger regenerate all previews (no auth)' })
-  async testRegenerateAll(@Res() res: Response) {
+  testRegenerateAll(@Res() res: Response) {
     try {
       this.logger.log('TEST: Starting regenerate all previews');
-      this.previewInitializationService.regenerateAllPreviews().catch(error => {
-        this.logger.error('Background preview regeneration failed:', error);
-      });
+      void this.previewInitializationService
+        .regenerateAllPreviews()
+        .catch(error => {
+          this.logger.error('Background preview regeneration failed:', error);
+        });
 
       return ResponseHelper.success(res, {
         message:

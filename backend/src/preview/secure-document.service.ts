@@ -323,12 +323,12 @@ export class SecureDocumentService {
   /**
    * Validate and decode a download token
    */
-  async validateDownloadToken(token: string): Promise<{
+  validateDownloadToken(token: string): {
     valid: boolean;
     documentId?: string;
     userId?: string;
     reason?: string;
-  }> {
+  } {
     try {
       const decoded = JSON.parse(
         Buffer.from(token, 'base64url').toString('utf-8'),
@@ -348,7 +348,7 @@ export class SecureDocumentService {
         documentId: decoded.documentId,
         userId: decoded.userId,
       };
-    } catch (error) {
+    } catch {
       return { valid: false, reason: 'Invalid token' };
     }
   }

@@ -72,7 +72,7 @@ export class EmbeddingMigrationService implements OnModuleInit {
         );
 
         // Start regeneration in background
-        this.startBackgroundRegeneration();
+        void this.startBackgroundRegeneration();
       } else {
         this.logger.log(
           `✅ Tất cả ${status.totalEmbeddings} embeddings đều đang sử dụng model ${status.currentModel}`,
@@ -291,11 +291,11 @@ export class EmbeddingMigrationService implements OnModuleInit {
   /**
    * Manually trigger regeneration of all embeddings (for admin use)
    */
-  async regenerateAllEmbeddings(): Promise<{
+  regenerateAllEmbeddings(): {
     success: boolean;
     message: string;
     progress?: RegenerationProgress;
-  }> {
+  } {
     if (this.isRegenerating) {
       return {
         success: false,
@@ -305,7 +305,7 @@ export class EmbeddingMigrationService implements OnModuleInit {
     }
 
     // Start regeneration in background
-    this.startBackgroundRegeneration();
+    void this.startBackgroundRegeneration();
 
     return {
       success: true,

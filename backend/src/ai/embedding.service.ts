@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, TaskType } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 

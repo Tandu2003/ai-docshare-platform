@@ -833,7 +833,7 @@ export class VectorSearchService {
   /**
    * Get results from cache
    */
-  private getFromCache(key: string): any | null {
+  private getFromCache(key: string): any {
     const cached = this.searchCache.get(key);
     if (!cached) return null;
 

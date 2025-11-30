@@ -205,10 +205,10 @@ export class AIController {
     status: HttpStatus.OK,
     description: 'Metrics retrieved successfully',
   })
-  async getMetrics(): Promise<{
+  getMetrics(): {
     embedding: EmbeddingMetrics;
     search: SearchMetrics;
-  }> {
+  } {
     this.logger.log('Getting embedding and search metrics');
 
     return {
@@ -225,7 +225,7 @@ export class AIController {
     status: HttpStatus.OK,
     description: 'Caches cleared successfully',
   })
-  async clearCaches() {
+  clearCaches() {
     this.logger.log('Clearing embedding and search caches');
 
     this.embeddingService.clearCache();
@@ -274,9 +274,9 @@ export class AIController {
     status: HttpStatus.OK,
     description: 'Regeneration started successfully',
   })
-  async regenerateOutdatedEmbeddings() {
+  regenerateOutdatedEmbeddings() {
     this.logger.log('Starting regeneration of outdated embeddings');
-    return await this.embeddingMigrationService.regenerateAllEmbeddings();
+    return this.embeddingMigrationService.regenerateAllEmbeddings();
   }
 
   @Post('embeddings/force-regenerate-all')

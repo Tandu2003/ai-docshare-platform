@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import {
   AlertTriangle,
   Calendar,
@@ -14,14 +16,13 @@ import {
   Sparkles,
   User,
   XCircle,
-} from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -29,23 +30,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   approveModerationDocument,
   generateModerationAnalysis,
@@ -55,8 +61,7 @@ import {
   processSimilarityDecision,
   rejectModerationDocument,
   SimilarityResult,
-} from '@/services/document.service'
-
+} from '@/services/document.service';
 import type {
   DocumentModerationStatus,
   ModerationDocument,
@@ -350,7 +355,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const documents = queueData?.documents ?? [];
+  const documents = useMemo(
+    () => queueData?.documents ?? [],
+    [queueData?.documents],
+  );
 
   const filteredDocuments = useMemo(() => {
     if (!searchQuery.trim()) return documents;

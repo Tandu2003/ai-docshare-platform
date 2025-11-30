@@ -36,7 +36,6 @@ export function DocumentPreviewViewer({
   documentId,
   previews: initialPreviews,
   previewStatus: initialStatus,
-  previewCount: _initialCount,
   isOwner = false,
   hasAccess = true,
   apiKey,
@@ -50,7 +49,6 @@ export function DocumentPreviewViewer({
     initialStatus || 'PENDING',
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const [_isLoading, _setIsLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);

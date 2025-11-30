@@ -1,5 +1,5 @@
 // For PDF to image conversion
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -7,16 +7,9 @@ import { Readable } from 'stream';
 import { promisify } from 'util';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PreviewStatus } from '@prisma/client';
-import * as pdfParse from 'pdf-parse';
 
 const execAsync = promisify(exec);
 
@@ -184,10 +177,7 @@ export class PreviewService {
   /**
    * Get preview images for a document with short-lived signed URLs
    */
-  async getDocumentPreviews(
-    documentId: string,
-    userId?: string,
-  ): Promise<PreviewImage[]> {
+  async getDocumentPreviews(documentId: string): Promise<PreviewImage[]> {
     const previews = await this.prisma.documentPreview.findMany({
       where: {
         documentId,
@@ -407,11 +397,11 @@ export class PreviewService {
 
           // Read the generated image
           const imageBuffer = await fs.promises.readFile(outputPath);
-          const { width, height } = await this.getImageDimensions(imageBuffer);
+          const { width, height } = this.getImageDimensions(imageBuffer);
 
           // Upload to R2
           const previewKey = `previews/${documentId}/page-${page}.jpg`;
-          const storageUrl = await this.r2Service.uploadBuffer(
+          await this.r2Service.uploadBuffer(
             imageBuffer,
             previewKey,
             'image/jpeg',
@@ -635,7 +625,7 @@ export class PreviewService {
         this.logger.error(
           `All conversion methods failed for: ${file.originalName}`,
         );
-        return await this.createPlaceholderPreviews(documentId, file);
+        return await this.createPlaceholderPreviews(documentId);
       }
 
       // Verify PDF file is valid
@@ -644,7 +634,7 @@ export class PreviewService {
 
       if (pdfStats.size === 0) {
         this.logger.error('Converted PDF is empty');
-        return await this.createPlaceholderPreviews(documentId, file);
+        return await this.createPlaceholderPreviews(documentId);
       }
 
       // Now generate previews from the PDF (local file)
@@ -743,7 +733,7 @@ export class PreviewService {
           this.logger.error(
             `Fallback text conversion also failed: ${fallbackError.message}`,
           );
-          return await this.createPlaceholderPreviews(documentId, file);
+          return await this.createPlaceholderPreviews(documentId);
         }
       }
 
@@ -759,7 +749,7 @@ export class PreviewService {
 
       // Read the generated image
       const imageBuffer = await fs.promises.readFile(outputPath);
-      const { width, height } = await this.getImageDimensions(imageBuffer);
+      const { width, height } = this.getImageDimensions(imageBuffer);
 
       // Upload to R2
       const previewKey = `previews/${documentId}/page-1.jpg`;
@@ -809,7 +799,7 @@ export class PreviewService {
       ];
     } catch (error) {
       this.logger.error(`Text preview generation failed: ${error.message}`);
-      return await this.createPlaceholderPreviews(documentId, file);
+      return await this.createPlaceholderPreviews(documentId);
     } finally {
       await fs.promises.rm(tmpDir, { recursive: true, force: true });
     }
@@ -898,7 +888,6 @@ export class PreviewService {
    */
   private async createPlaceholderPreviews(
     documentId: string,
-    file: { originalName: string; mimeType: string },
   ): Promise<PreviewImage[]> {
     // Mark as completed but with no actual images
     // Frontend will show a placeholder
@@ -937,7 +926,7 @@ export class PreviewService {
 
     try {
       // Try pdftoppm first (from poppler-utils)
-      const { stdout, stderr } = await execAsync(pdftoppmCmd, {
+      const { stderr } = await execAsync(pdftoppmCmd, {
         timeout: 30000,
       });
 
@@ -1055,9 +1044,10 @@ export class PreviewService {
   /**
    * Get image dimensions from buffer (basic implementation)
    */
-  private async getImageDimensions(
-    buffer: Buffer,
-  ): Promise<{ width?: number; height?: number }> {
+  private getImageDimensions(buffer: Buffer): {
+    width?: number;
+    height?: number;
+  } {
     // Simple JPEG dimension extraction
     // For production, use a proper image library
     try {
@@ -1162,7 +1152,7 @@ export class PreviewService {
       ) {
         try {
           await this.r2Service.deleteFile(preview.previewPath);
-        } catch (error) {
+        } catch {
           this.logger.warn(
             `Failed to delete preview file: ${preview.previewPath}`,
           );

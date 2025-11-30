@@ -170,6 +170,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         await uploadFilesToAPI(validFiles);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [multiple],
   );
 

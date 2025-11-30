@@ -12,7 +12,6 @@ import { ShareDocumentDto } from './dto/share-document.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { ViewDocumentDto } from './dto/view-document.dto';
-import { RoleGuard } from '@/common/authorization';
 import {
   BadRequestException,
   Body,
@@ -527,30 +526,30 @@ export class DocumentsController {
       res.setHeader('X-Download-Id', streamData.downloadId);
 
       // Track when stream completes successfully (all bytes sent to client)
-      res.on('finish', async () => {
+      res.on('finish', () => {
         this.logger.log(
           `res.finish triggered for download ${streamData.downloadId}`,
         );
-        await streamData.onStreamComplete();
+        void streamData.onStreamComplete();
       });
 
       // Track when stream is closed prematurely (client disconnected, network error, etc.)
-      res.on('close', async () => {
+      res.on('close', () => {
         if (!res.writableEnded) {
           // Stream was aborted before completion
           this.logger.log(
             `res.close (aborted) triggered for download ${streamData.downloadId}`,
           );
-          await streamData.onStreamError();
+          void streamData.onStreamError();
         }
       });
 
       // Handle stream errors
-      streamData.fileStream.on('error', async error => {
+      streamData.fileStream.on('error', error => {
         this.logger.error(
           `Stream error for download ${streamData.downloadId}: ${error.message}`,
         );
-        await streamData.onStreamError();
+        void streamData.onStreamError();
         if (!res.headersSent) {
           return ResponseHelper.error(
             res,

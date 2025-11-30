@@ -121,7 +121,8 @@ export function UserForm({
   const handleSubmit = (data: UserFormData) => {
     // Remove empty password for both create and edit mode
     if (!data.password || data.password.trim() === '') {
-      const { password: _password, ...dataWithoutPassword } = data;
+      const { password, ...dataWithoutPassword } = data;
+      void password; // Acknowledge unused extraction
       onSubmit(dataWithoutPassword);
     } else {
       onSubmit(data);

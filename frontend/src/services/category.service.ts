@@ -17,7 +17,7 @@ interface CategoryApiResponse {
   updatedAt: string;
 }
 
-interface CategoryListResponse extends Array<CategoryApiResponse> {}
+type CategoryListResponse = CategoryApiResponse[];
 
 export interface CategoryPayload {
   name: string;

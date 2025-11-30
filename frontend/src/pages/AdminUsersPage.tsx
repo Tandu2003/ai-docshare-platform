@@ -56,24 +56,11 @@ export default function AdminUsersPage() {
   const [targetPoints, setTargetPoints] = useState<number>(0);
   const [adjustNote, setAdjustNote] = useState<string>('');
 
-  // Kiểm tra quyền truy cập (chỉ admin)
-  if (!isAdmin()) {
-    return (
-      <div className="container mx-auto p-6">
-        <UnauthorizedMessage
-          title="Không có quyền quản lý người dùng"
-          description="Bạn cần có quyền quản trị viên để truy cập trang này."
-          action={{
-            label: 'Quay lại trang chủ',
-            onClick: () => window.history.back(),
-          }}
-        />
-      </div>
-    );
-  }
+  const isUserAdmin = isAdmin();
 
   // Load users
   const loadUsers = useCallback(async () => {
+    if (!isUserAdmin) return;
     try {
       setIsLoading(true);
       const queryFilters: GetUsersQuery = {
@@ -93,10 +80,11 @@ export default function AdminUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [search, page, viewMode]);
+  }, [search, page, viewMode, isUserAdmin]);
 
   // Load roles from API
   const loadRoles = useCallback(async () => {
+    if (!isUserAdmin) return;
     try {
       const response = await userService.getRoles();
       setRoles(response);
@@ -104,7 +92,7 @@ export default function AdminUsersPage() {
       console.error('Failed to load roles:', error);
       toast.error('Không thể tải vai trò người dùng');
     }
-  }, []);
+  }, [isUserAdmin]);
 
   useEffect(() => {
     void loadUsers();
@@ -113,6 +101,22 @@ export default function AdminUsersPage() {
   useEffect(() => {
     void loadRoles();
   }, [loadRoles]);
+
+  // Kiểm tra quyền truy cập (chỉ admin) - moved after hooks
+  if (!isUserAdmin) {
+    return (
+      <div className="container mx-auto p-6">
+        <UnauthorizedMessage
+          title="Không có quyền quản lý người dùng"
+          description="Bạn cần có quyền quản trị viên để truy cập trang này."
+          action={{
+            label: 'Quay lại trang chủ',
+            onClick: () => window.history.back(),
+          }}
+        />
+      </div>
+    );
+  }
 
   const handleOpenAdjustDialog = (user: User) => {
     setSelectedUser(user);
@@ -237,7 +241,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin() && viewMode === 'active' && (
+          {isUserAdmin && viewMode === 'active' && (
             <Button onClick={handleCreateUser} disabled={isLoading}>
               <Plus className="mr-2 h-4 w-4" />
               Thêm người dùng

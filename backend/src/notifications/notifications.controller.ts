@@ -97,7 +97,7 @@ export class NotificationsController {
 
   @ApiOperation({ summary: 'Get WebSocket status' })
   @Get('ws-status')
-  async getWebSocketStatus(@Req() req: any) {
+  getWebSocketStatus(@Req() req: any) {
     const userId = req.user.id;
     const room = `user:${userId}`;
 
