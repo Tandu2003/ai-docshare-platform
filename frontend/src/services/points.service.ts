@@ -12,6 +12,14 @@ export interface PointTransactionPerformedBy {
   username: string;
 }
 
+export interface PointTransactionUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email?: string;
+}
+
 export interface PointTransaction {
   id: string;
   userId: string;
@@ -30,6 +38,7 @@ export interface PointTransaction {
   createdAt: string;
   document?: PointTransactionDocument | null;
   performedBy?: PointTransactionPerformedBy | null;
+  user?: PointTransactionUser;
 }
 
 export interface TransactionsResponse {
@@ -47,21 +56,42 @@ class PointsService {
     const res = await apiClient.get<{ balance: number }>(
       `${this.baseUrl}/balance`,
     );
-    return res as unknown as { balance: number };
+    const data = (res as any)?.data ?? res;
+    return data as { balance: number };
   }
 
   async getTransactions(
     page: number = 1,
     limit: number = 10,
   ): Promise<TransactionsResponse> {
-    // apiClient.get already returns response.data, so we return it directly
     const res = await apiClient.get<TransactionsResponse>(
       `${this.baseUrl}/transactions`,
       {
         params: { page, limit },
       },
     );
-    return res as unknown as TransactionsResponse;
+    const data = (res as any)?.data ?? res;
+    return data as TransactionsResponse;
+  }
+
+  async adminGetTransactions(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    userId?: string;
+    type?: PointTransaction['type'];
+    reason?: PointTransaction['reason'];
+    from?: string;
+    to?: string;
+  }): Promise<TransactionsResponse> {
+    const res = await apiClient.get<TransactionsResponse>(
+      `${this.baseUrl}/admin/transactions`,
+      {
+        params,
+      },
+    );
+    const data = (res as any)?.data ?? res;
+    return data as TransactionsResponse;
   }
 
   async adminAdjust(
@@ -77,7 +107,8 @@ class PointsService {
         note,
       },
     );
-    return res as unknown as { balance: number };
+    const data = (res as any)?.data ?? res;
+    return data as { balance: number };
   }
 
   async adminSet(
@@ -93,7 +124,8 @@ class PointsService {
         note,
       },
     );
-    return res as unknown as { balance: number };
+    const data = (res as any)?.data ?? res;
+    return data as { balance: number };
   }
 }
 

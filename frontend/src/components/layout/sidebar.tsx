@@ -6,6 +6,7 @@ import {
   Bell,
   Bookmark,
   ChevronDown,
+  Coins,
   FileText,
   FolderOpen,
   Home,
@@ -218,6 +219,11 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'Quản lý người dùng',
       href: '/admin/users',
       icon: Users,
+    },
+    {
+      title: 'Giao dịch điểm',
+      href: '/admin/points',
+      icon: Coins,
     },
   ];
 

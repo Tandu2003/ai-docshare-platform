@@ -25,6 +25,7 @@ export interface AnalyticsDocument {
   downloads: number;
   views: number;
   rating: number;
+  ratingsCount?: number;
   category: string;
   language: string;
 }
@@ -204,6 +205,12 @@ export interface TopRatedStats {
   perfectCount: number;
 }
 
+export interface TopRatedMeta {
+  appliedRange?: string;
+  usedFallback?: boolean;
+  appliedMinRatings?: number;
+}
+
 export interface TopRatedDocument {
   id: string;
   title: string;
@@ -233,6 +240,7 @@ export interface TopRatedDocument {
 export interface TopRatedAnalyticsData {
   timeframe: AnalyticsTimeframe;
   filters: TopRatedFilters;
+  meta?: TopRatedMeta;
   stats: TopRatedStats;
   documents: TopRatedDocument[];
 }

@@ -274,7 +274,10 @@ export default function AnalyticsPage() {
       name: doc.title.length > 20 ? doc.title.slice(0, 20) + '...' : doc.title,
       downloads: doc.downloads,
       views: doc.views,
-      rating: doc.rating * 20, // Scale to 100
+      rating:
+        (doc.ratingsCount ?? 0) > 0 && doc.rating > 0 ? doc.rating : 0,
+      ratingsCount: doc.ratingsCount ?? 0,
+      hasRating: (doc.ratingsCount ?? 0) > 0 && doc.rating > 0,
     }));
   }, [data.topDocuments]);
 
@@ -403,6 +406,7 @@ export default function AnalyticsPage() {
   const ratingValue = Number.isFinite(data.averageRating)
     ? data.averageRating
     : 0;
+  const hasAnyRating = ratingValue > 0;
   const monthlyGrowthValue = Number.isFinite(data.monthlyGrowth)
     ? data.monthlyGrowth
     : 0;
@@ -427,7 +431,7 @@ export default function AnalyticsPage() {
             onValueChange={setTimeRange}
             disabled={isLoading}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-44">
               <SelectValue placeholder="Chọn khoảng" />
             </SelectTrigger>
             <SelectContent>
@@ -471,7 +475,7 @@ export default function AnalyticsPage() {
           onValueChange={setTimeRange}
           disabled={isLoading}
         >
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-44">
             <SelectValue placeholder="Chọn khoảng" />
           </SelectTrigger>
           <SelectContent>
@@ -602,8 +606,14 @@ export default function AnalyticsPage() {
                   Đánh giá trung bình
                 </p>
                 <p className="text-3xl font-bold tracking-tight">
-                  {ratingValue.toFixed(1)}
-                  <span className="text-muted-foreground text-lg">/5</span>
+                  {hasAnyRating ? (
+                    <>
+                      {ratingValue.toFixed(1)}
+                      <span className="text-muted-foreground text-lg">/5</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
                 </p>
               </div>
               <div className="rounded-full bg-yellow-500/10 p-3">
@@ -611,7 +621,15 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="mt-4">
-              <Progress value={ratingValue * 20} className="h-2" />
+              <Progress
+                value={hasAnyRating ? ratingValue * 20 : 0}
+                className="h-2"
+              />
+              {!hasAnyRating && (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  Chưa có đánh giá nào được ghi nhận
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1520,6 +1538,8 @@ export default function AnalyticsPage() {
                   ...topDocsComparisonData.map(d => d.views),
                   1,
                 );
+                const hasRating = doc.hasRating;
+                const ratingValue = hasRating ? doc.rating : 0;
 
                 const radarData = [
                   {
@@ -1534,7 +1554,7 @@ export default function AnalyticsPage() {
                   },
                   {
                     metric: 'Đánh giá',
-                    value: (doc.rating / 20) * 100,
+                    value: hasRating ? (ratingValue / 5) * 100 : 0,
                     fullMark: 100,
                   },
                 ];
@@ -1608,7 +1628,9 @@ export default function AnalyticsPage() {
                                       </span>
                                       <span className="font-medium">
                                         {item.metric === 'Đánh giá'
-                                          ? `${(item.value / 20).toFixed(1)}/5`
+                                          ? hasRating
+                                            ? `${ratingValue.toFixed(1)}/5`
+                                            : 'Chưa có đánh giá'
                                           : `${Math.round(item.value)}%`}
                                       </span>
                                     </div>
@@ -1637,7 +1659,7 @@ export default function AnalyticsPage() {
                         </span>
                         <span className="text-muted-foreground text-xs">•</span>
                         <span className="text-muted-foreground text-xs">
-                          ⭐ {(doc.rating / 20).toFixed(1)}
+                          ⭐ {hasRating ? ratingValue.toFixed(1) : '—'}
                         </span>
                       </div>
                     </div>
@@ -1714,7 +1736,9 @@ export default function AnalyticsPage() {
                         <div className="text-center">
                           <p className="flex items-center gap-1 text-lg font-bold text-yellow-500">
                             <Star className="h-4 w-4" />
-                            {doc.averageRating.toFixed(1)}
+                            {doc.averageRating > 0
+                              ? doc.averageRating.toFixed(1)
+                              : '—'}
                           </p>
                           <p className="text-muted-foreground text-xs">
                             Đánh giá
@@ -1781,7 +1805,9 @@ export default function AnalyticsPage() {
                         <div className="text-center">
                           <p className="flex items-center gap-1 text-lg font-bold text-yellow-500">
                             <Star className="h-4 w-4" />
-                            {doc.averageRating.toFixed(1)}
+                            {doc.averageRating > 0
+                              ? doc.averageRating.toFixed(1)
+                              : '—'}
                           </p>
                           <p className="text-muted-foreground text-xs">
                             Đánh giá
@@ -1868,7 +1894,9 @@ export default function AnalyticsPage() {
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500" />
                         <span className="font-medium">
-                          {document.rating.toFixed(1)}
+                          {document.rating > 0
+                            ? document.rating.toFixed(1)
+                            : '—'}
                         </span>
                       </div>
                       <p className="text-xs">Đánh giá</p>

@@ -42,10 +42,11 @@ const RANGE_OPTIONS: Array<{ value: string; label: string }> = [
 ];
 
 const MIN_RATING_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '1', label: 'Từ 1 đánh giá' },
+  { value: '3', label: '3+ đánh giá' },
   { value: '5', label: '5+ đánh giá' },
   { value: '10', label: '10+ đánh giá' },
   { value: '25', label: '25+ đánh giá' },
-  { value: '50', label: '50+ đánh giá' },
 ];
 
 const formatNumber = (value?: number | null) => {
@@ -97,13 +98,18 @@ const DEFAULT_DATA: TopRatedAnalyticsData = {
     endDate: new Date(0).toISOString(),
   },
   filters: {
-    minRatings: 10,
+    minRatings: 3,
   },
   stats: {
     totalDocuments: 0,
     averageRating: 0,
     totalRatings: 0,
     perfectCount: 0,
+  },
+  meta: {
+    appliedRange: '30d',
+    usedFallback: false,
+    appliedMinRatings: 3,
   },
   documents: [],
 };
@@ -116,7 +122,7 @@ export default function TopRatedPage() {
     () => searchParams.get('range') || '30d',
   );
   const [minRatings, setMinRatings] = useState(
-    () => searchParams.get('minRatings') || '10',
+    () => searchParams.get('minRatings') || '3',
   );
   const [data, setData] = useState<TopRatedAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,7 +133,7 @@ export default function TopRatedPage() {
     (range: string, ratings: string) => {
       const newParams = new URLSearchParams();
       if (range !== '30d') newParams.set('range', range);
-      if (ratings !== '10') newParams.set('minRatings', ratings);
+      if (ratings !== '3') newParams.set('minRatings', ratings);
       setSearchParams(newParams);
     },
     [setSearchParams],
@@ -154,7 +160,7 @@ export default function TopRatedPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const minRatingsNumber = Number(minRatingsValue) || 10;
+        const minRatingsNumber = Number(minRatingsValue) || 3;
         const response = await getTopRatedAnalytics(
           rangeValue,
           minRatingsNumber,
@@ -177,7 +183,7 @@ export default function TopRatedPage() {
   // Sync state from URL on mount and URL changes
   useEffect(() => {
     const range = searchParams.get('range') || '30d';
-    const ratings = searchParams.get('minRatings') || '10';
+    const ratings = searchParams.get('minRatings') || '3';
     setTimeRange(range);
     setMinRatings(ratings);
   }, [searchParams]);
@@ -197,6 +203,16 @@ export default function TopRatedPage() {
     }),
     [analytics.stats],
   );
+  const appliedRange = analytics.meta?.appliedRange ?? analytics.timeframe.range;
+  const usedFallback = analytics.meta?.usedFallback ?? false;
+  const appliedMinRatings =
+    analytics.meta?.appliedMinRatings ?? analytics.filters.minRatings;
+  const timeframeLabel =
+    appliedRange === 'all-time'
+      ? 'Tất cả thời gian'
+      : `${formatDate(analytics.timeframe.startDate)} → ${formatDate(analytics.timeframe.endDate)}`;
+  const averageRatingLabel =
+    stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '—';
 
   if (isLoading) {
     return (
@@ -218,7 +234,7 @@ export default function TopRatedPage() {
               onValueChange={handleTimeRangeChange}
               disabled={isLoading}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-44">
                 <SelectValue placeholder="Chọn khoảng thời gian" />
               </SelectTrigger>
               <SelectContent>
@@ -234,7 +250,7 @@ export default function TopRatedPage() {
               onValueChange={handleMinRatingsChange}
               disabled={isLoading}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="Số đánh giá tối thiểu" />
               </SelectTrigger>
               <SelectContent>
@@ -269,10 +285,19 @@ export default function TopRatedPage() {
           <p className="text-muted-foreground mt-1">
             Các tài liệu được đánh giá cao nhất dựa trên đánh giá của người dùng
           </p>
-          <Badge variant="outline" className="mt-2 text-xs font-normal">
-            {formatDate(analytics.timeframe.startDate)} →{' '}
-            {formatDate(analytics.timeframe.endDate)}
-          </Badge>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-xs font-normal">
+              {timeframeLabel}
+            </Badge>
+            <Badge variant="secondary" className="text-xs font-normal">
+              Tối thiểu {appliedMinRatings}+ đánh giá
+            </Badge>
+            {usedFallback && (
+              <Badge variant="outline" className="text-xs font-normal">
+                Đã nới lỏng bộ lọc để có kết quả
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Select
@@ -280,7 +305,7 @@ export default function TopRatedPage() {
             onValueChange={handleTimeRangeChange}
             disabled={isLoading}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-44">
               <SelectValue placeholder="Chọn khoảng thời gian" />
             </SelectTrigger>
             <SelectContent>
@@ -296,7 +321,7 @@ export default function TopRatedPage() {
             onValueChange={handleMinRatingsChange}
             disabled={isLoading}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Số đánh giá tối thiểu" />
             </SelectTrigger>
             <SelectContent>
@@ -330,7 +355,7 @@ export default function TopRatedPage() {
                   {isLoading ? (
                     <Skeleton className="h-6 w-20" />
                   ) : (
-                    stats.averageRating.toFixed(1)
+                    averageRatingLabel
                   )}
                 </p>
               </div>
@@ -448,6 +473,7 @@ function TopRatedDocumentCard({ document }: TopRatedDocumentCardProps) {
   ]
     .filter(Boolean)
     .join(' ');
+  const hasRatings = (document.ratingCount ?? 0) > 0;
 
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -477,15 +503,23 @@ function TopRatedDocumentCard({ document }: TopRatedDocumentCardProps) {
                   )}
                 </div>
                 <div className="mt-1 flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    {getRatingStars(document.averageRating)}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {document.averageRating.toFixed(1)}
-                  </span>
-                  <span className="text-muted-foreground text-sm">
-                    ({formatNumber(document.ratingCount)} đánh giá)
-                  </span>
+                  {hasRatings ? (
+                    <>
+                      <div className="flex items-center gap-1">
+                        {getRatingStars(document.averageRating)}
+                      </div>
+                      <span className="text-sm font-medium">
+                        {document.averageRating.toFixed(1)}
+                      </span>
+                      <span className="text-muted-foreground text-sm">
+                        ({formatNumber(document.ratingCount)} đánh giá)
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Chưa có đánh giá
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

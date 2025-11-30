@@ -1,7 +1,7 @@
 import { SystemSettingsService } from '../common/system-settings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { Document, PointTxnReason, PointTxnType } from '@prisma/client';
+import { Document, PointTxnReason, PointTxnType, Prisma } from '@prisma/client';
 
 @Injectable()
 export class PointsService {
@@ -48,6 +48,107 @@ export class PointsService {
       }),
       this.prisma.pointTransaction.count({ where: { userId } }),
     ]);
+    return { items, total, page, limit };
+  }
+
+  async listAllTransactions(options: {
+    page?: number;
+    limit?: number;
+    userId?: string;
+    type?: PointTxnType;
+    reason?: PointTxnReason;
+    search?: string;
+    from?: Date;
+    to?: Date;
+  }) {
+    const page = Math.max(1, Number(options.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(options.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.PointTransactionWhereInput = {
+      ...(options.userId ? { userId: options.userId } : {}),
+      ...(options.type ? { type: options.type } : {}),
+      ...(options.reason ? { reason: options.reason } : {}),
+    };
+
+    if (options.from || options.to) {
+      where.createdAt = {};
+      if (options.from) {
+        where.createdAt.gte = options.from;
+      }
+      if (options.to) {
+        where.createdAt.lte = options.to;
+      }
+    }
+
+    if (options.search?.trim()) {
+      const search = options.search.trim();
+      where.OR = [
+        {
+          note: { contains: search, mode: 'insensitive' },
+        },
+        {
+          user: {
+            OR: [
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { username: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          performedBy: {
+            OR: [
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { username: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          document: {
+            title: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.pointTransaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          document: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              username: true,
+              email: true,
+            },
+          },
+          performedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+        },
+      }),
+      this.prisma.pointTransaction.count({ where }),
+    ]);
+
     return { items, total, page, limit };
   }
 

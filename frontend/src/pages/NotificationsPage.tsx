@@ -347,7 +347,7 @@ export default function NotificationsPage() {
             <h1 className="text-3xl font-bold tracking-tight">Thông báo</h1>
             <p className="text-muted-foreground">Cập nhật hoạt động của bạn</p>
           </div>
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-44" />
         </div>
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -433,7 +433,7 @@ export default function NotificationsPage() {
               value={filter}
               onValueChange={(value: any) => setFilter(value)}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -443,7 +443,7 @@ export default function NotificationsPage() {
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

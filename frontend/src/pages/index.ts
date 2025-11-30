@@ -8,6 +8,7 @@ export * from './unauthorized';
 export { default as AdminUsersPage } from './AdminUsersPage';
 export { default as AnalyticsPage } from './AnalyticsPage';
 export { default as BookmarksPage } from './BookmarksPage';
+export { default as AdminPointsPage } from './AdminPointsPage';
 export { default as DocumentDetailPage } from './DocumentDetailPage';
 export { default as DocumentsPage } from './DocumentsPage';
 export { ForgotPasswordPage } from './forgot-password';

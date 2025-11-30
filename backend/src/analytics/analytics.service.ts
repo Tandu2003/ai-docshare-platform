@@ -535,7 +535,7 @@ export class AnalyticsService {
       totalDocuments,
       downloadsAggregate,
       viewsAggregate,
-      averageRatingAggregate,
+      ratedAverageAggregate,
       documentsInRange,
       documentsPreviousRange,
       totalUsers,
@@ -551,7 +551,16 @@ export class AnalyticsService {
         _sum: { viewCount: true },
       }),
       this.prisma.document.aggregate({
+        where: {
+          totalRatings: {
+            gt: 0,
+          },
+          averageRating: {
+            gt: 0,
+          },
+        },
         _avg: { averageRating: true },
+        _count: { averageRating: true },
       }),
       this.prisma.document.count({
         where: {
@@ -593,9 +602,9 @@ export class AnalyticsService {
 
     const totalDownloads = Number(downloadsAggregate._sum.downloadCount || 0);
     const totalViews = Number(viewsAggregate._sum.viewCount || 0);
-    const averageRating = Number(
-      averageRatingAggregate._avg.averageRating || 0,
-    );
+    const averageRating = ratedAverageAggregate._avg.averageRating
+      ? Number(ratedAverageAggregate._avg.averageRating.toFixed(2))
+      : 0;
 
     const monthlyGrowth =
       documentsPreviousRange > 0
@@ -682,6 +691,7 @@ export class AnalyticsService {
         downloadCount: true,
         viewCount: true,
         averageRating: true,
+        totalRatings: true,
         language: true,
         category: {
           select: { name: true },
@@ -703,7 +713,11 @@ export class AnalyticsService {
       title: doc.title,
       downloads: doc.downloadCount || 0,
       views: doc.viewCount || 0,
-      rating: Number((doc.averageRating || 0).toFixed(2)),
+      rating:
+        (doc.totalRatings || 0) > 0
+          ? Number((doc.averageRating || 0).toFixed(2))
+          : 0,
+      ratingsCount: doc.totalRatings || 0,
       category: doc.category?.name || 'Uncategorized',
       language: doc.language || 'unknown',
     }));
@@ -1004,51 +1018,95 @@ export class AnalyticsService {
       endDate,
     } = this.resolveRange(range);
 
-    const minRatings = Number.isFinite(minRatingsParam)
+    const requestedMinRatings = Number.isFinite(minRatingsParam)
       ? Math.max(1, Math.floor(minRatingsParam as number))
-      : 10;
+      : 3;
 
-    const ratingGroupsRaw = await this.prisma.rating.groupBy({
-      by: ['documentId'],
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
+    const fetchRatingGroups = async (useRequestedRange: boolean) =>
+      this.prisma.rating.groupBy({
+        by: ['documentId'],
+        where: useRequestedRange
+          ? {
+              createdAt: {
+                gte: startDate,
+                lte: endDate,
+              },
+            }
+          : undefined,
+        _avg: {
+          rating: true,
         },
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        rating: true,
-      },
-      orderBy: [
-        {
-          _avg: {
-            rating: 'desc',
+        _count: {
+          rating: true,
+        },
+        orderBy: [
+          {
+            _avg: {
+              rating: 'desc',
+            },
           },
-        },
-        {
-          _count: {
-            rating: 'desc',
+          {
+            _count: {
+              rating: 'desc',
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
 
-    const ratingGroups = ratingGroupsRaw
-      .filter(group => (group._count.rating ?? 0) >= minRatings)
-      .slice(0, 50);
+    const applyRatingFilter = (
+      groups: Awaited<ReturnType<typeof fetchRatingGroups>>,
+      minRatings: number,
+    ) =>
+      groups
+        .filter(group => (group._count.rating ?? 0) >= minRatings)
+        .slice(0, 50);
+
+    const ratingGroupsRaw = await fetchRatingGroups(true);
+
+    let appliedRange = normalizedRange;
+    let appliedMinRatings = requestedMinRatings;
+    let usedFallback = false;
+
+    let ratingGroups = applyRatingFilter(ratingGroupsRaw, requestedMinRatings);
+
+    if (ratingGroups.length === 0) {
+      const allTimeGroups = await fetchRatingGroups(false);
+      ratingGroups = applyRatingFilter(allTimeGroups, requestedMinRatings);
+      if (ratingGroups.length > 0) {
+        appliedRange = 'all-time';
+        usedFallback = true;
+      }
+    }
+
+    if (ratingGroups.length === 0 && appliedMinRatings > 1) {
+      appliedMinRatings = 1;
+      const sourceGroups =
+        appliedRange === 'all-time'
+          ? await fetchRatingGroups(false)
+          : ratingGroupsRaw;
+      ratingGroups = applyRatingFilter(sourceGroups, appliedMinRatings);
+      if (ratingGroups.length > 0) {
+        usedFallback = true;
+      }
+    }
 
     if (ratingGroups.length === 0) {
       return {
         timeframe: {
-          range: normalizedRange,
-          startDate: startDate.toISOString(),
+          range: appliedRange,
+          startDate:
+            appliedRange === 'all-time'
+              ? new Date(0).toISOString()
+              : startDate.toISOString(),
           endDate: endDate.toISOString(),
         },
         filters: {
-          minRatings,
+          minRatings: appliedMinRatings,
+        },
+        meta: {
+          appliedRange,
+          usedFallback,
+          appliedMinRatings,
         },
         stats: {
           totalDocuments: 0,
@@ -1155,12 +1213,20 @@ export class AnalyticsService {
 
     return {
       timeframe: {
-        range: normalizedRange,
-        startDate: startDate.toISOString(),
+        range: appliedRange,
+        startDate:
+          appliedRange === 'all-time'
+            ? new Date(0).toISOString()
+            : startDate.toISOString(),
         endDate: endDate.toISOString(),
       },
       filters: {
-        minRatings,
+        minRatings: appliedMinRatings,
+      },
+      meta: {
+        appliedRange,
+        usedFallback,
+        appliedMinRatings,
       },
       stats: {
         totalDocuments,

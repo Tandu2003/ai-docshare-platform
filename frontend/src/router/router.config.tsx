@@ -15,6 +15,7 @@ import {
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
+import AdminPointsPage from '@/pages/AdminPointsPage';
 import BookmarksPage from '@/pages/BookmarksPage';
 import CategoriesPage from '@/pages/CategoriesPage';
 import CategoryDetailPage from '@/pages/CategoryDetailPage';
@@ -206,6 +207,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredRole="admin">
             <SystemSettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/points',
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminPointsPage />
           </ProtectedRoute>
         ),
       },
