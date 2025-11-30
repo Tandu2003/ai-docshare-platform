@@ -57,7 +57,6 @@ import {
   getModerationDocument,
   getModerationQueue,
   getSimilarityResults,
-  processSimilarityDecision,
   rejectModerationDocument,
   SimilarityResult,
 } from '@/services/document.service'
@@ -332,28 +331,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSimilarityDecision = async (
-    similarityId: string,
-    decision: { isDuplicate: boolean; notes?: string },
-  ) => {
-    try {
-      await processSimilarityDecision(similarityId, decision);
-      toast.success(
-        decision.isDuplicate
-          ? 'Đã đánh dấu là trùng lặp'
-          : 'Đã đánh dấu là khác biệt',
-      );
-
-      // Remove the processed warning from the list
-      setSimilarityWarnings(prev =>
-        prev.filter(warning => warning.id !== similarityId),
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Không thể xử lý quyết định';
-      toast.error(message);
-    }
-  };
 
   const documents = useMemo(
     () => queueData?.documents ?? [],

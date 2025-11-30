@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { InputPassword } from '@/components/ui/input-password'
-import { ResetPasswordFormData, resetPasswordSchema, type } from '@/schemas'
+import { ResetPasswordFormData, resetPasswordSchema } from '@/schemas'
 import { authService } from '@/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 

@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 
 import { authService } from '@/utils'
-import { createAsyncThunk, createSlice, PayloadAction, type } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { AuthState, LoginDto, RegisterDto, User } from '@/types';
 // Initial state - Don't set authenticated immediately, let initializeAuth handle it
