@@ -1,160 +1,110 @@
 #!/bin/bash
 
-# ===========================================
-# Cloudflare Tunnel Setup Script
-# Domain: docshare.io.vn
-# Tunnel: docshare-iovn
-# ===========================================
-
 set -e
 
 TUNNEL_NAME="docshare-iovn"
 DOMAIN="docshare.io.vn"
 API_SUBDOMAIN="api.${DOMAIN}"
-CONFIG_DIR=~/.cloudflared
+CONFIG_DIR="$HOME/.cloudflared"
 
 echo ""
-echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║     🚀 Cloudflare Tunnel Setup - DocShare Platform        ║"
-echo "║     Domain: ${DOMAIN}                              ║"
-echo "╚═══════════════════════════════════════════════════════════╝"
+echo "Cloudflare Tunnel Setup"
+echo "Domain: ${DOMAIN}"
 echo ""
 
-# Kiểm tra cloudflared đã cài đặt chưa
-if ! command -v cloudflared &> /dev/null; then
-    echo "📦 Cài đặt cloudflared..."
+# Check cloudflared
+if ! command -v cloudflared >/dev/null; then
+    echo "Installing cloudflared..."
     curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
     sudo dpkg -i cloudflared.deb
     rm cloudflared.deb
 fi
 
-echo "✅ cloudflared version: $(cloudflared --version)"
+# Check jq
+if ! command -v jq >/dev/null; then
+    echo "Installing jq..."
+    sudo apt-get update -y && sudo apt-get install jq -y
+fi
 
-# Kiểm tra đã đăng nhập chưa
-if [ ! -f ~/.cloudflared/cert.pem ]; then
-    echo ""
-    echo "❌ Bạn chưa đăng nhập Cloudflare!"
-    echo "👉 Chạy lệnh: cloudflared tunnel login"
-    echo "   Sau đó chạy lại script này."
+# Check login
+if [ ! -f "$HOME/.cloudflared/cert.pem" ]; then
+    echo "You are not logged in."
+    echo "Run: cloudflared tunnel login"
     exit 1
 fi
 
-echo "✅ Đã đăng nhập Cloudflare"
+echo "Checking existing tunnel: ${TUNNEL_NAME}"
 
-# Kiểm tra và xử lý tunnel
-echo ""
-echo "🔍 Kiểm tra tunnel '${TUNNEL_NAME}'..."
+# Get tunnel list JSON safely
+TUNNELS_JSON=$(cloudflared tunnel list --output json 2>/dev/null || echo "[]")
 
-# Lấy tunnel ID từ cloudflared tunnel list (format: ID NAME CREATED CONNECTIONS)
-EXISTING_TUNNEL=$(cloudflared tunnel list --output json 2>/dev/null | grep -o '"id":"[^"]*"[^}]*"name":"'"${TUNNEL_NAME}"'"' | head -1)
+TUNNEL_ID=$(echo "$TUNNELS_JSON" | jq -r ".[] | select(.name==\"${TUNNEL_NAME}\") | .id" || true)
 
-if [ -n "$EXISTING_TUNNEL" ]; then
-    echo "⚠️  Tunnel '${TUNNEL_NAME}' đã tồn tại"
-    TUNNEL_ID=$(cloudflared tunnel list --output json 2>/dev/null | python3 -c "import sys,json; tunnels=json.load(sys.stdin); print(next((t['id'] for t in tunnels if t['name']=='${TUNNEL_NAME}'),''))" 2>/dev/null)
-
-    # Fallback nếu python không hoạt động
-    if [ -z "$TUNNEL_ID" ]; then
-        TUNNEL_ID=$(cloudflared tunnel list | grep -E "^[a-f0-9-]+\s+${TUNNEL_NAME}\s+" | awk '{print $1}')
-    fi
-else
-    echo "🚇 Tạo tunnel mới: ${TUNNEL_NAME}"
-    cloudflared tunnel create ${TUNNEL_NAME}
-    TUNNEL_ID=$(cloudflared tunnel list --output json 2>/dev/null | python3 -c "import sys,json; tunnels=json.load(sys.stdin); print(next((t['id'] for t in tunnels if t['name']=='${TUNNEL_NAME}'),''))" 2>/dev/null)
-
-    # Fallback nếu python không hoạt động
-    if [ -z "$TUNNEL_ID" ]; then
-        TUNNEL_ID=$(cloudflared tunnel list | grep -E "^[a-f0-9-]+\s+${TUNNEL_NAME}\s+" | awk '{print $1}')
-    fi
+if [ -z "$TUNNEL_ID" ] || [ "$TUNNEL_ID" == "null" ]; then
+    echo "Tunnel not found. Creating..."
+    cloudflared tunnel create "$TUNNEL_NAME"
+    TUNNELS_JSON=$(cloudflared tunnel list --output json)
+    TUNNEL_ID=$(echo "$TUNNELS_JSON" | jq -r ".[] | select(.name==\"${TUNNEL_NAME}\") | .id")
 fi
 
-# Kiểm tra Tunnel ID có hợp lệ không
-if [ -z "$TUNNEL_ID" ]; then
-    echo "❌ Không thể lấy Tunnel ID! Vui lòng kiểm tra lại."
-    echo "   Chạy: cloudflared tunnel list"
+if [ -z "$TUNNEL_ID" ] || [ "$TUNNEL_ID" == "null" ]; then
+    echo "Failed to get tunnel ID."
     exit 1
 fi
 
-echo "📋 Tunnel ID: ${TUNNEL_ID}"
+echo "Tunnel ID: ${TUNNEL_ID}"
 
-# Kiểm tra credentials file có tồn tại không
 CREDENTIALS_FILE="${CONFIG_DIR}/${TUNNEL_ID}.json"
+
+# Fix missing credentials
 if [ ! -f "$CREDENTIALS_FILE" ]; then
-    echo ""
-    echo "❌ Credentials file không tồn tại: $CREDENTIALS_FILE"
-    echo ""
-    echo "👉 Có thể tunnel đã được tạo nhưng credentials bị mất."
-    echo "   Để sửa, hãy xóa tunnel cũ và tạo lại:"
-    echo "   1. cloudflared tunnel delete ${TUNNEL_NAME}"
-    echo "   2. Chạy lại script này"
-    echo ""
-    read -p "Bạn có muốn xóa tunnel cũ và tạo lại không? (y/n): " confirm
-    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        echo "🗑️  Xóa tunnel cũ..."
-        cloudflared tunnel delete ${TUNNEL_NAME} 2>/dev/null || true
-        echo "🚇 Tạo tunnel mới: ${TUNNEL_NAME}"
-        cloudflared tunnel create ${TUNNEL_NAME}
-        TUNNEL_ID=$(cloudflared tunnel list --output json 2>/dev/null | python3 -c "import sys,json; tunnels=json.load(sys.stdin); print(next((t['id'] for t in tunnels if t['name']=='${TUNNEL_NAME}'),''))" 2>/dev/null)
-        if [ -z "$TUNNEL_ID" ]; then
-            TUNNEL_ID=$(cloudflared tunnel list | grep -E "^[a-f0-9-]+\s+${TUNNEL_NAME}\s+" | awk '{print $1}')
-        fi
-        echo "📋 Tunnel ID mới: ${TUNNEL_ID}"
-        CREDENTIALS_FILE="${CONFIG_DIR}/${TUNNEL_ID}.json"
-    else
+    echo "Credentials missing. Recreating tunnel."
+    cloudflared tunnel delete "$TUNNEL_NAME" || true
+    cloudflared tunnel create "$TUNNEL_NAME"
+
+    TUNNELS_JSON=$(cloudflared tunnel list --output json)
+    TUNNEL_ID=$(echo "$TUNNELS_JSON" | jq -r ".[] | select(.name==\"${TUNNEL_NAME}\") | .id")
+    CREDENTIALS_FILE="${CONFIG_DIR}/${TUNNEL_ID}.json"
+
+    if [ ! -f "$CREDENTIALS_FILE" ]; then
+        echo "Credentials still missing. Abort."
         exit 1
     fi
 fi
 
-echo "✅ Credentials file: $CREDENTIALS_FILE"
+mkdir -p "$CONFIG_DIR"
 
-# Tạo file config
-mkdir -p ${CONFIG_DIR}
-
-echo ""
-echo "📝 Tạo file cấu hình tunnel..."
-cat > ${CONFIG_DIR}/config.yml << EOF
+echo "Writing config.yml"
+cat > "${CONFIG_DIR}/config.yml" << EOF
 tunnel: ${TUNNEL_ID}
 credentials-file: ${CREDENTIALS_FILE}
 
 ingress:
-  # API Backend - api.docshare.io.vn -> localhost:8080
   - hostname: ${API_SUBDOMAIN}
     service: http://localhost:8080
     originRequest:
       noTLSVerify: true
 
-  # Frontend - docshare.io.vn -> localhost:5173
   - hostname: ${DOMAIN}
     service: http://localhost:5173
     originRequest:
       noTLSVerify: true
 
-  # www subdomain
   - hostname: www.${DOMAIN}
     service: http://localhost:5173
     originRequest:
       noTLSVerify: true
 
-  # Catch-all (required)
   - service: http_status:404
 EOF
 
-echo "✅ Config file: ${CONFIG_DIR}/config.yml"
+echo "Setting DNS routes..."
 
-# Cấu hình DNS routes
-echo ""
-echo "🌍 Cấu hình DNS routes..."
-
-# Route cho domain chính
-cloudflared tunnel route dns ${TUNNEL_NAME} ${DOMAIN} 2>/dev/null && echo "   ✓ ${DOMAIN}" || echo "   ✓ ${DOMAIN} (đã tồn tại)"
-
-# Route cho API subdomain
-cloudflared tunnel route dns ${TUNNEL_NAME} ${API_SUBDOMAIN} 2>/dev/null && echo "   ✓ ${API_SUBDOMAIN}" || echo "   ✓ ${API_SUBDOMAIN} (đã tồn tại)"
+cloudflared tunnel route dns "$TUNNEL_NAME" "$DOMAIN" || echo "DNS for root already exists."
+cloudflared tunnel route dns "$TUNNEL_NAME" "$API_SUBDOMAIN" || echo "DNS for API already exists."
 
 echo ""
-echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║              ✅ Setup Tunnel hoàn tất!                    ║"
-echo "╠═══════════════════════════════════════════════════════════╣"
-echo "║  🌐 Frontend: https://${DOMAIN}                    ║"
-echo "║  🔌 Backend:  https://${API_SUBDOMAIN}                ║"
-echo "╚═══════════════════════════════════════════════════════════╝"
+echo "Setup complete."
+echo "Frontend: https://${DOMAIN}"
+echo "Backend:  https://${API_SUBDOMAIN}"
 echo ""
