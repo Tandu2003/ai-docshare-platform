@@ -16,7 +16,6 @@ module.exports = {
       out_file: './logs/backend-out.log',
       log_file: './logs/backend-combined.log',
       time: true,
-      // Graceful shutdown
       kill_timeout: 5000,
       wait_ready: true,
       listen_timeout: 10000,
@@ -41,7 +40,7 @@ module.exports = {
     {
       name: 'docshare-tunnel',
       script: 'cloudflared',
-      args: 'tunnel run docshare-tunnel',
+      args: 'tunnel run docshare-iovn',
       instances: 1,
       autorestart: true,
       watch: false,

@@ -1,51 +1,76 @@
 #!/bin/bash
 
-# Deploy script cho DocShare Platform với PM2
+# ===========================================
+# Deploy Script - DocShare Platform
+# Domain: docshare.io.vn
+# ===========================================
 
 set -e
 
-echo "🚀 Bắt đầu deploy DocShare Platform..."
+DOMAIN="docshare.io.vn"
+API_DOMAIN="api.${DOMAIN}"
 
-# Tạo thư mục logs nếu chưa có
+echo ""
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║        🚀 Deploy DocShare Platform - ${DOMAIN}      ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+echo ""
+
+# Tạo thư mục logs
 mkdir -p logs
 
-# Build Backend
-echo "📦 Building Backend..."
+# ====== BUILD BACKEND ======
+echo "📦 [1/4] Building Backend..."
 cd backend
-npm install
+npm install --legacy-peer-deps
 npx prisma generate
 npm run build
 cd ..
+echo "✅ Backend built successfully"
+echo ""
 
-# Build Frontend
-echo "📦 Building Frontend..."
+# ====== BUILD FRONTEND ======
+echo "📦 [2/4] Building Frontend..."
 cd frontend
-npm install
+npm install --legacy-peer-deps
 npm run build
 cd ..
+echo "✅ Frontend built successfully"
+echo ""
 
-# Dừng PM2 processes cũ
-echo "🛑 Dừng processes cũ..."
+# ====== SETUP TUNNEL ======
+echo "🌐 [3/4] Setting up Cloudflare Tunnel..."
+./cloudflared-setup.sh
+echo ""
+
+# ====== START PM2 ======
+echo "🔄 [4/4] Starting PM2 processes..."
+
+# Dừng processes cũ
 pm2 delete all 2>/dev/null || true
 
-# Kill process đang dùng port 8080 và 5173 nếu có
-echo "🧹 Giải phóng ports..."
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+# Kill ports nếu bị chiếm (dùng fuser thay vì lsof)
+fuser -k 8080/tcp 2>/dev/null || true
+fuser -k 5173/tcp 2>/dev/null || true
 sleep 2
 
-# Khởi động với PM2
-echo "🔄 Khởi động ứng dụng với PM2..."
+# Khởi động PM2
 pm2 start ecosystem.config.js --env production
 
-# Lưu process list
+# Lưu để auto-start
 pm2 save
 
-echo "✅ Deploy hoàn tất!"
 echo ""
-echo "📊 Kiểm tra trạng thái: pm2 status"
-echo "📋 Xem logs backend: pm2 logs docshare-backend"
-echo "📋 Xem logs frontend: pm2 logs docshare-frontend"
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║              ✅ DEPLOY HOÀN TẤT!                          ║"
+echo "╠═══════════════════════════════════════════════════════════╣"
+echo "║                                                           ║"
+echo "║  🌐 Frontend: https://${DOMAIN}                    ║"
+echo "║  🔌 API:      https://${API_DOMAIN}                ║"
+echo "║                                                           ║"
+echo "║  📊 Xem trạng thái: pm2 status                            ║"
+echo "║  📋 Xem logs:       pm2 logs                              ║"
+echo "║  🔄 Restart:        pm2 restart all                       ║"
+echo "║                                                           ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
-echo "🌐 Backend: http://localhost:8080"
-echo "🌐 Frontend: http://localhost:5173"

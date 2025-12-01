@@ -107,7 +107,7 @@ JWT_ACCESS_SECRET="your-random-secret-key-64-characters-long-here"
 JWT_REFRESH_SECRET="another-random-secret-key-64-characters-here"
 
 # CORS - Thêm domain của bạn
-CORS_ORIGIN="https://yourdomain.com,http://localhost:5173"
+CORS_ORIGIN="https://docshare.io.vn,http://localhost:5173"
 
 # Server
 PORT=8080
@@ -121,7 +121,7 @@ MAIL_PASSWORD="your-app-password"
 MAIL_FROM=your-email@gmail.com
 
 # Frontend URL
-FRONTEND_URL=https://yourdomain.com
+FRONTEND_URL=https://docshare.io.vn
 
 # Cloudflare R2 - Storage
 CLOUDFLARE_R2_ENDPOINT=https://your-account.r2.cloudflarestorage.com
@@ -149,7 +149,7 @@ nano frontend/.env.local
 
 ```env
 # API URL - Đổi thành domain API của bạn
-VITE_API_BASE_URL=https://api.yourdomain.com
+VITE_API_BASE_URL=https://api.docshare.io.vn
 ```
 
 ---
@@ -202,7 +202,7 @@ cloudflared tunnel login
 
 ```bash
 # Tạo tunnel mới
-cloudflared tunnel create docshare-tunnel
+cloudflared tunnel create docshare-iovn
 
 # Lấy Tunnel ID
 cloudflared tunnel list
@@ -224,19 +224,19 @@ credentials-file: /home/YOUR_USERNAME/.cloudflared/YOUR_TUNNEL_ID_HERE.json
 
 ingress:
   # API Backend
-  - hostname: api.yourdomain.com
+  - hostname: api.docshare.io.vn
     service: http://localhost:8080
     originRequest:
       noTLSVerify: true
 
   # Frontend
-  - hostname: yourdomain.com
+  - hostname: docshare.io.vn
     service: http://localhost:5173
     originRequest:
       noTLSVerify: true
 
   # Wildcard (optional)
-  - hostname: '*.yourdomain.com'
+  - hostname: '*.docshare.io.vn'
     service: http://localhost:5173
 
   # Catch-all (required)
@@ -246,8 +246,8 @@ ingress:
 ### 5.4 Cấu hình DNS Routes
 
 ```bash
-cloudflared tunnel route dns docshare-tunnel yourdomain.com
-cloudflared tunnel route dns docshare-tunnel api.yourdomain.com
+cloudflared tunnel route dns docshare-iovn docshare.io.vn
+cloudflared tunnel route dns docshare-iovn api.docshare.io.vn
 ```
 
 ---
@@ -292,7 +292,7 @@ Kết quả mong đợi:
 ├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
 │ 0  │ docshare-backend   │ cluster  │ 0    │ online    │ 0%       │ 200mb    │
 │ 1  │ docshare-frontend  │ cluster  │ 0    │ online    │ 0%       │ 100mb    │
-│ 2  │ docshare-tunnel    │ fork     │ 0    │ online    │ 0%       │ 40mb     │
+│ 2  │ docshare-iovn    │ fork     │ 0    │ online    │ 0%       │ 40mb     │
 └────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
 ```
 
@@ -305,17 +305,17 @@ pm2 logs
 # Log riêng từng service
 pm2 logs docshare-backend
 pm2 logs docshare-frontend
-pm2 logs docshare-tunnel
+pm2 logs docshare-iovn
 ```
 
 ### 7.3 Test Endpoints
 
 ```bash
 # Test Frontend
-curl -I https://yourdomain.com
+curl -I https://docshare.io.vn
 
 # Test Backend API
-curl https://api.yourdomain.com/health
+curl https://api.docshare.io.vn/health
 ```
 
 ---
@@ -355,10 +355,10 @@ lsof -ti:8080 | xargs kill -9
 
 ```bash
 # Kiểm tra config
-cloudflared tunnel info docshare-tunnel
+cloudflared tunnel info docshare-iovn
 
 # Test tunnel thủ công
-cloudflared tunnel run docshare-tunnel
+cloudflared tunnel run docshare-iovn
 ```
 
 ### Lỗi: CORS
@@ -366,7 +366,7 @@ cloudflared tunnel run docshare-tunnel
 Kiểm tra `CORS_ORIGIN` trong `backend/.env` đã có domain frontend chưa:
 
 ```env
-CORS_ORIGIN="https://yourdomain.com,https://www.yourdomain.com"
+CORS_ORIGIN="https://docshare.io.vn,https://www.docshare.io.vn"
 ```
 
 Sau đó restart backend:
