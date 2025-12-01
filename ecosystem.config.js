@@ -1,0 +1,57 @@
+module.exports = {
+  apps: [
+    {
+      name: 'docshare-backend',
+      cwd: './backend',
+      script: 'dist/src/main.js',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 8080,
+      },
+      error_file: './logs/backend-error.log',
+      out_file: './logs/backend-out.log',
+      log_file: './logs/backend-combined.log',
+      time: true,
+      // Graceful shutdown
+      kill_timeout: 5000,
+      wait_ready: true,
+      listen_timeout: 10000,
+    },
+    {
+      name: 'docshare-frontend',
+      cwd: './frontend',
+      script: 'npx',
+      args: 'serve -s dist -l 5173',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '512M',
+      env_production: {
+        NODE_ENV: 'production',
+      },
+      error_file: './logs/frontend-error.log',
+      out_file: './logs/frontend-out.log',
+      log_file: './logs/frontend-combined.log',
+      time: true,
+    },
+    {
+      name: 'docshare-tunnel',
+      script: 'cloudflared',
+      args: 'tunnel run docshare-tunnel',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      env_production: {
+        NODE_ENV: 'production',
+      },
+      error_file: './logs/tunnel-error.log',
+      out_file: './logs/tunnel-out.log',
+      log_file: './logs/tunnel-combined.log',
+      time: true,
+    },
+  ],
+};
