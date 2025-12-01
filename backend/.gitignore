@@ -1,10 +1,16 @@
-# compiled output
+# ================================
+# Backend .gitignore (NestJS)
+# ================================
+
+# ===== Build output =====
 /dist
-/node_modules
 /build
 
-# Logs
-logs
+# ===== Dependencies =====
+/node_modules
+
+# ===== Logs =====
+logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
@@ -12,14 +18,15 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# OS
+# ===== OS =====
 .DS_Store
+Thumbs.db
 
-# Tests
+# ===== Testing =====
 /coverage
 /.nyc_output
 
-# IDEs and editors
+# ===== IDEs and editors =====
 /.idea
 .project
 .classpath
@@ -28,29 +35,44 @@ lerna-debug.log*
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
+# ===== IDE - VSCode =====
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# ===== Environment variables =====
 .env
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env.local
+# Keep example for reference
+!.env.example
 
-# temp directory
-.temp
-.tmp
+# ===== Temp directory =====
+.temp/
+.tmp/
+tmp/
 
-# Runtime data
-pids
+# ===== Runtime data =====
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
+# ===== Diagnostic reports =====
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ===== TypeScript =====
+*.tsbuildinfo
+tsconfig.build.tsbuildinfo
+
+# ===== Prisma =====
+# Generated Prisma Client (regenerated on npm install)
+# node_modules/@prisma/client is already ignored by node_modules
+
+# ===== Uploads (if local) =====
+/uploads
+/temp-uploads
