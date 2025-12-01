@@ -130,6 +130,13 @@ CLOUDFLARE_R2_SECRET_ACCESS_KEY=your-secret-key
 CLOUDFLARE_R2_BUCKET_NAME=your-bucket
 CLOUDFLARE_R2_PUBLIC_URL=https://your-public-url.r2.dev
 
+# Cloudinary - Preview image generation
+CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+# Optional: folder to group preview assets
+# CLOUDINARY_PREVIEW_FOLDER=document-previews
+
 # AI - Gemini API
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL_NAME="gemini-2.0-flash"
