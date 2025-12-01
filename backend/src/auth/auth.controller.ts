@@ -114,10 +114,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   logout(@Res() response: FastifyReply): void {
     // Clear refresh token cookie
+    const isProduction = process.env.NODE_ENV === 'production';
     response.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'strict',
       path: '/',
     });
 
@@ -242,7 +243,7 @@ export class AuthController {
     response.setCookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'strict', // 'none' required for cross-site cookies in production
       maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       path: '/',
     });

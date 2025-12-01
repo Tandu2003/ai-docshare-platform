@@ -47,22 +47,46 @@ async function bootstrap() {
       }
 
       // In production, check against allowed origins
-      const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+      const corsOrigin = process.env.CORS_ORIGIN;
+      let allowedOrigins = [
         'http://localhost:3000',
         'http://localhost:5173',
         'https://localhost:3000',
         'https://localhost:5173',
       ];
 
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (corsOrigin) {
+        // Remove spaces and split by comma
+        allowedOrigins = corsOrigin.replace(/\s+/g, '').split(',');
+      }
+
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.warn(
+          `CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`,
+        );
         callback(new Error('Not allowed by CORS'), false);
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
+    exposedHeaders: ['Set-Cookie'],
     credentials: true,
+    preflight: true,
+    strictPreflight: false,
   });
 
   // Global validation pipe
