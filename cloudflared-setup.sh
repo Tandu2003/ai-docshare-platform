@@ -2,11 +2,6 @@
 
 set -e
 
-TUNNEL_NAME="docshare-iovn"
-DOMAIN="docshare.io.vn"
-API_SUBDOMAIN="api.${DOMAIN}"
-CONFIG_DIR="$HOME/.cloudflared"
-
 echo ""
 echo "Cloudflare Tunnel Setup"
 echo "Domain: ${DOMAIN}"
@@ -19,6 +14,26 @@ if ! command -v cloudflared >/dev/null; then
     sudo dpkg -i cloudflared.deb
     rm cloudflared.deb
 fi
+
+set -o allexport
+source .env
+set +o allexport
+
+
+TUNNEL_NAME=${CLOUDFLARE_TUNNEL_NAME:-docshare-tunnel}
+DOMAIN="${CLOUDFLARE_TUNNEL_DOMAIN:-docshare.io.vn}"
+API_SUBDOMAIN="api.${DOMAIN}"
+CONFIG_DIR="$HOME/.cloudflared"
+
+zoneid=$CLOUDFLARE_ZONE_ID
+bearer=$CLOUDFLARE_API_TOKEN
+curl --silent "https://api.cloudflare.com/client/v4/zones/$zoneid/dns_records?per_page=50000" \
+--header "Authorization: Bearer $bearer" \
+| jq --raw-output '.result[].id' | while read id
+do
+  curl --silent --request DELETE "https://api.cloudflare.com/client/v4/zones/$zoneid/dns_records/$id" \
+--header "Authorization: Bearer $bearer"
+done
 
 # Check jq
 if ! command -v jq >/dev/null; then
@@ -59,7 +74,7 @@ CREDENTIALS_FILE="${CONFIG_DIR}/${TUNNEL_ID}.json"
 # Fix missing credentials
 if [ ! -f "$CREDENTIALS_FILE" ]; then
     echo "Credentials missing. Recreating tunnel."
-    cloudflared tunnel delete "$TUNNEL_NAME" || true
+    cloudflared tunnel delete -f "$TUNNEL_NAME"
     cloudflared tunnel create "$TUNNEL_NAME"
 
     TUNNELS_JSON=$(cloudflared tunnel list --output json)
