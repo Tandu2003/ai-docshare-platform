@@ -40,7 +40,7 @@ module.exports = {
     {
       name: 'docshare-tunnel',
       script: 'cloudflared',
-      args: 'tunnel run docshare-iovn',
+      args: 'tunnel run docshare-tunnel',
       instances: 1,
       autorestart: true,
       watch: false,

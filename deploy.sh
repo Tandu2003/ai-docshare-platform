@@ -7,7 +7,11 @@
 
 set -e
 
-DOMAIN="docshare.io.vn"
+set -o allexport
+source .env
+set +o allexport
+
+DOMAIN="${CLOUDFLARE_TUNNEL_DOMAIN:-docshare.io.vn}"
 API_DOMAIN="api.${DOMAIN}"
 
 echo ""
