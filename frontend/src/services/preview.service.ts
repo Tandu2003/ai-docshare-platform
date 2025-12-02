@@ -8,6 +8,18 @@ export interface DocumentPreview {
   mimeType: string;
   width?: number;
   height?: number;
+  variants?: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+  metadata?: {
+    pageCount: number;
+    processingTimeMs: number;
+    previewSizes: string[];
+    sourceType: 'PDF' | 'DOCX' | 'PPTX' | 'IMAGE' | 'TEXT';
+    textPreviewPath?: string;
+  };
 }
 
 export interface PreviewsResponse {
@@ -27,6 +39,13 @@ export interface PreviewStatus {
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   error?: string;
   previewCount: number;
+  metadata?: {
+    pageCount: number;
+    processingTimeMs: number;
+    previewSizes: string[];
+    sourceType: 'PDF' | 'DOCX' | 'PPTX' | 'IMAGE' | 'TEXT';
+    textPreviewPath?: string;
+  };
 }
 
 export interface SecureDownloadResponse {

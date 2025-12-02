@@ -32,6 +32,18 @@ export interface DocumentPreview {
   mimeType: string;
   width?: number;
   height?: number;
+  variants?: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+  metadata?: {
+    pageCount: number;
+    processingTimeMs: number;
+    previewSizes: string[];
+    sourceType: 'PDF' | 'DOCX' | 'PPTX' | 'IMAGE' | 'TEXT';
+    textPreviewPath?: string;
+  };
 }
 
 export type PreviewStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
