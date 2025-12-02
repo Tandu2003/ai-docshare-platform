@@ -37,4 +37,8 @@ export class UpdateDocumentDto {
   @IsInt()
   @Min(0)
   downloadCost?: number | null; // null = use system default, number = custom cost
+
+  @IsOptional()
+  @IsBoolean()
+  filesEdited?: boolean;
 }

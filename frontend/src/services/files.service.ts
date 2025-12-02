@@ -40,6 +40,7 @@ export interface UpdateDocumentData {
   tags?: string[];
   language?: string;
   downloadCost?: number | null; // null = use system default
+  filesEdited?: boolean;
 }
 
 export interface Document {

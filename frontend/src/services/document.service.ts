@@ -54,6 +54,7 @@ export interface DocumentView {
   description?: string;
   tags: string[];
   language: string;
+  needsReModeration?: boolean;
   isPublic: boolean;
   isPremium: boolean;
   isApproved: boolean;
@@ -73,6 +74,7 @@ export interface DocumentView {
   totalRatings: number;
   createdAt: string;
   updatedAt: string;
+  categoryId?: string;
   uploader: {
     id: string;
     username: string;

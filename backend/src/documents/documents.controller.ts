@@ -1331,10 +1331,14 @@ export class DocumentsController {
         userRole,
       );
 
+      const message = updatedDocument.needsReModeration
+        ? 'Tài liệu đã được cập nhật và cần kiểm duyệt lại'
+        : 'Tài liệu đã được cập nhật thành công';
+
       return ResponseHelper.success(
         res,
         updatedDocument,
-        'Tài liệu đã được cập nhật thành công',
+        message,
       );
     } catch (error) {
       this.logger.error(`Error updating document ${documentId}:`, error);

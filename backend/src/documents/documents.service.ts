@@ -13,6 +13,7 @@ import { FilesService } from '../files/files.service';
 import { PreviewService } from '../preview/preview.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PointsService } from '@/points/points.service';
@@ -3818,15 +3819,7 @@ export class DocumentsService {
   async updateDocument(
     documentId: string,
     userId: string,
-    updateData: {
-      title?: string;
-      description?: string;
-      categoryId?: string;
-      isPublic?: boolean;
-      tags?: string[];
-      language?: string;
-      downloadCost?: number | null;
-    },
+    updateData: UpdateDocumentDto,
     userRole?: string,
   ) {
     try {
@@ -3855,6 +3848,7 @@ export class DocumentsService {
 
       // Build update data
       const dataToUpdate: any = {};
+      let needsReModeration = false;
 
       if (updateData.title !== undefined) {
         dataToUpdate.title = updateData.title;
@@ -3888,6 +3882,13 @@ export class DocumentsService {
         dataToUpdate.downloadCost = updateData.downloadCost;
       }
 
+      // Handle files edited flag - triggers re-moderation
+      if (updateData.filesEdited) {
+        needsReModeration = true;
+        dataToUpdate.moderationStatus = DocumentModerationStatus.PENDING;
+        dataToUpdate.isApproved = false;
+      }
+
       // Handle isPublic change - may need re-moderation
       if (updateData.isPublic !== undefined) {
         const wasPublic = document.isPublic;
@@ -3898,10 +3899,13 @@ export class DocumentsService {
           dataToUpdate.isPublic = true;
           dataToUpdate.isApproved = false;
           dataToUpdate.moderationStatus = DocumentModerationStatus.PENDING;
+          needsReModeration = true;
         } else if (wasPublic && !wantsPublic) {
           // Switching from public to private
           dataToUpdate.isPublic = false;
-          dataToUpdate.isApproved = true;
+          if (!needsReModeration) {
+            dataToUpdate.isApproved = true;
+          }
         }
       }
 
@@ -3956,6 +3960,7 @@ export class DocumentsService {
           fileSize: df.file.fileSize,
           order: df.order,
         })),
+        needsReModeration: needsReModeration,
       };
     } catch (error) {
       this.logger.error(`Error updating document ${documentId}:`, error);
