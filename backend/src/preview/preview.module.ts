@@ -1,5 +1,4 @@
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
-import { CloudinaryService } from '../common/cloudinary.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PreviewInitializationService } from './preview-initialization.service';
 import { PreviewController } from './preview.controller';
@@ -16,7 +15,6 @@ import { ConfigModule } from '@nestjs/config';
     PreviewService,
     SecureDocumentService,
     CloudflareR2Service,
-    CloudinaryService,
     PreviewInitializationService,
   ],
   exports: [
