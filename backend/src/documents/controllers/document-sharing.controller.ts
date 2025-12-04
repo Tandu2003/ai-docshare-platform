@@ -1,3 +1,12 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { DocumentsService } from '@/documents/documents.service';
+import { SetRatingDto } from '@/documents/dto/set-rating.dto';
+import { ShareDocumentDto } from '@/documents/dto/share-document.dto';
+import { ViewDocumentDto } from '@/documents/dto/view-document.dto';
+import { AuthenticatedRequest } from '@/documents/interfaces';
+import { DocumentCommentService } from '@/documents/services/document-comment.service';
+import { DocumentSharingService } from '@/documents/services/document-sharing.service';
 import {
   BadRequestException,
   Body,
@@ -19,15 +28,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { DocumentsService } from '@/documents/documents.service';
-import { SetRatingDto } from '@/documents/dto/set-rating.dto';
-import { ShareDocumentDto } from '@/documents/dto/share-document.dto';
-import { ViewDocumentDto } from '@/documents/dto/view-document.dto';
-import { AuthenticatedRequest } from '@/documents/interfaces';
-import { DocumentCommentService } from '@/documents/services/document-comment.service';
-import { DocumentSharingService } from '@/documents/services/document-sharing.service';
 
 @ApiTags('Document Sharing')
 @Controller('documents')

@@ -1,3 +1,11 @@
+import { Public } from '@/auth/decorators/public.decorator';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { CreateCommentDto } from '@/documents/dto/create-comment.dto';
+import { UpdateCommentDto } from '@/documents/dto/update-comment.dto';
+import { AuthenticatedRequest } from '@/documents/interfaces';
+import { DocumentCommentService } from '@/documents/services/document-comment.service';
 import {
   Body,
   Controller,
@@ -18,14 +26,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { Public } from '@/auth/decorators/public.decorator';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { CreateCommentDto } from '@/documents/dto/create-comment.dto';
-import { UpdateCommentDto } from '@/documents/dto/update-comment.dto';
-import { AuthenticatedRequest } from '@/documents/interfaces';
-import { DocumentCommentService } from '@/documents/services/document-comment.service';
 
 @ApiTags('Document Comments')
 @Controller('documents')

@@ -1,3 +1,9 @@
+import { Public } from '@/auth/decorators/public.decorator';
+import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { DocumentsService } from '@/documents/documents.service';
+import { AuthenticatedRequest } from '@/documents/interfaces';
+import { FilesService } from '@/files/files.service';
 import {
   BadRequestException,
   Controller,
@@ -13,12 +19,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { Public } from '@/auth/decorators/public.decorator';
-import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { DocumentsService } from '@/documents/documents.service';
-import { AuthenticatedRequest } from '@/documents/interfaces';
-import { FilesService } from '@/files/files.service';
 
 @ApiTags('Documents')
 @Controller('documents')
@@ -74,7 +74,9 @@ export class DocumentAccessController {
 
       const userId = req.user?.id;
       const userRole = req.user?.role?.name;
-      const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : undefined;
+      const tagsArray = tags
+        ? tags.split(',').map(tag => tag.trim())
+        : undefined;
       const allowedSortBy = [
         'createdAt',
         'downloadCount',

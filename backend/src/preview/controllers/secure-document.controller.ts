@@ -1,3 +1,7 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { SecureDocumentService } from '@/preview/secure-document.service';
 import {
   BadRequestException,
   Controller,
@@ -22,10 +26,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { SecureDocumentService } from '@/preview/secure-document.service';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user?: {

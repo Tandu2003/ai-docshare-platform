@@ -1,6 +1,6 @@
 import { PrismaModule } from '../prisma/prisma.module';
-import { CategoriesController } from './controllers/categories.controller';
 import { CategoriesService } from './categories.service';
+import { CategoriesController } from './controllers/categories.controller';
 import {
   CategoryCrudService,
   CategoryQueryService,

@@ -1,4 +1,18 @@
 import {
+  AIAnalysisRequest,
+  AIAnalysisResponse,
+  AIService,
+} from '@/ai/ai.service';
+import { AnalyzeDocumentDto } from '@/ai/dto';
+import {
+  EmbeddingMigrationService,
+  EmbeddingMigrationStatus,
+  RegenerationProgress,
+} from '@/ai/embedding-migration.service';
+import { EmbeddingMetrics, EmbeddingService } from '@/ai/embedding.service';
+import { SearchMetrics, VectorSearchService } from '@/ai/vector-search.service';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import {
   Body,
   Controller,
   Get,
@@ -17,20 +31,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyRequest } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import {
-  AIAnalysisRequest,
-  AIAnalysisResponse,
-  AIService,
-} from '@/ai/ai.service';
-import { AnalyzeDocumentDto } from '@/ai/dto';
-import {
-  EmbeddingMigrationService,
-  EmbeddingMigrationStatus,
-  RegenerationProgress,
-} from '@/ai/embedding-migration.service';
-import { EmbeddingMetrics, EmbeddingService } from '@/ai/embedding.service';
-import { SearchMetrics, VectorSearchService } from '@/ai/vector-search.service';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user: {

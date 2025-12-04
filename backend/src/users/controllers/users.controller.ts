@@ -1,3 +1,15 @@
+import { JwtAuthGuard } from '@/auth/guards';
+import { AuthUser } from '@/auth/interfaces';
+import { ResponseHelper } from '@/common';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
+import {
+  CreateUserDto,
+  GetUsersQueryDto,
+  UpdateUserDto,
+  UpdateUserRoleDto,
+  UpdateUserStatusDto,
+} from '@/users/dto';
+import { UsersService } from '@/users/users.service';
 import {
   Body,
   Controller,
@@ -14,18 +26,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards';
-import { AuthUser } from '@/auth/interfaces';
-import { ResponseHelper } from '@/common';
-import { AdminOnly, RoleGuard } from '@/common/authorization';
-import {
-  CreateUserDto,
-  GetUsersQueryDto,
-  UpdateUserDto,
-  UpdateUserRoleDto,
-  UpdateUserStatusDto,
-} from '@/users/dto';
-import { UsersService } from '@/users/users.service';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RoleGuard)

@@ -1,3 +1,11 @@
+import { Public } from '@/auth/decorators/public.decorator';
+import { AdminGuard } from '@/auth/guards/admin.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { PreviewInitializationService } from '@/preview/preview-initialization.service';
+import { PreviewService } from '@/preview/preview.service';
+import { SecureDocumentService } from '@/preview/secure-document.service';
 import {
   Controller,
   Get,
@@ -21,14 +29,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { Public } from '@/auth/decorators/public.decorator';
-import { AdminGuard } from '@/auth/guards/admin.guard';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { PreviewInitializationService } from '@/preview/preview-initialization.service';
-import { PreviewService } from '@/preview/preview.service';
-import { SecureDocumentService } from '@/preview/secure-document.service';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user?: {

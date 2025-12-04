@@ -1,9 +1,9 @@
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { PrismaModule } from '../prisma/prisma.module';
-import { PreviewInitializationService } from './preview-initialization.service';
 import { PreviewController } from './controllers/preview.controller';
-import { PreviewService } from './preview.service';
 import { SecureDocumentController } from './controllers/secure-document.controller';
+import { PreviewInitializationService } from './preview-initialization.service';
+import { PreviewService } from './preview.service';
 import { SecureDocumentService } from './secure-document.service';
 import {
   ImagePreviewService,

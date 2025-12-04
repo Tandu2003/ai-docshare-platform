@@ -1,6 +1,6 @@
 import { PrismaModule } from '../prisma/prisma.module';
-import { BookmarksController } from './controllers/bookmarks.controller';
 import { BookmarksService } from './bookmarks.service';
+import { BookmarksController } from './controllers/bookmarks.controller';
 import { Module } from '@nestjs/common';
 
 @Module({

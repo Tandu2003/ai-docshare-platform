@@ -1,3 +1,7 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { NotificationsGateway } from '@/notifications/notifications.gateway';
+import { NotificationsService } from '@/notifications/notifications.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   Body,
   Controller,
@@ -18,10 +22,6 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { NotificationsGateway } from '@/notifications/notifications.gateway';
-import { NotificationsService } from '@/notifications/notifications.service';
-import { PrismaService } from '@/prisma/prisma.service';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()

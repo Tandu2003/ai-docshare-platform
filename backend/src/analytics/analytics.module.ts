@@ -1,6 +1,6 @@
 import { PrismaModule } from '../prisma/prisma.module';
-import { AnalyticsController } from './controllers/analytics.controller';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsController } from './controllers/analytics.controller';
 import {
   ActivityAnalyticsService,
   AnalyticsUtilService,

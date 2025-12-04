@@ -1,17 +1,3 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
-import { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthService } from '@/auth/auth.service';
 import { Public } from '@/auth/decorators/public.decorator';
 import {
@@ -27,6 +13,20 @@ import {
 import { JwtAuthGuard } from '@/auth/guards';
 import { AuthUser } from '@/auth/interfaces';
 import { ResponseHelper } from '@/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user: AuthUser;

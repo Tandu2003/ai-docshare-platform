@@ -1,5 +1,5 @@
-import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './auth.service';
+import { AuthController } from './controllers/auth.controller';
 import { RoleController } from './controllers/role.controller';
 import { RoleService } from './role.service';
 import { JwtStrategy } from './strategies';

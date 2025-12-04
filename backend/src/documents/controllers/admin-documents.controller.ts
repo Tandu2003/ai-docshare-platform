@@ -1,3 +1,11 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { DocumentsService } from '@/documents/documents.service';
+import { ApproveDocumentDto } from '@/documents/dto/approve-document.dto';
+import { ModerationQueueQueryDto } from '@/documents/dto/moderation-queue.dto';
+import { RejectDocumentDto } from '@/documents/dto/reject-document.dto';
+import { AuthenticatedRequest } from '@/documents/interfaces';
 import {
   BadRequestException,
   Body,
@@ -19,14 +27,6 @@ import {
 } from '@nestjs/swagger';
 import { DocumentModerationStatus } from '@prisma/client';
 import { FastifyReply } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminOnly, RoleGuard } from '@/common/authorization';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { DocumentsService } from '@/documents/documents.service';
-import { ApproveDocumentDto } from '@/documents/dto/approve-document.dto';
-import { ModerationQueueQueryDto } from '@/documents/dto/moderation-queue.dto';
-import { RejectDocumentDto } from '@/documents/dto/reject-document.dto';
-import { AuthenticatedRequest } from '@/documents/interfaces';
 
 @ApiTags('Admin Documents')
 @ApiBearerAuth()

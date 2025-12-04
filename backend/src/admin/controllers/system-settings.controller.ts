@@ -1,3 +1,10 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import {
+  SystemSettingsService,
+  SystemSettingValue,
+} from '@/common/system-settings.service';
 import {
   Body,
   Controller,
@@ -17,13 +24,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminOnly, RoleGuard } from '@/common/authorization';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import {
-  SystemSettingsService,
-  SystemSettingValue,
-} from '@/common/system-settings.service';
 
 @ApiTags('System Settings')
 @Controller('settings')

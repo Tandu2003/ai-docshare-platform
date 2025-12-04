@@ -1,3 +1,7 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { BookmarksService } from '@/bookmarks/bookmarks.service';
+import { CreateBookmarkDto } from '@/bookmarks/dto/create-bookmark.dto';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import {
   Body,
   Controller,
@@ -15,10 +19,6 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { BookmarksService } from '@/bookmarks/bookmarks.service';
-import { CreateBookmarkDto } from '@/bookmarks/dto/create-bookmark.dto';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user?: {

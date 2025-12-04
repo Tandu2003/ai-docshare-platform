@@ -1,3 +1,6 @@
+import { JwtAuthGuard } from '@/auth/guards';
+import { RoleService } from '@/auth/role.service';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
 import {
   Body,
   Controller,
@@ -8,9 +11,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '@/auth/guards';
-import { RoleService } from '@/auth/role.service';
-import { AdminOnly, RoleGuard } from '@/common/authorization';
 
 interface Permission {
   action: string;

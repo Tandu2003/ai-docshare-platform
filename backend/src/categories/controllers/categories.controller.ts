@@ -1,3 +1,9 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { CategoriesService } from '@/categories/categories.service';
+import { CreateCategoryDto } from '@/categories/dto/create-category.dto';
+import { UpdateCategoryDto } from '@/categories/dto/update-category.dto';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
+import { ResponseHelper } from '@/common/helpers/response.helper';
 import {
   Body,
   Controller,
@@ -21,12 +27,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminOnly, RoleGuard } from '@/common/authorization';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { CategoriesService } from '@/categories/categories.service';
-import { CreateCategoryDto } from '@/categories/dto/create-category.dto';
-import { UpdateCategoryDto } from '@/categories/dto/update-category.dto';
 
 @ApiTags('Categories')
 @ApiBearerAuth()

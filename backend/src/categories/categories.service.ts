@@ -7,13 +7,13 @@
 
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Injectable } from '@nestjs/common';
 import {
   CategoryCrudService,
   CategoryQueryService,
   CategorySuggestionService,
   DefaultCategoriesService,
 } from './services';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class CategoriesService {

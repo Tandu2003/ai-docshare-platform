@@ -1,3 +1,7 @@
+import { AdminGuard } from '@/auth/guards/admin.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { SimilarityJobService } from '@/similarity/similarity-job.service';
+import { SimilarityService } from '@/similarity/similarity.service';
 import {
   Body,
   Controller,
@@ -8,10 +12,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { AdminGuard } from '@/auth/guards/admin.guard';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { SimilarityJobService } from '@/similarity/similarity-job.service';
-import { SimilarityService } from '@/similarity/similarity.service';
 
 @Controller('similarity')
 @UseGuards(JwtAuthGuard, AdminGuard)

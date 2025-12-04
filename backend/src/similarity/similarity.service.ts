@@ -5,12 +5,12 @@
  * Delegates to specialized sub-services for different functionality domains.
  */
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
 import {
   SimilarityDetectionService,
   SimilarityEmbeddingService,
   SimilarityModerationService,
 } from './services';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 export interface SimilarityResult {
   documentId: string;

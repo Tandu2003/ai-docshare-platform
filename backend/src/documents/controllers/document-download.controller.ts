@@ -1,3 +1,9 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { DocumentsService } from '@/documents/documents.service';
+import { DownloadDocumentDto } from '@/documents/dto/download-document.dto';
+import { AuthenticatedRequest } from '@/documents/interfaces';
+import { DocumentDownloadService } from '@/documents/services/document-download.service';
 import {
   BadRequestException,
   Body,
@@ -19,12 +25,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { DocumentsService } from '@/documents/documents.service';
-import { DownloadDocumentDto } from '@/documents/dto/download-document.dto';
-import { AuthenticatedRequest } from '@/documents/interfaces';
-import { DocumentDownloadService } from '@/documents/services/document-download.service';
 
 @ApiTags('Document Downloads')
 @Controller('documents')
@@ -348,10 +348,7 @@ export class DocumentDownloadController {
         referrer,
       );
 
-      await this.downloadService.confirmDownload(
-        initResult.downloadId,
-        userId,
-      );
+      await this.downloadService.confirmDownload(initResult.downloadId, userId);
 
       return ResponseHelper.success(
         res,

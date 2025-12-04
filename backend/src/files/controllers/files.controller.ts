@@ -1,3 +1,12 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { CloudflareR2Service } from '@/common/cloudflare-r2.service';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import {
+  FastifyFilesInterceptor,
+  MultipartFile,
+} from '@/common/interceptors/fastify-file.interceptor';
+import { FilesService } from '@/files/files.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
   Controller,
@@ -19,15 +28,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { CloudflareR2Service } from '@/common/cloudflare-r2.service';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import {
-  FastifyFilesInterceptor,
-  MultipartFile,
-} from '@/common/interceptors/fastify-file.interceptor';
-import { FilesService } from '@/files/files.service';
-import { PrismaService } from '@/prisma/prisma.service';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user: {

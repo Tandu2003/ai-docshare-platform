@@ -1,6 +1,13 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { ResponseHelper } from '@/common/helpers/response.helper';
+import { DocumentsService } from '@/documents/documents.service';
+import { CreateDocumentDto } from '@/documents/dto/create-document.dto';
+import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
+import { AuthenticatedRequest } from '@/documents/interfaces';
+import { FilesService } from '@/files/files.service';
 import {
-  Body,
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
@@ -21,13 +28,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { ResponseHelper } from '@/common/helpers/response.helper';
-import { DocumentsService } from '@/documents/documents.service';
-import { CreateDocumentDto } from '@/documents/dto/create-document.dto';
-import { UpdateDocumentDto } from '@/documents/dto/update-document.dto';
-import { AuthenticatedRequest } from '@/documents/interfaces';
-import { FilesService } from '@/files/files.service';
 
 @ApiTags('Documents')
 @ApiBearerAuth()
@@ -170,11 +170,7 @@ export class DocumentManagementController {
       this.logger.error(`Error deleting document ${documentId}:`, error);
 
       if (error instanceof BadRequestException) {
-        return ResponseHelper.error(
-          res,
-          error.message,
-          HttpStatus.BAD_REQUEST,
-        );
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
 
       return ResponseHelper.error(

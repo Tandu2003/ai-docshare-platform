@@ -1,3 +1,6 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminOnly, RoleGuard } from '@/common/authorization';
+import { PointsService } from '@/points/points.service';
 import {
   Body,
   Controller,
@@ -10,9 +13,6 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PointTxnReason, PointTxnType } from '@prisma/client';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminOnly, RoleGuard } from '@/common/authorization';
-import { PointsService } from '@/points/points.service';
 
 @ApiTags('Points')
 @Controller('points')
