@@ -230,16 +230,7 @@ export class DocumentsService {
 
       this.logger.log(`Document created successfully: ${document.id}`);
 
-      // Award points for uploading a document
-      try {
-        await this.pointsService.awardOnUpload(userId, document.id);
-      } catch (e) {
-        this.logger.warn(
-          `Failed to award points for upload of document ${document.id}: ${e?.message}`,
-        );
-      }
-
-      // Create DocumentFile relationships
+      // Create DocumentFile relationships (required synchronously for response)
       const documentFiles = await Promise.all(
         files.map((file, index) =>
           this.prisma.documentFile.create({
@@ -259,273 +250,24 @@ export class DocumentsService {
         `Document-file relationships created: ${documentFiles.length} files`,
       );
 
-      // Save AI analysis if provided
-      if (
-        useAI &&
-        aiAnalysis &&
-        aiAnalysis.confidence &&
-        aiAnalysis.confidence > 0
-      ) {
-        try {
-          await this.prisma.aIAnalysis.create({
-            data: {
-              documentId: document.id,
-              summary: aiAnalysis.summary,
-              keyPoints: aiAnalysis.keyPoints || [],
-              suggestedTags: aiAnalysis.tags || [],
-              difficulty: aiAnalysis.difficulty || 'beginner',
-              language: aiAnalysis.language || 'en',
-              confidence: aiAnalysis.confidence,
-            },
-          });
-          this.logger.log(`AI analysis saved for document ${document.id}`);
+      // Run background tasks asynchronously - don't make user wait
+      void this.runPostCreationTasks(
+        document,
+        userId,
+        fileIds,
+        files,
+        wantsPublic,
+        useAI,
+        aiAnalysis,
+        categoryId,
+        category,
+        suggestedCategory,
+        title,
+        description,
+        tags,
+      );
 
-          // When AI analysis is provided, run similarity detection and apply moderation
-          if (wantsPublic) {
-            try {
-              // Run similarity detection SYNCHRONOUSLY first - results must be saved before moderation
-              await this.similarityJobService.runSimilarityDetectionSync(
-                document.id,
-              );
-              this.logger.log(
-                `Similarity detection completed for document ${document.id}`,
-              );
-            } catch (simError) {
-              this.logger.warn(
-                `Similarity detection failed for document ${document.id}: ${simError.message}`,
-              );
-            }
-
-            // Apply AI moderation (will also check similarity)
-            try {
-              const moderationScore = aiAnalysis.confidence || 50;
-              const moderationResult =
-                await this.aiService.applyModerationSettings(
-                  document.id,
-                  moderationScore,
-                );
-
-              this.logger.log(
-                `AI moderation applied for document ${document.id}: ${moderationResult.status} (${moderationResult.action})`,
-              );
-
-              // Update document status if auto-approved or auto-rejected
-              if (
-                moderationResult.status === 'approved' ||
-                moderationResult.status === 'rejected'
-              ) {
-                const isApproved = moderationResult.status === 'approved';
-                const moderatedAt = new Date();
-                const moderationNotes = `AI Tự động ${moderationResult.action === 'auto_approved' ? 'phê duyệt' : 'từ chối'}: Điểm ${moderationScore}% - ${moderationResult.reason || 'Không có lý do'}`;
-
-                await this.prisma.document.update({
-                  where: { id: document.id },
-                  data: {
-                    moderationStatus:
-                      moderationResult.status === 'approved'
-                        ? 'APPROVED'
-                        : 'REJECTED',
-                    isApproved,
-                    moderatedAt,
-                    moderationNotes,
-                  },
-                });
-
-                // Send notification
-                try {
-                  await this.notifications.emitToUploaderOfDocument(
-                    document.uploaderId,
-                    {
-                      type: 'moderation',
-                      documentId: document.id,
-                      status:
-                        moderationResult.status === 'approved'
-                          ? 'approved'
-                          : 'rejected',
-                      notes: moderationNotes,
-                      reason: moderationResult.reason,
-                    },
-                  );
-                } catch (notificationError) {
-                  this.logger.warn(
-                    `Failed to send moderation notification: ${notificationError.message}`,
-                  );
-                }
-              }
-            } catch (moderationError) {
-              this.logger.warn(
-                `Failed to apply AI moderation: ${moderationError.message}`,
-              );
-            }
-          }
-        } catch (error) {
-          this.logger.warn(`Failed to save AI analysis: ${error.message}`);
-        }
-      }
-
-      // Automatically trigger AI analysis for public documents when not provided
-      if (wantsPublic && (!useAI || !aiAnalysis)) {
-        try {
-          const aiResult = await this.aiService.analyzeDocuments({
-            fileIds,
-            userId,
-          });
-
-          if (aiResult.success && aiResult.data) {
-            await this.aiService.saveAnalysis(document.id, aiResult.data);
-            this.logger.log(
-              `AI moderation analysis generated for document ${document.id}`,
-            );
-
-            // If category was not specified, try to suggest based on AI analysis
-            if (!categoryId && !suggestedCategory) {
-              try {
-                const aiSuggestion =
-                  await this.categoriesService.suggestBestCategoryFromContent({
-                    title: aiResult.data.title || title,
-                    description: aiResult.data.description || description,
-                    tags: aiResult.data.tags || tags,
-                    summary: aiResult.data.summary,
-                    keyPoints: aiResult.data.keyPoints,
-                  });
-
-                if (
-                  aiSuggestion.categoryId &&
-                  aiSuggestion.categoryId !== category.id
-                ) {
-                  // Update document with suggested category
-                  await this.prisma.document.update({
-                    where: { id: document.id },
-                    data: { categoryId: aiSuggestion.categoryId },
-                  });
-                  this.logger.log(
-                    `Document ${document.id} category updated to AI suggested: ${aiSuggestion.categoryName} (confidence: ${aiSuggestion.confidence}%)`,
-                  );
-                  suggestedCategory = aiSuggestion;
-                }
-              } catch (catError) {
-                this.logger.warn(
-                  `Failed to suggest category for document ${document.id}: ${catError.message}`,
-                );
-              }
-            }
-
-            // Apply AI moderation settings based on analysis score
-            // Note: This will also check similarity if enableSimilarityCheck is enabled
-            try {
-              const moderationScore = aiResult.data.moderationScore || 50; // Default score if not provided
-
-              // Run similarity detection SYNCHRONOUSLY before applying moderation
-              // This ensures similarity data is available for moderation decision
-              if (wantsPublic) {
-                try {
-                  await this.similarityJobService.runSimilarityDetectionSync(
-                    document.id,
-                  );
-                  this.logger.log(
-                    `Similarity detection completed for document ${document.id}`,
-                  );
-                } catch (simError) {
-                  this.logger.warn(
-                    `Similarity detection failed for document ${document.id}: ${simError.message}`,
-                  );
-                }
-              }
-
-              const moderationResult =
-                await this.aiService.applyModerationSettings(
-                  document.id,
-                  moderationScore,
-                );
-
-              this.logger.log(
-                `AI moderation applied for document ${document.id}: ${moderationResult.status} (${moderationResult.action})`,
-              );
-
-              // Update document status if auto-approved or auto-rejected
-              if (
-                moderationResult.status === 'approved' ||
-                moderationResult.status === 'rejected'
-              ) {
-                const isApproved = moderationResult.status === 'approved';
-                const moderatedAt = new Date();
-                const moderationNotes = `AI Tự động ${moderationResult.action === 'auto_approved' ? 'phê duyệt' : 'từ chối'}: Điểm ${moderationScore}% - ${moderationResult.reason || 'Không có lý do'}`;
-
-                await this.prisma.document.update({
-                  where: { id: document.id },
-                  data: {
-                    moderationStatus:
-                      moderationResult.status === 'approved'
-                        ? 'APPROVED'
-                        : 'REJECTED',
-                    isApproved,
-                    moderatedAt,
-                    moderationNotes,
-                  },
-                });
-                this.logger.log(
-                  `Document ${document.id} status updated to ${moderationResult.status} with moderation notes: ${moderationNotes}`,
-                );
-
-                // Send notification to document uploader
-                try {
-                  await this.notifications.emitToUploaderOfDocument(
-                    document.uploaderId,
-                    {
-                      type: 'moderation',
-                      documentId: document.id,
-                      status:
-                        moderationResult.status === 'approved'
-                          ? 'approved'
-                          : 'rejected',
-                      notes: moderationNotes,
-                      reason: moderationResult.reason,
-                    },
-                  );
-                  this.logger.log(
-                    `Moderation notification sent and saved to database for user ${document.uploaderId} for document ${document.id}`,
-                  );
-                } catch (notificationError) {
-                  this.logger.warn(
-                    `Failed to send moderation notification for document ${document.id}: ${notificationError.message}`,
-                  );
-                }
-              }
-            } catch (moderationError) {
-              this.logger.warn(
-                `Failed to apply AI moderation for document ${document.id}: ${moderationError.message}`,
-              );
-            }
-          } else {
-            this.logger.warn(
-              `AI analysis skipped or failed for document ${document.id}`,
-            );
-          }
-        } catch (error) {
-          this.logger.warn(
-            `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
-          );
-        }
-      }
-
-      // Generate document embedding for vector search (in background)
-      // Only for approved/public documents to enable vector search
-      if (document.isApproved && wantsPublic) {
-        void this.generateDocumentEmbedding(document.id).catch(error => {
-          this.logger.warn(
-            `Failed to generate embedding for document ${document.id}: ${error.message}`,
-          );
-        });
-      }
-
-      // Generate document previews in background (first 3 pages as images)
-      void this.previewService.generatePreviews(document.id).catch(error => {
-        this.logger.warn(
-          `Failed to generate previews for document ${document.id}: ${error.message}`,
-        );
-      });
-
-      // Return document with files
+      // Return document with files immediately
       const result = {
         ...document,
         files: documentFiles.map(df => df.file),
@@ -540,9 +282,7 @@ export class DocumentsService {
           : null,
       };
 
-      this.logger.log(
-        `Document creation completed successfully: ${document.id}`,
-      );
+      this.logger.log(`Document creation response ready: ${document.id}`);
       return result;
     } catch (error) {
       this.logger.error('Error creating document:', error);
@@ -550,6 +290,291 @@ export class DocumentsService {
         throw error;
       }
       throw new InternalServerErrorException('Đã xảy ra lỗi khi tạo tài liệu');
+    }
+  }
+
+  /**
+   * Run post-creation tasks in background
+   * These tasks don't need to block the response to the user
+   */
+  private async runPostCreationTasks(
+    document: any,
+    userId: string,
+    fileIds: string[],
+    files: any[],
+    wantsPublic: boolean,
+    useAI: boolean,
+    aiAnalysis: any,
+    categoryId: string | undefined,
+    category: any,
+    suggestedCategory: any,
+    title: string,
+    description?: string,
+    tags: string[] = [],
+  ): Promise<void> {
+    try {
+      this.logger.log(`Starting background tasks for document ${document.id}`);
+
+      // Award points for uploading a document
+      try {
+        await this.pointsService.awardOnUpload(userId, document.id);
+      } catch (e) {
+        this.logger.warn(
+          `Failed to award points for upload of document ${document.id}: ${e?.message}`,
+        );
+      }
+
+      // Save AI analysis if provided
+      if (
+        useAI &&
+        aiAnalysis &&
+        aiAnalysis.confidence &&
+        aiAnalysis.confidence > 0
+      ) {
+        await this.processProvidedAIAnalysis(document, aiAnalysis, wantsPublic);
+      }
+
+      // Automatically trigger AI analysis for public documents when not provided
+      if (wantsPublic && (!useAI || !aiAnalysis)) {
+        await this.processAutoAIAnalysis(
+          document,
+          fileIds,
+          userId,
+          categoryId,
+          category,
+          suggestedCategory,
+          title,
+          description,
+          tags,
+        );
+      }
+
+      // Generate document embedding for vector search
+      // Only for approved/public documents to enable vector search
+      if (document.isApproved && wantsPublic) {
+        try {
+          await this.generateDocumentEmbedding(document.id);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to generate embedding for document ${document.id}: ${error.message}`,
+          );
+        }
+      }
+
+      // Generate document previews (first 3 pages as images)
+      try {
+        await this.previewService.generatePreviews(document.id);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to generate previews for document ${document.id}: ${error.message}`,
+        );
+      }
+
+      this.logger.log(`Background tasks completed for document ${document.id}`);
+    } catch (error) {
+      this.logger.error(
+        `Error in background tasks for document ${document.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Process provided AI analysis and apply moderation
+   */
+  private async processProvidedAIAnalysis(
+    document: any,
+    aiAnalysis: any,
+    wantsPublic: boolean,
+  ): Promise<void> {
+    try {
+      await this.prisma.aIAnalysis.create({
+        data: {
+          documentId: document.id,
+          summary: aiAnalysis.summary,
+          keyPoints: aiAnalysis.keyPoints || [],
+          suggestedTags: aiAnalysis.tags || [],
+          difficulty: aiAnalysis.difficulty || 'beginner',
+          language: aiAnalysis.language || 'en',
+          confidence: aiAnalysis.confidence,
+        },
+      });
+      this.logger.log(`AI analysis saved for document ${document.id}`);
+
+      // When AI analysis is provided, run similarity detection and apply moderation
+      if (wantsPublic) {
+        try {
+          await this.similarityJobService.runSimilarityDetectionSync(
+            document.id,
+          );
+          this.logger.log(
+            `Similarity detection completed for document ${document.id}`,
+          );
+        } catch (simError) {
+          this.logger.warn(
+            `Similarity detection failed for document ${document.id}: ${simError.message}`,
+          );
+        }
+
+        // Apply AI moderation
+        await this.applyAIModeration(document, aiAnalysis.confidence || 50);
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to save AI analysis: ${error.message}`);
+    }
+  }
+
+  /**
+   * Process auto AI analysis for public documents
+   */
+  private async processAutoAIAnalysis(
+    document: any,
+    fileIds: string[],
+    userId: string,
+    categoryId: string | undefined,
+    category: any,
+    suggestedCategory: any,
+    title: string,
+    description?: string,
+    tags: string[] = [],
+  ): Promise<void> {
+    try {
+      const aiResult = await this.aiService.analyzeDocuments({
+        fileIds,
+        userId,
+      });
+
+      if (aiResult.success && aiResult.data) {
+        await this.aiService.saveAnalysis(document.id, aiResult.data);
+        this.logger.log(
+          `AI moderation analysis generated for document ${document.id}`,
+        );
+
+        // If category was not specified, try to suggest based on AI analysis
+        if (!categoryId && !suggestedCategory) {
+          try {
+            const aiSuggestion =
+              await this.categoriesService.suggestBestCategoryFromContent({
+                title: aiResult.data.title || title,
+                description: aiResult.data.description || description,
+                tags: aiResult.data.tags || tags,
+                summary: aiResult.data.summary,
+                keyPoints: aiResult.data.keyPoints,
+              });
+
+            if (
+              aiSuggestion.categoryId &&
+              aiSuggestion.categoryId !== category.id
+            ) {
+              // Update document with suggested category
+              await this.prisma.document.update({
+                where: { id: document.id },
+                data: { categoryId: aiSuggestion.categoryId },
+              });
+              this.logger.log(
+                `Document ${document.id} category updated to AI suggested: ${aiSuggestion.categoryName} (confidence: ${aiSuggestion.confidence}%)`,
+              );
+            }
+          } catch (catError) {
+            this.logger.warn(
+              `Failed to suggest category for document ${document.id}: ${catError.message}`,
+            );
+          }
+        }
+
+        // Run similarity detection
+        try {
+          await this.similarityJobService.runSimilarityDetectionSync(
+            document.id,
+          );
+          this.logger.log(
+            `Similarity detection completed for document ${document.id}`,
+          );
+        } catch (simError) {
+          this.logger.warn(
+            `Similarity detection failed for document ${document.id}: ${simError.message}`,
+          );
+        }
+
+        // Apply AI moderation
+        const moderationScore = aiResult.data.moderationScore || 50;
+        await this.applyAIModeration(document, moderationScore);
+      } else {
+        this.logger.warn(
+          `AI analysis skipped or failed for document ${document.id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Apply AI moderation and update document status
+   */
+  private async applyAIModeration(
+    document: any,
+    moderationScore: number,
+  ): Promise<void> {
+    try {
+      const moderationResult = await this.aiService.applyModerationSettings(
+        document.id,
+        moderationScore,
+      );
+
+      this.logger.log(
+        `AI moderation applied for document ${document.id}: ${moderationResult.status} (${moderationResult.action})`,
+      );
+
+      // Update document status if auto-approved or auto-rejected
+      if (
+        moderationResult.status === 'approved' ||
+        moderationResult.status === 'rejected'
+      ) {
+        const isApproved = moderationResult.status === 'approved';
+        const moderatedAt = new Date();
+        const moderationNotes = `AI Tự động ${moderationResult.action === 'auto_approved' ? 'phê duyệt' : 'từ chối'}: Điểm ${moderationScore}% - ${moderationResult.reason || 'Không có lý do'}`;
+
+        await this.prisma.document.update({
+          where: { id: document.id },
+          data: {
+            moderationStatus:
+              moderationResult.status === 'approved' ? 'APPROVED' : 'REJECTED',
+            isApproved,
+            moderatedAt,
+            moderationNotes,
+          },
+        });
+        this.logger.log(
+          `Document ${document.id} status updated to ${moderationResult.status}`,
+        );
+
+        // Send notification to document uploader
+        try {
+          await this.notifications.emitToUploaderOfDocument(
+            document.uploaderId,
+            {
+              type: 'moderation',
+              documentId: document.id,
+              status:
+                moderationResult.status === 'approved'
+                  ? 'approved'
+                  : 'rejected',
+              notes: moderationNotes,
+              reason: moderationResult.reason,
+            },
+          );
+        } catch (notificationError) {
+          this.logger.warn(
+            `Failed to send moderation notification for document ${document.id}: ${notificationError.message}`,
+          );
+        }
+      }
+    } catch (moderationError) {
+      this.logger.warn(
+        `Failed to apply AI moderation for document ${document.id}: ${moderationError.message}`,
+      );
     }
   }
 

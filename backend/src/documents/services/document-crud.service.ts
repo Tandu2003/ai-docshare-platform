@@ -183,58 +183,30 @@ export class DocumentCrudService {
 
       this.logger.log(`Document created successfully: ${document.id}`);
 
-      // Award points
-      await this.awardUploadPoints(userId, document.id);
-
-      // Create document-file relationships
+      // Create document-file relationships (required synchronously for response)
       const documentFiles = await this.createDocumentFiles(document.id, files);
 
-      // Handle AI analysis
-      let finalSuggestedCategory = suggestedCategory;
-      if (useAI && aiAnalysis?.confidence && aiAnalysis.confidence > 0) {
-        await this.saveAIAnalysis(document.id, aiAnalysis);
-
-        if (wantsPublic) {
-          await this.handlePublicDocumentModeration(
-            document.id,
-            document.uploaderId,
-            aiAnalysis.confidence,
-          );
-        }
-      } else if (wantsPublic && !useAI) {
-        finalSuggestedCategory = await this.triggerAutoAnalysis(
-          document,
-          fileIds,
-          userId,
-          categoryId,
-          suggestedCategory,
-          title,
-          description,
-          tags,
-        );
-      }
-
-      // Generate embedding and previews in background
-      if (document.isApproved && wantsPublic) {
-        void this.searchService
-          .generateDocumentEmbedding(document.id)
-          .catch(err =>
-            this.logger.warn(`Failed to generate embedding: ${err.message}`),
-          );
-      }
-
-      void this.previewService
-        .generatePreviews(document.id)
-        .catch(err =>
-          this.logger.warn(`Failed to generate previews: ${err.message}`),
-        );
+      // Run background tasks asynchronously - don't make user wait
+      void this.runBackgroundTasks(
+        document,
+        userId,
+        fileIds,
+        wantsPublic,
+        useAI,
+        aiAnalysis,
+        categoryId,
+        suggestedCategory,
+        title,
+        description,
+        tags,
+      );
 
       this.logger.log(`Document creation completed: ${document.id}`);
 
       return {
         ...document,
         files: documentFiles.map(df => df.file),
-        aiSuggestedCategory: finalSuggestedCategory,
+        aiSuggestedCategory: suggestedCategory,
       };
     } catch (error) {
       this.logger.error('Error creating document:', error);
@@ -447,10 +419,79 @@ export class DocumentCrudService {
     return files;
   }
 
+  /**
+   * Run background tasks after document creation
+   * These tasks are not required for the immediate response
+   */
+  private async runBackgroundTasks(
+    document: any,
+    userId: string,
+    fileIds: string[],
+    wantsPublic: boolean,
+    useAI: boolean,
+    aiAnalysis: any,
+    categoryId: string | undefined,
+    suggestedCategory: CategorySuggestion | null,
+    title: string,
+    description?: string,
+    tags: string[] = [],
+  ): Promise<void> {
+    try {
+      // Award points for uploading (non-blocking)
+      await this.awardUploadPoints(userId, document.id);
+
+      // Handle AI analysis and moderation
+      if (useAI && aiAnalysis?.confidence && aiAnalysis.confidence > 0) {
+        await this.saveAIAnalysis(document.id, aiAnalysis);
+
+        if (wantsPublic) {
+          await this.handlePublicDocumentModeration(
+            document.id,
+            document.uploaderId,
+            aiAnalysis.confidence,
+          );
+        }
+      } else if (wantsPublic && !useAI) {
+        await this.triggerAutoAnalysis(
+          document,
+          fileIds,
+          userId,
+          categoryId,
+          suggestedCategory,
+          title,
+          description,
+          tags,
+        );
+      }
+
+      // Generate embedding for search
+      if (document.isApproved && wantsPublic) {
+        await this.searchService
+          .generateDocumentEmbedding(document.id)
+          .catch(err =>
+            this.logger.warn(`Failed to generate embedding: ${err.message}`),
+          );
+      }
+
+      // Generate previews
+      await this.previewService
+        .generatePreviews(document.id)
+        .catch(err =>
+          this.logger.warn(`Failed to generate previews: ${err.message}`),
+        );
+
+      this.logger.log(`Background tasks completed for document ${document.id}`);
+    } catch (error) {
+      this.logger.error(
+        `Error in background tasks for document ${document.id}: ${error.message}`,
+      );
+    }
+  }
+
   private async determineCategory(
     categoryId: string | undefined,
     useAI: boolean,
-    aiAnalysis: any | undefined,
+    aiAnalysis: any,
     title: string,
     description?: string,
     tags: string[] = [],
