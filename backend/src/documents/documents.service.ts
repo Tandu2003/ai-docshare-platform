@@ -1,5 +1,18 @@
+/**
+ * Documents Service
+ *
+ * Main service handling all document-related operations.
+ * Orchestrates domain services for specific operations.
+ */
+
+// ============================================================================
+// Node.js Built-in Modules
+// ============================================================================
 import { randomBytes } from 'crypto';
 import { Readable } from 'stream';
+// ============================================================================
+// Internal Modules
+// ============================================================================
 import { AIService } from '../ai/ai.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import {
@@ -12,12 +25,27 @@ import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PreviewService } from '../preview/preview.service';
 import { PrismaService } from '../prisma/prisma.service';
+// ============================================================================
+// Local Imports
+// ============================================================================
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { UpdateDocumentDto } from './dto/update-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
+import {
+  DocumentCommentService,
+  DocumentCrudService,
+  DocumentDownloadService,
+  DocumentModerationService,
+  DocumentQueryService,
+  DocumentSearchService,
+  DocumentSharingService,
+} from './services';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PointsService } from '@/points/points.service';
 import { SimilarityJobService } from '@/similarity/similarity-job.service';
+// ============================================================================
+// Third-party Libraries
+// ============================================================================
 import {
   BadRequestException,
   forwardRef,
@@ -32,7 +60,7 @@ import {
   DocumentShareLink,
   Prisma,
 } from '@prisma/client';
-import * as archiver from 'archiver';
+import archiver from 'archiver';
 
 @Injectable()
 export class DocumentsService {
@@ -53,6 +81,14 @@ export class DocumentsService {
     private categoriesService: CategoriesService,
     @Inject(forwardRef(() => PreviewService))
     private previewService: PreviewService,
+    // Domain services
+    private commentService: DocumentCommentService,
+    private crudService: DocumentCrudService,
+    private downloadService: DocumentDownloadService,
+    private moderationService: DocumentModerationService,
+    private queryService: DocumentQueryService,
+    private searchService: DocumentSearchService,
+    private sharingService: DocumentSharingService,
   ) {}
 
   /**
@@ -519,292 +555,35 @@ export class DocumentsService {
 
   /**
    * Comments: list for a document
+   * @deprecated Use DocumentCommentService.getComments directly
    */
-  async getComments(documentId: string, userId?: string) {
-    try {
-      const comments = await this.prisma.comment.findMany({
-        where: { documentId, isDeleted: false },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            },
-          },
-          likes: userId
-            ? {
-                where: { userId },
-                select: { userId: true },
-              }
-            : false,
-          replies: {
-            where: { isDeleted: false },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  firstName: true,
-                  lastName: true,
-                  avatar: true,
-                },
-              },
-              likes: userId
-                ? {
-                    where: { userId },
-                    select: { userId: true },
-                  }
-                : false,
-            },
-          },
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      // Transform to add isLiked field
-      const transformComment = (comment: any) => ({
-        ...comment,
-        isLiked: userId ? comment.likes?.length > 0 : false,
-        likes: undefined,
-        replies: comment.replies?.map(transformComment),
-      });
-
-      return comments.map(transformComment);
-    } catch (error) {
-      this.logger.error(
-        `Error getting comments for document ${documentId}:`,
-        error,
-      );
-      throw new InternalServerErrorException('Không thể lấy bình luận');
-    }
+  async getComments(documentId: string, userId?: string): Promise<any[]> {
+    return this.commentService.getComments(documentId, userId);
   }
 
   /**
    * Comments: add
+   * @deprecated Use DocumentCommentService.addComment directly
    */
   async addComment(
     documentId: string,
     userId: string,
     dto: { content: string; parentId?: string },
-  ) {
-    try {
-      // ensure document exists and get uploader info
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        select: { id: true, title: true, uploaderId: true },
-      });
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      // If this is a reply, get parent comment info
-      let parentComment: { id: string; userId: string } | null = null;
-      if (dto.parentId) {
-        parentComment = await this.prisma.comment.findUnique({
-          where: { id: dto.parentId },
-          select: { id: true, userId: true },
-        });
-      }
-
-      const comment = await this.prisma.comment.create({
-        data: {
-          documentId,
-          userId,
-          parentId: dto.parentId || null,
-          content: dto.content,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            },
-          },
-        },
-      });
-
-      const commenterName =
-        comment.user.firstName && comment.user.lastName
-          ? `${comment.user.firstName} ${comment.user.lastName}`
-          : comment.user.username;
-
-      const truncatedContent =
-        comment.content.length > 100
-          ? comment.content.substring(0, 100) + '...'
-          : comment.content;
-
-      // If this is a reply, notify the parent comment owner
-      if (dto.parentId && parentComment && parentComment.userId !== userId) {
-        await this.notifications.emitToUser(parentComment.userId, {
-          type: 'reply',
-          documentId,
-          documentTitle: document.title,
-          commentId: comment.id,
-          parentCommentId: dto.parentId,
-          replierName: commenterName,
-          replierId: userId,
-          content: truncatedContent,
-        });
-
-        this.logger.log(
-          `Reply notification sent to comment owner ${parentComment.userId} for document ${documentId}`,
-        );
-      }
-
-      // Send notification to document owner if commenter is not the owner
-      // and it's not a reply to the document owner's comment (to avoid duplicate notifications)
-      const shouldNotifyDocOwner =
-        document.uploaderId &&
-        document.uploaderId !== userId &&
-        (!parentComment || parentComment.userId !== document.uploaderId);
-
-      if (shouldNotifyDocOwner) {
-        await this.notifications.emitToUser(document.uploaderId, {
-          type: 'comment',
-          documentId,
-          documentTitle: document.title,
-          commentId: comment.id,
-          commenterName,
-          commenterId: userId,
-          content: truncatedContent,
-          isReply: !!dto.parentId,
-        });
-
-        this.logger.log(
-          `Comment notification sent to document owner ${document.uploaderId} for document ${documentId}`,
-        );
-      }
-
-      // Broadcast new comment to all viewers of this document
-      const commentWithIsLiked = { ...comment, isLiked: false };
-      this.notifications.emitToDocument(documentId, {
-        type: 'new_comment',
-        documentId,
-        comment: commentWithIsLiked,
-      });
-
-      // Return comment with isLiked set to false (new comment is never liked yet)
-      return commentWithIsLiked;
-    } catch (error) {
-      this.logger.error(
-        `Error adding comment for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Không thể thêm bình luận');
-    }
+  ): Promise<any> {
+    return this.commentService.addComment(documentId, userId, dto);
   }
 
   /**
    * Comments: toggle like (like/unlike)
+   * @deprecated Use DocumentCommentService.likeComment directly
    */
   async likeComment(documentId: string, commentId: string, userId: string) {
-    try {
-      // Get comment with user info and document info
-      const comment = await this.prisma.comment.findFirst({
-        where: { id: commentId, documentId },
-        include: {
-          user: {
-            select: { id: true },
-          },
-          document: {
-            select: { id: true, title: true },
-          },
-        },
-      });
-      if (!comment) throw new BadRequestException('Không tìm thấy bình luận');
-
-      // Check if user already liked this comment
-      const existingLike = await this.prisma.commentLike.findUnique({
-        where: { userId_commentId: { userId, commentId } },
-      });
-
-      if (existingLike) {
-        // Unlike: remove the like
-        await this.prisma.commentLike.delete({
-          where: { userId_commentId: { userId, commentId } },
-        });
-
-        const updated = await this.prisma.comment.update({
-          where: { id: commentId },
-          data: { likesCount: { decrement: 1 } },
-        });
-
-        // Broadcast like update to all viewers
-        this.notifications.emitToDocument(documentId, {
-          type: 'comment_updated',
-          documentId,
-          commentId,
-          likesCount: updated.likesCount,
-          isLiked: false,
-          likerId: userId,
-        });
-
-        return { ...updated, isLiked: false };
-      } else {
-        // Like: create the like
-        await this.prisma.commentLike.create({
-          data: { userId, commentId },
-        });
-
-        const updated = await this.prisma.comment.update({
-          where: { id: commentId },
-          data: { likesCount: { increment: 1 } },
-        });
-
-        // Broadcast like update to all viewers
-        this.notifications.emitToDocument(documentId, {
-          type: 'comment_updated',
-          documentId,
-          commentId,
-          likesCount: updated.likesCount,
-          isLiked: true,
-          likerId: userId,
-        });
-
-        // Send notification to comment owner if liker is not the owner (only on first like)
-        if (comment.userId !== userId) {
-          const liker = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { username: true, firstName: true, lastName: true },
-          });
-
-          const likerName =
-            liker?.firstName && liker?.lastName
-              ? `${liker.firstName} ${liker.lastName}`
-              : liker?.username || 'Người dùng';
-
-          await this.notifications.emitToUser(comment.userId, {
-            type: 'comment_like',
-            documentId,
-            documentTitle: comment.document.title,
-            commentId,
-            likerName,
-            likerId: userId,
-          });
-
-          this.logger.log(
-            `Like notification sent to comment owner ${comment.userId} for comment ${commentId}`,
-          );
-        }
-
-        return { ...updated, isLiked: true };
-      }
-    } catch (error) {
-      this.logger.error(`Error liking comment ${commentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Không thể thích bình luận');
-    }
+    return this.commentService.likeComment(documentId, commentId, userId);
   }
 
   /**
    * Comments: edit
+   * @deprecated Use DocumentCommentService.editComment directly
    */
   async editComment(
     documentId: string,
@@ -812,299 +591,71 @@ export class DocumentsService {
     userId: string,
     dto: { content: string },
   ) {
-    try {
-      const comment = await this.prisma.comment.findUnique({
-        where: { id: commentId },
-      });
-      if (!comment || comment.documentId !== documentId) {
-        throw new BadRequestException('Không tìm thấy bình luận');
-      }
-      if (comment.userId !== userId) {
-        throw new BadRequestException('Bạn không có quyền sửa bình luận này');
-      }
-
-      const updated = await this.prisma.comment.update({
-        where: { id: commentId },
-        data: { content: dto.content, isEdited: true, editedAt: new Date() },
-      });
-      return updated;
-    } catch (error) {
-      this.logger.error(`Error editing comment ${commentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Không thể sửa bình luận');
-    }
+    return this.commentService.editComment(documentId, commentId, userId, dto);
   }
 
   /**
    * Comments: delete (soft)
+   * @deprecated Use DocumentCommentService.deleteComment directly
    */
   async deleteComment(documentId: string, commentId: string, userId: string) {
-    try {
-      const comment = await this.prisma.comment.findUnique({
-        where: { id: commentId },
-      });
-      if (!comment || comment.documentId !== documentId) {
-        throw new BadRequestException('Không tìm thấy bình luận');
-      }
-      if (comment.userId !== userId) {
-        throw new BadRequestException('Bạn không có quyền xóa bình luận này');
-      }
-
-      await this.prisma.comment.update({
-        where: { id: commentId },
-        data: { isDeleted: true },
-      });
-    } catch (error) {
-      this.logger.error(`Error deleting comment ${commentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Không thể xóa bình luận');
-    }
+    return this.commentService.deleteComment(documentId, commentId, userId);
   }
 
   /**
    * Ratings: get current user's rating
+   * @deprecated Use DocumentCommentService.getUserRating directly
    */
-  async getUserRating(documentId: string, userId: string) {
-    try {
-      const rating = await this.prisma.rating.findUnique({
-        where: { userId_documentId: { userId, documentId } },
-        select: { rating: true },
-      });
-      return { rating: rating?.rating || 0 };
-    } catch (error) {
-      this.logger.error(
-        `Error getting user rating for document ${documentId}:`,
-        error,
-      );
-      throw new InternalServerErrorException('Không thể lấy đánh giá');
-    }
+  async getUserRating(
+    documentId: string,
+    userId: string,
+  ): Promise<{ rating: number }> {
+    return this.commentService.getUserRating(documentId, userId);
   }
 
   /**
    * Ratings: set current user's rating and update document aggregates
+   * @deprecated Use DocumentCommentService.setUserRating directly
    */
-  async setUserRating(documentId: string, userId: string, ratingValue: number) {
-    try {
-      // upsert rating
-      const existing = await this.prisma.rating.findUnique({
-        where: { userId_documentId: { userId, documentId } },
-      });
-
-      if (existing) {
-        await this.prisma.rating.update({
-          where: { userId_documentId: { userId, documentId } },
-          data: { rating: ratingValue },
-        });
-      } else {
-        await this.prisma.rating.create({
-          data: { userId, documentId, rating: ratingValue },
-        });
-      }
-
-      // recompute aggregates
-      const agg = await this.prisma.rating.aggregate({
-        where: { documentId },
-        _avg: { rating: true },
-        _count: { rating: true },
-      });
-
-      await this.prisma.document.update({
-        where: { id: documentId },
-        data: {
-          averageRating: agg._avg.rating || 0,
-          totalRatings: agg._count.rating || 0,
-        },
-      });
-
-      return { rating: ratingValue };
-    } catch (error) {
-      this.logger.error(
-        `Error setting rating for document ${documentId}:`,
-        error,
-      );
-      throw new InternalServerErrorException('Không thể cập nhật đánh giá');
-    }
+  async setUserRating(
+    documentId: string,
+    userId: string,
+    ratingValue: number,
+  ): Promise<{ rating: number }> {
+    return this.commentService.setUserRating(documentId, userId, ratingValue);
   }
 
   /**
    * Prepare document download with all its files
+   * @deprecated Use DocumentDownloadService.prepareDocumentDownload directly
    */
-  async prepareDocumentDownload(documentId: string) {
-    const document = await this.prisma.document.findUnique({
-      where: { id: documentId },
-      include: {
-        files: {
-          include: {
-            file: true,
-          },
-          orderBy: { order: 'asc' },
-        },
-        uploader: {
-          select: {
-            id: true,
-            username: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        category: true,
-      },
-    });
-
-    if (!document) {
-      throw new BadRequestException('Không tìm thấy tài liệu');
-    }
-
-    // Increment download count
-    await this.prisma.document.update({
-      where: { id: documentId },
-      data: { downloadCount: { increment: 1 } },
-    });
-
-    return {
-      document: {
-        id: document.id,
-        title: document.title,
-        description: document.description,
-        uploader: document.uploader,
-        category: document.category,
-        createdAt: document.createdAt,
-      },
-      files: document.files.map(df => ({
-        id: df.file.id,
-        originalName: df.file.originalName,
-        fileName: df.file.fileName,
-        mimeType: df.file.mimeType,
-        fileSize: df.file.fileSize,
-        // storageUrl: df.file.storageUrl, // Removed for security - use secure endpoint
-        order: df.order,
-      })),
-    };
+  async prepareDocumentDownload(documentId: string): Promise<any> {
+    return this.downloadService.prepareDocumentDownload(documentId);
   }
 
   /**
    * Get or create default category
+   * @deprecated Use DocumentCrudService.getOrCreateDefaultCategory directly
    */
-  private async getOrCreateDefaultCategory() {
-    let category = await this.prisma.category.findFirst({
-      where: { name: 'Tổng hợp' },
-    });
-
-    if (!category) {
-      category = await this.prisma.category.create({
-        data: {
-          name: 'Tổng hợp',
-          description: 'Danh mục mặc định cho tài liệu',
-          isActive: true,
-          documentCount: 0,
-          sortOrder: 0,
-        },
-      });
-    }
-
-    return category;
+  private async getOrCreateDefaultCategory(): Promise<any> {
+    return this.crudService.getOrCreateDefaultCategory();
   }
 
   /**
    * Get user's documents with pagination
+   * @deprecated Use DocumentQueryService.getUserDocuments directly
    */
-  async getUserDocuments(userId: string, page: number = 1, limit: number = 10) {
-    try {
-      const skip = (page - 1) * limit;
-
-      this.logger.log(
-        `Getting documents for user ${userId}, page ${page}, limit ${limit}`,
-      );
-
-      const [documents, total] = await Promise.all([
-        this.prisma.document.findMany({
-          where: { uploaderId: userId },
-          include: {
-            files: {
-              include: {
-                file: true,
-              },
-              orderBy: {
-                order: 'asc',
-              },
-            },
-            category: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          skip,
-          take: limit,
-        }),
-        this.prisma.document.count({
-          where: { uploaderId: userId },
-        }),
-      ]);
-
-      // Transform the data and add secure URLs
-      const transformedDocuments = await Promise.all(
-        documents.map(async document => {
-          const filesData = document.files.map(df => ({
-            id: df.file.id,
-            originalName: df.file.originalName,
-            fileName: df.file.fileName,
-            mimeType: df.file.mimeType,
-            fileSize: df.file.fileSize,
-            order: df.order,
-          }));
-
-          const filesWithSecureUrls =
-            await this.filesService.addSecureUrlsToFiles(filesData, {
-              userId,
-            });
-
-          return {
-            id: document.id,
-            title: document.title,
-            description: document.description,
-            isPublic: document.isPublic,
-            isApproved: document.isApproved,
-            moderationStatus: document.moderationStatus,
-            moderatedAt: document.moderatedAt
-              ? document.moderatedAt.toISOString()
-              : null,
-            moderatedById: document.moderatedById,
-            moderationNotes: document.moderationNotes,
-            rejectionReason: document.rejectionReason,
-            isPremium: document.isPremium,
-            isDraft: document.isDraft,
-            tags: document.tags,
-            language: document.language,
-            createdAt: document.createdAt?.toISOString(),
-            updatedAt: document.updatedAt?.toISOString(),
-            uploaderId: document.uploaderId,
-            categoryId: document.categoryId,
-            category: document.category,
-            downloadCount: document.downloadCount,
-            viewCount: document.viewCount,
-            averageRating: document.averageRating,
-            totalRatings: document.totalRatings,
-            files: filesWithSecureUrls,
-          };
-        }),
-      );
-
-      return {
-        documents: transformedDocuments,
-        total,
-        page,
-        limit,
-      };
-    } catch (error) {
-      this.logger.error('Error getting user documents:', error);
-      throw new InternalServerErrorException(
-        'Không thể lấy tài liệu người dùng',
-      );
-    }
+  async getUserDocuments(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<any> {
+    return this.queryService.getUserDocuments(userId, page, limit);
   }
 
   /**
    * Get public documents with pagination and filters
+   * @deprecated Use DocumentQueryService.getPublicDocuments directly
    */
   async getPublicDocuments(
     page: number = 1,
@@ -1116,129 +667,19 @@ export class DocumentsService {
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     },
-  ) {
-    try {
-      console.log('userId', userId);
-      console.log('userRole', userRole);
-
-      const skip = (page - 1) * limit;
-
-      this.logger.log(
-        `Getting public documents, page ${page}, limit ${limit}, filters: ${JSON.stringify(filters)}`,
-      );
-
-      // Build where condition with filters
-      const whereCondition: any = {
-        isPublic: true,
-        isApproved: true,
-        moderationStatus: DocumentModerationStatus.APPROVED,
-      };
-
-      // Apply category filter
-      if (filters?.categoryId) {
-        whereCondition.categoryId = filters.categoryId;
-      }
-
-      // Build orderBy
-      const sortBy = filters?.sortBy || 'createdAt';
-      const sortOrder = filters?.sortOrder || 'desc';
-      const orderBy: any = {};
-      orderBy[sortBy] = sortOrder;
-
-      const [documents, total] = await Promise.all([
-        this.prisma.document.findMany({
-          where: whereCondition,
-          include: {
-            files: {
-              include: {
-                file: true,
-              },
-              orderBy: {
-                order: 'asc',
-              },
-            },
-            category: true,
-            uploader: {
-              select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-          orderBy,
-          skip,
-          take: limit,
-        }),
-        this.prisma.document.count({
-          where: whereCondition,
-        }),
-      ]);
-
-      // Get download cost settings
-      const settings = await this.systemSettings.getPointsSettings();
-
-      // Transform the data and add secure URLs
-      const transformedDocuments = await Promise.all(
-        documents.map(async document => {
-          const filesData = document.files.map(df => ({
-            id: df.file.id,
-            originalName: df.file.originalName,
-            fileName: df.file.fileName,
-            mimeType: df.file.mimeType,
-            fileSize: df.file.fileSize,
-            order: df.order,
-          }));
-
-          const filesWithSecureUrls =
-            await this.filesService.addSecureUrlsToFiles(filesData, {
-              userId,
-            });
-
-          const isOwner = document.uploaderId === userId;
-          const downloadCost = document.downloadCost || settings.downloadCost;
-
-          return {
-            id: document.id,
-            title: document.title,
-            description: document.description,
-            isPublic: document.isPublic,
-            isApproved: document.isApproved,
-            moderationStatus: document.moderationStatus,
-            tags: document.tags,
-            language: document.language,
-            createdAt: document.createdAt,
-            updatedAt: document.updatedAt,
-            uploaderId: document.uploaderId,
-            categoryId: document.categoryId,
-            category: document.category,
-            uploader: document.uploader,
-            downloadCount: document.downloadCount,
-            downloadCost: isOwner ? 0 : downloadCost,
-            viewCount: document.viewCount,
-            averageRating: document.averageRating,
-            files: filesWithSecureUrls,
-          };
-        }),
-      );
-
-      return {
-        documents: transformedDocuments,
-        total,
-        page,
-        limit,
-      };
-    } catch (error) {
-      this.logger.error('Error getting public documents:', error);
-      throw new InternalServerErrorException(
-        'Không thể lấy tài liệu công khai',
-      );
-    }
+  ): Promise<any> {
+    return this.queryService.getPublicDocuments(
+      page,
+      limit,
+      userId,
+      userRole,
+      filters,
+    );
   }
 
   /**
    * Track document view
+   * @deprecated Use DocumentQueryService.viewDocument directly
    */
   async viewDocument(
     documentId: string,
@@ -1246,441 +687,73 @@ export class DocumentsService {
     ipAddress?: string,
     userAgent?: string,
     referrer?: string,
-  ) {
-    try {
-      this.logger.log(
-        `Tracking view for document ${documentId} by user ${userId || 'anonymous'}`,
-      );
-
-      // Check if document exists and is public (or user has access)
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        select: {
-          id: true,
-          isPublic: true,
-          uploaderId: true,
-          viewCount: true,
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      // Check access permissions
-      if (!document.isPublic && document.uploaderId !== userId) {
-        throw new BadRequestException('Tài liệu không công khai');
-      }
-
-      // Create view record
-      await this.prisma.view.create({
-        data: {
-          documentId,
-          userId: userId || null,
-          ipAddress,
-          userAgent,
-          referrer,
-        },
-      });
-
-      // Increment view count
-      await this.prisma.document.update({
-        where: { id: documentId },
-        data: { viewCount: { increment: 1 } },
-      });
-
-      this.logger.log(`View tracked successfully for document ${documentId}`);
-
-      return {
-        success: true,
-        message: 'View tracked successfully',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error tracking view for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Không thể theo dõi lượt xem tài liệu',
-      );
-    }
+  ): Promise<any> {
+    return this.queryService.viewDocument(
+      documentId,
+      userId,
+      ipAddress,
+      userAgent,
+      referrer,
+    );
   }
 
   /**
    * Get document details with files
+   * @deprecated Use DocumentQueryService.getDocumentById directly
    */
   async getDocumentById(
     documentId: string,
     userId?: string,
     shareToken?: string,
     apiKey?: string,
-  ) {
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          uploader: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            },
-          },
-          category: true,
-          files: {
-            include: {
-              file: true,
-            },
-            orderBy: { order: 'asc' },
-          },
-          shareLink: true,
-          aiAnalysis: true,
-          _count: {
-            select: {
-              ratings: true,
-              comments: true,
-              views: true,
-
-              downloads: true,
-            },
-          },
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const isOwner = document.uploaderId === userId;
-      let shareAccessGranted = false;
-      let activeShareLink: DocumentShareLink | null = null;
-      let isApiKeyAccess = false;
-
-      if (shareToken) {
-        activeShareLink = await this.validateShareLink(documentId, shareToken);
-        shareAccessGranted = true;
-      }
-
-      if (apiKey) {
-        // API key access - only allow if document is public
-        if (!document.isPublic) {
-          throw new BadRequestException(
-            'Tài liệu riêng tư không thể truy cập qua API key',
-          );
-        }
-        isApiKeyAccess = true;
-      }
-
-      // Check access permissions
-      if (
-        !document.isPublic &&
-        !isOwner &&
-        !shareAccessGranted &&
-        !isApiKeyAccess
-      ) {
-        throw new BadRequestException('Tài liệu không công khai');
-      }
-
-      if (
-        document.isPublic &&
-        !document.isApproved &&
-        !isOwner &&
-        !shareAccessGranted &&
-        !isApiKeyAccess
-      ) {
-        throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
-      }
-
-      if (
-        document.moderationStatus === DocumentModerationStatus.REJECTED &&
-        !isOwner
-      ) {
-        throw new BadRequestException('Tài liệu đã bị từ chối');
-      }
-
-      // Prepare file data without secure URLs first
-      const filesData =
-        (document as any).files?.map((df: any) => ({
-          id: df.file.id,
-          originalName: df.file.originalName,
-          fileName: df.file.fileName,
-          mimeType: df.file.mimeType,
-          fileSize: df.file.fileSize,
-          thumbnailUrl: df.file.thumbnailUrl,
-          order: df.order,
-        })) || [];
-
-      // Add secure URLs to files
-      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
-        filesData,
-        {
-          userId,
-          allowSharedAccess: isOwner || shareAccessGranted,
-        },
-      );
-
-      // Get download cost from document or system settings
-      const settings = await this.systemSettings.getPointsSettings();
-      const effectiveDownloadCost =
-        document.downloadCost ?? settings.downloadCost;
-
-      const response: any = {
-        id: document.id,
-        title: document.title,
-        description: document.description,
-        tags: document.tags,
-        language: document.language,
-        isPublic: document.isPublic,
-        isPremium: document.isPremium,
-        isApproved: document.isApproved,
-        moderationStatus: document.moderationStatus,
-        moderationNotes: document.moderationNotes,
-        rejectionReason: document.rejectionReason,
-        moderatedAt: document.moderatedAt
-          ? document.moderatedAt.toISOString()
-          : null,
-        moderatedById: document.moderatedById,
-        viewCount: document.viewCount,
-        downloadCount: document.downloadCount,
-        // For downloaders: show effective cost (0 for owner, actual for others)
-        downloadCost: isOwner ? 0 : effectiveDownloadCost,
-        // For owner: show the raw value from document (null = system default)
-        // This allows owner to see and edit the custom cost setting
-        ...(isOwner && {
-          originalDownloadCost: document.downloadCost, // null = system default, number = custom
-          systemDefaultDownloadCost: settings.downloadCost, // For reference
-        }),
-        averageRating: document.averageRating,
-        totalRatings: document.totalRatings,
-        createdAt:
-          document.createdAt?.toISOString() || new Date().toISOString(),
-        updatedAt:
-          document.updatedAt?.toISOString() || new Date().toISOString(),
-        uploader: (document as any).uploader,
-        category: (document as any).category,
-        files: filesWithSecureUrls,
-        stats: {
-          ratingsCount: (document as any)._count?.ratings || 0,
-          commentsCount: (document as any)._count?.comments || 0,
-          viewsCount: (document as any)._count?.views || 0,
-          downloadsCount: (document as any)._count?.downloads || 0,
-        },
-        aiAnalysis: (document as any).aiAnalysis || null,
-      };
-
-      // Add preview information
-      try {
-        const previews =
-          await this.previewService.getDocumentPreviews(documentId);
-        const previewStatus =
-          await this.previewService.getPreviewStatus(documentId);
-        response.previews = previews;
-        response.previewStatus = previewStatus.status;
-        response.previewCount = previewStatus.previewCount;
-      } catch (previewError) {
-        this.logger.warn(
-          `Could not get previews for document ${documentId}: ${previewError.message}`,
-        );
-        response.previews = [];
-        response.previewStatus = 'PENDING';
-        response.previewCount = 0;
-      }
-
-      if (isOwner && document.shareLink) {
-        response.shareLink = {
-          token: document.shareLink.token,
-          expiresAt: document.shareLink.expiresAt.toISOString(),
-          isRevoked: document.shareLink.isRevoked,
-        };
-      } else if (shareAccessGranted && activeShareLink) {
-        response.shareLink = {
-          expiresAt: activeShareLink.expiresAt.toISOString(),
-        };
-      }
-
-      return response;
-    } catch (error) {
-      this.logger.error(`Error getting document ${documentId}:`, error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Không thể lấy tài liệu');
-    }
+  ): Promise<any> {
+    return this.queryService.getDocumentById(
+      documentId,
+      userId,
+      shareToken,
+      apiKey,
+    );
   }
 
   /**
    * Create or update a share link for a document
+   * @deprecated Use DocumentSharingService.createOrUpdateShareLink directly
    */
   async createOrUpdateShareLink(
     documentId: string,
     userId: string,
     shareOptions: ShareDocumentDto,
-  ) {
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      if (document.uploaderId !== userId) {
-        throw new BadRequestException(
-          'Bạn không có quyền chia sẻ tài liệu này',
-        );
-      }
-
-      const now = new Date();
-      let expiration: Date;
-
-      if (shareOptions?.expiresAt) {
-        expiration = new Date(shareOptions.expiresAt);
-        if (Number.isNaN(expiration.getTime())) {
-          throw new BadRequestException('Thời gian hết hạn không hợp lệ');
-        }
-      } else {
-        const durationMinutes =
-          shareOptions?.expiresInMinutes && shareOptions.expiresInMinutes > 0
-            ? shareOptions.expiresInMinutes
-            : 60 * 24; // default 24 hours
-        expiration = new Date(now.getTime() + durationMinutes * 60 * 1000);
-      }
-
-      if (expiration <= now) {
-        throw new BadRequestException(
-          'Thời gian hết hạn liên kết chia sẻ phải ở tương lai',
-        );
-      }
-
-      const existingShareLink = await this.prisma.documentShareLink.findUnique({
-        where: { documentId },
-      });
-
-      let tokenToUse: string;
-      if (!existingShareLink || shareOptions?.regenerateToken) {
-        tokenToUse = this.generateShareToken();
-      } else {
-        tokenToUse = existingShareLink.token;
-      }
-
-      const shareLink = await this.prisma.documentShareLink.upsert({
-        where: { documentId },
-        update: {
-          token: tokenToUse,
-          expiresAt: expiration,
-          isRevoked: false,
-        },
-        create: {
-          documentId,
-          token: tokenToUse,
-          expiresAt: expiration,
-          createdById: userId,
-        },
-      });
-
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:5173';
-      const shareUrl = `${frontendUrl}/documents/${documentId}?apiKey=${shareLink.token}`;
-
-      return {
-        token: shareLink.token,
-        expiresAt: shareLink.expiresAt.toISOString(),
-        isRevoked: shareLink.isRevoked,
-        shareUrl,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error creating/updating share link for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Không thể tạo liên kết chia sẻ');
-    }
+  ): Promise<any> {
+    return this.sharingService.createOrUpdateShareLink(documentId, userId, {
+      expiresAt: shareOptions.expiresAt,
+      expiresInMinutes: shareOptions.expiresInMinutes,
+      regenerateToken: shareOptions.regenerateToken,
+    });
   }
 
   /**
    * Revoke existing share link
+   * @deprecated Use DocumentSharingService.revokeShareLink directly
    */
-  async revokeShareLink(documentId: string, userId: string) {
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      if (document.uploaderId !== userId) {
-        throw new BadRequestException(
-          'Bạn không có quyền thu hồi liên kết chia sẻ này',
-        );
-      }
-
-      await this.prisma.documentShareLink.updateMany({
-        where: { documentId },
-        data: { isRevoked: true },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Error revoking share link for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Không thể thu hồi liên kết chia sẻ',
-      );
-    }
+  async revokeShareLink(
+    documentId: string,
+    userId: string,
+  ): Promise<{ success: boolean }> {
+    return this.sharingService.revokeShareLink(documentId, userId);
   }
 
   /**
    * Validate share token for a document
+   * @deprecated Use DocumentSharingService.validateShareLink directly
    */
   async validateShareLink(
     documentId: string,
     token: string,
-  ): Promise<DocumentShareLink> {
-    try {
-      const shareLink = await this.prisma.documentShareLink.findUnique({
-        where: { token },
-      });
-
-      if (!shareLink || shareLink.documentId !== documentId) {
-        throw new BadRequestException('Liên kết chia sẻ không hợp lệ');
-      }
-
-      if (shareLink.isRevoked) {
-        throw new BadRequestException('Liên kết chia sẻ đã bị thu hồi');
-      }
-
-      if (shareLink.expiresAt.getTime() <= Date.now()) {
-        throw new BadRequestException('Liên kết chia sẻ đã hết hạn');
-      }
-
-      return shareLink;
-    } catch (error) {
-      this.logger.error(
-        `Error validating share link for document ${documentId} with token ${token}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Không thể xác thực liên kết chia sẻ',
-      );
-    }
+  ): Promise<DocumentShareLink | null> {
+    return this.sharingService.validateShareLink(
+      documentId,
+      token,
+    ) as Promise<DocumentShareLink | null>;
   }
 
   private generateShareToken(): string {
@@ -1867,6 +940,7 @@ export class DocumentsService {
 
   /**
    * Get moderation queue data for admin review
+   * @delegates DocumentModerationService.getModerationQueue
    */
   async getModerationQueue(options: {
     page?: number;
@@ -1876,717 +950,60 @@ export class DocumentsService {
     status?: DocumentModerationStatus;
     sort?: 'createdAt' | 'title' | 'uploader';
     order?: 'asc' | 'desc';
-  }) {
-    const {
-      page = 1,
-      limit = 10,
-      categoryId,
-      uploaderId,
-      status = DocumentModerationStatus.PENDING,
-      sort = 'createdAt',
-      order = 'desc',
-    } = options;
-
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.DocumentWhereInput = {
-      isPublic: true,
-      moderationStatus: status,
-    };
-
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    if (uploaderId) {
-      where.uploaderId = uploaderId;
-    }
-
-    const orderBy: Prisma.DocumentOrderByWithRelationInput =
-      sort === 'title'
-        ? { title: order }
-        : sort === 'uploader'
-          ? { uploader: { username: order } }
-          : { createdAt: order };
-
-    try {
-      const [
-        documents,
-        total,
-        pendingDocuments,
-        rejectedDocuments,
-        approvedToday,
-      ] = await Promise.all([
-        this.prisma.document.findMany({
-          where,
-          include: {
-            files: {
-              include: {
-                file: true,
-              },
-              orderBy: { order: 'asc' },
-            },
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            uploader: {
-              select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                avatar: true,
-                email: true,
-                isVerified: true,
-              },
-            },
-            aiAnalysis: true,
-          },
-          orderBy,
-          skip,
-          take: limit,
-        }),
-        this.prisma.document.count({ where }),
-        this.prisma.document.count({
-          where: {
-            isPublic: true,
-            moderationStatus: DocumentModerationStatus.PENDING,
-          },
-        }),
-        this.prisma.document.count({
-          where: {
-            isPublic: true,
-            moderationStatus: DocumentModerationStatus.REJECTED,
-          },
-        }),
-        this.prisma.document.count({
-          where: {
-            isPublic: true,
-            moderationStatus: DocumentModerationStatus.APPROVED,
-            moderatedAt: {
-              gte: new Date(new Date().setHours(0, 0, 0, 0)),
-            },
-          },
-        }),
-      ]);
-
-      const mappedDocuments = documents.map(document => ({
-        id: document.id,
-        title: document.title,
-        description: document.description,
-        isPublic: document.isPublic,
-        isApproved: document.isApproved,
-        moderationStatus: document.moderationStatus,
-        moderatedAt: document.moderatedAt
-          ? document.moderatedAt.toISOString()
-          : null,
-        moderatedById: document.moderatedById,
-        moderationNotes: document.moderationNotes,
-        rejectionReason: document.rejectionReason,
-        tags: document.tags,
-        language: document.language,
-        createdAt: document.createdAt.toISOString(),
-        updatedAt: document.updatedAt.toISOString(),
-        category: document.category,
-        uploader: document.uploader,
-        aiAnalysis: document.aiAnalysis
-          ? {
-              summary: document.aiAnalysis.summary,
-              keyPoints: document.aiAnalysis.keyPoints,
-              difficulty: document.aiAnalysis.difficulty,
-              confidence: document.aiAnalysis.confidence,
-              reliabilityScore:
-                (document as any).aiAnalysis?.reliabilityScore ?? 0,
-              // Enhanced moderation fields
-              moderationScore: document.aiAnalysis.moderationScore,
-              safetyFlags: document.aiAnalysis.safetyFlags,
-              isSafe: document.aiAnalysis.isSafe,
-              recommendedAction: document.aiAnalysis.recommendedAction,
-            }
-          : null,
-        files: document.files.map(df => ({
-          id: df.file.id,
-          originalName: df.file.originalName,
-          mimeType: df.file.mimeType,
-          fileSize: df.file.fileSize,
-          order: df.order,
-          thumbnailUrl: df.file.thumbnailUrl,
-        })),
-      }));
-
-      const totalPages = Math.max(1, Math.ceil(total / limit));
-
-      return {
-        summary: {
-          pendingDocuments,
-          rejectedDocuments,
-          approvedToday,
-        },
-        documents: mappedDocuments,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
-        },
-      };
-    } catch (error) {
-      this.logger.error('Error getting moderation queue:', error);
-      throw new InternalServerErrorException(
-        'Không thể lấy danh sách tài liệu chờ duyệt',
-      );
-    }
+  }): Promise<any> {
+    return this.moderationService.getModerationQueue(options);
   }
 
   /**
    * Get document detail for moderation
+   * @delegates DocumentModerationService.getDocumentForModeration
    */
-  async getDocumentForModeration(documentId: string) {
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          uploader: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-              email: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-            },
-          },
-          files: {
-            include: {
-              file: true,
-            },
-            orderBy: { order: 'asc' },
-          },
-          aiAnalysis: true,
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const files = document.files.map(df => ({
-        id: df.file.id,
-        originalName: df.file.originalName,
-        fileName: df.file.fileName,
-        mimeType: df.file.mimeType,
-        fileSize: df.file.fileSize,
-        order: df.order,
-        thumbnailUrl: df.file.thumbnailUrl,
-      }));
-
-      const filesWithSecureUrls = await this.filesService.addSecureUrlsToFiles(
-        files,
-        {
-          allowSharedAccess: true,
-        },
-      );
-
-      return {
-        id: document.id,
-        title: document.title,
-        description: document.description,
-        isPublic: document.isPublic,
-        isApproved: document.isApproved,
-        moderationStatus: document.moderationStatus,
-        moderationNotes: document.moderationNotes,
-        rejectionReason: document.rejectionReason,
-        moderatedAt: document.moderatedAt
-          ? document.moderatedAt.toISOString()
-          : null,
-        moderatedById: document.moderatedById,
-        language: document.language,
-        tags: document.tags,
-        createdAt: document.createdAt.toISOString(),
-        updatedAt: document.updatedAt.toISOString(),
-        uploader: document.uploader,
-        category: document.category,
-        aiAnalysis: document.aiAnalysis || null,
-        files: filesWithSecureUrls,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error getting moderation detail for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Không thể lấy chi tiết tài liệu chờ duyệt',
-      );
-    }
+  async getDocumentForModeration(documentId: string): Promise<any> {
+    return this.moderationService.getDocumentForModeration(documentId);
   }
 
   /**
    * Approve a document and publish it
+   * @delegates DocumentModerationService.approveDocument
    */
   async approveDocumentModeration(
     documentId: string,
     adminId: string,
     options: { notes?: string; publish?: boolean } = {},
-  ) {
-    const publish = options.publish ?? true;
-
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          files: {
-            select: {
-              fileId: true,
-            },
-          },
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const updatedDocument = await this.prisma.document.update({
-        where: { id: documentId },
-        data: {
-          isApproved: true,
-          isPublic: publish,
-          moderationStatus: DocumentModerationStatus.APPROVED,
-          moderatedById: adminId,
-          moderatedAt: new Date(),
-          moderationNotes: options.notes || null,
-          rejectionReason: null,
-        },
-        include: {
-          aiAnalysis: true,
-        },
-      });
-
-      await this.prisma.file.updateMany({
-        where: {
-          id: {
-            in: document.files.map(file => file.fileId),
-          },
-        },
-        data: {
-          isPublic: publish,
-        },
-      });
-
-      // Emit moderation approved event to uploader
-      void this.notifications.emitToUploaderOfDocument(
-        updatedDocument.uploaderId,
-        {
-          type: 'moderation',
-          documentId,
-          status: 'approved',
-          notes: options.notes || null,
-        },
-      );
-
-      return updatedDocument;
-    } catch (error) {
-      this.logger.error(`Error approving document ${documentId}:`, error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Không thể duyệt tài liệu này');
-    }
+  ): Promise<any> {
+    return this.moderationService.approveDocument(documentId, adminId, options);
   }
 
   /**
    * Reject a document and optionally add notes
+   * @delegates DocumentModerationService.rejectDocument
    */
   async rejectDocumentModeration(
     documentId: string,
     adminId: string,
     options: { reason: string; notes?: string },
-  ) {
-    if (!options.reason) {
-      throw new BadRequestException('Vui lòng cung cấp lý do từ chối');
-    }
-
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          files: {
-            select: {
-              fileId: true,
-            },
-          },
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const updatedDocument = await this.prisma.document.update({
-        where: { id: documentId },
-        data: {
-          isApproved: false,
-          isPublic: false,
-          moderationStatus: DocumentModerationStatus.REJECTED,
-          moderatedById: adminId,
-          moderatedAt: new Date(),
-          moderationNotes: options.notes || null,
-          rejectionReason: options.reason,
-        },
-        include: {
-          aiAnalysis: true,
-        },
-      });
-
-      await Promise.all([
-        this.prisma.file.updateMany({
-          where: {
-            id: {
-              in: document.files.map(file => file.fileId),
-            },
-          },
-          data: {
-            isPublic: false,
-          },
-        }),
-        this.prisma.documentShareLink.updateMany({
-          where: { documentId },
-          data: { isRevoked: true },
-        }),
-      ]);
-
-      // Emit moderation rejected event to uploader
-      void this.notifications.emitToUploaderOfDocument(
-        updatedDocument.uploaderId,
-        {
-          type: 'moderation',
-          documentId,
-          status: 'rejected',
-          notes: options.notes || null,
-          reason: options.reason,
-        },
-      );
-
-      return updatedDocument;
-    } catch (error) {
-      this.logger.error(`Error rejecting document ${documentId}:`, error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Không thể từ chối tài liệu này');
-    }
+  ): Promise<any> {
+    return this.moderationService.rejectDocument(documentId, adminId, options);
   }
 
   /**
    * Check if document should be auto-approved or auto-rejected based on AI analysis and similarity
+   * @delegates DocumentModerationService.checkAutoModeration
    */
   async checkAutoModeration(documentId: string): Promise<{
     shouldAutoApprove: boolean;
     shouldAutoReject: boolean;
     reason?: string;
   }> {
-    try {
-      const aiSettings = await this.systemSettings.getAIModerationSettings();
-
-      // Check similarity first if enabled
-      if (aiSettings.enableSimilarityCheck) {
-        const similarityCheck = await this.checkSimilarityForModeration(
-          documentId,
-          aiSettings,
-        );
-        if (similarityCheck.shouldAutoReject) {
-          return {
-            shouldAutoApprove: false,
-            shouldAutoReject: true,
-            reason: similarityCheck.reason,
-          };
-        }
-        if (similarityCheck.requiresManualReview) {
-          return {
-            shouldAutoApprove: false,
-            shouldAutoReject: false,
-            reason: similarityCheck.reason,
-          };
-        }
-      }
-
-      const analysis = await this.prisma.aIAnalysis.findUnique({
-        where: { documentId },
-      });
-
-      if (!analysis) {
-        return {
-          shouldAutoApprove: false,
-          shouldAutoReject: false,
-          reason: 'No AI analysis available',
-        };
-      }
-
-      const { moderationScore, safetyFlags } = analysis;
-
-      // Auto-reject if score is below threshold or has critical safety flags
-      if (aiSettings.enableAutoRejection) {
-        if (moderationScore < aiSettings.autoRejectThreshold) {
-          return {
-            shouldAutoApprove: false,
-            shouldAutoReject: true,
-            reason: `AI score ${moderationScore} below rejection threshold ${aiSettings.autoRejectThreshold}`,
-          };
-        }
-
-        if (safetyFlags.length > 0) {
-          return {
-            shouldAutoApprove: false,
-            shouldAutoReject: true,
-            reason: `Safety flags detected: ${safetyFlags.join(', ')}`,
-          };
-        }
-      }
-
-      // Auto-approve if score is above threshold and no safety issues
-      if (aiSettings.enableAutoApproval) {
-        if (
-          moderationScore >= aiSettings.autoApprovalThreshold &&
-          safetyFlags.length === 0
-        ) {
-          return {
-            shouldAutoApprove: true,
-            shouldAutoReject: false,
-            reason: `AI score ${moderationScore} above approval threshold ${aiSettings.autoApprovalThreshold}`,
-          };
-        }
-      }
-
-      return {
-        shouldAutoApprove: false,
-        shouldAutoReject: false,
-        reason: 'Requires manual review',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error checking auto moderation for document ${documentId}:`,
-        error,
-      );
-      return {
-        shouldAutoApprove: false,
-        shouldAutoReject: false,
-        reason: 'Error checking auto moderation',
-      };
-    }
-  }
-
-  /**
-   * Check similarity for moderation decisions
-   */
-  private async checkSimilarityForModeration(
-    documentId: string,
-    aiSettings: {
-      similarityAutoRejectThreshold: number;
-      similarityManualReviewThreshold: number;
-    },
-  ): Promise<{
-    shouldAutoReject: boolean;
-    requiresManualReview: boolean;
-    reason?: string;
-    highestSimilarity?: number;
-    similarDocumentId?: string;
-  }> {
-    try {
-      // Get highest similarity score for this document
-      const highestSimilarity = await this.prisma.documentSimilarity.findFirst({
-        where: {
-          sourceDocumentId: documentId,
-        },
-        orderBy: {
-          similarityScore: 'desc',
-        },
-        include: {
-          targetDocument: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-        },
-      });
-
-      if (!highestSimilarity) {
-        return {
-          shouldAutoReject: false,
-          requiresManualReview: false,
-          reason: 'No similar documents found',
-        };
-      }
-
-      const similarityPercent = Math.round(
-        highestSimilarity.similarityScore * 100,
-      );
-
-      // Auto-reject if similarity is above auto-reject threshold
-      if (similarityPercent >= aiSettings.similarityAutoRejectThreshold) {
-        return {
-          shouldAutoReject: true,
-          requiresManualReview: false,
-          reason: `Tài liệu tương đồng ${similarityPercent}% với "${highestSimilarity.targetDocument.title}" - vượt ngưỡng tự động từ chối ${aiSettings.similarityAutoRejectThreshold}%`,
-          highestSimilarity: similarityPercent,
-          similarDocumentId: highestSimilarity.targetDocumentId,
-        };
-      }
-
-      // Require manual review if similarity is above manual review threshold
-      if (similarityPercent >= aiSettings.similarityManualReviewThreshold) {
-        return {
-          shouldAutoReject: false,
-          requiresManualReview: true,
-          reason: `Tài liệu tương đồng ${similarityPercent}% với "${highestSimilarity.targetDocument.title}" - cần xem xét thủ công (ngưỡng ${aiSettings.similarityManualReviewThreshold}%)`,
-          highestSimilarity: similarityPercent,
-          similarDocumentId: highestSimilarity.targetDocumentId,
-        };
-      }
-
-      return {
-        shouldAutoReject: false,
-        requiresManualReview: false,
-        reason: `Độ tương đồng ${similarityPercent}% nằm trong giới hạn cho phép`,
-        highestSimilarity: similarityPercent,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error checking similarity for moderation for document ${documentId}:`,
-        error,
-      );
-      return {
-        shouldAutoReject: false,
-        requiresManualReview: false,
-        reason: 'Error checking similarity',
-      };
-    }
+    return this.moderationService.checkAutoModeration(documentId);
   }
 
   /**
    * Trigger AI moderation analysis for a document
+   * @delegates DocumentModerationService.generateModerationAnalysis
    */
-  async generateModerationAnalysis(documentId: string) {
-    try {
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          files: {
-            select: {
-              fileId: true,
-            },
-          },
-          uploader: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const fileIds = document.files.map(file => file.fileId);
-
-      if (!fileIds.length) {
-        throw new BadRequestException('Tài liệu không có tệp để phân tích AI');
-      }
-
-      const analysisResult = await this.aiService.analyzeDocuments({
-        fileIds,
-        userId: document.uploader.id,
-      });
-
-      if (analysisResult.success) {
-        await this.aiService.saveAnalysis(documentId, analysisResult.data);
-      }
-
-      const savedAnalysis = await this.prisma.aIAnalysis.findUnique({
-        where: { documentId },
-      });
-
-      // Check for auto-moderation after AI analysis
-      const autoModeration = await this.checkAutoModeration(documentId);
-      let autoModerationResult: { action: string; reason: string } | null =
-        null;
-
-      if (autoModeration.shouldAutoApprove) {
-        this.logger.log(
-          `Auto-approving document ${documentId}: ${autoModeration.reason}`,
-        );
-        try {
-          await this.approveDocumentModeration(documentId, 'system', {
-            notes: `Tự động duyệt bởi AI: ${autoModeration.reason}`,
-            publish: true,
-          });
-          autoModerationResult = {
-            action: 'approved',
-            reason: autoModeration.reason || 'Auto-approved by AI',
-          };
-        } catch (error) {
-          this.logger.error(
-            `Failed to auto-approve document ${documentId}:`,
-            error,
-          );
-        }
-      } else if (autoModeration.shouldAutoReject) {
-        this.logger.log(
-          `Auto-rejecting document ${documentId}: ${autoModeration.reason}`,
-        );
-        try {
-          await this.rejectDocumentModeration(documentId, 'system', {
-            reason: `Tự động từ chối bởi AI: ${autoModeration.reason}`,
-            notes:
-              'Tài liệu này đã được AI phân tích và tự động từ chối do không đáp ứng tiêu chuẩn an toàn.',
-          });
-          autoModerationResult = {
-            action: 'rejected',
-            reason: autoModeration.reason || 'Auto-rejected by AI',
-          };
-        } catch (error) {
-          this.logger.error(
-            `Failed to auto-reject document ${documentId}:`,
-            error,
-          );
-        }
-      }
-
-      return {
-        success: analysisResult.success,
-        analysis: savedAnalysis,
-        processedFiles: analysisResult.processedFiles,
-        processingTime: analysisResult.processingTime,
-        autoModeration: autoModerationResult,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error generating AI moderation analysis for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Không thể phân tích AI cho tài liệu này',
-      );
-    }
+  async generateModerationAnalysis(documentId: string): Promise<any> {
+    return this.moderationService.generateModerationAnalysis(documentId);
   }
 
   /**
@@ -2772,6 +1189,7 @@ export class DocumentsService {
 
   /**
    * Get download URL for a document without tracking download
+   * @delegates DocumentDownloadService.getDownloadUrl
    */
   async getDownloadUrl(
     documentId: string,
@@ -2781,130 +1199,12 @@ export class DocumentsService {
     fileName: string;
     fileCount: number;
   }> {
-    try {
-      this.logger.log(
-        `Getting download URL for document ${documentId} by user ${userId || 'guest'}`,
-      );
-
-      // Get document with files
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          files: {
-            include: {
-              file: true,
-            },
-            orderBy: { order: 'asc' },
-          },
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const isOwner = document.uploaderId === userId;
-
-      if (document.isPublic) {
-        if (!document.isApproved && !isOwner) {
-          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
-        }
-        if (
-          document.moderationStatus === DocumentModerationStatus.REJECTED &&
-          !isOwner
-        ) {
-          throw new BadRequestException('Tài liệu đã bị từ chối');
-        }
-      } else {
-        if (!userId) {
-          throw new BadRequestException(
-            'Cần xác thực để tải xuống tài liệu riêng tư',
-          );
-        }
-        if (!isOwner) {
-          throw new BadRequestException(
-            'Bạn không có quyền tải xuống tài liệu này',
-          );
-        }
-      }
-
-      if (!document.files || document.files.length === 0) {
-        throw new BadRequestException('Tài liệu không có tệp để tải xuống');
-      }
-
-      // If single file, return direct download URL
-      if (document.files.length === 1) {
-        const file = document.files[0].file;
-        this.logger.log(
-          `Preparing single file download URL: ${file.originalName}`,
-        );
-        const downloadUrl = await this.r2Service.getSignedDownloadUrl(
-          file.storageUrl,
-          300,
-        ); // 5 minutes
-
-        return {
-          downloadUrl,
-          fileName: file.originalName,
-          fileCount: 1,
-        };
-      }
-
-      // For multiple files, create or use cached ZIP
-      this.logger.log(
-        `Preparing ZIP download URL for ${document.files.length} files`,
-      );
-
-      // Check if ZIP file already exists and is still valid
-      if (document.zipFileUrl) {
-        this.logger.log(`Using cached ZIP file for document ${documentId}`);
-
-        // Generate new signed URL for the existing ZIP file
-        const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(
-          document.zipFileUrl,
-          1800,
-        );
-        const zipFileName = `${document.title || 'document'}.zip`;
-
-        return {
-          downloadUrl: zipDownloadUrl,
-          fileName: zipFileName,
-          fileCount: document.files.length,
-        };
-      }
-
-      // Create new ZIP file
-      const zipUrl = await this.createZipDownload(document.files, documentId);
-      const zipFileName = `${document.title || 'document'}.zip`;
-
-      return {
-        downloadUrl: zipUrl,
-        fileName: zipFileName,
-        fileCount: document.files.length,
-      };
-    } catch (error) {
-      this.logger.error('Error getting download URL:', error);
-      throw error;
-    }
+    return this.downloadService.getDownloadUrl(documentId, userId);
   }
 
   /**
    * Initialize a download - creates a pending download record (success=false)
-   * Called by frontend BEFORE starting the actual download.
-   * Returns a downloadId that must be used to confirm the download later.
-   *
-   * Flow:
-   * 1. Validate document exists and user has permission
-   * 2. Check if user has already downloaded this document successfully
-   * 3. Create pending download record (success=false)
-   * 4. Return downloadId for confirmation
-   *
-   * Note: Points are NOT deducted here. Points will be deducted in confirmDownload()
-   * AFTER the file is actually downloaded successfully. This prevents charging
-   * users for cancelled/failed downloads.
-   *
-   * Note: Download count is NOT incremented here. It will be incremented
-   * only when confirmDownload is called with the downloadId.
+   * @delegates DocumentDownloadService.initDownload
    */
   async initDownload(
     documentId: string,
@@ -2913,374 +1213,40 @@ export class DocumentsService {
     userAgent?: string,
     referrer?: string,
   ): Promise<{ downloadId: string; alreadyDownloaded: boolean }> {
-    try {
-      this.logger.log(
-        `Initializing download for document ${documentId} by user ${userId || 'guest'}`,
-      );
-
-      // Verify document exists and user has permission
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        select: {
-          id: true,
-          isPublic: true,
-          isApproved: true,
-          moderationStatus: true,
-          uploaderId: true,
-          downloadCost: true,
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const isOwner = document.uploaderId === userId;
-
-      if (document.isPublic) {
-        if (!document.isApproved && !isOwner) {
-          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
-        }
-        if (
-          document.moderationStatus === DocumentModerationStatus.REJECTED &&
-          !isOwner
-        ) {
-          throw new BadRequestException('Tài liệu đã bị từ chối');
-        }
-      } else {
-        if (!userId) {
-          throw new BadRequestException(
-            'Cần xác thực để tải xuống tài liệu riêng tư',
-          );
-        }
-        if (!isOwner) {
-          throw new BadRequestException(
-            'Bạn không có quyền tải xuống tài liệu này',
-          );
-        }
-      }
-
-      // Check if user already has a successful download for this document
-      let hasExistingSuccessfulDownload = false;
-      if (userId) {
-        const existingDownload = await this.prisma.download.findFirst({
-          where: {
-            userId,
-            documentId,
-            success: true,
-          },
-        });
-        hasExistingSuccessfulDownload = !!existingDownload;
-
-        if (hasExistingSuccessfulDownload) {
-          this.logger.log(
-            `User ${userId} already has a successful download for document ${documentId}, will skip points deduction on confirm`,
-          );
-        }
-      }
-
-      // PRE-CHECK: Verify user has enough points BEFORE allowing download
-      // This prevents users from downloading files they can't afford
-      if (userId && !isOwner && !hasExistingSuccessfulDownload) {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            id: true,
-            pointsBalance: true,
-            role: { select: { name: true } },
-          },
-        });
-        const isAdmin = user?.role?.name === 'admin';
-
-        if (!isAdmin) {
-          // Get effective download cost
-          const settings = await this.systemSettings.getPointsSettings();
-          const effectiveDownloadCost =
-            document.downloadCost ?? settings.downloadCost;
-
-          if ((user?.pointsBalance ?? 0) < effectiveDownloadCost) {
-            throw new BadRequestException(
-              `Bạn không đủ điểm để tải xuống tài liệu này. Cần ${effectiveDownloadCost} điểm, bạn có ${user?.pointsBalance ?? 0} điểm.`,
-            );
-          }
-        }
-      }
-
-      // NOTE: Points are NOT deducted here.
-      // Points will be deducted in confirmDownload() AFTER the file is actually downloaded.
-      // This prevents charging users for cancelled/failed downloads.
-
-      // Create pending download record (success=false)
-      const download = await this.prisma.download.create({
-        data: {
-          userId: userId || null,
-          documentId,
-          ipAddress,
-          userAgent,
-          referrer,
-          success: false, // Will be set to true when confirmed
-          uploaderRewarded: false,
-        },
-      });
-
-      this.logger.log(
-        `Created pending download record ${download.id} for document ${documentId}`,
-      );
-
-      return {
-        downloadId: download.id,
-        alreadyDownloaded: hasExistingSuccessfulDownload,
-      };
-    } catch (error) {
-      this.logger.error('Error initializing download:', error);
-      throw error;
-    }
+    return this.downloadService.initDownload(
+      documentId,
+      userId,
+      ipAddress,
+      userAgent,
+      referrer,
+    );
   }
 
   /**
    * Confirm a download - marks the download as successful, deducts points, and increments count
-   * Called by frontend AFTER the file has been successfully fetched/downloaded.
-   *
-   * Flow:
-   * 1. Verify download record exists and belongs to user
-   * 2. Check if download is already confirmed (prevent double counting)
-   * 3. Deduct points from user (only for first successful download)
-   * 4. Mark download as successful
-   * 5. Increment download count (only for first successful download per user)
-   * 6. Award points to uploader
-   * 7. Emit notification
+   * @delegates DocumentDownloadService.confirmDownload
    */
   async confirmDownload(
     downloadId: string,
     userId?: string,
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      this.logger.log(
-        `Confirming download ${downloadId} for user ${userId || 'guest'}`,
-      );
-
-      // Find the download record
-      const download = await this.prisma.download.findUnique({
-        where: { id: downloadId },
-        include: {
-          document: {
-            select: {
-              id: true,
-              uploaderId: true,
-              downloadCost: true,
-            },
-          },
-        },
-      });
-
-      if (!download) {
-        throw new BadRequestException('Không tìm thấy bản ghi tải xuống');
-      }
-
-      // Verify the download belongs to the user (or is a guest download)
-      if (download.userId && download.userId !== userId) {
-        throw new BadRequestException(
-          'Bạn không có quyền xác nhận tải xuống này',
-        );
-      }
-
-      // Check if already confirmed
-      if (download.success) {
-        this.logger.log(`Download ${downloadId} already confirmed, skipping`);
-        return {
-          success: true,
-          message: 'Tải xuống đã được xác nhận trước đó',
-        };
-      }
-
-      const documentId = download.documentId;
-      const isOwner = download.document.uploaderId === userId;
-
-      // Check if user has other successful downloads for this document
-      let hasOtherSuccessfulDownload = false;
-      if (userId) {
-        const otherDownload = await this.prisma.download.findFirst({
-          where: {
-            userId,
-            documentId,
-            success: true,
-            id: { not: downloadId }, // Exclude current download
-          },
-        });
-        hasOtherSuccessfulDownload = !!otherDownload;
-      }
-
-      // Deduct points for non-owner first-time downloads
-      // Points are deducted HERE (in confirmDownload) instead of initDownload
-      // This ensures users are only charged when download actually completes
-      if (userId && !isOwner && !hasOtherSuccessfulDownload) {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true, role: { select: { name: true } } },
-        });
-        const isAdmin = user?.role?.name === 'admin';
-
-        if (!isAdmin) {
-          try {
-            await this.pointsService.spendOnDownload({
-              userId,
-              document: { ...(download.document as any) },
-              performedById: undefined,
-              bypass: false,
-            });
-            this.logger.log(
-              `Deducted points from user ${userId} for download ${downloadId}`,
-            );
-          } catch (e) {
-            this.logger.error(
-              `Failed to deduct points for download ${downloadId}: ${e.message}`,
-            );
-            throw e; // Re-throw points error to prevent confirming download
-          }
-        }
-      }
-
-      // Update download record and increment count in transaction
-      await this.prisma.$transaction(async prisma => {
-        // Mark download as successful
-        await prisma.download.update({
-          where: { id: downloadId },
-          data: { success: true },
-        });
-
-        // Only increment download count if:
-        // 1. This is NOT the owner (owner downloads don't count)
-        // 2. This is the first successful download for this user
-        if (!isOwner && !hasOtherSuccessfulDownload) {
-          await prisma.document.update({
-            where: { id: documentId },
-            data: {
-              downloadCount: { increment: 1 },
-            },
-          });
-        }
-      });
-
-      // Award uploader points (if not owner and this is first successful download)
-      if (userId && !isOwner && !hasOtherSuccessfulDownload) {
-        try {
-          let effectiveDownloadCost = download.document.downloadCost;
-          if (
-            effectiveDownloadCost === null ||
-            effectiveDownloadCost === undefined
-          ) {
-            const settings = await this.systemSettings.getPointsSettings();
-            effectiveDownloadCost = settings.downloadCost;
-          }
-
-          await this.pointsService.awardUploaderOnDownload(
-            download.document.uploaderId,
-            documentId,
-            userId,
-            downloadId,
-            effectiveDownloadCost,
-          );
-          this.logger.log(
-            `Awarded uploader ${download.document.uploaderId} for download ${downloadId}`,
-          );
-        } catch (awardError) {
-          this.logger.error(
-            `Failed to award uploader for download ${downloadId}: ${awardError.message}`,
-          );
-        }
-      }
-
-      // Emit realtime notification (only if count was incremented - not for owner or re-downloads)
-      if (!isOwner && !hasOtherSuccessfulDownload) {
-        void this.notifications.emitToUploaderOfDocument(
-          download.document.uploaderId,
-          {
-            type: 'download',
-            documentId,
-            userId,
-            count: 1,
-          },
-        );
-      }
-
-      this.logger.log(
-        `Successfully confirmed download ${downloadId}${isOwner ? ' (owner download, count not incremented)' : hasOtherSuccessfulDownload ? ' (re-download, count not incremented)' : ''}`,
-      );
-
-      return {
-        success: true,
-        message: hasOtherSuccessfulDownload
-          ? 'Tải xuống đã được xác nhận (tải lại)'
-          : 'Tải xuống đã được xác nhận thành công',
-      };
-    } catch (error) {
-      this.logger.error('Error confirming download:', error);
-      throw error;
-    }
+    return this.downloadService.confirmDownload(downloadId, userId);
   }
 
   /**
    * Cancel/cleanup a pending download - called when download fails or is cancelled
-   * This allows refunding points if needed
+   * @delegates DocumentDownloadService.cancelDownload
    */
   async cancelDownload(
     downloadId: string,
     userId?: string,
   ): Promise<{ success: boolean }> {
-    try {
-      this.logger.log(
-        `Cancelling download ${downloadId} for user ${userId || 'guest'}`,
-      );
-
-      const download = await this.prisma.download.findUnique({
-        where: { id: downloadId },
-      });
-
-      if (!download) {
-        // Download not found, maybe already cleaned up
-        return { success: true };
-      }
-
-      // Verify ownership
-      if (download.userId && download.userId !== userId) {
-        throw new BadRequestException('Bạn không có quyền hủy tải xuống này');
-      }
-
-      // Only allow cancelling pending downloads
-      if (download.success) {
-        this.logger.log(
-          `Download ${downloadId} already successful, cannot cancel`,
-        );
-        return { success: false };
-      }
-
-      // Mark as failed (keep record for audit)
-      await this.prisma.download.update({
-        where: { id: downloadId },
-        data: { success: false },
-      });
-
-      // TODO: Implement point refund logic if needed
-      // For now, points are not refunded on cancellation
-
-      this.logger.log(`Download ${downloadId} cancelled`);
-      return { success: true };
-    } catch (error) {
-      this.logger.error('Error cancelling download:', error);
-      throw error;
-    }
+    return this.downloadService.cancelDownload(downloadId, userId);
   }
 
   /**
    * Prepare streaming download - validates permissions, checks points, creates pending download record
-   * Returns necessary data for streaming and callback functions for success/failure
-   *
-   * Flow:
-   * 1. Validate document exists and user has permission
-   * 2. Check if user has already downloaded this document successfully (skip points deduction if yes)
-   * 3. Deduct points from downloader (if applicable)
-   * 4. Create pending download record (success=false)
-   * 5. Return file stream data and callbacks for onFinish/onError
+   * @delegates DocumentDownloadService.prepareStreamingDownload
    */
   async prepareStreamingDownload(
     documentId: string,
@@ -3299,232 +1265,14 @@ export class DocumentsService {
     onStreamComplete: () => Promise<void>;
     onStreamError: () => Promise<void>;
   }> {
-    try {
-      this.logger.log(
-        `Preparing streaming download for document ${documentId} by user ${userId}`,
-      );
-
-      // Get document with files and downloadCost for reward calculation
-      const document = await this.prisma.document.findUnique({
-        where: { id: documentId },
-        select: {
-          id: true,
-          title: true,
-          uploaderId: true,
-          isPublic: true,
-          isApproved: true,
-          moderationStatus: true,
-          downloadCost: true, // Include for uploader reward calculation
-          files: {
-            include: {
-              file: true,
-            },
-            orderBy: { order: 'asc' },
-          },
-        },
-      });
-
-      if (!document) {
-        throw new BadRequestException('Không tìm thấy tài liệu');
-      }
-
-      const isOwner = document.uploaderId === userId;
-      let shareAccessGranted = false;
-
-      if (apiKey) {
-        try {
-          const link = await this.validateShareLink(documentId, apiKey);
-          if (
-            link &&
-            !link.isRevoked &&
-            link.expiresAt.getTime() > Date.now()
-          ) {
-            shareAccessGranted = true;
-          }
-        } catch {
-          // ignore invalid apiKey
-        }
-      }
-
-      // Check access permissions
-      if (document.isPublic) {
-        if (!document.isApproved && !isOwner) {
-          throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
-        }
-        if (
-          document.moderationStatus === DocumentModerationStatus.REJECTED &&
-          !isOwner
-        ) {
-          throw new BadRequestException('Tài liệu đã bị từ chối');
-        }
-      } else {
-        if (!isOwner && !shareAccessGranted) {
-          throw new BadRequestException(
-            'Bạn không có quyền tải xuống tài liệu này',
-          );
-        }
-      }
-
-      if (!document.files || document.files.length === 0) {
-        throw new BadRequestException('Tài liệu không có tệp để tải xuống');
-      }
-
-      // Check if user has already successfully downloaded this document
-      const hasExistingSuccessfulDownload =
-        await this.pointsService.hasSuccessfulDownload(userId, documentId);
-
-      // Points deduction logic for non-owner downloads (only if not already downloaded)
-      if (!isOwner && !hasExistingSuccessfulDownload) {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true, role: { select: { name: true } } },
-        });
-        const isAdmin = user?.role?.name === 'admin';
-        const bypass = Boolean(isAdmin || shareAccessGranted);
-
-        try {
-          await this.pointsService.spendOnDownload({
-            userId,
-            document: { ...(document as any) },
-            performedById: isAdmin ? userId : undefined,
-            bypass,
-          });
-        } catch (e) {
-          if (!bypass) {
-            throw e;
-          }
-        }
-      } else if (hasExistingSuccessfulDownload) {
-        this.logger.log(
-          `User ${userId} has already downloaded document ${documentId}, skipping points deduction`,
-        );
-      }
-
-      // Create pending download record
-      const download = await this.prisma.download.create({
-        data: {
-          userId,
-          documentId,
-          ipAddress,
-          userAgent,
-          referrer,
-          success: false, // Will be set to true on res.finish
-          uploaderRewarded: false,
-        },
-      });
-
-      // Get the file to stream (single file only for now - ZIP streaming requires different approach)
-      if (document.files.length > 1) {
-        // For multiple files, fall back to ZIP download (existing behavior)
-        // Clean up the download record we just created
-        await this.prisma.download.delete({ where: { id: download.id } });
-        throw new BadRequestException(
-          'Streaming download chỉ hỗ trợ tài liệu đơn tệp. Sử dụng endpoint download thông thường cho tài liệu nhiều tệp.',
-        );
-      }
-
-      const file = document.files[0].file;
-      const fileStream = await this.r2Service.getFileStream(file.storageUrl);
-
-      const uploaderId = document.uploaderId;
-      const downloadId = download.id;
-
-      // Callback for when stream completes successfully (res.finish)
-      const onStreamComplete = async () => {
-        try {
-          this.logger.log(
-            `Stream completed for download ${downloadId}, marking as successful`,
-          );
-
-          // Update download count
-          await this.prisma.document.update({
-            where: { id: documentId },
-            data: {
-              downloadCount: { increment: 1 },
-            },
-          });
-
-          // Award uploader (handles duplicate check internally)
-          // Pass effective downloadCost so uploader receives same amount as downloader paid
-          // We already have document.downloadCost from the initial query
-          let effectiveDownloadCost = document.downloadCost;
-          if (
-            effectiveDownloadCost === null ||
-            effectiveDownloadCost === undefined
-          ) {
-            const settings = await this.systemSettings.getPointsSettings();
-            effectiveDownloadCost = settings.downloadCost;
-          }
-          await this.pointsService.awardUploaderOnDownload(
-            uploaderId,
-            documentId,
-            userId,
-            downloadId,
-            effectiveDownloadCost,
-          );
-
-          // Emit realtime download event to uploader
-          void this.notifications.emitToUploaderOfDocument(uploaderId, {
-            type: 'download',
-            documentId,
-            userId,
-            count: 1,
-          });
-
-          this.logger.log(
-            `Download ${downloadId} marked as successful, uploader rewarded`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Error in onStreamComplete for download ${downloadId}: ${error.message}`,
-          );
-        }
-      };
-
-      // Callback for when stream fails or is aborted
-      const onStreamError = async () => {
-        try {
-          this.logger.log(
-            `Stream failed/aborted for download ${downloadId}, cleaning up`,
-          );
-
-          // Mark download as failed (don't delete to keep audit trail)
-          await this.prisma.download.update({
-            where: { id: downloadId },
-            data: { success: false },
-          });
-
-          // Note: We don't refund points here because points were deducted before streaming started
-          // This is a design decision - if user wants refund for failed downloads,
-          // we'd need a different approach (deduct after success)
-        } catch (error) {
-          this.logger.error(
-            `Error in onStreamError for download ${downloadId}: ${error.message}`,
-          );
-        }
-      };
-
-      return {
-        fileStream,
-        fileName: file.originalName,
-        mimeType: file.mimeType,
-        fileSize: Number(file.fileSize),
-        downloadId,
-        uploaderId,
-        onStreamComplete,
-        onStreamError,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error preparing streaming download for document ${documentId}: ${error.message}`,
-      );
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Không thể chuẩn bị tải xuống tài liệu',
-      );
-    }
+    return this.downloadService.prepareStreamingDownload(
+      documentId,
+      userId,
+      ipAddress,
+      userAgent,
+      referrer,
+      apiKey,
+    );
   }
 
   /**
@@ -3973,21 +1721,9 @@ export class DocumentsService {
 
   /**
    * Get effective download cost for a document (from document or system default)
+   * @delegates DocumentDownloadService.getEffectiveDownloadCost
    */
   async getEffectiveDownloadCost(documentId: string): Promise<number> {
-    const document = await this.prisma.document.findUnique({
-      where: { id: documentId },
-      select: { downloadCost: true },
-    });
-
-    if (
-      document?.downloadCost !== null &&
-      document?.downloadCost !== undefined
-    ) {
-      return document.downloadCost;
-    }
-
-    const settings = await this.systemSettings.getPointsSettings();
-    return settings.downloadCost;
+    return this.downloadService.getEffectiveDownloadCost(documentId);
   }
 }

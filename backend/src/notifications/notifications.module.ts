@@ -1,4 +1,4 @@
-import { NotificationsController } from './notifications.controller';
+import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsService } from './notifications.service';
 import { PrismaModule } from '@/prisma/prisma.module';

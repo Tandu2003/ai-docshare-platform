@@ -1,4 +1,4 @@
-import { HealthController } from './health.controller';
+import { HealthController } from './controllers/health.controller';
 import { Module } from '@nestjs/common';
 
 @Module({

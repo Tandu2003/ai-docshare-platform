@@ -6,6 +6,13 @@ import * as path from 'path';
 import { Readable } from 'stream';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ImagePreviewService,
+  OfficePreviewService,
+  PdfPreviewService,
+  PreviewUtilService,
+  TextPreviewService,
+} from './services';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PreviewStatus } from '@prisma/client';
@@ -61,6 +68,11 @@ export class PreviewService {
     private readonly prisma: PrismaService,
     private readonly r2Service: CloudflareR2Service,
     private readonly configService: ConfigService,
+    private readonly pdfPreviewService: PdfPreviewService,
+    private readonly officePreviewService: OfficePreviewService,
+    private readonly textPreviewService: TextPreviewService,
+    private readonly imagePreviewService: ImagePreviewService,
+    private readonly previewUtilService: PreviewUtilService,
   ) {}
 
   /**
@@ -457,6 +469,7 @@ export class PreviewService {
 
   /**
    * Generate preview from PDF file
+   * @delegates PdfPreviewService.generatePdfPreviews
    */
   private async generatePdfPreviews(
     documentId: string,
@@ -465,267 +478,26 @@ export class PreviewService {
       storageUrl: string;
       originalName: string;
     },
-    isLocalFile: boolean = false, // Flag to indicate if storageUrl is a local path
+    isLocalFile: boolean = false,
     options?: {
       processingStart?: number;
       sourceType?: PreviewMetadata['sourceType'];
     },
   ): Promise<PreviewImage[]> {
-    this.logger.log(`Generating PDF previews for file: ${file.originalName}`);
-
-    // If isLocalFile, use the parent directory of the file as tmpDir
-    // Otherwise, create a new temp directory
-    let tmpDir: string;
-    let shouldCleanup = true;
-
-    if (isLocalFile) {
-      // Use the directory containing the local file
-      tmpDir = path.dirname(file.storageUrl);
-      shouldCleanup = false; // Don't cleanup - parent function will handle it
-    } else {
-      tmpDir = await fs.promises.mkdtemp(
-        path.join(os.tmpdir(), 'pdf-preview-'),
-      );
-    }
-
-    try {
-      // Get PDF file - either from local path or download from R2
-      let pdfPath: string;
-
-      if (isLocalFile) {
-        // storageUrl is already a local file path
-        pdfPath = file.storageUrl;
-      } else {
-        // Download PDF from R2
-        pdfPath = path.join(tmpDir, 'input.pdf');
-        const pdfStream = await this.r2Service.getFileStream(file.storageUrl);
-        await this.streamToFile(pdfStream, pdfPath);
-      }
-
-      // Verify PDF file exists
-      const pdfExists = await fs.promises
-        .access(pdfPath)
-        .then(() => true)
-        .catch(() => false);
-      if (!pdfExists) {
-        throw new Error(`PDF file not found at: ${pdfPath}`);
-      }
-
-      const pageCount = await this.getPdfPageCount(pdfPath);
-      const baseMetadata = this.buildMetadata({
-        pageCount,
-        processingStart: options?.processingStart,
-        sourceType: options?.sourceType ?? 'PDF',
-      });
-
-      let textPreviewPath: string | undefined;
-      try {
-        textPreviewPath = await this.generatePdfTextPreview(
-          documentId,
-          pdfPath,
-          tmpDir,
-          baseMetadata,
-        );
-      } catch (textError) {
-        this.logger.warn(
-          `pdftotext failed for ${file.originalName}: ${(textError as Error).message}`,
-        );
-      }
-
-      // Convert PDF pages to images using pdftoppm (from poppler-utils)
-      // Fallback to ImageMagick if pdftoppm is not available
-      const previews: PreviewImage[] = [];
-
-      const totalPages = Math.min(this.maxPreviewPages, pageCount);
-
-      for (let page = 1; page <= totalPages; page++) {
-        try {
-          const variantPaths = await this.convertPdfPageToVariants(
-            pdfPath,
-            tmpDir,
-            page,
-          );
-
-          const availableSizes = Object.entries(variantPaths)
-            .filter(([, value]) => !!value)
-            .map(([size]) => size as PreviewSize);
-
-          const mediumPath =
-            variantPaths.medium ||
-            variantPaths.large ||
-            variantPaths.small;
-
-          if (!mediumPath) {
-            this.logger.warn(
-              `Failed to convert page ${page} of ${file.originalName}`,
-            );
-            if (page === 1) {
-              const placeholderMetadata = this.buildMetadata({
-                pageCount: 0,
-                processingStart: options?.processingStart,
-                sourceType: options?.sourceType ?? 'PDF',
-              });
-              return await this.createPlaceholderPreviews(
-                documentId,
-                file.originalName,
-                placeholderMetadata,
-              );
-            }
-            break; // Stop if page doesn't exist
-          }
-
-          // Read the generated image
-          const imageBuffer = await fs.promises.readFile(mediumPath);
-          const { width, height } = this.getImageDimensions(imageBuffer);
-
-          // Upload to R2
-          const previewKey = `previews/${documentId}/page-${page}.jpg`;
-          await this.r2Service.uploadBuffer(
-            imageBuffer,
-            previewKey,
-            'image/jpeg',
-          );
-
-          const variantKeys: Partial<Record<PreviewSize, string>> = {
-            medium: previewKey,
-          };
-
-          if (variantPaths.small) {
-            const smallBuffer = await fs.promises.readFile(
-              variantPaths.small,
-            );
-            const smallKey = this.getVariantKey(previewKey, 'small');
-            await this.r2Service.uploadBuffer(
-              smallBuffer,
-              smallKey,
-              'image/jpeg',
-            );
-            variantKeys.small = smallKey;
-          }
-
-          if (variantPaths.large) {
-            const largeBuffer = await fs.promises.readFile(
-              variantPaths.large,
-            );
-            const largeKey = this.getVariantKey(previewKey, 'large');
-            await this.r2Service.uploadBuffer(
-              largeBuffer,
-              largeKey,
-              'image/jpeg',
-            );
-            variantKeys.large = largeKey;
-          }
-
-          const metadata = this.buildMetadata({
-            pageCount,
-            previewSizes:
-              availableSizes.length > 0
-                ? (Array.from(
-                    new Set([...availableSizes, 'medium']),
-                  ) as PreviewSize[])
-                : baseMetadata.previewSizes,
-            processingStart: options?.processingStart,
-            sourceType: options?.sourceType ?? 'PDF',
-            textPreviewPath,
-          });
-
-          // Save to database
-          const preview = await this.prisma.documentPreview.upsert({
-            where: {
-              documentId_pageNumber: { documentId, pageNumber: page },
-            },
-            create: {
-              documentId,
-              pageNumber: page,
-              previewPath: previewKey,
-              mimeType: 'image/jpeg',
-              fileSize: imageBuffer.length,
-              width,
-              height,
-              status: PreviewStatus.COMPLETED,
-              errorMessage: JSON.stringify(metadata),
-            },
-            update: {
-              previewPath: previewKey,
-              fileSize: imageBuffer.length,
-              width,
-              height,
-              status: PreviewStatus.COMPLETED,
-              errorMessage: JSON.stringify(metadata),
-            },
-          });
-
-          // Generate signed URL
-          const signedUrl = await this.r2Service.getSignedDownloadUrl(
-            previewKey,
-            this.shortSignedUrlExpiry,
-          );
-
-          const variants: {
-            small: string;
-            medium: string;
-            large: string;
-          } = {
-            small:
-              (variantKeys.small &&
-                (await this.r2Service.getSignedDownloadUrl(
-                  variantKeys.small,
-                  this.shortSignedUrlExpiry,
-                ))) ||
-              signedUrl,
-            medium: signedUrl,
-            large:
-              (variantKeys.large &&
-                (await this.r2Service.getSignedDownloadUrl(
-                  variantKeys.large,
-                  this.shortSignedUrlExpiry,
-                ))) ||
-              signedUrl,
-          };
-
-          previews.push({
-            id: preview.id,
-            documentId,
-            pageNumber: page,
-            previewUrl: signedUrl,
-            mimeType: 'image/jpeg',
-            width,
-            height,
-            variants,
-            metadata,
-          });
-        } catch (pageError) {
-          this.logger.warn(
-            `Error generating preview for page ${page}: ${pageError.message}`,
-          );
-          // Stop if we can't generate more pages (likely reached end of document)
-          if (page === 1) {
-            const placeholderMetadata = this.buildMetadata({
-              pageCount: 0,
-              processingStart: options?.processingStart,
-              sourceType: options?.sourceType ?? 'PDF',
-            });
-            return await this.createPlaceholderPreviews(
-              documentId,
-              file.originalName,
-              placeholderMetadata,
-            );
-          }
-          break;
-        }
-      }
-
-      return previews;
-    } finally {
-      // Only cleanup temp directory if we created it (not for local files from Office conversion)
-      if (shouldCleanup) {
-        await fs.promises.rm(tmpDir, { recursive: true, force: true });
-      }
-    }
+    return this.pdfPreviewService.generatePdfPreviews(
+      documentId,
+      file,
+      isLocalFile,
+      options,
+    );
   }
 
   /**
    * Generate preview from Office documents (DOC, DOCX, PPT, PPTX)
+   */
+  /**
+   * Generate preview from Office documents (DOC, DOCX, PPT, PPTX)
+   * @delegates OfficePreviewService.generateOfficePreviews
    */
   private async generateOfficePreviews(
     documentId: string,
@@ -740,241 +512,16 @@ export class PreviewService {
       sourceType?: PreviewMetadata['sourceType'];
     },
   ): Promise<PreviewImage[]> {
-    this.logger.log(
-      `Generating Office previews for file: ${file.originalName} (${file.mimeType})`,
+    return this.officePreviewService.generateOfficePreviews(
+      documentId,
+      file,
+      options,
     );
-    this.logger.log(`Storage URL: ${file.storageUrl}`);
-
-    const tmpDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), 'office-preview-'),
-    );
-
-    try {
-      // Download file from R2
-      const ext = this.getExtensionFromMimeType(file.mimeType);
-      const inputPath = path.join(tmpDir, `input${ext}`);
-
-      this.logger.log(`Downloading file from R2 to: ${inputPath}`);
-
-      try {
-        const fileStream = await this.r2Service.getFileStream(file.storageUrl);
-        await this.streamToFile(fileStream, inputPath);
-      } catch (downloadError) {
-        this.logger.error(
-          `Failed to download file from R2: ${downloadError.message}`,
-        );
-        throw new Error(`Cannot download file: ${downloadError.message}`);
-      }
-
-      // Verify file was downloaded
-      const fileStats = await fs.promises.stat(inputPath);
-      this.logger.log(`Downloaded file size: ${fileStats.size} bytes`);
-
-      if (fileStats.size === 0) {
-        throw new Error('Downloaded file is empty');
-      }
-
-      // Convert to PDF using LibreOffice
-      this.logger.log('Starting LibreOffice conversion...');
-
-      // Try multiple conversion approaches
-      let pdfPath: string | null = null;
-
-      // Approach 1: Unoconv with soffice daemon if available
-      const unoconvAvailable = await this.isCommandAvailable('unoconv');
-      if (unoconvAvailable) {
-        this.logger.log('Trying unoconv conversion (daemon mode)...');
-        const unoconvOutput = path.join(tmpDir, 'output.pdf');
-        try {
-          await this.runCommandWithTimeout(
-            `unoconv --port=8100 -f pdf -o "${unoconvOutput}" "${inputPath}"`,
-            { logLabel: 'unoconv' },
-          );
-          if (await this.fileExists(unoconvOutput)) {
-            pdfPath = unoconvOutput;
-            this.logger.log(`unoconv created PDF at: ${pdfPath}`);
-          }
-        } catch (unoError) {
-          this.logger.warn(`unoconv conversion failed: ${unoError.message}`);
-
-          // Try to start soffice daemon then retry
-          const daemon = await this.startSofficeDaemon(tmpDir);
-          if (daemon) {
-            await this.delay(1200);
-            try {
-              await this.runCommandWithTimeout(
-                `unoconv --port=8100 -f pdf -o "${unoconvOutput}" "${inputPath}"`,
-                { logLabel: 'unoconv-daemon' },
-              );
-              if (await this.fileExists(unoconvOutput)) {
-                pdfPath = unoconvOutput;
-                this.logger.log(`unoconv (daemon) created PDF at: ${pdfPath}`);
-              }
-            } catch (unoRetryError) {
-              this.logger.warn(
-                `unoconv with daemon failed: ${unoRetryError.message}`,
-              );
-            } finally {
-              try {
-                daemon.kill('SIGKILL');
-              } catch {
-                // ignore
-              }
-            }
-          }
-        }
-      }
-
-      // Approach 2: Standard conversion with HOME set to tmpDir
-      if (!pdfPath) {
-        try {
-          const { stdout, stderr } = await this.runCommandWithTimeout(
-            `soffice --headless --nofirststartwizard --norestore --nologo --convert-to pdf --outdir "${tmpDir}" "${inputPath}"`,
-            {
-              logLabel: 'soffice-convert',
-              env: {
-                ...process.env,
-                HOME: tmpDir,
-                TMPDIR: tmpDir,
-              },
-            },
-          );
-          this.logger.log(`LibreOffice stdout: ${stdout}`);
-          if (stderr) this.logger.warn(`LibreOffice stderr: ${stderr}`);
-
-          // LibreOffice outputs to input.pdf (same base name)
-          const expectedPdf = path.join(tmpDir, 'input.pdf');
-          const pdfExists = await this.fileExists(expectedPdf);
-
-          if (pdfExists) {
-            pdfPath = expectedPdf;
-            this.logger.log(`PDF created at: ${pdfPath}`);
-          } else {
-            // List files in tmpDir to debug
-            const files = await fs.promises.readdir(tmpDir);
-            this.logger.log(`Files in tmpDir: ${files.join(', ')}`);
-
-            // Try to find any PDF file
-            const pdfFile = files.find(f => f.endsWith('.pdf'));
-            if (pdfFile) {
-              pdfPath = path.join(tmpDir, pdfFile);
-              this.logger.log(`Found PDF at: ${pdfPath}`);
-            }
-          }
-        } catch (loError) {
-          this.logger.warn(
-            `LibreOffice conversion attempt 1 failed: ${loError.message}`,
-          );
-        }
-      }
-
-      // Approach 3: Try with different options if first attempt failed
-      if (!pdfPath) {
-        try {
-          this.logger.log('Trying alternative LibreOffice conversion...');
-          const { stdout, stderr } = await this.runCommandWithTimeout(
-            `libreoffice --headless --invisible --convert-to pdf:writer_pdf_Export --outdir "${tmpDir}" "${inputPath}"`,
-            {
-              logLabel: 'libreoffice-alt',
-              env: {
-                ...process.env,
-                HOME: tmpDir,
-                TMPDIR: tmpDir,
-                SAL_USE_VCLPLUGIN: 'svp',
-              },
-            },
-          );
-          this.logger.log(`LibreOffice (alt) stdout: ${stdout}`);
-          if (stderr) this.logger.warn(`LibreOffice (alt) stderr: ${stderr}`);
-
-          const files = await fs.promises.readdir(tmpDir);
-          const pdfFile = files.find(f => f.endsWith('.pdf'));
-          if (pdfFile) {
-            pdfPath = path.join(tmpDir, pdfFile);
-            this.logger.log(`Found PDF at: ${pdfPath}`);
-          }
-        } catch (loError2) {
-          this.logger.warn(
-            `LibreOffice conversion attempt 2 failed: ${loError2.message}`,
-          );
-        }
-      }
-
-      // Approach 4: Try unoconv without daemon if not already tried
-      if (!pdfPath) {
-        const unoconvOutput = path.join(tmpDir, 'output.pdf');
-        try {
-          this.logger.log('Trying unoconv conversion (no daemon)...');
-          await this.runCommandWithTimeout(
-            `unoconv -f pdf -o "${unoconvOutput}" "${inputPath}"`,
-            { logLabel: 'unoconv-last' },
-          );
-          if (await this.fileExists(unoconvOutput)) {
-            pdfPath = unoconvOutput;
-            this.logger.log(`unoconv created PDF at: ${pdfPath}`);
-          }
-        } catch (unoError) {
-          this.logger.warn(`unoconv conversion failed: ${unoError.message}`);
-        }
-      }
-
-      // If all conversion attempts failed
-      if (!pdfPath) {
-        this.logger.error(
-          `All conversion methods failed for: ${file.originalName}`,
-        );
-        const placeholderMetadata = this.buildMetadata({
-          pageCount: 0,
-          processingStart: options?.processingStart,
-          sourceType: options?.sourceType ?? this.getSourceType(file.mimeType),
-        });
-        return await this.createPlaceholderPreviews(
-          documentId,
-          file.originalName,
-          placeholderMetadata,
-        );
-      }
-
-      // Verify PDF file is valid
-      const pdfStats = await fs.promises.stat(pdfPath);
-      this.logger.log(`PDF file size: ${pdfStats.size} bytes`);
-
-      if (pdfStats.size === 0) {
-        this.logger.error('Converted PDF is empty');
-        const placeholderMetadata = this.buildMetadata({
-          pageCount: 0,
-          processingStart: options?.processingStart,
-          sourceType: options?.sourceType ?? this.getSourceType(file.mimeType),
-        });
-        return await this.createPlaceholderPreviews(
-          documentId,
-          file.originalName,
-          placeholderMetadata,
-        );
-      }
-
-      // Now generate previews from the PDF (local file)
-      return await this.generatePdfPreviews(
-        documentId,
-        {
-          id: file.id,
-          storageUrl: pdfPath, // Local path to converted PDF
-          originalName: 'converted.pdf',
-        },
-        true, // isLocalFile = true
-        {
-          processingStart: options?.processingStart,
-          sourceType: options?.sourceType ?? this.getSourceType(file.mimeType),
-        },
-      );
-    } finally {
-      await fs.promises.rm(tmpDir, { recursive: true, force: true });
-    }
   }
 
   /**
    * Generate preview from text file (TXT, MD, CSV, etc.)
-   * Creates an image from the text content
+   * @delegates TextPreviewService.generateTextPreviews
    */
   private async generateTextPreviews(
     documentId: string,
@@ -989,271 +536,16 @@ export class PreviewService {
       sourceType?: PreviewMetadata['sourceType'];
     },
   ): Promise<PreviewImage[]> {
-    this.logger.log(`Generating text preview for file: ${file.originalName}`);
-
-    const tmpDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), 'text-preview-'),
+    return this.textPreviewService.generateTextPreviews(
+      documentId,
+      file,
+      options,
     );
-
-    try {
-      // Download text file from R2
-      const inputPath = path.join(tmpDir, 'input.txt');
-      const fileStream = await this.r2Service.getFileStream(file.storageUrl);
-      await this.streamToFile(fileStream, inputPath);
-
-      // Read text content
-      let textContent = await fs.promises.readFile(inputPath, 'utf-8');
-
-      // Truncate if too long (keep first ~4000 characters for preview)
-      if (textContent.length > 4000) {
-        textContent =
-          textContent.substring(0, 4000) +
-          '\n\n... [Nội dung tiếp theo được rút gọn]';
-      }
-
-      // Create image from text using ImageMagick
-      const outputPath = path.join(tmpDir, 'preview-1.jpg');
-
-      // Escape special characters for shell and prepare formatted text
-      const escapedText = textContent
-        .replace(/\\/g, '\\\\')
-        .replace(/"/g, '\\"')
-        .replace(/`/g, '\\`')
-        .replace(/\$/g, '\\$');
-
-      try {
-        // Use ImageMagick to create image from text
-        await this.runCommandWithTimeout(
-          `convert -size ${this.previewWidth}x1200 xc:white \
-            -font "NimbusMonoPS-Regular" -pointsize 14 -fill black \
-            -gravity NorthWest -annotate +20+20 "${escapedText}" \
-            -trim +repage -bordercolor white -border 20 \
-            -quality ${this.previewQuality} "${outputPath}"`,
-          {
-            maxBuffer: 50 * 1024 * 1024,
-            logLabel: 'convert-text',
-          },
-        );
-      } catch (convertError) {
-        this.logger.warn(
-          `ImageMagick text conversion failed: ${convertError.message}`,
-        );
-        // Fallback: Try simpler convert command
-        try {
-          // Write text to file and use pango
-          const wrappedText = this.wrapText(textContent, 80);
-          const textFilePath = path.join(tmpDir, 'wrapped.txt');
-          await fs.promises.writeFile(textFilePath, wrappedText);
-
-          await this.runCommandWithTimeout(
-            `convert -size ${this.previewWidth}x -background white \
-              -fill black -font "NimbusMonoPS-Regular" -pointsize 14 \
-              caption:@"${textFilePath}" \
-              -bordercolor white -border 20 \
-              -quality ${this.previewQuality} "${outputPath}"`,
-            { logLabel: 'convert-text-fallback' },
-          );
-        } catch (fallbackError) {
-          this.logger.error(
-            `Fallback text conversion also failed: ${fallbackError.message}`,
-          );
-          const placeholderMetadata = this.buildMetadata({
-            pageCount: 0,
-            processingStart: options?.processingStart,
-            sourceType: options?.sourceType ?? 'TEXT',
-          });
-          return await this.createPlaceholderPreviews(
-            documentId,
-            file.originalName,
-            placeholderMetadata,
-          );
-        }
-      }
-
-      // Check if output exists
-      const outputExists = await fs.promises
-        .access(outputPath)
-        .then(() => true)
-        .catch(() => false);
-
-      if (!outputExists) {
-        throw new Error('Text preview image was not created');
-      }
-
-      // Read the generated image
-      const imageBuffer = await fs.promises.readFile(outputPath);
-      const { width, height } = this.getImageDimensions(imageBuffer);
-
-      // Upload to R2
-      const previewKey = `previews/${documentId}/page-1.jpg`;
-      await this.r2Service.uploadBuffer(imageBuffer, previewKey, 'image/jpeg');
-
-      const smallPath = path.join(tmpDir, 'preview-1-small.jpg');
-      const largePath = path.join(tmpDir, 'preview-1-large.jpg');
-      const smallCreated = await this.resizeImage(
-        outputPath,
-        smallPath,
-        this.previewSizes.small,
-      );
-      const largeCreated = await this.resizeImage(
-        outputPath,
-        largePath,
-        this.previewSizes.large,
-      );
-
-      const variantKeys: Partial<Record<PreviewSize, string>> = {
-        medium: previewKey,
-      };
-
-      if (smallCreated) {
-        const smallBuffer = await fs.promises.readFile(smallPath);
-        const smallKey = this.getVariantKey(previewKey, 'small');
-        await this.r2Service.uploadBuffer(
-          smallBuffer,
-          smallKey,
-          'image/jpeg',
-        );
-        variantKeys.small = smallKey;
-      }
-
-      if (largeCreated) {
-        const largeBuffer = await fs.promises.readFile(largePath);
-        const largeKey = this.getVariantKey(previewKey, 'large');
-        await this.r2Service.uploadBuffer(
-          largeBuffer,
-          largeKey,
-          'image/jpeg',
-        );
-        variantKeys.large = largeKey;
-      }
-
-      const availableSizes: PreviewSize[] = (
-        Object.keys(variantKeys) as PreviewSize[]
-      ).filter(Boolean);
-
-      const metadata = this.buildMetadata({
-        pageCount: 1,
-        processingStart: options?.processingStart,
-        sourceType: options?.sourceType ?? 'TEXT',
-        previewSizes: availableSizes.length
-          ? availableSizes
-          : ['small', 'medium', 'large'],
-      });
-
-      // Save to database
-      const preview = await this.prisma.documentPreview.upsert({
-        where: {
-          documentId_pageNumber: { documentId, pageNumber: 1 },
-        },
-        create: {
-          documentId,
-          pageNumber: 1,
-          previewPath: previewKey,
-          mimeType: 'image/jpeg',
-          fileSize: imageBuffer.length,
-          width,
-          height,
-          status: PreviewStatus.COMPLETED,
-          errorMessage: JSON.stringify(metadata),
-        },
-        update: {
-          previewPath: previewKey,
-          fileSize: imageBuffer.length,
-          width,
-          height,
-          status: PreviewStatus.COMPLETED,
-          errorMessage: JSON.stringify(metadata),
-        },
-      });
-
-      // Generate signed URL
-      const signedUrl = await this.r2Service.getSignedDownloadUrl(
-        previewKey,
-        this.shortSignedUrlExpiry,
-      );
-
-      const variants: {
-        small: string;
-        medium: string;
-        large: string;
-      } = {
-        small:
-          (variantKeys.small &&
-            (await this.r2Service.getSignedDownloadUrl(
-              variantKeys.small,
-              this.shortSignedUrlExpiry,
-            ))) ||
-          signedUrl,
-        medium: signedUrl,
-        large:
-          (variantKeys.large &&
-            (await this.r2Service.getSignedDownloadUrl(
-              variantKeys.large,
-              this.shortSignedUrlExpiry,
-            ))) ||
-          signedUrl,
-      };
-
-      return [
-        {
-          id: preview.id,
-          documentId,
-          pageNumber: 1,
-          previewUrl: signedUrl,
-          mimeType: 'image/jpeg',
-          width,
-          height,
-          variants,
-          metadata,
-        },
-      ];
-    } catch (error) {
-      this.logger.error(`Text preview generation failed: ${error.message}`);
-      const placeholderMetadata = this.buildMetadata({
-        pageCount: 0,
-        processingStart: options?.processingStart,
-        sourceType: options?.sourceType ?? 'TEXT',
-      });
-      return await this.createPlaceholderPreviews(
-        documentId,
-        file.originalName,
-        placeholderMetadata,
-      );
-    } finally {
-      await fs.promises.rm(tmpDir, { recursive: true, force: true });
-    }
-  }
-
-  /**
-   * Wrap text to specified width
-   */
-  private wrapText(text: string, maxWidth: number): string {
-    const lines = text.split('\n');
-    const wrappedLines: string[] = [];
-
-    for (const line of lines) {
-      if (line.length <= maxWidth) {
-        wrappedLines.push(line);
-      } else {
-        const words = line.split(' ');
-        let currentLine = '';
-        for (const word of words) {
-          if ((currentLine + ' ' + word).trim().length <= maxWidth) {
-            currentLine = (currentLine + ' ' + word).trim();
-          } else {
-            if (currentLine) wrappedLines.push(currentLine);
-            currentLine = word;
-          }
-        }
-        if (currentLine) wrappedLines.push(currentLine);
-      }
-    }
-
-    return wrappedLines.join('\n');
   }
 
   /**
    * Create preview from image file (image is its own preview)
+   * @delegates ImagePreviewService.createImagePreview
    */
   private async createImagePreview(
     documentId: string,
@@ -1268,237 +560,27 @@ export class PreviewService {
       sourceType?: PreviewMetadata['sourceType'];
     },
   ): Promise<PreviewImage> {
-    this.logger.log(`Creating image preview for file: ${file.originalName}`);
-
-    const tmpDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), 'image-preview-'),
+    return this.imagePreviewService.createImagePreview(
+      documentId,
+      file,
+      options,
     );
-
-    try {
-      const inputPath = path.join(tmpDir, 'input');
-      const inputStream = await this.r2Service.getFileStream(file.storageUrl);
-      await this.streamToFile(inputStream, inputPath);
-
-      const mediumPath = path.join(tmpDir, 'preview-1.jpg');
-      const smallPath = path.join(tmpDir, 'preview-1-small.jpg');
-      const largePath = path.join(tmpDir, 'preview-1-large.jpg');
-
-      let mediumReady = await this.resizeImage(
-        inputPath,
-        mediumPath,
-        this.previewSizes.medium,
-      );
-
-      // If resize failed, fall back to original file
-      if (!mediumReady && (await this.fileExists(inputPath))) {
-        await fs.promises.copyFile(inputPath, mediumPath);
-        mediumReady = true;
-      }
-
-      const smallReady = mediumReady
-        ? await this.resizeImage(mediumPath, smallPath, this.previewSizes.small)
-        : false;
-      const largeReady = await this.resizeImage(
-        inputPath,
-        largePath,
-        this.previewSizes.large,
-      );
-
-      const mediumPathToUse = mediumReady ? mediumPath : inputPath;
-      const imageBuffer = await fs.promises.readFile(mediumPathToUse);
-      const { width, height } = this.getImageDimensions(imageBuffer);
-
-      const previewKey = `previews/${documentId}/page-1.jpg`;
-      await this.r2Service.uploadBuffer(imageBuffer, previewKey, 'image/jpeg');
-
-      const variantKeys: Partial<Record<PreviewSize, string>> = {
-        medium: previewKey,
-      };
-
-      if (smallReady) {
-        const smallBuffer = await fs.promises.readFile(smallPath);
-        const smallKey = this.getVariantKey(previewKey, 'small');
-        await this.r2Service.uploadBuffer(
-          smallBuffer,
-          smallKey,
-          'image/jpeg',
-        );
-        variantKeys.small = smallKey;
-      }
-
-      if (largeReady) {
-        const largeBuffer = await fs.promises.readFile(largePath);
-        const largeKey = this.getVariantKey(previewKey, 'large');
-        await this.r2Service.uploadBuffer(
-          largeBuffer,
-          largeKey,
-          'image/jpeg',
-        );
-        variantKeys.large = largeKey;
-      }
-
-      const availableSizes: PreviewSize[] = (
-        Object.keys(variantKeys) as PreviewSize[]
-      ).filter(Boolean);
-
-      const metadata = this.buildMetadata({
-        pageCount: 1,
-        processingStart: options?.processingStart,
-        sourceType: options?.sourceType ?? 'IMAGE',
-        previewSizes: availableSizes.length
-          ? availableSizes
-          : ['small', 'medium', 'large'],
-      });
-
-      const preview = await this.prisma.documentPreview.upsert({
-        where: {
-          documentId_pageNumber: { documentId, pageNumber: 1 },
-        },
-        create: {
-          documentId,
-          pageNumber: 1,
-          previewPath: previewKey,
-          mimeType: 'image/jpeg',
-          fileSize: imageBuffer.length,
-          width,
-          height,
-          status: PreviewStatus.COMPLETED,
-          errorMessage: JSON.stringify(metadata),
-        },
-        update: {
-          previewPath: previewKey,
-          mimeType: 'image/jpeg',
-          fileSize: imageBuffer.length,
-          width,
-          height,
-          status: PreviewStatus.COMPLETED,
-          errorMessage: JSON.stringify(metadata),
-        },
-      });
-
-      const signedUrl = await this.r2Service.getSignedDownloadUrl(
-        previewKey,
-        this.shortSignedUrlExpiry,
-      );
-
-      const variants: {
-        small: string;
-        medium: string;
-        large: string;
-      } = {
-        small:
-          (variantKeys.small &&
-            (await this.r2Service.getSignedDownloadUrl(
-              variantKeys.small,
-              this.shortSignedUrlExpiry,
-            ))) ||
-          signedUrl,
-        medium: signedUrl,
-        large:
-          (variantKeys.large &&
-            (await this.r2Service.getSignedDownloadUrl(
-              variantKeys.large,
-              this.shortSignedUrlExpiry,
-            ))) ||
-          signedUrl,
-      };
-
-      return {
-        id: preview.id,
-        documentId,
-        pageNumber: 1,
-        previewUrl: signedUrl,
-        mimeType: 'image/jpeg',
-        width,
-        height,
-        variants,
-        metadata,
-      };
-    } finally {
-      await fs.promises.rm(tmpDir, { recursive: true, force: true });
-    }
   }
 
   /**
    * Create placeholder previews when conversion fails
+   * @delegates PdfPreviewService.createPlaceholderPreviews
    */
   private async createPlaceholderPreviews(
     documentId: string,
     fileName?: string,
     metadata?: PreviewMetadata,
   ): Promise<PreviewImage[]> {
-    const safeName = (fileName || 'Document').slice(0, 80);
-    const escapedName = safeName
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f3f4f6"/>
-      <stop offset="100%" stop-color="#e5e7eb"/>
-    </linearGradient>
-  </defs>
-  <rect width="1200" height="800" fill="url(#bg)"/>
-  <text x="50%" y="45%" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" fill="#4b5563">Preview unavailable</text>
-  <text x="50%" y="55%" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#6b7280">${escapedName}</text>
-</svg>`;
-    const buffer = Buffer.from(svg, 'utf-8');
-    const baseKey = `previews/${documentId}/placeholder.svg`;
-
-    const keys = [
-      baseKey,
-      this.getVariantKey(baseKey, 'small'),
-      this.getVariantKey(baseKey, 'large'),
-    ];
-
-    for (const key of keys) {
-      await this.r2Service.uploadBuffer(buffer, key, 'image/svg+xml');
-    }
-
-    const errorMessage = metadata
-      ? JSON.stringify(metadata)
-      : 'Preview generation not supported for this format';
-
-    const preview = await this.prisma.documentPreview.upsert({
-      where: {
-        documentId_pageNumber: { documentId, pageNumber: 1 },
-      },
-      create: {
-        documentId,
-        pageNumber: 1,
-        previewPath: baseKey,
-        mimeType: 'image/svg+xml',
-        status: PreviewStatus.COMPLETED,
-        errorMessage,
-      },
-      update: {
-        previewPath: baseKey,
-        mimeType: 'image/svg+xml',
-        status: PreviewStatus.COMPLETED,
-        errorMessage,
-      },
-    });
-
-    const signedUrl = await this.r2Service.getSignedDownloadUrl(
-      baseKey,
-      this.shortSignedUrlExpiry,
+    return this.pdfPreviewService.createPlaceholderPreviews(
+      documentId,
+      fileName,
+      metadata,
     );
-
-    return [
-      {
-        id: preview.id,
-        documentId,
-        pageNumber: 1,
-        previewUrl: signedUrl,
-        mimeType: 'image/svg+xml',
-        variants: {
-          small: signedUrl,
-          medium: signedUrl,
-          large: signedUrl,
-        },
-      },
-    ];
   }
 
   /**
@@ -1763,9 +845,7 @@ export class PreviewService {
 
       return key;
     } catch (error) {
-      this.logger.warn(
-        `pdftotext snippet failed: ${(error as Error).message}`,
-      );
+      this.logger.warn(`pdftotext snippet failed: ${(error as Error).message}`);
       return undefined;
     }
   }
@@ -1928,7 +1008,9 @@ export class PreviewService {
     }
   }
 
-  private async startSofficeDaemon(tmpDir: string): Promise<ChildProcess | null> {
+  private async startSofficeDaemon(
+    tmpDir: string,
+  ): Promise<ChildProcess | null> {
     try {
       const child = spawn(
         'soffice',
@@ -1991,9 +1073,7 @@ export class PreviewService {
     return this.maxPreviewPages;
   }
 
-  private getSourceType(
-    mimeType: string,
-  ): PreviewMetadata['sourceType'] {
+  private getSourceType(mimeType: string): PreviewMetadata['sourceType'] {
     if (mimeType === 'application/pdf') return 'PDF';
     if (mimeType.startsWith('image/')) return 'IMAGE';
     if (this.isTextFormat(mimeType)) return 'TEXT';

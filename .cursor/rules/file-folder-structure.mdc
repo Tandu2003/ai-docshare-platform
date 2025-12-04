@@ -1,0 +1,434 @@
+---
+description: >
+  File and Folder Structure Standards — Enforces proper organization, respect for existing structure, single responsibility per file, and clear separation between client and server components in Next.js applications.
+  This rule ensures files are placed in the correct locations, avoids duplication of directories/files, promotes minimal responsibility per file, and maintains clear architectural boundaries.
+  These standards apply to all projects, with specific guidelines for Next.js App Router architecture.
+alwaysApply: true
+globs: **/*
+---
+
+# 📁 File and Folder Structure Standards
+
+## 🎯 Vision
+
+A well-organized codebase is easy to navigate, maintain, and extend. Every file and folder should have a clear purpose and be placed in its designated location. We respect existing structures and avoid unnecessary duplication.
+
+---
+
+## 🏗️ Core Principles
+
+### 1. Respect Existing Structure
+
+**ALWAYS check existing directories and files before creating new ones.**
+
+- Scan the codebase to understand the current organization
+- Use existing directories instead of creating duplicates
+- Follow established naming conventions and patterns
+- Only create new directories when they serve a distinct purpose that doesn't exist
+
+**❌ Bad:**
+```
+src/
+  ├── components/
+  └── ui-components/  # Duplicate purpose
+```
+
+**✅ Good:**
+```
+src/
+  └── components/  # Use existing directory
+```
+
+---
+
+### 2. Single Responsibility Per File
+
+**Each file should have ONE clear, minimal responsibility.**
+
+- One component per file
+- One utility function set per file
+- One service class per file
+- One hook per file
+- One type/interface definition per file (unless closely related)
+
+**File Size Guidelines:**
+- Aim for files under **200 lines of code**
+- Maximum **300 lines** (except for generated or configuration files)
+- Split large files immediately when they exceed limits
+
+**❌ Bad:**
+```typescript
+// user-utils.ts - TOO MANY RESPONSIBILITIES
+export function validateEmail() { /* ... */ }
+export function hashPassword() { /* ... */ }
+export function formatUserName() { /* ... */ }
+export function sendEmail() { /* ... */ }
+export function generateToken() { /* ... */ }
+export const USER_CONSTANTS = { /* ... */ }
+export type User = { /* ... */ }
+```
+
+**✅ Good:**
+```typescript
+// validation.ts
+export function validateEmail() { /* ... */ }
+
+// encryption.ts
+export function hashPassword() { /* ... */ }
+
+// formatting.ts
+export function formatUserName() { /* ... */ }
+
+// email-service.ts
+export function sendEmail() { /* ... */ }
+
+// auth-utils.ts
+export function generateToken() { /* ... */ }
+
+// constants.ts
+export const USER_CONSTANTS = { /* ... */ }
+
+// types.ts
+export type User = { /* ... */ }
+```
+
+---
+
+### 3. Avoid Monolithic Files
+
+**Never put everything into a single file.**
+
+- Split by responsibility, not by convenience
+- Extract reusable logic into separate modules
+- Separate concerns (UI, business logic, data fetching, utilities)
+- Create focused, composable modules
+
+**❌ Bad:**
+```typescript
+// everything.tsx - MONOLITHIC
+export default function Page() {
+  // 500 lines of component logic
+  // Data fetching
+  // Form handling
+  // Validation
+  // API calls
+  // UI rendering
+  // Error handling
+  // State management
+}
+```
+
+**✅ Good:**
+```typescript
+// page.tsx
+import { UserList } from './components/user-list';
+import { useUsers } from './hooks/use-users';
+import { UserFilters } from './components/user-filters';
+
+export default function Page() {
+  const { users, isLoading, error } = useUsers();
+  // Minimal orchestration logic
+}
+
+// hooks/use-users.ts
+export function useUsers() { /* Data fetching logic */ }
+
+// components/user-list.tsx
+export function UserList() { /* UI component */ }
+
+// components/user-filters.tsx
+export function UserFilters() { /* UI component */ }
+```
+
+---
+
+### 4. Standard Directory Structure
+
+**Follow established patterns based on framework/type:**
+
+#### Next.js App Router Structure
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Route groups
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   └── register/
+│   │       └── page.tsx
+│   ├── layout.tsx         # Root layout (Server Component)
+│   ├── page.tsx           # Home page
+│   ├── globals.css
+│   └── api/               # API routes (Server)
+│       └── users/
+│           └── route.ts
+├── components/            # Shared components
+│   ├── ui/               # UI primitives
+│   │   ├── button.tsx
+│   │   └── input.tsx
+│   └── features/         # Feature-specific components
+│       ├── user/
+│       │   ├── user-card.tsx
+│       │   └── user-list.tsx
+│       └── dashboard/
+│           └── dashboard-stats.tsx
+├── hooks/                 # Custom React hooks
+│   ├── use-users.ts
+│   └── use-auth.ts
+├── lib/                   # Utilities and configurations
+│   ├── utils.ts
+│   ├── api-client.ts
+│   └── constants.ts
+├── types/                 # TypeScript types/interfaces
+│   ├── user.ts
+│   └── api.ts
+├── services/              # Business logic services
+│   ├── user-service.ts
+│   └── auth-service.ts
+└── middleware.ts          # Next.js middleware
+```
+
+---
+
+## 🎭 Next.js Specific Rules
+
+### 5. Clear Client/Server Separation
+
+**ALWAYS distinguish between Client Components and Server Components.**
+
+#### Server Components (Default)
+- No `'use client'` directive
+- Can directly access server resources (DB, file system, APIs)
+- Cannot use React hooks, event handlers, or browser APIs
+- Use for: Data fetching, layouts, static content
+
+#### Client Components
+- MUST have `'use client'` directive at the top
+- Can use React hooks, event handlers, browser APIs
+- Use for: Interactivity, state management, browser-only features
+
+**File Naming Conventions:**
+- Use descriptive names: `user-profile-client.tsx`, `user-list-server.tsx` (optional but helpful)
+- Or rely on `'use client'` directive for clarity
+
+**❌ Bad:**
+```typescript
+// page.tsx - MIXING SERVER AND CLIENT
+export default async function Page() {
+  const data = await fetchData(); // Server
+
+  return (
+    <div>
+      <button onClick={() => alert('clicked')}>Click</button>
+      {/* Client interactivity in Server Component */}
+    </div>
+  );
+}
+```
+
+**✅ Good:**
+```typescript
+// page.tsx - SERVER COMPONENT
+import { InteractiveButton } from './components/interactive-button';
+
+export default async function Page() {
+  const data = await fetchData(); // Server-side data fetching
+
+  return (
+    <div>
+      <InteractiveButton />
+      {/* Client Component for interactivity */}
+    </div>
+  );
+}
+
+// components/interactive-button.tsx - CLIENT COMPONENT
+'use client';
+
+export function InteractiveButton() {
+  return (
+    <button onClick={() => alert('clicked')}>
+      Click
+    </button>
+  );
+}
+```
+
+#### API Routes (Server)
+```
+app/
+└── api/
+    └── users/
+        ├── route.ts              # GET, POST handlers
+        └── [id]/
+            └── route.ts          # GET, PUT, DELETE by ID
+```
+
+#### Route Handlers Structure
+- Keep handlers focused and split by method if needed
+- Extract business logic to services
+- Keep route files thin (orchestration only)
+
+**❌ Bad:**
+```typescript
+// route.ts - TOO MUCH LOGIC
+export async function GET() {
+  // 100+ lines of database queries
+  // Business logic
+  // Validation
+  // Error handling
+  // Response formatting
+}
+```
+
+**✅ Good:**
+```typescript
+// route.ts - THIN ORCHESTRATION
+import { getUserService } from '@/services/user-service';
+import { handleApiError } from '@/lib/api-error-handler';
+
+export async function GET() {
+  try {
+    const users = await getUserService().getAll();
+    return Response.json(users);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+// services/user-service.ts
+export class UserService {
+  async getAll() {
+    // Business logic here
+  }
+}
+```
+
+---
+
+### 6. Component Organization
+
+**Group components by feature/domain, not by type.**
+
+**❌ Bad:**
+```
+components/
+├── buttons/
+├── inputs/
+├── modals/
+└── cards/
+```
+
+**✅ Good:**
+```
+components/
+├── ui/              # Reusable primitives
+│   ├── button.tsx
+│   ├── input.tsx
+│   └── modal.tsx
+└── features/        # Feature-specific
+    ├── user/
+    │   ├── user-card.tsx
+    │   ├── user-form.tsx
+    │   └── user-list.tsx
+    └── dashboard/
+        └── dashboard-card.tsx
+```
+
+---
+
+### 7. Import Organization
+
+**Follow consistent import ordering within files:**
+
+```typescript
+// 1. React/Next.js built-ins
+import { useState } from 'react';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+
+// 2. Third-party packages
+import axios from 'axios';
+import { z } from 'zod';
+
+// 3. Internal modules (absolute imports)
+import { Button } from '@/components/ui/button';
+import { useUsers } from '@/hooks/use-users';
+import { UserService } from '@/services/user-service';
+
+// 4. Relative imports
+import './styles.css';
+import { LocalType } from './types';
+```
+
+---
+
+### 8. Naming Conventions
+
+**Files and Directories:**
+
+- **Files:** `kebab-case.ts` or `kebab-case.tsx`
+  - Examples: `user-profile.tsx`, `api-client.ts`, `use-auth.ts`
+
+- **Directories:** `kebab-case`
+  - Examples: `user-profile/`, `api-routes/`
+
+- **Components:** `PascalCase.tsx`
+  - File: `user-card.tsx`, Export: `export function UserCard() {}`
+
+- **Hooks:** `camelCase` with `use-` prefix in filename
+  - File: `use-users.ts`, Export: `export function useUsers() {}`
+
+- **Utilities:** `camelCase` or `kebab-case`
+  - File: `format-date.ts`, Export: `export function formatDate() {}`
+
+- **Types:** `PascalCase` or descriptive names
+  - File: `user-types.ts`, Export: `export type User = {}`
+
+---
+
+## ✅ Checklist Before Creating New Files/Directories
+
+1. **Scan existing structure** - Does a similar directory/file already exist?
+2. **Check naming conventions** - Does it follow established patterns?
+3. **Verify responsibility** - Does it serve a single, clear purpose?
+4. **Assess file size** - Will this file stay under 300 lines?
+5. **Consider location** - Is this the correct directory based on purpose?
+6. **Review imports** - Will imports be clear and maintainable?
+7. **Client/Server separation** - Is the Next.js boundary clear?
+
+---
+
+## 🚫 Anti-Patterns to Avoid
+
+### ❌ Don't:
+- Create duplicate directories (`components/` and `ui-components/`)
+- Put multiple unrelated utilities in one file
+- Mix server and client logic in the same component
+- Create deeply nested structures (>4 levels)
+- Use vague names (`utils.ts`, `helpers.ts`, `misc.ts`)
+- Put everything in a single "common" or "shared" directory
+- Create files >300 lines without splitting
+
+### ✅ Do:
+- Check existing structure first
+- One responsibility per file
+- Separate client/server clearly
+- Use feature-based organization
+- Create focused, composable modules
+- Keep files small and maintainable
+- Follow established naming conventions
+
+---
+
+## 📋 Summary
+
+1. **Respect existing structure** - Check before creating
+2. **Single responsibility** - One purpose per file
+3. **Avoid monoliths** - Split large files immediately
+4. **Clear boundaries** - Separate client/server in Next.js
+5. **Feature-based organization** - Group by domain, not type
+6. **Consistent naming** - Follow established patterns
+7. **Keep files small** - Maximum 300 lines per file
+
+These standards ensure a maintainable, scalable, and navigable codebase that respects architectural boundaries and promotes code reusability.

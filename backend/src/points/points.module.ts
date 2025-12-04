@@ -1,4 +1,4 @@
-import { PointsController } from './points.controller';
+import { PointsController } from './controllers/points.controller';
 import { PointsService } from './points.service';
 import { AdminModule } from '@/admin/admin.module';
 import { PrismaModule } from '@/prisma/prisma.module';

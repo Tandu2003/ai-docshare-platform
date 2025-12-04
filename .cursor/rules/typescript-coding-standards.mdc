@@ -1,0 +1,97 @@
+---
+description: >
+  TypeScript Coding Standards — definitive guide for maintainable, scalable, and robust TypeScript code across our engineering stack.
+  This handbook details strict typing, naming conventions, error handling, file organization, and service patterns. It enforces best practices including explicit typing, clean architecture, DRY, clear error boundaries, consistent naming, and strict compiler settings.
+  The rules apply to all TypeScript files, ensuring readable, consistent, and reliable code for both new and existing projects. Service authoring must follow our internal RPC pattern and template.
+alwaysApply: true
+globs: **/*.ts
+---
+
+# ✅ TypeScript Coding Standards (Industry-Ready)
+
+## 1. Typing Rules
+
+- Use explicit return types on all public functions, services, controllers, utilities
+- Allow type inference only for local variables
+- Prefer `unknown` over `any`
+- Avoid non-null assertions (`!`) unless absolutely safe
+- Prefer `readonly` wherever possible
+
+## 2. Types vs Interfaces
+
+- Use `interface` for extendable object shapes
+- Use `type` for unions, intersections, utility types, function signatures
+- Avoid mixing both to describe the same entity
+- Always export shared interfaces/types
+
+## 3. Naming Conventions
+
+- **PascalCase** → Classes, interfaces, generics, enums
+- **camelCase** → Variables, functions, instances
+- **SCREAMING_SNAKE_CASE** → Constants & env keys
+
+Suffix naming:
+
+- `*Dto`, `*Payload`, `*Response` (backend)
+- `*Props` (React)
+- `*Schema` (validation schemas)
+
+## 4. Error Handling
+
+- Avoid throwing raw strings
+- Create domain-specific error classes
+- Or use Result/Either patterns
+- Never swallow exceptions silently
+- Wrap external calls with try/catch
+
+## 5. Function & Module Structure
+
+- Keep functions pure unless mutation required
+- One module = one main responsibility
+- Avoid files > 300 LOC
+- Reduce nesting → use early returns
+
+## 6. Promises & Async Rules
+
+- Always `await` async calls unless intentional
+- Don’t mix `.then()` with `async/await`
+- Type promises explicitly: `Promise<User>`
+
+## 7. Collections & Data Structures
+
+- Prefer `Record<Key, Value>` over index signatures
+- Prefer `Map`/`Set` when appropriate
+- Use readonly arrays when mutation not intended
+
+## 8. File Organization
+
+- One entity per file
+- Import order:
+  - Built-in
+  - Third-party
+  - Internal modules
+  - Local utilities/types
+- Avoid default exports
+
+## 9. Strictness & Compiler Settings
+
+Enable:
+
+- `"strict": true`
+- `"noImplicitAny": true`
+- `"strictNullChecks": true`
+- `"noUnusedLocals": true`
+- `"noUnusedParameters": true`
+- `"noFallthroughCasesInSwitch": true`
+
+Avoid:
+
+- `"skipLibCheck": false`
+- `"esModuleInterop"` unless necessary
+
+## 10. Patterns & Architecture
+
+- Prefer composition over inheritance
+- Separate domain types from infrastructure
+- Use adapters/mappers between layers
+- Use Zod/Yup/Joi/Valibot for runtime validation

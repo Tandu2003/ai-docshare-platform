@@ -1,45 +1,67 @@
-// Import for convenient exports
-import { HttpErrorHelper } from './helpers/http-error.helper';
-import { ResponseHelper } from './helpers/response.helper';
+/**
+ * Common Module - Centralized exports for shared utilities, helpers, and services
+ *
+ * This module follows the Single Source of Truth principle (Commandment #6)
+ * by centralizing all common exports in one place.
+ */
 
-// Response interfaces
-export * from './interfaces/api-response.interface';
-
+// ============================================================================
 // Constants
-export * from './constants/http.constants';
+// ============================================================================
+export { HTTP_STATUS, HTTP_MESSAGES } from './constants';
 
-// Errors
-export * from './errors';
+// ============================================================================
+// Errors - Domain-specific error classes
+// ============================================================================
+export {
+  AppError,
+  ValidationError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ConflictError,
+  RateLimitError,
+  DatabaseError,
+  ExternalServiceError,
+} from './errors';
 
+// ============================================================================
+// Interfaces & Types
+// ============================================================================
+export type { ApiResponse, PaginationMeta, BaseMeta } from './interfaces';
+
+// ============================================================================
 // Utils
-export { ErrorUtils } from './utils/error.utils';
+// ============================================================================
+export { ErrorUtils } from './utils';
 
+// ============================================================================
 // Filters
-export { GlobalExceptionFilter } from './filters/global-exception.filter';
+// ============================================================================
+export { GlobalExceptionFilter } from './filters';
 
-// Response helpers
-export { ResponseHelper } from './helpers/response.helper';
-export { HttpErrorHelper } from './helpers/http-error.helper';
+// ============================================================================
+// Helpers
+// ============================================================================
+export { ResponseHelper, HttpErrorHelper } from './helpers';
 
+// ============================================================================
+// Interceptors
+// ============================================================================
+export {
+  FastifyFileInterceptor,
+  FastifyFilesInterceptor,
+} from './interceptors';
+export type { MultipartFile } from './interceptors';
+
+// ============================================================================
 // Services
-export { DatabaseInitService } from './services/database-init.service';
+// ============================================================================
+export { DatabaseInitService } from './services';
 export { SystemSettingsService } from './system-settings.service';
+export type { SystemSettingValue } from './system-settings.service';
 
-// Convenient exports for direct usage (with proper context binding)
-export const success = ResponseHelper.success.bind(ResponseHelper);
-export const created = ResponseHelper.created.bind(ResponseHelper);
-export const updated = ResponseHelper.updated.bind(ResponseHelper);
-export const deleted = ResponseHelper.deleted.bind(ResponseHelper);
-export const paginated = ResponseHelper.paginated.bind(ResponseHelper);
-
-export const badRequest = HttpErrorHelper.badRequest.bind(HttpErrorHelper);
-export const unauthorized = HttpErrorHelper.unauthorized.bind(HttpErrorHelper);
-export const forbidden = HttpErrorHelper.forbidden.bind(HttpErrorHelper);
-export const notFound = HttpErrorHelper.notFound.bind(HttpErrorHelper);
-export const validationError =
-  HttpErrorHelper.validationError.bind(HttpErrorHelper);
-export const conflict = HttpErrorHelper.conflict.bind(HttpErrorHelper);
-export const tooManyRequests =
-  HttpErrorHelper.tooManyRequests.bind(HttpErrorHelper);
-export const internalError =
-  HttpErrorHelper.internalError.bind(HttpErrorHelper);
+// ============================================================================
+// External Services
+// ============================================================================
+export { CloudflareR2Service } from './cloudflare-r2.service';

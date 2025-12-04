@@ -1,6 +1,6 @@
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { PrismaModule } from '../prisma/prisma.module';
-import { FilesController } from './files.controller';
+import { FilesController } from './controllers/files.controller';
 import { FilesService } from './files.service';
 import { NotificationsModule } from '@/notifications/notifications.module';
 import { Module } from '@nestjs/common';

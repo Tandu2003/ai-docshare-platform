@@ -1,0 +1,120 @@
+---
+description: >
+  Clean Code Handbook — Engineering Standard Edition.
+  This handbook defines a unified, opinionated standard for writing professional, scalable, and maintainable TypeScript code across our engineering stack.
+  It summarizes the Four Pillars of Clean Code—DRY, KISS, YAGNI, and SOLID—and the 10 Clean Code Commandments that guide code readability, naming, modularity, structure, duplication, and error handling.
+  Extended best practices and specific service authoring rules (including enforced patterns and naming) are also included.
+  These rules must be applied to all TypeScript files for team-wide code clarity, maintainability, and long-term stability.
+alwaysApply: true
+globs: **/*.ts
+---
+
+# Clean Code Handbook — Engineering Standard Edition
+
+## 🎯 Vision
+
+Clean code is not about perfection. It is about clarity, maintainability, and long-term stability. The goal is to produce code that is easy to read, easy to change, and hard to break.
+
+# 🧱 I. The Four Pillars of Clean Code
+
+### 1. DRY — Don’t Repeat Yourself
+
+Avoid duplicating logic or business rules.
+Every piece of knowledge should have a single, unambiguous source.
+Extract helpers, services, hooks, or modules when logic repeats.
+Avoid premature abstraction.
+
+### 2. KISS — Keep It Simple, Stupid
+
+Prefer the simplest solution that works.
+Avoid unnecessary complexity, indirection, and over-engineering.
+Simple code is easier to debug, test, and extend.
+
+### 3. YAGNI — You Aren’t Gonna Need It
+
+Don’t implement features, abstractions, or extensibility “just in case.”
+Build only what is required for the current use case.
+Future-proofing without evidence leads to technical debt.
+
+### 4. SOLID Principles
+
+**S – Single Responsibility Principle**
+A class/function/module should have one reason to change.
+
+**O – Open/Closed Principle**
+Software entities should be open for extension but closed for modification.
+
+**L – Liskov Substitution Principle**
+Subtypes must be interchangeable with their base types without altering behavior.
+
+**I – Interface Segregation Principle**
+Use small, focused interfaces. Don’t force clients to implement methods they don’t need.
+
+**D – Dependency Inversion Principle**
+Depend on abstractions, not concrete implementations. High-level modules should not be tightly coupled to low-level ones.
+
+# 🏆 II. The 10 Clean Code Commandments
+
+### 1. Write code for humans, not machines
+
+Readable code outlives clever code.
+
+### 2. Use meaningful, intention-revealing names
+
+Names should clearly express purpose.
+Avoid ambiguity and abbreviations.
+
+### 3. Functions should be small and do one thing well
+
+Prefer short, focused, single-responsibility functions.
+Long functions are harder to test and maintain.
+
+### 4. Eliminate duplication (Apply DRY)
+
+Duplicated logic leads to inconsistencies and bugs.
+Centralize shared rules, formulas, validations, and calculations.
+
+### 5. Don’t rely on comments to justify messy code
+
+Comments should explain why, not what.
+Clean code should be self-explanatory.
+
+### 6. Establish a Single Source of Truth
+
+Constants, settings, environment variables, enumerations → define them once.
+Avoid scattering the same concept across multiple files.
+
+### 7. Low Coupling
+
+Modules should not depend heavily on one another.
+Loose coupling increases flexibility and reduces breakage.
+
+### 8. High Cohesion
+
+A module should focus on a single, well-defined responsibility.
+Avoid “god classes” and multipurpose modules.
+
+### 9. Fail loudly and clearly
+
+Throw explicit, meaningful errors.
+Never swallow exceptions silently.
+Don’t return vague values like null, undefined, or magic numbers unless absolutely required.
+
+### 10. Consistent formatting and structure
+
+Consistency improves readability and reduces cognitive load.
+Standardize naming conventions, folder structure, import ordering, and formatting.
+
+# 🔥 III. Extended Best Practices (Optional but recommended)
+
+- Prefer composition over inheritance
+- Prioritize correctness over micro-optimization
+- Avoid surprises (Principle of Least Astonishment)
+- Apply TDD where appropriate
+- Avoid over-abstracting early (combine with YAGNI)
+
+# 🔚 Summary
+
+The four pillars (DRY, KISS, YAGNI, SOLID) define how to think.
+The 10 commandments define how to write.
+Together, they form a unified standard for writing professional, scalable, maintainable code across any modern engineering stack.

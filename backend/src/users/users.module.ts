@@ -1,4 +1,4 @@
-import { UsersController } from './users.controller';
+import { UsersController } from './controllers/users.controller';
 import { UsersService } from './users.service';
 import { AuthorizationModule } from '@/common/authorization';
 import { PrismaModule } from '@/prisma/prisma.module';
