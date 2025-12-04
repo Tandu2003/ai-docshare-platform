@@ -78,7 +78,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [files, setFiles] = useState<FileWithMetadata[]>([]);
   const [uploadData, setUploadData] = useState<DocumentData>({
     isPublic: true,
-    language: 'en',
+    language: 'vi',
     tags: [],
     categoryId: undefined,
     downloadCost: null, // null = use system default
@@ -720,7 +720,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )}
 
         {/* Upload Settings */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="title">Tiêu đề *</Label>
             <div className="relative">
@@ -752,7 +752,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="language">Language</Label>
+            <Label htmlFor="language">Ngôn ngữ</Label>
             <Select
               value={uploadData.language}
               onValueChange={value => {
@@ -767,8 +767,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <SelectValue placeholder="Chọn ngôn ngữ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">Tiếng Anh</SelectItem>
                 <SelectItem value="vi">Tiếng Việt</SelectItem>
+                <SelectItem value="en">Tiếng Anh</SelectItem>
                 <SelectItem value="es">Tiếng Tây Ban Nha</SelectItem>
                 <SelectItem value="fr">Tiếng Pháp</SelectItem>
                 <SelectItem value="de">Tiếng Đức</SelectItem>
@@ -835,25 +835,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Thẻ</Label>
-            {aiAnalysis.analysisResult?.tags &&
-              aiAnalysis.analysisResult.tags.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setUploadData(prev => ({
-                      ...prev,
-                      tags: [
-                        ...(prev.tags || []),
-                        ...(aiAnalysis.analysisResult?.tags || []),
-                      ],
-                    }));
-                  }}
-                  className="text-xs"
-                >
-                  Áp dụng thẻ AI
-                </Button>
-              )}
           </div>
           <div className="mb-2 flex flex-wrap gap-2">
             {uploadData.tags?.map((tag: string) => (

@@ -69,7 +69,7 @@ export const FileList: React.FC<FileListProps> = ({
       setTotal(response.total);
       setPage(pageNum);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load files');
+      setError(err instanceof Error ? err.message : 'Không thể tải tệp');
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export const FileList: React.FC<FileListProps> = ({
   }, [refreshTrigger, searchTerm, mimeTypeFilter]);
 
   const handleDelete = async (fileId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa tệp này không?')) return;
 
     try {
       setDeletingId(fileId);
@@ -88,14 +88,14 @@ export const FileList: React.FC<FileListProps> = ({
       setFiles(prev => prev.filter(f => f.id !== fileId));
       onFileDeleted?.(fileId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete file');
+      setError(err instanceof Error ? err.message : 'Không thể xóa tệp');
     } finally {
       setDeletingId(null);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -105,12 +105,12 @@ export const FileList: React.FC<FileListProps> = ({
   };
 
   const mimeTypeOptions = [
-    { value: '', label: 'All Types' },
+    { value: '', label: 'Tất cả loại' },
     { value: 'application/pdf', label: 'PDF' },
-    { value: 'image/', label: 'Images' },
-    { value: 'text/', label: 'Text Files' },
-    { value: 'application/msword', label: 'Word Documents' },
-    { value: 'application/vnd.ms-excel', label: 'Excel Files' },
+    { value: 'image/', label: 'Hình ảnh' },
+    { value: 'text/', label: 'Tệp văn bản' },
+    { value: 'application/msword', label: 'Tài liệu Word' },
+    { value: 'application/vnd.ms-excel', label: 'Tệp Excel' },
   ];
 
   if (loading && files.length === 0) {
@@ -139,7 +139,7 @@ export const FileList: React.FC<FileListProps> = ({
             onClick={() => loadFiles(page, searchTerm, mimeTypeFilter)}
             disabled={loading}
           >
-            Refresh
+            Làm mới
           </Button>
         </CardTitle>
 
@@ -149,7 +149,7 @@ export const FileList: React.FC<FileListProps> = ({
             <div className="relative">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
-                placeholder="Search documents..."
+                placeholder="Tìm kiếm tài liệu..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -221,7 +221,7 @@ export const FileList: React.FC<FileListProps> = ({
                           onClick={() => window.open(file.secureUrl, '_blank')}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
-                          View Document
+                          Xem tài liệu
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
@@ -230,7 +230,7 @@ export const FileList: React.FC<FileListProps> = ({
                         className="text-red-600"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        {deletingId === file.id ? 'Deleting...' : 'Delete'}
+                        {deletingId === file.id ? 'Đang xóa...' : 'Xóa'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -244,8 +244,8 @@ export const FileList: React.FC<FileListProps> = ({
         {total > limit && (
           <div className="mt-6 flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to{' '}
-              {Math.min(page * limit, total)} of {total} documents
+              Hiển thị {(page - 1) * limit + 1} đến{' '}
+              {Math.min(page * limit, total)} trong tổng số {total} tài liệu
             </p>
             <div className="flex gap-2">
               <Button
@@ -254,7 +254,7 @@ export const FileList: React.FC<FileListProps> = ({
                 onClick={() => loadFiles(page - 1, searchTerm, mimeTypeFilter)}
                 disabled={page <= 1 || loading}
               >
-                Previous
+                Trang trước
               </Button>
               <Button
                 size="sm"
@@ -262,7 +262,7 @@ export const FileList: React.FC<FileListProps> = ({
                 onClick={() => loadFiles(page + 1, searchTerm, mimeTypeFilter)}
                 disabled={page * limit >= total || loading}
               >
-                Next
+                Trang sau
               </Button>
             </div>
           </div>

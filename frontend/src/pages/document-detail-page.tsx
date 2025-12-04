@@ -976,7 +976,8 @@ export function DocumentDetailPage(): ReactElement {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {isOwner && (
+          {/* Share management - only show for private documents owned by user */}
+          {isOwner && !document.isPublic && (
             <Card>
               <CardHeader>
                 <CardTitle>Chia sẻ tài liệu</CardTitle>
@@ -1009,6 +1010,21 @@ export function DocumentDetailPage(): ReactElement {
                 >
                   Quản lý liên kết chia sẻ
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Public document notice */}
+          {isOwner && document.isPublic && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Chia sẻ tài liệu</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Tài liệu này đã được công khai. Mọi người đều có thể xem mà
+                  không cần liên kết chia sẻ riêng.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -1060,7 +1076,7 @@ export function DocumentDetailPage(): ReactElement {
                       <div className="flex items-center justify-between rounded-md border px-3 py-2">
                         <span className="text-muted-foreground">Công khai</span>
                         <span className="font-medium">
-                          {document.isPublic ? 'Public' : 'Private'}
+                          {document.isPublic ? 'Công khai' : 'Riêng tư'}
                         </span>
                       </div>
                     </div>

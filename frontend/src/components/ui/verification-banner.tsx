@@ -38,12 +38,14 @@ export function VerificationBanner({
 
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-            Verify your email address
+            Xác thực địa chỉ email
           </p>
           <p className="text-xs text-amber-700 dark:text-amber-300">
-            We sent a verification email to{' '}
-            <span className="font-medium">{email || 'your email address'}</span>
-            . Please check your inbox and follow the instructions.
+            Chúng tôi đã gửi email xác thực đến{' '}
+            <span className="font-medium">
+              {email || 'địa chỉ email của bạn'}
+            </span>
+            . Vui lòng kiểm tra hộp thư và làm theo hướng dẫn.
           </p>
         </div>
 
@@ -55,7 +57,7 @@ export function VerificationBanner({
               onClick={onResend}
               className="h-8 border-amber-200 text-xs text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900"
             >
-              Resend
+              Gửi lại
             </Button>
           )}
 
@@ -102,10 +104,10 @@ export function EmailVerifiedBanner({
 
         <div className="flex-1">
           <p className="text-sm font-medium text-green-800 dark:text-green-200">
-            Email verified successfully!
+            Xác thực email thành công!
           </p>
           <p className="text-xs text-green-700 dark:text-green-300">
-            Your account is now fully activated.
+            Tài khoản của bạn đã được kích hoạt đầy đủ.
           </p>
         </div>
 

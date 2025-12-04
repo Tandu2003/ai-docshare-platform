@@ -78,6 +78,13 @@ export class DocumentSharingService {
         );
       }
 
+      // Public documents don't need share links
+      if (document.isPublic) {
+        throw new BadRequestException(
+          'Tài liệu công khai không cần liên kết chia sẻ. Mọi người đều có thể xem.',
+        );
+      }
+
       const expiration = this.calculateExpiration(options);
       const tokenToUse = await this.determineToken(documentId, options);
 

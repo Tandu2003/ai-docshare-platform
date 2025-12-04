@@ -99,7 +99,9 @@ export function BookmarksPage(): ReactElement {
       setBookmarks(data);
     } catch (err) {
       console.error('Failed to load bookmarks', err);
-      setError(err instanceof Error ? err.message : 'Failed to load bookmarks');
+      setError(
+        err instanceof Error ? err.message : 'Không thể tải danh sách đánh dấu',
+      );
     } finally {
       setIsLoading(false);
     }

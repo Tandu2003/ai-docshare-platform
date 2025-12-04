@@ -78,7 +78,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       setTotal(response.total);
       setPage(pageNum);
     } catch (err) {
-      setError('Failed to load documents');
+      setError('Không thể tải danh sách tài liệu');
       console.error('Error loading documents:', err);
     } finally {
       setLoading(false);
@@ -103,13 +103,13 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       // Use real API to download document
       await DocumentsService.downloadDocument(document.id);
     } catch (err) {
-      setError('Failed to download document');
+      setError('Không thể tải tài liệu');
       console.error('Error downloading document:', err);
     }
   };
 
   const handleDelete = async (documentId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa tài liệu này không?')) return;
 
     try {
       setDeletingId(documentId);
@@ -124,7 +124,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       // Notify parent component
       onDocumentDeleted?.(documentId);
     } catch (err) {
-      setError('Failed to delete document');
+      setError('Không thể xóa tài liệu');
       console.error('Error deleting document:', err);
     } finally {
       setDeletingId(null);
@@ -286,8 +286,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             title="Không tìm thấy tài liệu"
             description={
               searchTerm
-                ? 'No documents match your search criteria.'
-                : "You haven't uploaded any documents yet."
+                ? 'Không có tài liệu nào khớp với tiêu chí tìm kiếm.'
+                : 'Bạn chưa tải lên tài liệu nào.'
             }
           />
         ) : (
@@ -384,7 +384,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           onClick={() => handleDownload(document)}
                         >
                           <Download className="mr-2 h-4 w-4" />
-                          Download
+                          Tải xuống
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDelete(document.id)}
@@ -392,9 +392,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {deletingId === document.id
-                            ? 'Deleting...'
-                            : 'Delete'}
+                          {deletingId === document.id ? 'Đang xóa...' : 'Xóa'}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -409,8 +407,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         {total > limit && (
           <div className="mt-6 flex items-center justify-between">
             <p className="text-muted-foreground text-sm">
-              Showing {(page - 1) * limit + 1} to{' '}
-              {Math.min(page * limit, total)} of {total} documents
+              Hiển thị {(page - 1) * limit + 1} đến{' '}
+              {Math.min(page * limit, total)} trong tổng số {total} tài liệu
             </p>
             <div className="flex gap-2">
               <Button
@@ -419,7 +417,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 onClick={() => loadDocuments(page - 1, searchTerm)}
                 disabled={page <= 1 || loading}
               >
-                Previous
+                Trang trước
               </Button>
               <Button
                 size="sm"
@@ -427,7 +425,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 onClick={() => loadDocuments(page + 1, searchTerm)}
                 disabled={page * limit >= total || loading}
               >
-                Next
+                Trang sau
               </Button>
             </div>
           </div>

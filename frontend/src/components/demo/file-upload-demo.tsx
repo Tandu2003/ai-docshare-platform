@@ -43,9 +43,9 @@ const FileUploadDemo: React.FC = () => {
           fileIds: results.data!.map(f => f.id),
         }));
       }
-      alert('Files uploaded successfully!');
+      alert('Tải tệp lên thành công!');
     } catch (error) {
-      alert('Failed to upload files: ' + (error as Error).message);
+      alert('Không thể tải tệp lên: ' + (error as Error).message);
     } finally {
       setIsUploading(false);
     }
@@ -55,14 +55,14 @@ const FileUploadDemo: React.FC = () => {
 
   const handleCreateDocument = async () => {
     if (!documentData.title || uploadedFiles.length === 0) {
-      alert('Please provide a title and upload files first');
+      alert('Vui lòng nhập tiêu đề và tải tệp lên trước');
       return;
     }
 
     setIsCreatingDocument(true);
     try {
       const document = await DocumentsService.createDocument(documentData);
-      alert('Document created successfully!');
+      alert('Tạo tài liệu thành công!');
       console.log('Created document:', document);
 
       // Reset form
@@ -75,7 +75,7 @@ const FileUploadDemo: React.FC = () => {
         isPublic: true,
       });
     } catch (error) {
-      alert('Failed to create document: ' + (error as Error).message);
+      alert('Không thể tạo tài liệu: ' + (error as Error).message);
     } finally {
       setIsCreatingDocument(false);
     }

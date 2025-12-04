@@ -509,14 +509,13 @@ export function CategoriesPage(): ReactElement {
             ? 'grid gap-6 md:grid-cols-2'
             : viewMode === 'list'
               ? 'flex flex-col gap-4'
-              : 'grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+              : 'grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4'
         }
       >
         {displayCategories.map(category => {
           const parentCategory = category.parentId
             ? getParentCategory(category.parentId)
             : null;
-          const categoryColor = category.color ?? '#3b82f6';
           const categoryIcon = category.icon ?? '📁';
 
           // Compact view - minimal card
@@ -749,21 +748,6 @@ export function CategoriesPage(): ReactElement {
                     <Eye className="h-4 w-4" />
                     <span>{category.totalViews} lượt xem</span>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      backgroundColor: `${categoryColor}20`,
-                      color: categoryColor,
-                    }}
-                  >
-                    Sắp xếp: {category.sortOrder}
-                  </Badge>
-                  <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                    {category.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
-                  </Badge>
                 </div>
 
                 {/* View documents link */}

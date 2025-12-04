@@ -516,16 +516,31 @@ export class DocumentQueryService {
         document.id,
         shareToken,
       );
-      shareAccessGranted = true;
+      shareAccessGranted = activeShareLink !== null;
     }
 
+    // Check apiKey (share link token) - validate the share link
     if (apiKey) {
-      if (!document.isPublic) {
-        throw new BadRequestException(
-          'Tài liệu riêng tư không thể truy cập qua API key',
+      // If user is owner, allow access regardless of apiKey validation
+      if (isOwner) {
+        isApiKeyAccess = true;
+      } else {
+        // For non-owners, validate the share link token
+        const validatedLink = await this.sharingService.validateShareLink(
+          document.id,
+          apiKey,
         );
+        if (validatedLink) {
+          shareAccessGranted = true;
+          activeShareLink = validatedLink;
+          isApiKeyAccess = true;
+        } else if (!document.isPublic) {
+          // Only throw error for private documents with invalid apiKey
+          throw new BadRequestException(
+            'Liên kết chia sẻ không hợp lệ hoặc đã hết hạn',
+          );
+        }
       }
-      isApiKeyAccess = true;
     }
 
     // Check access permissions
