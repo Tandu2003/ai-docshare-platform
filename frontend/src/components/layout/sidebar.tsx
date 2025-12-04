@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useState } from 'react';
+
 import {
   Archive,
   BarChart3,
@@ -15,11 +17,10 @@ import {
   TrendingUp,
   Upload,
   Users,
-} from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+} from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { AdminOnly } from '@/components/common/permission-gate'
+import { AdminOnly } from '@/components/common/permission-gate';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,10 +31,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,18 +42,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/hooks'
-import { getSocket } from '@/lib/socket'
-import { cn } from '@/lib/utils'
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks';
+import { getSocket } from '@/lib/socket';
+import { cn } from '@/lib/utils';
 import {
   BOOKMARKS_UPDATED_EVENT,
   BookmarkStats,
   getBookmarkStats,
-} from '@/services/bookmark.service'
-import { getMyNotifications } from '@/services/notifications.service'
+} from '@/services/bookmark.service';
+import { getMyNotifications } from '@/services/notifications.service';
 
 interface SidebarProps {
   className?: string;

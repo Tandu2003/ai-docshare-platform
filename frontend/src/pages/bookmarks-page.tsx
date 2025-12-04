@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import {
   Bookmark,
@@ -35,7 +41,7 @@ import {
 import { formatDate } from '@/utils/date';
 import { getLanguageName } from '@/utils/language';
 
-export default function BookmarksPage() {
+export function BookmarksPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Get initial values from URL

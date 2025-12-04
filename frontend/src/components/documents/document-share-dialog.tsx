@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ClipboardCopy, Link, RefreshCw } from 'lucide-react';
@@ -54,7 +54,7 @@ export function DocumentShareDialog({
   shareLink,
   onShareLinkUpdated,
   onShareLinkRevoked,
-}: DocumentShareDialogProps) {
+}: DocumentShareDialogProps): ReactElement {
   const [durationValue, setDurationValue] = useState<string>('1440');
   const [customExpiresAt, setCustomExpiresAt] = useState<string>('');
   const [regenerateToken, setRegenerateToken] = useState(false);
@@ -284,5 +284,3 @@ export function DocumentShareDialog({
     </Dialog>
   );
 }
-
-export default DocumentShareDialog;

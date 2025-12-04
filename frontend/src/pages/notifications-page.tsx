@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import {
   Bell,
@@ -51,7 +57,7 @@ import {
 } from '@/services/notifications.service';
 import type { Notification } from '@/types';
 
-export default function NotificationsPage() {
+export function NotificationsPage(): ReactElement {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);

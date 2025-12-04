@@ -1,2 +1,2 @@
-export { default as apiClient } from '@/utils/api-client';
-export { default as authService } from '@/utils/auth.service';
+export { apiClient } from '@/utils/api-client';
+export { authService } from '@/utils/auth.service';

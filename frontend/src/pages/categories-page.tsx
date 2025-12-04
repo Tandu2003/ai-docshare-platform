@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import {
   ArrowRight,
@@ -61,7 +61,7 @@ import type { CategoryWithStats } from '@/types';
 
 type ViewMode = 'grid' | 'list' | 'compact';
 
-export default function CategoriesPage() {
+export function CategoriesPage(): ReactElement {
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

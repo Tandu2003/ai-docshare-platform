@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { CategorySelector } from '@/components/categories/CategorySelector';
+import { CategorySelector } from '@/components/categories/category-selector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

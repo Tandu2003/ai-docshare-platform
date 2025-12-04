@@ -1,6 +1,5 @@
-import { API_ENDPOINTS } from '@/config'
-import { apiClient } from '@/utils/api-client'
-
+import { API_ENDPOINTS } from '@/config';
+import type { AppStore } from '@/store';
 import type {
   ForgotPasswordDto,
   LoginDto,
@@ -11,11 +10,13 @@ import type {
   User,
   VerifyEmailDto,
 } from '@/types';
+import { apiClient } from '@/utils/api-client';
+
 // We need to access the store to get the access token
 // This is a simple way to access the store from outside React components
-let store: any = null;
+let store: AppStore | null = null;
 
-export const setStore = (reduxStore: any) => {
+export const setStore = (reduxStore: AppStore): void => {
   store = reduxStore;
 };
 
@@ -202,7 +203,7 @@ class AuthService {
    */
   getAccessToken(): string | null {
     if (store) {
-      return store.getState().auth.accessToken;
+      return store.getState().auth.accessToken ?? null;
     }
     return null;
   }
@@ -420,4 +421,3 @@ class AuthService {
 
 // Export singleton instance
 export const authService = new AuthService();
-export default authService;

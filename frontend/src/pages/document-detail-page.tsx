@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
 import { Edit2, Plus, RefreshCw, Save, Sparkles, X } from 'lucide-react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -10,14 +10,20 @@ import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
 import { DocumentInlineViewer } from '@/components/documents/document-inline-viewer';
 import { DocumentPreviewViewer } from '@/components/documents/document-preview-viewer';
-import DocumentShareDialog from '@/components/documents/document-share-dialog';
+import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,7 +60,7 @@ const LANGUAGE_OPTIONS = [
   { value: 'ko', label: 'Tiếng Hàn' },
 ];
 
-export default function DocumentDetailPage() {
+export function DocumentDetailPage(): ReactElement {
   const { documentId } = useParams<{ documentId: string }>();
   const location = useLocation();
   const { user } = useAuth();
@@ -143,7 +149,8 @@ export default function DocumentDetailPage() {
         setMetaForm({
           title: foundDocument.title ?? '',
           description: foundDocument.description ?? '',
-          categoryId: foundDocument.category?.id ?? foundDocument.categoryId ?? '',
+          categoryId:
+            foundDocument.category?.id ?? foundDocument.categoryId ?? '',
           tags: foundDocument.tags || [],
           language: foundDocument.language || 'en',
           isPublic: foundDocument.isPublic,
@@ -1034,7 +1041,7 @@ export default function DocumentDetailPage() {
                     <div className="grid grid-cols-1 gap-3 text-sm">
                       <div className="flex items-center justify-between rounded-md border px-3 py-2">
                         <span className="text-muted-foreground">Tiêu đề</span>
-                        <span className="font-medium line-clamp-1">
+                        <span className="line-clamp-1 font-medium">
                           {document.title}
                         </span>
                       </div>
@@ -1137,7 +1144,11 @@ export default function DocumentDetailPage() {
                           }}
                           placeholder="Nhập thẻ và nhấn Enter"
                         />
-                        <Button type="button" size="icon" onClick={handleAddTag}>
+                        <Button
+                          type="button"
+                          size="icon"
+                          onClick={handleAddTag}
+                        >
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1214,7 +1225,10 @@ export default function DocumentDetailPage() {
                         <Switch
                           checked={metaForm.filesEdited}
                           onCheckedChange={value =>
-                            setMetaForm(prev => ({ ...prev, filesEdited: value }))
+                            setMetaForm(prev => ({
+                              ...prev,
+                              filesEdited: value,
+                            }))
                           }
                         />
                       </div>
@@ -1256,7 +1270,9 @@ export default function DocumentDetailPage() {
                             title: document.title ?? '',
                             description: document.description ?? '',
                             categoryId:
-                              document.category?.id ?? document.categoryId ?? '',
+                              document.category?.id ??
+                              document.categoryId ??
+                              '',
                             tags: document.tags || [],
                             language: document.language || 'en',
                             isPublic: document.isPublic,

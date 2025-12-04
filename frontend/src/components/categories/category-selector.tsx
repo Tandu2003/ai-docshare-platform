@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import {
   AlertCircle,
@@ -44,7 +44,7 @@ export function CategorySelector({
   disabled = false,
   showAiSuggestions = true,
   className,
-}: CategorySelectorProps) {
+}: CategorySelectorProps): ReactElement {
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -238,7 +238,7 @@ export function AICategorySuggestions({
   currentCategoryId,
   onSelectCategory,
   className,
-}: AICategorySuggestionsProps) {
+}: AICategorySuggestionsProps): ReactElement {
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

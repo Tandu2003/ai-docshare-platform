@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import {
   BarChart3,
@@ -161,7 +167,7 @@ const monthlyChartConfig = {
   },
 } satisfies ChartConfig;
 
-export default function AnalyticsPage() {
+export function AnalyticsPage(): ReactElement {
   const [timeRange, setTimeRange] = useState('30d');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null,
@@ -274,8 +280,7 @@ export default function AnalyticsPage() {
       name: doc.title.length > 20 ? doc.title.slice(0, 20) + '...' : doc.title,
       downloads: doc.downloads,
       views: doc.views,
-      rating:
-        (doc.ratingsCount ?? 0) > 0 && doc.rating > 0 ? doc.rating : 0,
+      rating: (doc.ratingsCount ?? 0) > 0 && doc.rating > 0 ? doc.rating : 0,
       ratingsCount: doc.ratingsCount ?? 0,
       hasRating: (doc.ratingsCount ?? 0) > 0 && doc.rating > 0,
     }));

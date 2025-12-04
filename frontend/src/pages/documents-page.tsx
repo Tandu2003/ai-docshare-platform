@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -37,7 +43,7 @@ function syncFiltersToUrl(filters: SearchFilters): URLSearchParams {
   return params;
 }
 
-export default function DocumentsPage() {
+export function DocumentsPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);

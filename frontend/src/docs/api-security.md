@@ -127,7 +127,7 @@ Frontend đã được cập nhật để xử lý các lỗi bảo mật:
 ### 1. Kiểm tra quyền truy cập
 
 ```typescript
-// AdminUsersPage.tsx
+// admin-users-page.tsx
 if (user?.role?.name !== 'admin') {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-4 text-center">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileUpload } from '@/components/upload/FileUpload';
+import { FileUpload } from '@/components/upload/file-upload';
 
 export const UploadPage: React.FC = () => {
   const [uploadStatus, setUploadStatus] = useState<{

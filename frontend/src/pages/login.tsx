@@ -1,6 +1,6 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom';
 
-import { LoginForm } from '@/components/auth'
+import { LoginForm } from '@/components/auth';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();

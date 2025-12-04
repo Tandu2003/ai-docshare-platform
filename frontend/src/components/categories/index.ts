@@ -1,1 +1,1 @@
-export { CategorySelector, AICategorySuggestions } from './CategorySelector';
+export { CategorySelector, AICategorySuggestions } from './category-selector';

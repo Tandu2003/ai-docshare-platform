@@ -2,33 +2,33 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { MainLayout, ProtectedRoute } from '@/components/layout';
 import {
+  AdminDashboardPage,
+  AdminPointsPage,
+  AdminUsersPage,
+  AnalyticsPage,
+  BookmarksPage,
+  CategoriesPage,
+  CategoryDetailPage,
   DashboardPage,
+  DocumentDetailPage,
+  DocumentsPage,
   ForgotPasswordPage,
   LoginPage,
+  MyDocumentsPage,
   NotFoundPage,
+  NotificationsPage,
+  ProfilePage,
   RegisterPage,
   ResendVerificationPage,
   ResetPasswordPage,
+  SettingsPage,
+  SystemSettingsPage,
+  TopRatedPage,
+  TrendingPage,
   UnauthorizedPage,
+  UploadPage,
   VerifyEmailPage,
 } from '@/pages';
-import AdminDashboardPage from '@/pages/AdminDashboardPage';
-import AdminUsersPage from '@/pages/AdminUsersPage';
-import AnalyticsPage from '@/pages/AnalyticsPage';
-import AdminPointsPage from '@/pages/AdminPointsPage';
-import BookmarksPage from '@/pages/BookmarksPage';
-import CategoriesPage from '@/pages/CategoriesPage';
-import CategoryDetailPage from '@/pages/CategoryDetailPage';
-import DocumentDetailPage from '@/pages/DocumentDetailPage';
-import DocumentsPage from '@/pages/DocumentsPage';
-import MyDocumentsPage from '@/pages/MyDocumentsPage';
-import NotificationsPage from '@/pages/NotificationsPage';
-import ProfilePage from '@/pages/ProfilePage';
-import SettingsPage from '@/pages/SettingsPage';
-import SystemSettingsPage from '@/pages/SystemSettingsPage';
-import TopRatedPage from '@/pages/TopRatedPage';
-import TrendingPage from '@/pages/TrendingPage';
-import { UploadPage } from '@/pages/UploadPage';
 
 export const router = createBrowserRouter([
   // Redirect root to dashboard

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactElement, type ReactNode } from 'react';
 
 import { toast } from 'sonner';
 
@@ -44,7 +44,9 @@ interface SocketProviderProps {
  * SocketProvider - Manages socket connection and global notification handling
  * This component should wrap the main app content after AuthInitializer
  */
-export function SocketProvider({ children }: SocketProviderProps) {
+export function SocketProvider({
+  children,
+}: SocketProviderProps): ReactElement {
   const { isAuthenticated, accessToken } = useAuth();
 
   // Initialize/disconnect socket based on auth state

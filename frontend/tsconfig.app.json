@@ -5,7 +5,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "types": [],
+    "types": ["vite/client", "react", "react-dom"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

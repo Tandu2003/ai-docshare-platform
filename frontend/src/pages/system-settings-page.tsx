@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import {
   Coins,
@@ -22,7 +22,7 @@ import {
 } from '@/services/system-settings.service';
 import { AISettings } from '@/types/database.types';
 
-export default function SystemSettingsPage() {
+export function SystemSettingsPage(): ReactElement {
   const [aiSettings, setAiSettings] = useState<AISettings>({
     autoApprovalThreshold: 80,
     autoRejectThreshold: 30,

@@ -268,5 +268,3 @@ export class PreviewService {
     }
   }
 }
-
-export default PreviewService;

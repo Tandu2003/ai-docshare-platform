@@ -66,10 +66,10 @@ class UserService {
 }
 ```
 
-### 2. Cập nhật AdminUsersPage
+### 2. Cập nhật admin-users-page.tsx
 
 ```typescript
-// frontend/src/pages/AdminUsersPage.tsx
+// frontend/src/pages/admin-users-page.tsx
 const loadRoles = useCallback(async () => {
   try {
     const rolesData = await userService.getRoles();

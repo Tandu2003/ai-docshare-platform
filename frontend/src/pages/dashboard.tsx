@@ -1,21 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 
-import { AdminOnly } from '@/components/common/permission-gate'
-import { ActivityFeed } from '@/components/dashboard/activity-feed'
-import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
-import { PopularCategories } from '@/components/dashboard/popular-categories'
-import { RecentDocuments } from '@/components/dashboard/recent-documents'
-import { UserDashboard } from '@/components/dashboard/user-dashboard'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LoadingPage } from '@/components/ui/loading-skeleton'
-import { usePermissions } from '@/hooks/use-permissions'
+import { AdminOnly } from '@/components/common/permission-gate';
+import { ActivityFeed } from '@/components/dashboard/activity-feed';
+import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
+import { PopularCategories } from '@/components/dashboard/popular-categories';
+import { RecentDocuments } from '@/components/dashboard/recent-documents';
+import { UserDashboard } from '@/components/dashboard/user-dashboard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingPage } from '@/components/ui/loading-skeleton';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   getDashboardOverview,
   getUserDashboardOverview,
-} from '@/services/dashboard.service'
-
+} from '@/services/dashboard.service';
 import type { DashboardOverview } from '@/types';
 
 export const DashboardPage: React.FC = () => {

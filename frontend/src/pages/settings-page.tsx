@@ -1,16 +1,26 @@
-import { Camera, Eye, EyeOff, Globe, Save, Settings, Shield, User } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { useRef, useState, type ReactElement } from 'react';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useAuth } from '@/hooks'
-import { FilesService } from '@/services/files.service'
-import { authService } from '@/utils'
+import {
+  Camera,
+  Eye,
+  EyeOff,
+  Globe,
+  Save,
+  Settings,
+  Shield,
+  User,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks';
+import { FilesService } from '@/services/files.service';
+import { authService } from '@/utils';
 
 interface UserSettings {
   firstName: string;
@@ -27,7 +37,7 @@ interface PasswordData {
   confirmPassword: string;
 }
 
-export default function SettingsPage() {
+export function SettingsPage(): ReactElement {
   const { user, fetchCurrentUser } = useAuth();
   const [settings, setSettings] = useState<UserSettings>({
     firstName: user?.firstName || '',

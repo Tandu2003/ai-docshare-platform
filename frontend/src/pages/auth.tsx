@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 
-import { LoginForm, RegisterForm } from '@/components/auth'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/hooks'
+import { LoginForm, RegisterForm } from '@/components/auth';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks';
 
 export const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);

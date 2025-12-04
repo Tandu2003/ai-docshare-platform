@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import {
   Award,
@@ -114,7 +120,7 @@ const DEFAULT_DATA: TopRatedAnalyticsData = {
   documents: [],
 };
 
-export default function TopRatedPage() {
+export function TopRatedPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Get initial values from URL
@@ -203,7 +209,8 @@ export default function TopRatedPage() {
     }),
     [analytics.stats],
   );
-  const appliedRange = analytics.meta?.appliedRange ?? analytics.timeframe.range;
+  const appliedRange =
+    analytics.meta?.appliedRange ?? analytics.timeframe.range;
   const usedFallback = analytics.meta?.usedFallback ?? false;
   const appliedMinRatings =
     analytics.meta?.appliedMinRatings ?? analytics.filters.minRatings;

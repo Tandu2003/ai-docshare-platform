@@ -1,7 +1,9 @@
-import { PageHeader } from '@/components/common/page-header';
-import { DocumentList } from '@/components/upload/DocumentList';
+import type { ReactElement } from 'react';
 
-export default function MyDocumentsPage() {
+import { PageHeader } from '@/components/common/page-header';
+import { DocumentList } from '@/components/upload/document-list';
+
+export function MyDocumentsPage(): ReactElement {
   const handleFileDeleted = () => {
     console.log('Document deleted successfully');
   };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
 import {
   ArrowDown,
@@ -34,7 +34,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { pointsService, type PointTransaction } from '@/services/points.service';
+import {
+  pointsService,
+  type PointTransaction,
+} from '@/services/points.service';
 import { formatDate } from '@/utils/date';
 
 type RangeFilter = '7d' | '30d' | '90d' | 'all';
@@ -46,7 +49,10 @@ const RANGE_OPTIONS: { value: RangeFilter; label: string }[] = [
   { value: 'all', label: 'Toàn thời gian' },
 ];
 
-const TYPE_OPTIONS: Array<{ value: PointTransaction['type'] | 'all'; label: string }> = [
+const TYPE_OPTIONS: Array<{
+  value: PointTransaction['type'] | 'all';
+  label: string;
+}> = [
   { value: 'all', label: 'Tất cả loại' },
   { value: 'EARN', label: 'Cộng điểm' },
   { value: 'SPEND', label: 'Trừ điểm' },
@@ -111,7 +117,7 @@ const calculateFromDate = (range: RangeFilter) => {
   return from.toISOString();
 };
 
-export default function AdminPointsPage() {
+export function AdminPointsPage(): ReactElement {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -119,10 +125,12 @@ export default function AdminPointsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [typeFilter, setTypeFilter] =
-    useState<PointTransaction['type'] | 'all'>('all');
-  const [reasonFilter, setReasonFilter] =
-    useState<PointTransaction['reason'] | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<
+    PointTransaction['type'] | 'all'
+  >('all');
+  const [reasonFilter, setReasonFilter] = useState<
+    PointTransaction['reason'] | 'all'
+  >('all');
   const [range, setRange] = useState<RangeFilter>('30d');
   const limit = 15;
 
@@ -278,7 +286,7 @@ export default function AdminPointsPage() {
                   {formatPoints(summary.net)}
                 </p>
               </div>
-              <div className="rounded-full bg-primary/10 p-3 text-primary">
+              <div className="bg-primary/10 text-primary rounded-full p-3">
                 <Shield className="h-5 w-5" />
               </div>
             </div>
@@ -421,7 +429,10 @@ export default function AdminPointsPage() {
                 const amountLabel = `${tx.amount > 0 ? '+' : ''}${formatPoints(tx.amount)}`;
                 const balanceLabel = formatPoints(tx.balanceAfter);
                 const typeVariant = typeBadgeVariant(tx.type);
-                const userName = `${tx.user?.firstName ?? ''} ${tx.user?.lastName ?? ''}`.trim() || tx.user?.username || 'Không rõ';
+                const userName =
+                  `${tx.user?.firstName ?? ''} ${tx.user?.lastName ?? ''}`.trim() ||
+                  tx.user?.username ||
+                  'Không rõ';
                 const performedBy = tx.performedBy
                   ? `${tx.performedBy.firstName} ${tx.performedBy.lastName}`.trim() ||
                     tx.performedBy.username
@@ -442,7 +453,11 @@ export default function AdminPointsPage() {
                           variant={tx.amount >= 0 ? 'secondary' : 'destructive'}
                           className="text-xs"
                         >
-                          {tx.amount >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                          {tx.amount >= 0 ? (
+                            <ArrowUp className="mr-1 h-3 w-3" />
+                          ) : (
+                            <ArrowDown className="mr-1 h-3 w-3" />
+                          )}
                           {amountLabel}
                         </Badge>
                         <span className="text-muted-foreground text-xs">
@@ -455,7 +470,9 @@ export default function AdminPointsPage() {
                         <Badge variant={typeVariant} className="w-fit">
                           {typeLabel(tx.type)}
                         </Badge>
-                        <span className="text-xs">{reasonLabel(tx.reason)}</span>
+                        <span className="text-xs">
+                          {reasonLabel(tx.reason)}
+                        </span>
                         {tx.isBypass && (
                           <Badge variant="outline" className="w-fit text-xs">
                             Bỏ qua trừ điểm
@@ -468,7 +485,7 @@ export default function AdminPointsPage() {
                         {tx.document ? (
                           <Link
                             to={`/documents/${tx.document.id}`}
-                            className="text-sm font-medium hover:text-primary"
+                            className="hover:text-primary text-sm font-medium"
                           >
                             <span className="inline-flex items-center gap-1">
                               <FileText className="h-3 w-3" />
@@ -487,15 +504,13 @@ export default function AdminPointsPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm">
+                    <TableCell className="text-sm whitespace-nowrap">
                       {formatDate(tx.createdAt, 'dd/MM/yyyy HH:mm')}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <UserRound className="text-muted-foreground h-4 w-4" />
-                        <span className="text-sm">
-                          {tx.note || '—'}
-                        </span>
+                        <span className="text-sm">{tx.note || '—'}</span>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -503,7 +518,10 @@ export default function AdminPointsPage() {
               })}
               {transactions.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-muted-foreground py-6 text-center"
+                  >
                     Không có giao dịch nào trong bộ lọc hiện tại
                   </TableCell>
                 </TableRow>
@@ -520,7 +538,8 @@ export default function AdminPointsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-muted-foreground text-sm">
-          Hiển thị {startItem}-{endItem} trong tổng số {formatPoints(total)} giao dịch
+          Hiển thị {startItem}-{endItem} trong tổng số {formatPoints(total)}{' '}
+          giao dịch
         </div>
         <div className="flex items-center gap-2">
           <Button

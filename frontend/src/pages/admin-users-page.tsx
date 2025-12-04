@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import { Plus, Search, Trash2, UserCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ import {
   type User,
 } from '@/services/user.service';
 
-export default function AdminUsersPage() {
+export function AdminUsersPage(): ReactElement {
   const { isAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);

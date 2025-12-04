@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import {
   ArrowLeft,
@@ -35,7 +35,7 @@ import { Document } from '@/services/files.service';
 type SortField = 'createdAt' | 'downloadCount' | 'viewCount' | 'averageRating';
 type SortOrder = 'asc' | 'desc';
 
-export default function CategoryDetailPage() {
+export function CategoryDetailPage(): ReactElement | null {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 

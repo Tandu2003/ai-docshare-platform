@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import {
   ChevronLeft,
@@ -18,7 +24,7 @@ import type {
   DocumentPreview,
   PreviewStatus,
 } from '@/services/document.service';
-import PreviewService from '@/services/preview.service';
+import { PreviewService } from '@/services/preview.service';
 
 interface DocumentPreviewViewerProps {
   documentId: string;
@@ -41,7 +47,7 @@ export function DocumentPreviewViewer({
   apiKey,
   className,
   onPreviewClick,
-}: DocumentPreviewViewerProps) {
+}: DocumentPreviewViewerProps): ReactElement {
   const [previews, setPreviews] = useState<DocumentPreview[]>(
     initialPreviews || [],
   );
@@ -374,5 +380,3 @@ export function DocumentPreviewViewer({
     </Card>
   );
 }
-
-export default DocumentPreviewViewer;

@@ -1,17 +1,19 @@
-import { CheckCircle, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
+import { useState } from 'react';
 
-import { Button } from '@/components/ui/button'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -19,11 +21,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { InputPassword } from '@/components/ui/input-password'
-import { ResetPasswordFormData, resetPasswordSchema } from '@/schemas'
-import { authService } from '@/utils'
-import { zodResolver } from '@hookform/resolvers/zod'
+} from '@/components/ui/form';
+import { InputPassword } from '@/components/ui/input-password';
+import { ResetPasswordFormData, resetPasswordSchema } from '@/schemas';
+import { authService } from '@/utils';
 
 export function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);

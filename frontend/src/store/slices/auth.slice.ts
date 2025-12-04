@@ -1,9 +1,9 @@
-import { toast } from 'sonner'
-
-import { authService } from '@/utils'
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { toast } from 'sonner';
 
 import type { AuthState, LoginDto, RegisterDto, User } from '@/types';
+import { authService } from '@/utils';
+
 // Initial state - Don't set authenticated immediately, let initializeAuth handle it
 const initialState: AuthState = {
   user: null,
@@ -264,14 +264,15 @@ export const {
 } = authSlice.actions;
 
 // Export reducer
-export default authSlice.reducer;
+export const authReducer = authSlice.reducer;
 
 // Selectors
-export const selectAuth = (state: { auth: AuthState }) => state.auth;
-export const selectUser = (state: { auth: AuthState }) => state.auth.user;
-export const selectIsAuthenticated = (state: { auth: AuthState }) =>
+export const selectAuth = (state: { auth: AuthState }): AuthState => state.auth;
+export const selectUser = (state: { auth: AuthState }): User | null =>
+  state.auth.user;
+export const selectIsAuthenticated = (state: { auth: AuthState }): boolean =>
   state.auth.isAuthenticated;
-export const selectIsLoading = (state: { auth: AuthState }) =>
+export const selectIsLoading = (state: { auth: AuthState }): boolean =>
   state.auth.isLoading;
-export const selectAccessToken = (state: { auth: AuthState }) =>
-  state.auth.accessToken;
+export const selectAccessToken = (state: { auth: AuthState }): string | null =>
+  state.auth.accessToken ?? null;

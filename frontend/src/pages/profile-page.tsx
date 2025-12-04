@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 
 import {
   ArrowDownRight,
@@ -56,7 +56,7 @@ import { formatDate } from '@/utils/date';
 
 const POINT_TXNS_LIMIT = 10;
 
-export default function ProfilePage() {
+export function ProfilePage(): ReactElement {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);

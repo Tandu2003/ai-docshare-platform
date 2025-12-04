@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactElement } from 'react';
 
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -11,6 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+
+/* eslint-disable react-refresh/only-export-components -- Error boundary must be a class component */
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -29,7 +31,10 @@ interface ErrorFallbackProps {
   resetError: () => void;
 }
 
-function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
+function DefaultErrorFallback({
+  error,
+  resetError,
+}: ErrorFallbackProps): ReactElement {
   return (
     <Card className="mx-auto max-w-md">
       <CardHeader className="text-center">
@@ -76,7 +81,7 @@ export class ErrorBoundary extends React.Component<
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     this.setState({
       error,
       errorInfo,
@@ -93,11 +98,11 @@ export class ErrorBoundary extends React.Component<
     }
   }
 
-  resetError = () => {
+  resetError = (): void => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
-  render() {
+  render(): React.ReactNode {
     if (this.state.hasError && this.state.error) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
       return (
@@ -111,5 +116,3 @@ export class ErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
-
-export default ErrorBoundary;

@@ -210,4 +210,4 @@ const PublicDocumentCard: React.FC<PublicDocumentCardProps> = ({
   );
 };
 
-export default PublicDocumentCard;
+export { PublicDocumentCard };

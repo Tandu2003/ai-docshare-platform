@@ -62,4 +62,4 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ file }) => {
   );
 };
 
-export default DocumentViewer;
+export { DocumentViewer };

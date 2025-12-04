@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import {
   Calendar,
@@ -82,7 +88,7 @@ const getInitials = (firstName?: string | null, lastName?: string | null) =>
     .trim()
     .toUpperCase() || 'U';
 
-export default function TrendingPage() {
+export function TrendingPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Get initial values from URL
