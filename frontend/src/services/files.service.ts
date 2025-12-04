@@ -41,6 +41,7 @@ export interface UpdateDocumentData {
   language?: string;
   downloadCost?: number | null; // null = use system default
   filesEdited?: boolean;
+  fileIds?: string[]; // Update document files
 }
 
 export interface Document {

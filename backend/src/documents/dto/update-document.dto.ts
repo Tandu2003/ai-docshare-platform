@@ -41,4 +41,9 @@ export class UpdateDocumentDto {
   @IsOptional()
   @IsBoolean()
   filesEdited?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fileIds?: string[]; // Optional: Update document files
 }

@@ -1,33 +1,22 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
-import { Edit2, Plus, RefreshCw, Save, Sparkles, X } from 'lucide-react';
+import { Edit2, Save, X } from 'lucide-react';
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { CategorySelector } from '@/components/categories';
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
+import { DocumentEditSheet } from '@/components/documents/document-edit-sheet';
 import { DocumentInlineViewer } from '@/components/documents/document-inline-viewer';
 import { DocumentPreviewViewer } from '@/components/documents/document-preview-viewer';
 import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks';
 import { getSocket } from '@/lib/socket';
 import {
@@ -49,17 +38,6 @@ import { DocumentsService } from '@/services/files.service';
 import { RatingService } from '@/services/rating.service';
 import type { AIAnalysis, Comment } from '@/types';
 
-const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'Tiếng Anh' },
-  { value: 'vi', label: 'Tiếng Việt' },
-  { value: 'es', label: 'Tiếng Tây Ban Nha' },
-  { value: 'fr', label: 'Tiếng Pháp' },
-  { value: 'de', label: 'Tiếng Đức' },
-  { value: 'zh', label: 'Tiếng Trung' },
-  { value: 'ja', label: 'Tiếng Nhật' },
-  { value: 'ko', label: 'Tiếng Hàn' },
-];
-
 export function DocumentDetailPage(): ReactElement {
   const { documentId } = useParams<{ documentId: string }>();
   const location = useLocation();
@@ -75,32 +53,13 @@ export function DocumentDetailPage(): ReactElement {
   const [isBookmarkActionLoading, setIsBookmarkActionLoading] = useState(false);
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isCheckingDownloadStatus, setIsCheckingDownloadStatus] =
     useState(false);
   const [isEditingDownloadCost, setIsEditingDownloadCost] = useState(false);
   const [editDownloadCost, setEditDownloadCost] = useState<number | null>(null);
   const [isSavingDownloadCost, setIsSavingDownloadCost] = useState(false);
-  const [isEditingMeta, setIsEditingMeta] = useState(false);
-  const [isSavingMeta, setIsSavingMeta] = useState(false);
-  const [tagInput, setTagInput] = useState('');
-  const [metaForm, setMetaForm] = useState<{
-    title: string;
-    description: string;
-    categoryId: string;
-    tags: string[];
-    language: string;
-    isPublic: boolean;
-    filesEdited: boolean;
-  }>({
-    title: '',
-    description: '',
-    categoryId: '',
-    tags: [],
-    language: 'en',
-    isPublic: false,
-    filesEdited: false,
-  });
 
   const apiKey = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -146,17 +105,6 @@ export function DocumentDetailPage(): ReactElement {
         // Use real API to fetch document
         const foundDocument = await getDocumentById(documentId, apiKey);
         setDocument(foundDocument);
-        setMetaForm({
-          title: foundDocument.title ?? '',
-          description: foundDocument.description ?? '',
-          categoryId:
-            foundDocument.category?.id ?? foundDocument.categoryId ?? '',
-          tags: foundDocument.tags || [],
-          language: foundDocument.language || 'en',
-          isPublic: foundDocument.isPublic,
-          filesEdited: false,
-        });
-        setTagInput('');
 
         // Load comments for this document
         const documentComments = await CommentsService.getComments(documentId);
@@ -688,144 +636,11 @@ export function DocumentDetailPage(): ReactElement {
     setIsEditingDownloadCost(true);
   };
 
-  const handleAddTag = () => {
-    const nextTag = tagInput.trim();
-    if (!nextTag) return;
-    setMetaForm(prev => ({
-      ...prev,
-      tags: Array.from(new Set([...(prev.tags || []), nextTag])),
-    }));
-    setTagInput('');
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    setMetaForm(prev => ({
-      ...prev,
-      tags: (prev.tags || []).filter(t => t !== tag),
-    }));
-  };
-
-  const willNeedReModeration = useMemo(() => {
-    if (!document) return false;
-    const goingPublic = !document.isPublic && metaForm.isPublic;
-    return metaForm.filesEdited || goingPublic;
-  }, [document, metaForm.filesEdited, metaForm.isPublic]);
-
-  const handleSaveMeta = async () => {
-    if (!documentId || !document) return;
-
-    const payload: Record<string, any> = {};
-
-    if (metaForm.title.trim() !== document.title) {
-      payload.title = metaForm.title.trim();
-    }
-    if ((metaForm.description || '') !== (document.description || '')) {
-      payload.description = metaForm.description;
-    }
-    if (
-      metaForm.categoryId &&
-      metaForm.categoryId !== (document.category?.id || document.categoryId)
-    ) {
-      payload.categoryId = metaForm.categoryId;
-    }
-    if (metaForm.language !== document.language) {
-      payload.language = metaForm.language;
-    }
-    if (metaForm.isPublic !== document.isPublic) {
-      payload.isPublic = metaForm.isPublic;
-    }
-    const tagsChanged =
-      (metaForm.tags || []).join('|') !== (document.tags || []).join('|');
-    if (tagsChanged) {
-      payload.tags = metaForm.tags;
-    }
-    if (metaForm.filesEdited) {
-      payload.filesEdited = true;
-    }
-
-    if (Object.keys(payload).length === 0) {
-      toast.info('Không có thay đổi nào để lưu');
-      setIsEditingMeta(false);
-      return;
-    }
-
-    try {
-      setIsSavingMeta(true);
-      const response = await DocumentsService.updateDocument(
-        documentId,
-        payload,
-      );
-      const updatedDocument = response?.data ?? response;
-
-      if (!updatedDocument) {
-        throw new Error('Không nhận được phản hồi cập nhật');
-      }
-
-      setDocument(prev =>
-        prev
-          ? {
-              ...prev,
-              ...updatedDocument,
-              tags: updatedDocument.tags ?? prev.tags,
-              language: updatedDocument.language ?? prev.language,
-              isPublic:
-                updatedDocument.isPublic !== undefined
-                  ? updatedDocument.isPublic
-                  : prev.isPublic,
-              isApproved:
-                updatedDocument.isApproved !== undefined
-                  ? updatedDocument.isApproved
-                  : prev.isApproved,
-              moderationStatus:
-                updatedDocument.moderationStatus ?? prev.moderationStatus,
-              title: updatedDocument.title ?? prev.title,
-              description:
-                updatedDocument.description !== undefined
-                  ? updatedDocument.description
-                  : prev.description,
-              category:
-                updatedDocument.category !== undefined
-                  ? updatedDocument.category
-                  : prev.category,
-            }
-          : prev,
-      );
-
-      setMetaForm({
-        title: updatedDocument.title ?? metaForm.title,
-        description:
-          updatedDocument.description !== undefined
-            ? updatedDocument.description || ''
-            : metaForm.description,
-        categoryId:
-          updatedDocument.category?.id ??
-          updatedDocument.categoryId ??
-          metaForm.categoryId,
-        tags: updatedDocument.tags ?? metaForm.tags,
-        language: updatedDocument.language ?? metaForm.language,
-        isPublic:
-          updatedDocument.isPublic !== undefined
-            ? updatedDocument.isPublic
-            : metaForm.isPublic,
-        filesEdited: false,
-      });
-
-      setIsEditingMeta(false);
-
-      if (updatedDocument.needsReModeration || willNeedReModeration) {
-        toast.success(
-          response?.message ||
-            'Đã cập nhật. Tài liệu sẽ được kiểm duyệt lại trước khi công khai.',
-        );
-      } else {
-        toast.success(response?.message || 'Đã cập nhật tài liệu');
-      }
-    } catch (error: any) {
-      console.error('Failed to update metadata:', error);
-      toast.error(error.message || 'Không thể cập nhật tài liệu');
-    } finally {
-      setIsSavingMeta(false);
-    }
+  // Handler for document update from edit sheet
+  const handleDocumentUpdated = (updatedDocument: DocumentView) => {
+    setDocument(updatedDocument);
+    setEditSheetOpen(false);
+    toast.success('Đã cập nhật tài liệu thành công');
   };
 
   if (loading) {
@@ -1029,282 +844,85 @@ export function DocumentDetailPage(): ReactElement {
             </Card>
           )}
 
-          {/* Owner: Update metadata */}
+          {/* Owner: Update metadata - Using DocumentEditSheet */}
           {isOwner && (
             <Card>
               <CardHeader className="space-y-1">
                 <CardTitle className="flex items-center justify-between">
                   <span>Chỉnh sửa tài liệu</span>
-                  {!isEditingMeta && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setIsEditingMeta(true)}
-                    >
-                      <Edit2 className="mr-1 h-4 w-4" />
-                      Sửa
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditSheetOpen(true)}
+                  >
+                    <Edit2 className="mr-1 h-4 w-4" />
+                    Chỉnh sửa
+                  </Button>
                 </CardTitle>
                 <p className="text-muted-foreground text-sm">
-                  Các trường cơ bản không cần duyệt lại. Thay đổi tệp đính kèm
-                  hoặc chuyển sang công khai sẽ yêu cầu kiểm duyệt.
+                  Chỉnh sửa thông tin, tệp đính kèm và phân tích AI.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {!isEditingMeta ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 gap-3 text-sm">
-                      <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                        <span className="text-muted-foreground">Tiêu đề</span>
-                        <span className="line-clamp-1 font-medium">
-                          {document.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                        <span className="text-muted-foreground">Danh mục</span>
-                        <span className="font-medium">
-                          {document.category?.name || 'Chưa chọn'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                        <span className="text-muted-foreground">Ngôn ngữ</span>
-                        <span className="font-medium uppercase">
-                          {document.language}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                        <span className="text-muted-foreground">Công khai</span>
-                        <span className="font-medium">
-                          {document.isPublic ? 'Công khai' : 'Riêng tư'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Thẻ</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(document.tags || []).length > 0 ? (
-                            document.tags.map(tag => (
-                              <Badge key={tag} variant="secondary">
-                                {tag}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              Không có thẻ
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingMeta(true)}
-                      >
-                        Chỉnh sửa nhanh
-                      </Button>
-                    </div>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 gap-3 text-sm">
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <span className="text-muted-foreground">Tiêu đề</span>
+                    <span className="line-clamp-1 font-medium">
+                      {document.title}
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Tiêu đề</Label>
-                      <Input
-                        value={metaForm.title}
-                        onChange={e =>
-                          setMetaForm(prev => ({
-                            ...prev,
-                            title: e.target.value,
-                          }))
-                        }
-                        placeholder="Nhập tiêu đề"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Mô tả</Label>
-                      <Textarea
-                        value={metaForm.description}
-                        onChange={e =>
-                          setMetaForm(prev => ({
-                            ...prev,
-                            description: e.target.value,
-                          }))
-                        }
-                        rows={3}
-                        placeholder="Thêm mô tả ngắn gọn"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Danh mục</Label>
-                      <CategorySelector
-                        value={metaForm.categoryId}
-                        onChange={categoryId =>
-                          setMetaForm(prev => ({ ...prev, categoryId }))
-                        }
-                        disabled={isSavingMeta}
-                        showAiSuggestions={false}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Thẻ</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={tagInput}
-                          onChange={e => setTagInput(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddTag();
-                            }
-                          }}
-                          placeholder="Nhập thẻ và nhấn Enter"
-                        />
-                        <Button
-                          type="button"
-                          size="icon"
-                          onClick={handleAddTag}
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <span className="text-muted-foreground">Danh mục</span>
+                    <span className="font-medium">
+                      {document.category?.name || 'Chưa chọn'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <span className="text-muted-foreground">Ngôn ngữ</span>
+                    <span className="font-medium uppercase">
+                      {document.language}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <span className="text-muted-foreground">Trạng thái</span>
+                    <span className="font-medium">
+                      {document.isPublic ? 'Công khai' : 'Riêng tư'}
+                    </span>
+                  </div>
+                </div>
+                {(document.tags || []).length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-xs">Thẻ</p>
+                    <div className="flex flex-wrap gap-1">
+                      {document.tags.slice(0, 5).map(tag => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="text-xs"
                         >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {metaForm.tags.length > 0 ? (
-                          metaForm.tags.map(tag => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="flex items-center gap-1"
-                            >
-                              {tag}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveTag(tag)}
-                                className="hover:text-destructive"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            Chưa có thẻ
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Ngôn ngữ</Label>
-                      <Select
-                        value={metaForm.language}
-                        onValueChange={value =>
-                          setMetaForm(prev => ({ ...prev, language: value }))
-                        }
-                        disabled={isSavingMeta}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn ngôn ngữ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {LANGUAGE_OPTIONS.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-3 rounded-lg border p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Công khai</p>
-                          <p className="text-muted-foreground text-xs">
-                            Chuyển sang công khai sẽ cần duyệt lại.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={metaForm.isPublic}
-                          onCheckedChange={value =>
-                            setMetaForm(prev => ({ ...prev, isPublic: value }))
-                          }
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">
-                            Tôi đã chỉnh sửa tệp đính kèm
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            Đánh dấu để yêu cầu kiểm duyệt lại tệp.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={metaForm.filesEdited}
-                          onCheckedChange={value =>
-                            setMetaForm(prev => ({
-                              ...prev,
-                              filesEdited: value,
-                            }))
-                          }
-                        />
-                      </div>
-                      {willNeedReModeration && (
-                        <Alert className="border-amber-200 bg-amber-50">
-                          <Sparkles className="h-4 w-4" />
-                          <AlertTitle>Cần kiểm duyệt lại</AlertTitle>
-                          <AlertDescription>
-                            Thay đổi của bạn sẽ được gửi tới kiểm duyệt trước
-                            khi hiển thị công khai.
-                          </AlertDescription>
-                        </Alert>
+                          {tag}
+                        </Badge>
+                      ))}
+                      {document.tags.length > 5 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{document.tags.length - 5}
+                        </Badge>
                       )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        className="flex-1"
-                        onClick={handleSaveMeta}
-                        disabled={isSavingMeta}
-                      >
-                        {isSavingMeta ? (
-                          <>
-                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            Đang lưu...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Lưu thay đổi
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditingMeta(false);
-                          setMetaForm(prev => ({
-                            ...prev,
-                            title: document.title ?? '',
-                            description: document.description ?? '',
-                            categoryId:
-                              document.category?.id ??
-                              document.categoryId ??
-                              '',
-                            tags: document.tags || [],
-                            language: document.language || 'en',
-                            isPublic: document.isPublic,
-                            filesEdited: false,
-                          }));
-                          setTagInput('');
-                        }}
-                        disabled={isSavingMeta}
-                      >
-                        Hủy
-                      </Button>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Document Edit Sheet */}
+          {isOwner && document && (
+            <DocumentEditSheet
+              open={editSheetOpen}
+              onOpenChange={setEditSheetOpen}
+              document={document}
+              onDocumentUpdated={handleDocumentUpdated}
+            />
           )}
 
           {/* Download Cost Settings - Owner Only */}

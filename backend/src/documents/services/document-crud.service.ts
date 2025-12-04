@@ -755,7 +755,7 @@ export class DocumentCrudService {
 
   private async buildUpdateData(
     updateData: UpdateDocumentDto,
-    document: { isPublic: boolean },
+    document: { id?: string; isPublic: boolean },
   ): Promise<{ dataToUpdate: any; needsReModeration: boolean }> {
     const dataToUpdate: any = {};
     let needsReModeration = false;
@@ -788,6 +788,37 @@ export class DocumentCrudService {
 
     if (updateData.downloadCost !== undefined) {
       dataToUpdate.downloadCost = updateData.downloadCost;
+    }
+
+    // Handle file updates
+    if (updateData.fileIds !== undefined && document.id) {
+      // Validate files exist
+      const files = await this.prisma.file.findMany({
+        where: { id: { in: updateData.fileIds } },
+      });
+
+      if (files.length !== updateData.fileIds.length) {
+        throw new BadRequestException('Một hoặc nhiều tệp không tồn tại');
+      }
+
+      // Delete old document-file relationships
+      await this.prisma.documentFile.deleteMany({
+        where: { documentId: document.id },
+      });
+
+      // Create new document-file relationships
+      await this.prisma.documentFile.createMany({
+        data: updateData.fileIds.map((fileId, index) => ({
+          documentId: document.id!,
+          fileId,
+          order: index,
+        })),
+      });
+
+      // Mark as files edited for re-moderation
+      needsReModeration = true;
+      dataToUpdate.moderationStatus = DocumentModerationStatus.PENDING;
+      dataToUpdate.isApproved = false;
     }
 
     if (updateData.filesEdited) {
