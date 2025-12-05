@@ -124,7 +124,9 @@ export function DocumentDetailHeader({
             </div>
 
             {/* Moderation Info */}
-            {document.moderatedAt && (
+            {(document.moderatedAt ||
+              document.moderationNotes ||
+              document.rejectionReason) && (
               <div className="bg-muted/50 rounded-lg border p-4">
                 <div className="mb-2 flex items-center space-x-2">
                   {document.moderatedById ? (
@@ -135,16 +137,35 @@ export function DocumentDetailHeader({
                   <span className="text-sm font-medium">
                     {document.moderatedById
                       ? 'Admin duyệt'
-                      : 'AI tự động duyệt'}
+                      : document.moderationStatus === 'REJECTED'
+                        ? 'Đã từ chối'
+                        : 'AI tự động duyệt'}
                   </span>
-                  <span className="text-muted-foreground text-sm">
-                    {new Date(document.moderatedAt).toLocaleString('vi-VN')}
-                  </span>
+                  {document.moderatedAt && (
+                    <span className="text-muted-foreground text-sm">
+                      {new Date(document.moderatedAt).toLocaleString('vi-VN')}
+                    </span>
+                  )}
                 </div>
                 {document.moderationNotes && (
-                  <p className="text-muted-foreground text-sm">
-                    {document.moderationNotes}
-                  </p>
+                  <div className="mb-2">
+                    <p className="text-muted-foreground text-xs font-medium">
+                      Ghi chú kiểm duyệt:
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      {document.moderationNotes}
+                    </p>
+                  </div>
+                )}
+                {document.rejectionReason && (
+                  <div className="rounded-md border border-destructive/50 bg-destructive/10 p-2">
+                    <p className="text-destructive text-xs font-medium">
+                      Lý do từ chối:
+                    </p>
+                    <p className="text-destructive text-sm">
+                      {document.rejectionReason}
+                    </p>
+                  </div>
                 )}
               </div>
             )}
@@ -154,7 +175,7 @@ export function DocumentDetailHeader({
             {/* Stats and Actions */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               {/* Stats */}
-              <div className="text-muted-foreground flex items-center space-x-6 text-sm">
+              <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
                 <div className="flex items-center space-x-1">
                   <Download className="h-4 w-4" />
                   <span>{document.downloadCount} lượt tải</span>
@@ -170,6 +191,16 @@ export function DocumentDetailHeader({
                     đánh giá)
                   </span>
                 </div>
+                {document.stats?.commentsCount !== undefined && (
+                  <div className="flex items-center space-x-1">
+                    <span>{document.stats.commentsCount} bình luận</span>
+                  </div>
+                )}
+                {document.files && document.files.length > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <span>{document.files.length} file</span>
+                  </div>
+                )}
                 <div className="flex items-center space-x-1">
                   <User className="h-4 w-4" />
                   <span>{formatDate(document.createdAt)}</span>

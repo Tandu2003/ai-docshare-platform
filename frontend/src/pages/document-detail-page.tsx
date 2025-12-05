@@ -38,6 +38,7 @@ import { DocumentsService } from '@/services/files.service';
 import { RatingService } from '@/services/rating.service';
 import type { AIAnalysis, Comment } from '@/types';
 import { getLanguageName } from '@/utils/language';
+import { UploadService } from '@/services/upload.service';
 
 export function DocumentDetailPage(): ReactElement {
   const { documentId } = useParams<{ documentId: string }>();
@@ -841,10 +842,111 @@ export function DocumentDetailPage(): ReactElement {
                 <div className="space-y-1">
                   <p className="text-muted-foreground text-xs">Ngày đăng</p>
                   <span>
-                    {new Date(document.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(document.createdAt).toLocaleDateString('vi-VN', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
                   </span>
                 </div>
+
+                {/* Updated date */}
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">Cập nhật lần cuối</p>
+                  <span>
+                    {new Date(document.updatedAt).toLocaleDateString('vi-VN', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+
+                {/* File count */}
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">Số lượng file</p>
+                  <span className="font-medium">
+                    {document.files?.length || 0} file
+                  </span>
+                </div>
+
+                {/* Total file size */}
+                {document.files && document.files.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-xs">Tổng dung lượng</p>
+                    <span className="font-medium">
+                      {UploadService.formatFileSize(
+                        document.files.reduce((total, file) => {
+                          const size =
+                            typeof file.fileSize === 'string'
+                              ? parseInt(file.fileSize, 10)
+                              : file.fileSize || 0;
+                          return total + size;
+                        }, 0),
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {/* Preview status */}
+                {document.previewStatus && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-xs">Trạng thái preview</p>
+                    <Badge
+                      variant={
+                        document.previewStatus === 'COMPLETED'
+                          ? 'default'
+                          : document.previewStatus === 'FAILED'
+                            ? 'destructive'
+                            : 'secondary'
+                      }
+                      className="text-xs"
+                    >
+                      {document.previewStatus === 'COMPLETED'
+                        ? 'Hoàn thành'
+                        : document.previewStatus === 'PROCESSING'
+                          ? 'Đang xử lý'
+                          : document.previewStatus === 'FAILED'
+                            ? 'Thất bại'
+                            : 'Chờ xử lý'}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Preview count */}
+                {document.previewCount !== undefined && document.previewCount > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-xs">Số trang preview</p>
+                    <span className="font-medium">{document.previewCount} trang</span>
+                  </div>
+                )}
               </div>
+
+              {/* Rejection reason */}
+              {document.rejectionReason && (
+                <div className="space-y-1 rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                  <p className="text-destructive text-xs font-medium">
+                    Lý do từ chối
+                  </p>
+                  <p className="text-destructive text-sm">
+                    {document.rejectionReason}
+                  </p>
+                </div>
+              )}
+
+              {/* ZIP file info */}
+              {document.zipFileUrl && (
+                <div className="space-y-1 rounded-md border bg-muted/50 p-3">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    File ZIP đã tạo
+                  </p>
+                  <p className="text-sm">
+                    {document.zipFileCreatedAt
+                      ? `Tạo lúc: ${new Date(document.zipFileCreatedAt).toLocaleString('vi-VN')}`
+                      : 'Đã có sẵn'}
+                  </p>
+                </div>
+              )}
 
               {/* Tags */}
               {(document.tags || []).length > 0 && (
@@ -861,8 +963,84 @@ export function DocumentDetailPage(): ReactElement {
                   </div>
                 </div>
               )}
+
+              {/* Detailed Stats */}
+              {document.stats && (
+                <div className="space-y-2 border-t pt-4">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Thống kê chi tiết
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Lượt xem:</span>
+                      <span className="ml-1 font-medium">
+                        {document.stats.viewsCount || document.viewCount}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Lượt tải:</span>
+                      <span className="ml-1 font-medium">
+                        {document.stats.downloadsCount || document.downloadCount}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Đánh giá:</span>
+                      <span className="ml-1 font-medium">
+                        {document.stats.ratingsCount || document.totalRatings}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Bình luận:</span>
+                      <span className="ml-1 font-medium">
+                        {document.stats.commentsCount || 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* File Details - Show all files */}
+          {document.files && document.files.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Danh sách file</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {document.files
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((file, index) => (
+                    <div
+                      key={file.id}
+                      className="flex items-start justify-between rounded-md border p-3"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground text-xs">
+                            #{index + 1}
+                          </span>
+                          <p className="text-sm font-medium">
+                            {file.originalName || file.fileName}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>
+                            {UploadService.formatFileSize(
+                              typeof file.fileSize === 'string'
+                                ? parseInt(file.fileSize, 10)
+                                : file.fileSize || 0,
+                            )}
+                          </span>
+                          <span className="text-muted-foreground">•</span>
+                          <span>{file.mimeType}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Owner Management Section */}
           {isOwner && (
@@ -886,8 +1064,40 @@ export function DocumentDetailPage(): ReactElement {
                   <span className="text-muted-foreground text-sm">
                     Trạng thái
                   </span>
-                  <Badge variant={document.isPublic ? 'default' : 'secondary'}>
-                    {document.isPublic ? 'Công khai' : 'Riêng tư'}
+                  <div className="flex items-center gap-2">
+                    <Badge variant={document.isPublic ? 'default' : 'secondary'}>
+                      {document.isPublic ? 'Công khai' : 'Riêng tư'}
+                    </Badge>
+                    {document.isDraft && (
+                      <Badge variant="outline">Bản nháp</Badge>
+                    )}
+                    {document.isPremium && (
+                      <Badge variant="default" className="bg-yellow-500">
+                        Premium
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Moderation Status */}
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-sm">
+                    Trạng thái kiểm duyệt
+                  </span>
+                  <Badge
+                    variant={
+                      document.moderationStatus === 'APPROVED'
+                        ? 'default'
+                        : document.moderationStatus === 'REJECTED'
+                          ? 'destructive'
+                          : 'secondary'
+                    }
+                  >
+                    {document.moderationStatus === 'APPROVED'
+                      ? 'Đã duyệt'
+                      : document.moderationStatus === 'REJECTED'
+                        ? 'Đã từ chối'
+                        : 'Chờ duyệt'}
                   </Badge>
                 </div>
 
