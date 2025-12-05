@@ -8,15 +8,13 @@ import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis'
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
 import { DocumentEditSheet } from '@/components/documents/document-edit-sheet';
-import { DocumentInlineViewer } from '@/components/documents/document-inline-viewer';
-import { DocumentPreviewViewer } from '@/components/documents/document-preview-viewer';
+import { DocumentPreviewModal } from '@/components/documents/document-preview-modal';
 import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks';
 import { getSocket } from '@/lib/socket';
 import {
@@ -56,6 +54,7 @@ export function DocumentDetailPage(): ReactElement {
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isCheckingDownloadStatus, setIsCheckingDownloadStatus] =
     useState(false);
@@ -654,38 +653,187 @@ export function DocumentDetailPage(): ReactElement {
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-8 w-24" />
+                {/* Title and badges */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-8 w-3/4" />
+                    <Skeleton className="h-5 w-1/2" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                </div>
+
+                {/* Author info */}
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+
+                {/* Stats and actions */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-9 w-9" />
+                  <Skeleton className="h-9 w-9" />
+                  <Skeleton className="h-9 w-9" />
+                </div>
+
+                {/* Rating */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-8 w-40" />
+                </div>
+
+                {/* Category and tags */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Content Skeleton */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardHeader>
+        {/* Main Content Skeleton - Vertical Layout */}
+        <div className="space-y-6">
+          {/* Document Info Card */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Description */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Tags */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-18" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* File Details Card */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-md border p-3"
+                >
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Owner Management Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-64 w-full" />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-32 w-full" />
-              </CardContent>
-            </Card>
-          </div>
+                <Skeleton className="h-8 w-24" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Comments Section */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Comment input */}
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-9 w-24 ml-auto" />
+              </div>
+
+              {/* Comment items */}
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="space-y-3 border-t pt-4">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* AI Analysis Card */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <div className="space-y-2 pt-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -716,6 +864,19 @@ export function DocumentDetailPage(): ReactElement {
         onShareLinkUpdated={handleShareLinkUpdated}
         onShareLinkRevoked={handleShareLinkRevoked}
       />
+
+      {/* Preview Modal */}
+      <DocumentPreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        documentId={document.id}
+        previews={document.previews}
+        previewStatus={document.previewStatus}
+        previewCount={document.previewCount}
+        isOwner={isOwner}
+        hasAccess={true}
+        apiKey={apiKey}
+      />
       {/* Document Header */}
       <DocumentDetailHeader
         document={document}
@@ -725,6 +886,7 @@ export function DocumentDetailPage(): ReactElement {
         }}
         onShare={handleShare}
         onRate={handleRate}
+        onPreview={() => setPreviewModalOpen(true)}
         userRating={userRating}
         isBookmarked={isBookmarked}
         isBookmarking={isBookmarkActionLoading}
@@ -734,67 +896,10 @@ export function DocumentDetailPage(): ReactElement {
         isOwner={isOwner}
       />
 
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Document Content */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Nội dung tài liệu</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* For non-owners: Show preview images only */}
-              {/* For owners: Show tabs to switch between preview and full viewer */}
-              {isOwner ? (
-                <Tabs defaultValue="preview" className="w-full">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                    <TabsTrigger value="full">Xem đầy đủ</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="preview">
-                    <DocumentPreviewViewer
-                      documentId={document.id}
-                      previews={document.previews}
-                      previewStatus={document.previewStatus}
-                      previewCount={document.previewCount}
-                      isOwner={isOwner}
-                      hasAccess={true}
-                      apiKey={apiKey}
-                    />
-                  </TabsContent>
-                  <TabsContent value="full">
-                    <DocumentInlineViewer files={document.files} />
-                  </TabsContent>
-                </Tabs>
-              ) : (
-                <DocumentPreviewViewer
-                  documentId={document.id}
-                  previews={document.previews}
-                  previewStatus={document.previewStatus}
-                  previewCount={document.previewCount}
-                  isOwner={false}
-                  hasAccess={true}
-                  apiKey={apiKey}
-                />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Comments */}
-          <DocumentComments
-            comments={comments}
-            onAddComment={handleAddComment}
-            onLikeComment={handleLikeComment}
-            onEditComment={handleEditComment}
-            onDeleteComment={handleDeleteComment}
-            currentUserId={user?.id}
-          />
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Document Info - Visible to everyone */}
-          <Card>
+      {/* Main Content - Vertical Layout */}
+      <div className="space-y-6">
+        {/* Document Info - Visible to everyone */}
+        <Card>
             <CardHeader>
               <CardTitle>Thông tin tài liệu</CardTitle>
             </CardHeader>
@@ -977,9 +1082,9 @@ export function DocumentDetailPage(): ReactElement {
             </CardContent>
           </Card>
 
-          {/* File Details - Show all files */}
-          {document.files && document.files.length > 0 && (
-            <Card>
+        {/* File Details - Show all files */}
+        {document.files && document.files.length > 0 && (
+          <Card>
               <CardHeader>
                 <CardTitle>Danh sách file</CardTitle>
               </CardHeader>
@@ -1014,13 +1119,13 @@ export function DocumentDetailPage(): ReactElement {
                       </div>
                     </div>
                   ))}
-              </CardContent>
-            </Card>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Owner Management Section */}
-          {isOwner && (
-            <Card>
+        {/* Owner Management Section */}
+        {isOwner && (
+          <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Quản lý tài liệu</span>
@@ -1175,23 +1280,32 @@ export function DocumentDetailPage(): ReactElement {
                     Tài liệu công khai - mọi người đều có thể xem.
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Document Edit Sheet */}
-          {isOwner && document && (
-            <DocumentEditSheet
-              open={editSheetOpen}
-              onOpenChange={setEditSheetOpen}
-              document={document}
-              onDocumentUpdated={handleDocumentUpdated}
-            />
-          )}
+        {/* Document Edit Sheet */}
+        {isOwner && document && (
+          <DocumentEditSheet
+            open={editSheetOpen}
+            onOpenChange={setEditSheetOpen}
+            document={document}
+            onDocumentUpdated={handleDocumentUpdated}
+          />
+        )}
 
-          {/* AI Analysis */}
-          {aiAnalysis && <DocumentAIAnalysis analysis={aiAnalysis} />}
-        </div>
+        {/* Comments */}
+        <DocumentComments
+          comments={comments}
+          onAddComment={handleAddComment}
+          onLikeComment={handleLikeComment}
+          onEditComment={handleEditComment}
+          onDeleteComment={handleDeleteComment}
+          currentUserId={user?.id}
+        />
+
+        {/* AI Analysis */}
+        {aiAnalysis && <DocumentAIAnalysis analysis={aiAnalysis} />}
       </div>
     </div>
   );

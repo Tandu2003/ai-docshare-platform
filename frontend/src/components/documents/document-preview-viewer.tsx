@@ -60,6 +60,16 @@ export function DocumentPreviewViewer({
   const [zoom, setZoom] = useState(1);
   const [imageLoadError, setImageLoadError] = useState<Set<number>>(new Set());
 
+  // Update state when initial props change
+  useEffect(() => {
+    if (initialPreviews) {
+      setPreviews(initialPreviews);
+    }
+    if (initialStatus) {
+      setPreviewStatus(initialStatus);
+    }
+  }, [initialPreviews, initialStatus]);
+
   // Auto-refresh previews when URLs expire (every 25 seconds)
   const refreshPreviews = useCallback(async () => {
     if (!hasAccess || previewStatus !== 'COMPLETED') return;

@@ -32,6 +32,7 @@ interface DocumentDetailHeaderProps {
   onBookmark: () => void;
   onShare: () => void;
   onRate: (rating: number) => void;
+  onPreview?: () => void;
   userRating?: number;
   isBookmarked?: boolean;
   isBookmarking?: boolean;
@@ -47,6 +48,7 @@ export function DocumentDetailHeader({
   onBookmark,
   onShare,
   onRate,
+  onPreview,
   userRating = 0,
   isBookmarked = false,
   isBookmarking = false,
@@ -209,6 +211,13 @@ export function DocumentDetailHeader({
 
               {/* Actions */}
               <div className="flex items-center space-x-2">
+                {onPreview && (
+                  <Button variant="outline" onClick={onPreview}>
+                    <Eye className="h-4 w-4" />
+                    Xem trước
+                  </Button>
+                )}
+
                 <DocumentPermissionGate document={document} action="download">
                   <Button
                     onClick={onDownload}
