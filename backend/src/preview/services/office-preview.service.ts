@@ -127,26 +127,44 @@ export class OfficePreviewService {
   ): Promise<string | null> {
     let pdfPath: string | null = null;
 
-    // Approach 1: Try unoconv with soffice daemon
+    // Approach 1: Try unoconv with soffice daemon (skip if known to fail)
     const unoconvAvailable =
       await this.utilService.isCommandAvailable('unoconv');
     if (unoconvAvailable) {
+      this.logger.debug('Attempting unoconv conversion...');
       pdfPath = await this.tryUnoconvConversion(inputPath, tmpDir);
+      if (pdfPath) {
+        return pdfPath;
+      }
+      this.logger.debug('unoconv failed, falling back to LibreOffice');
+    } else {
+      this.logger.debug('unoconv not available, using LibreOffice directly');
     }
 
-    // Approach 2: Standard LibreOffice conversion
-    if (!pdfPath) {
-      pdfPath = await this.tryLibreOfficeConversion(inputPath, tmpDir);
+    // Approach 2: Standard LibreOffice conversion (primary fallback)
+    this.logger.debug('Attempting LibreOffice conversion...');
+    pdfPath = await this.tryLibreOfficeConversion(inputPath, tmpDir);
+    if (pdfPath) {
+      return pdfPath;
     }
 
     // Approach 3: Alternative LibreOffice options
-    if (!pdfPath) {
-      pdfPath = await this.tryAlternativeLibreOffice(inputPath, tmpDir);
+    this.logger.debug('Attempting alternative LibreOffice conversion...');
+    pdfPath = await this.tryAlternativeLibreOffice(inputPath, tmpDir);
+    if (pdfPath) {
+      return pdfPath;
     }
 
-    // Approach 4: Last resort unoconv without daemon
-    if (!pdfPath) {
+    // Approach 4: Last resort unoconv without daemon (only if not tried yet)
+    if (unoconvAvailable) {
+      this.logger.debug('Attempting unoconv without daemon as last resort...');
       pdfPath = await this.tryUnoconvNoDaemon(inputPath, tmpDir);
+    }
+
+    if (!pdfPath) {
+      this.logger.error(
+        'All conversion methods failed. Cannot convert Office document to PDF.',
+      );
     }
 
     return pdfPath;
@@ -172,12 +190,19 @@ export class OfficePreviewService {
         return unoconvOutput;
       }
     } catch (unoError) {
-      this.logger.warn(
-        `unoconv conversion failed: ${(unoError as Error).message}`,
-      );
+      const errorMessage = (unoError as Error).message;
+      const isDistutilsError = errorMessage.includes('distutils');
 
-      // Try starting soffice daemon
-      const daemon = await this.utilService.startSofficeDaemon(tmpDir);
+      if (isDistutilsError) {
+        // Silently skip unoconv if distutils is missing - will use LibreOffice
+        return null;
+      }
+
+      // Only log non-distutils errors at debug level
+      this.logger.debug(`unoconv conversion failed: ${errorMessage}`);
+
+      // Try starting soffice daemon only if not a distutils error
+      const daemon = this.utilService.startSofficeDaemon(tmpDir);
       if (daemon) {
         await this.utilService.delay(1200);
         try {
@@ -193,9 +218,12 @@ export class OfficePreviewService {
             return unoconvOutput;
           }
         } catch (unoRetryError) {
-          this.logger.warn(
-            `unoconv with daemon failed: ${(unoRetryError as Error).message}`,
-          );
+          const retryErrorMessage = (unoRetryError as Error).message;
+          if (!retryErrorMessage.includes('distutils')) {
+            this.logger.debug(
+              `unoconv with daemon failed: ${retryErrorMessage}`,
+            );
+          }
         } finally {
           try {
             daemon.kill('SIGKILL');
@@ -285,7 +313,7 @@ export class OfficePreviewService {
     const unoconvOutput = path.join(tmpDir, 'output.pdf');
 
     try {
-      this.logger.log('Trying unoconv conversion (no daemon)...');
+      this.logger.debug('Trying unoconv conversion (no daemon)...');
       await this.utilService.runCommandWithTimeout(
         `unoconv -f pdf -o "${unoconvOutput}" "${inputPath}"`,
         { logLabel: 'unoconv-last' },
@@ -296,9 +324,11 @@ export class OfficePreviewService {
         return unoconvOutput;
       }
     } catch (unoError) {
-      this.logger.warn(
-        `unoconv conversion failed: ${(unoError as Error).message}`,
-      );
+      const errorMessage = (unoError as Error).message;
+      // Only log non-distutils errors at debug level
+      if (!errorMessage.includes('distutils')) {
+        this.logger.debug(`unoconv conversion failed: ${errorMessage}`);
+      }
     }
 
     return null;

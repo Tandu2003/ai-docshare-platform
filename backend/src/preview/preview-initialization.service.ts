@@ -42,7 +42,51 @@ export class PreviewInitializationService implements OnModuleInit {
     );
 
     try {
+      // Get statistics for debugging
+      const [
+        totalDocs,
+        approvedDocs,
+        pendingApprovalDocs,
+        nonDraftDocs,
+        draftDocs,
+        docsWithFiles,
+        docsWithoutFiles,
+        completedPreviews,
+        pendingPreviews,
+        failedPreviews,
+        processingPreviews,
+      ] = await Promise.all([
+        this.prisma.document.count(),
+        this.prisma.document.count({ where: { isApproved: true } }),
+        this.prisma.document.count({ where: { isApproved: false } }),
+        this.prisma.document.count({ where: { isDraft: false } }),
+        this.prisma.document.count({ where: { isDraft: true } }),
+        this.prisma.document.count({
+          where: { files: { some: {} } },
+        }),
+        this.prisma.document.count({
+          where: { files: { none: {} } },
+        }),
+        this.prisma.document.count({
+          where: { previewStatus: PreviewStatus.COMPLETED },
+        }),
+        this.prisma.document.count({
+          where: { previewStatus: PreviewStatus.PENDING },
+        }),
+        this.prisma.document.count({
+          where: { previewStatus: PreviewStatus.FAILED },
+        }),
+        this.prisma.document.count({
+          where: { previewStatus: PreviewStatus.PROCESSING },
+        }),
+      ]);
+
+      this.logger.log(
+        `Document statistics: Total=${totalDocs} | Approved=${approvedDocs} (Pending approval=${pendingApprovalDocs}) | Non-draft=${nonDraftDocs} (Draft=${draftDocs}) | With files=${docsWithFiles} (Without files=${docsWithoutFiles}) | Preview: Completed=${completedPreviews}, Pending=${pendingPreviews}, Failed=${failedPreviews}, Processing=${processingPreviews}`,
+      );
+
       // Find documents without previews or with PENDING/FAILED status
+      // Generate previews for all documents (approved or not), except drafts
       const documentsNeedingPreviews = await this.prisma.document.findMany({
         where: {
           OR: [
@@ -61,8 +105,7 @@ export class PreviewInitializationService implements OnModuleInit {
               },
             },
           ],
-          // Only approved and non-draft documents
-          isApproved: true,
+          // Non-draft documents only (preview for both approved and pending approval)
           isDraft: false,
           // Must have files
           files: {
@@ -82,12 +125,19 @@ export class PreviewInitializationService implements OnModuleInit {
       const totalDocuments = documentsNeedingPreviews.length;
 
       if (totalDocuments === 0) {
-        this.logger.log('No documents need preview initialization');
+        // Calculate breakdown (now includes both approved and pending approval)
+        const eligibleDocs = nonDraftDocs; // All non-draft documents (approved + pending)
+        const eligibleWithFiles = Math.min(eligibleDocs, docsWithFiles);
+        const needsPreview = eligibleWithFiles - completedPreviews;
+
+        this.logger.log(
+          `No documents need preview initialization. Breakdown: ${totalDocs} total → ${eligibleDocs} eligible (${draftDocs} drafts excluded, ${approvedDocs} approved + ${pendingApprovalDocs} pending approval) → ${eligibleWithFiles} with files (${docsWithoutFiles} without files) → ${needsPreview} need preview but all are already completed (${completedPreviews} completed, ${pendingPreviews} pending, ${failedPreviews} failed, ${processingPreviews} processing)`,
+        );
         return;
       }
 
       this.logger.log(
-        `Found ${totalDocuments} documents needing preview generation`,
+        `Found ${totalDocuments} documents needing preview generation (out of ${totalDocs} total documents)`,
       );
 
       let processedCount = 0;
@@ -168,7 +218,7 @@ export class PreviewInitializationService implements OnModuleInit {
     const failedDocuments = await this.prisma.document.findMany({
       where: {
         previewStatus: PreviewStatus.FAILED,
-        isApproved: true,
+        // Include both approved and pending approval documents
         isDraft: false,
       },
       select: {
@@ -209,7 +259,7 @@ export class PreviewInitializationService implements OnModuleInit {
 
     const allDocuments = await this.prisma.document.findMany({
       where: {
-        isApproved: true,
+        // Include both approved and pending approval documents
         isDraft: false,
         files: {
           some: {},

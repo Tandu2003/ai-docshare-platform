@@ -180,6 +180,29 @@ export class PreviewService {
         });
       }
 
+      // Validate that previews were actually generated
+      if (!previews || previews.length === 0) {
+        this.logger.warn(
+          `No previews generated for document ${documentId}, marking as failed`,
+        );
+        await this.prisma.document.update({
+          where: { id: documentId },
+          data: {
+            previewStatus: PreviewStatus.FAILED,
+            previewError: 'Preview generation returned empty result',
+          },
+        });
+
+        return {
+          success: false,
+          documentId,
+          previews: [],
+          totalPages: 0,
+          error: 'No previews were generated',
+        };
+      }
+
+      // Only mark as COMPLETED if previews were successfully generated
       await this.prisma.document.update({
         where: { id: documentId },
         data: { previewStatus: PreviewStatus.COMPLETED },

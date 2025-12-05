@@ -134,9 +134,26 @@ export class PreviewUtilService {
         return result;
       } catch (error) {
         lastError = error as Error;
-        this.logger.warn(
-          `${label} failed (attempt ${attempt}/${retries + 1}): ${lastError.message}`,
-        );
+        const errorMessage = lastError.message;
+        const isDistutilsError = errorMessage.includes('distutils');
+        const isUnoconvCommand = label.includes('unoconv');
+
+        // Suppress warnings for unoconv/distutils errors - they're expected and handled by fallback
+        if (isUnoconvCommand && isDistutilsError) {
+          this.logger.debug(
+            `${label} failed (attempt ${attempt}/${retries + 1}): distutils error (expected, using LibreOffice fallback)`,
+          );
+        } else if (isUnoconvCommand) {
+          // Other unoconv errors at debug level
+          this.logger.debug(
+            `${label} failed (attempt ${attempt}/${retries + 1}): ${errorMessage}`,
+          );
+        } else {
+          // Non-unoconv errors keep warning level
+          this.logger.warn(
+            `${label} failed (attempt ${attempt}/${retries + 1}): ${errorMessage}`,
+          );
+        }
       }
     }
 
@@ -161,7 +178,7 @@ export class PreviewUtilService {
   /**
    * Start LibreOffice daemon for unoconv
    */
-  async startSofficeDaemon(tmpDir: string): Promise<ChildProcess | null> {
+  startSofficeDaemon(tmpDir: string): ChildProcess | null {
     try {
       const child = spawn(
         'soffice',
