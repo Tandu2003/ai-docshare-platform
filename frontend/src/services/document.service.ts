@@ -111,6 +111,8 @@ export interface DocumentView {
   };
   shareLink?: DocumentShareLink;
   aiAnalysis?: AIAnalysis | null;
+  zipFileUrl?: string;
+  zipFileCreatedAt?: string;
 }
 
 export interface ViewDocumentRequest {
