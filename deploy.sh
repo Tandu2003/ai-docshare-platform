@@ -64,6 +64,9 @@ pm2 start ecosystem.config.js --env production
 # Lưu để auto-start
 pm2 save
 
+# Restart all processes
+pm2 restart all
+
 echo ""
 echo "╔═══════════════════════════════════════════════════════════╗"
 echo "║              ✅ DEPLOY HOÀN TẤT!                          ║"
@@ -78,3 +81,4 @@ echo "║  🔄 Restart:        pm2 restart all                       ║"
 echo "║                                                           ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
+pm2 status

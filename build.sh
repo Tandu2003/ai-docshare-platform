@@ -13,8 +13,15 @@ echo "║        🔨 Building DocShare Platform                      ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
 
+# ====== UPDATE CODE FROM GIT ======
+echo "🔄 [1/4] Updating code from Git..."
+git fetch
+git pull
+echo "✅ Code updated successfully"
+echo ""
+
 # ====== BUILD FRONTEND ======
-echo "📦 [1/3] Building Frontend..."
+echo "📦 [2/4] Building Frontend..."
 cd frontend
 npm install
 npm run build
@@ -23,7 +30,7 @@ echo "✅ Frontend built successfully"
 echo ""
 
 # ====== BUILD BACKEND ======
-echo "📦 [2/3] Building Backend..."
+echo "📦 [3/4] Building Backend..."
 cd backend
 npm install
 npm run build
@@ -32,7 +39,23 @@ echo "✅ Backend built successfully"
 echo ""
 
 # ====== RESTART PM2 ======
-echo "🔄 [3/3] Restarting PM2 processes..."
+echo "🔄 [4/4] Restarting PM2 processes..."
+
+# Dừng processes cũ
+pm2 delete all 2>/dev/null || true
+
+# Kill ports nếu bị chiếm
+fuser -k 8080/tcp 2>/dev/null || true
+fuser -k 5173/tcp 2>/dev/null || true
+sleep 1
+
+# Khởi động PM2
+pm2 start ecosystem.config.js --env production
+
+# Lưu để auto-start
+pm2 save
+
+# Restart all processes
 pm2 restart all
 
 echo ""
@@ -45,4 +68,5 @@ echo "║  📋 Xem logs:       pm2 logs                              ║"
 echo "║                                                           ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
+pm2 status
 
