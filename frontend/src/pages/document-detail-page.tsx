@@ -36,9 +36,9 @@ import {
 } from '@/services/document.service';
 import { DocumentsService } from '@/services/files.service';
 import { RatingService } from '@/services/rating.service';
+import { UploadService } from '@/services/upload.service';
 import type { AIAnalysis, Comment } from '@/types';
 import { getLanguageName } from '@/utils/language';
-import { UploadService } from '@/services/upload.service';
 
 export function DocumentDetailPage(): ReactElement {
   const { documentId } = useParams<{ documentId: string }>();
@@ -852,7 +852,9 @@ export function DocumentDetailPage(): ReactElement {
 
                 {/* Updated date */}
                 <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">Cập nhật lần cuối</p>
+                  <p className="text-muted-foreground text-xs">
+                    Cập nhật lần cuối
+                  </p>
                   <span>
                     {new Date(document.updatedAt).toLocaleDateString('vi-VN', {
                       year: 'numeric',
@@ -873,7 +875,9 @@ export function DocumentDetailPage(): ReactElement {
                 {/* Total file size */}
                 {document.files && document.files.length > 0 && (
                   <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs">Tổng dung lượng</p>
+                    <p className="text-muted-foreground text-xs">
+                      Tổng dung lượng
+                    </p>
                     <span className="font-medium">
                       {UploadService.formatFileSize(
                         document.files.reduce((total, file) => {
@@ -891,7 +895,9 @@ export function DocumentDetailPage(): ReactElement {
                 {/* Preview status */}
                 {document.previewStatus && (
                   <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs">Trạng thái preview</p>
+                    <p className="text-muted-foreground text-xs">
+                      Trạng thái preview
+                    </p>
                     <Badge
                       variant={
                         document.previewStatus === 'COMPLETED'
@@ -914,17 +920,22 @@ export function DocumentDetailPage(): ReactElement {
                 )}
 
                 {/* Preview count */}
-                {document.previewCount !== undefined && document.previewCount > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs">Số trang preview</p>
-                    <span className="font-medium">{document.previewCount} trang</span>
-                  </div>
-                )}
+                {document.previewCount !== undefined &&
+                  document.previewCount > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">
+                        Số trang preview
+                      </p>
+                      <span className="font-medium">
+                        {document.previewCount} trang
+                      </span>
+                    </div>
+                  )}
               </div>
 
               {/* Rejection reason */}
               {document.rejectionReason && (
-                <div className="space-y-1 rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                <div className="border-destructive/50 bg-destructive/10 space-y-1 rounded-md border p-3">
                   <p className="text-destructive text-xs font-medium">
                     Lý do từ chối
                   </p>
@@ -936,7 +947,7 @@ export function DocumentDetailPage(): ReactElement {
 
               {/* ZIP file info */}
               {document.zipFileUrl && (
-                <div className="space-y-1 rounded-md border bg-muted/50 p-3">
+                <div className="bg-muted/50 space-y-1 rounded-md border p-3">
                   <p className="text-muted-foreground text-xs font-medium">
                     File ZIP đã tạo
                   </p>
@@ -960,41 +971,6 @@ export function DocumentDetailPage(): ReactElement {
                         {tag}
                       </Badge>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Detailed Stats */}
-              {document.stats && (
-                <div className="space-y-2 border-t pt-4">
-                  <p className="text-muted-foreground text-xs font-medium">
-                    Thống kê chi tiết
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Lượt xem:</span>
-                      <span className="ml-1 font-medium">
-                        {document.stats.viewsCount || document.viewCount}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Lượt tải:</span>
-                      <span className="ml-1 font-medium">
-                        {document.stats.downloadsCount || document.downloadCount}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Đánh giá:</span>
-                      <span className="ml-1 font-medium">
-                        {document.stats.ratingsCount || document.totalRatings}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Bình luận:</span>
-                      <span className="ml-1 font-medium">
-                        {document.stats.commentsCount || 0}
-                      </span>
-                    </div>
                   </div>
                 </div>
               )}
@@ -1024,7 +1000,7 @@ export function DocumentDetailPage(): ReactElement {
                             {file.originalName || file.fileName}
                           </p>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center gap-3 text-xs">
                           <span>
                             {UploadService.formatFileSize(
                               typeof file.fileSize === 'string'
@@ -1065,7 +1041,9 @@ export function DocumentDetailPage(): ReactElement {
                     Trạng thái
                   </span>
                   <div className="flex items-center gap-2">
-                    <Badge variant={document.isPublic ? 'default' : 'secondary'}>
+                    <Badge
+                      variant={document.isPublic ? 'default' : 'secondary'}
+                    >
                       {document.isPublic ? 'Công khai' : 'Riêng tư'}
                     </Badge>
                     {document.isDraft && (

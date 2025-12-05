@@ -394,20 +394,34 @@ export class VectorSearchService {
 
       // Perform both searches in parallel
       // Mark as internal calls to prevent double counting metrics
-      const [vectorResults, textResults] = await Promise.all([
-        this.vectorSearch({
-          ...options,
-          query: variants.embeddingText || variants.trimmed,
-          limit: limit * 2, // Get more results for better combination
-          recordHistory: false,
-          _isInternalCall: true,
-        }),
-        this.keywordSearch({
-          ...options,
-          query: variants.trimmed,
-          _isInternalCall: true,
-        }),
-      ]);
+      let vectorResults: VectorSearchResult[] = [];
+      let textResults: Array<{ documentId: string; textScore: number }> = [];
+
+      try {
+        [vectorResults, textResults] = await Promise.all([
+          this.vectorSearch({
+            ...options,
+            query: variants.embeddingText || variants.trimmed,
+            limit: limit * 2, // Get more results for better combination
+            recordHistory: false,
+            _isInternalCall: true,
+          }).catch(error => {
+            this.logger.warn('Vector search failed in hybrid search:', error);
+            return [];
+          }),
+          this.keywordSearch({
+            ...options,
+            query: variants.trimmed,
+            _isInternalCall: true,
+          }).catch(error => {
+            this.logger.warn('Keyword search failed in hybrid search:', error);
+            return [];
+          }),
+        ]);
+      } catch (error) {
+        this.logger.error('Error performing parallel searches:', error);
+        // Continue with empty results - will return empty array
+      }
 
       // Combine results
       const combinedMap = new Map<string, HybridSearchResult>();
@@ -446,29 +460,34 @@ export class VectorSearchService {
       // Cache the results
       this.cacheResults(cacheKey, combinedResults);
 
-      // Save search history
+      // Save search history (non-blocking)
       if (options.userId) {
-        const historyEmbeddingQuery =
-          variants.embeddingText || variants.trimmed || query;
-        const queryEmbedding = await this.embeddingService.generateEmbedding(
-          historyEmbeddingQuery,
-        );
-        const highestScore = combinedResults[0]?.combinedScore || 0;
+        try {
+          const historyEmbeddingQuery =
+            variants.embeddingText || variants.trimmed || query;
+          const queryEmbedding = await this.embeddingService.generateEmbedding(
+            historyEmbeddingQuery,
+          );
+          const highestScore = combinedResults[0]?.combinedScore || 0;
 
-        await this.saveSearchHistory(
-          {
-            ...options,
-            query: variants.trimmed,
-            // Mark as hybrid
-          },
-          queryEmbedding,
-          combinedResults.map(r => ({
-            documentId: r.documentId,
-            similarityScore: r.combinedScore,
-          })),
-          'hybrid',
-          highestScore,
-        );
+          await this.saveSearchHistory(
+            {
+              ...options,
+              query: variants.trimmed,
+              // Mark as hybrid
+            },
+            queryEmbedding,
+            combinedResults.map(r => ({
+              documentId: r.documentId,
+              similarityScore: r.combinedScore,
+            })),
+            'hybrid',
+            highestScore,
+          );
+        } catch (historyError) {
+          // Don't fail the search if history saving fails
+          this.logger.warn('Failed to save search history:', historyError);
+        }
       }
 
       // Update metrics

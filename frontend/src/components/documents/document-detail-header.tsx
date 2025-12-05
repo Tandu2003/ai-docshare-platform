@@ -158,7 +158,7 @@ export function DocumentDetailHeader({
                   </div>
                 )}
                 {document.rejectionReason && (
-                  <div className="rounded-md border border-destructive/50 bg-destructive/10 p-2">
+                  <div className="border-destructive/50 bg-destructive/10 rounded-md border p-2">
                     <p className="text-destructive text-xs font-medium">
                       Lý do từ chối:
                     </p>

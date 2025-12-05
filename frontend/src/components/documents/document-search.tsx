@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  ArrowDownAZ,
-  ArrowUpAZ,
-  FolderOpen,
-  Layers,
-  Search,
-} from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, FolderOpen, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -139,7 +133,11 @@ export function DocumentSearch({
     setSearchQuery(value);
 
     const trimmed = value.trim();
-    if ((filters.query || '') === trimmed) {
+    const currentQuery = (filters.query || '').trim();
+
+    // Only skip if the trimmed values are exactly the same
+    // This prevents unnecessary API calls when the query hasn't actually changed
+    if (currentQuery === trimmed) {
       return;
     }
 
@@ -315,17 +313,6 @@ export function DocumentSearch({
             </Button>
           </div>
         </div>
-
-        {/* Search Mode Indicator */}
-        {filters.query && (
-          <div className="border-primary/40 bg-primary/5 text-muted-foreground flex items-center gap-2 rounded-md border border-dashed p-3 text-sm">
-            <Layers className="text-primary h-4 w-4" />
-            <span>
-              Đang sử dụng chế độ tìm kiếm kết hợp (AI embeddings + từ khóa) để
-              trả về kết quả chính xác hơn.
-            </span>
-          </div>
-        )}
 
         {/* Active Filters Display */}
         {(filters.categoryId ||

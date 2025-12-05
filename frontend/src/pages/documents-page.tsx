@@ -84,6 +84,15 @@ export function DocumentsPage(): ReactElement {
             },
           );
 
+          if (!response || !response.documents) {
+            console.error('Invalid search response:', response);
+            if (reset) {
+              setDocuments([]);
+            }
+            setHasMore(false);
+            return;
+          }
+
           if (reset) {
             setDocuments(response.documents);
           } else {
@@ -105,6 +114,15 @@ export function DocumentsPage(): ReactElement {
             },
           );
 
+          if (!response || !response.documents) {
+            console.error('Invalid public documents response:', response);
+            if (reset) {
+              setDocuments([]);
+            }
+            setHasMore(false);
+            return;
+          }
+
           if (reset) {
             setDocuments(response.documents);
           } else {
@@ -121,6 +139,7 @@ export function DocumentsPage(): ReactElement {
         if (reset) {
           setDocuments([]);
         }
+        setHasMore(false);
       } finally {
         setLoading(false);
       }

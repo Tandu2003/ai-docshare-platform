@@ -1345,8 +1345,10 @@ export class DocumentsService {
         vectorFilters.isPublic = true;
       }
 
-      let searchResults: HybridSearchResult[] =
-        await this.vectorSearchService.hybridSearch({
+      let searchResults: HybridSearchResult[] = [];
+
+      try {
+        searchResults = await this.vectorSearchService.hybridSearch({
           query: normalizedQuery,
           userId,
           userRole,
@@ -1354,23 +1356,37 @@ export class DocumentsService {
           threshold: 0.4,
           filters: vectorFilters,
         });
+      } catch (hybridError) {
+        this.logger.error(
+          'Hybrid search failed, falling back to keyword search:',
+          hybridError,
+        );
+        // Fallback to keyword search on error
+        searchResults = [];
+      }
 
       if (searchResults.length === 0) {
         this.logger.warn(
           'Hybrid search returned no results; falling back to keyword search.',
         );
 
-        const fallbackResults = await this.vectorSearchService.keywordSearch({
-          query: normalizedQuery,
-          limit: fetchLimit,
-          filters: vectorFilters,
-        });
+        try {
+          const fallbackResults = await this.vectorSearchService.keywordSearch({
+            query: normalizedQuery,
+            limit: fetchLimit,
+            filters: vectorFilters,
+          });
 
-        searchResults = fallbackResults.map(result => ({
-          documentId: result.documentId,
-          textScore: result.textScore,
-          combinedScore: result.textScore,
-        }));
+          searchResults = fallbackResults.map(result => ({
+            documentId: result.documentId,
+            textScore: result.textScore,
+            combinedScore: result.textScore,
+          }));
+        } catch (keywordError) {
+          this.logger.error('Keyword search also failed:', keywordError);
+          // Return empty results if both searches fail
+          searchResults = [];
+        }
       }
 
       const documentIds = searchResults
