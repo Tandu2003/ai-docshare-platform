@@ -296,6 +296,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
               const statusInfo = getDocumentStatusInfo(
                 document.isApproved,
                 document.moderationStatus,
+                document.needsReModeration,
               );
 
               return (
@@ -339,7 +340,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </Badge>
 
                       {/* Moderation Info */}
-                      {document.moderatedAt && (
+                      {document.moderatedAt && !document.needsReModeration && (
                         <div className="flex items-center gap-1">
                           {document.moderatedById ? (
                             <UserCheck className="h-3 w-3 text-blue-600" />

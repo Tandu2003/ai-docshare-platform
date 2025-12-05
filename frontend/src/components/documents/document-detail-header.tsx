@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import {
   ArrowLeft,
   Bookmark,
@@ -53,6 +55,16 @@ export function DocumentDetailHeader({
   isCheckingDownloadStatus = false,
   isOwner = false,
 }: DocumentDetailHeaderProps) {
+  function renderStatusBadge(): ReactElement {
+    if (document.moderationStatus === 'REJECTED') {
+      return <Badge variant="destructive">Đã từ chối</Badge>;
+    }
+    if (document.isApproved || document.moderationStatus === 'APPROVED') {
+      return <Badge variant="default">Đã duyệt</Badge>;
+    }
+    return <Badge variant="secondary">Chờ duyệt</Badge>;
+  }
+
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -85,10 +97,9 @@ export function DocumentDetailHeader({
                     Premium
                   </Badge>
                 )}
-                {document.isApproved ? (
-                  <Badge variant="default">Đã duyệt</Badge>
-                ) : (
-                  <Badge variant="secondary">Chờ duyệt</Badge>
+                {renderStatusBadge()}
+                {document.needsReModeration && (
+                  <Badge variant="outline">Chờ kiểm duyệt lại</Badge>
                 )}
                 {document.isDraft && <Badge variant="outline">Draft</Badge>}
               </div>

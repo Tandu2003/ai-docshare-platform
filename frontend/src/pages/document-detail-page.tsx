@@ -37,6 +37,7 @@ import {
 import { DocumentsService } from '@/services/files.service';
 import { RatingService } from '@/services/rating.service';
 import type { AIAnalysis, Comment } from '@/types';
+import { getLanguageName } from '@/utils/language';
 
 export function DocumentDetailPage(): ReactElement {
   const { documentId } = useParams<{ documentId: string }>();
@@ -791,65 +792,84 @@ export function DocumentDetailPage(): ReactElement {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Share management - only show for private documents owned by user */}
-          {isOwner && !document.isPublic && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Chia sẻ tài liệu</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {activeShareLink ? (
-                  <>
-                    <div className="bg-muted/40 rounded-md border border-dashed p-3 text-xs leading-relaxed">
-                      <span className="text-muted-foreground font-medium">
-                        Đường dẫn:
-                      </span>
-                      <br />
-                      <span className="break-all">{shareLinkUrl}</span>
-                    </div>
-                    {shareExpiresAtLabel && (
-                      <p className="text-muted-foreground text-xs">
-                        Liên kết sẽ hết hạn vào {shareExpiresAtLabel}.
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    Bạn chưa thiết lập liên kết chia sẻ cho tài liệu này.
+          {/* Document Info - Visible to everyone */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Thông tin tài liệu</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Description */}
+              {document.description && (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Mô tả
                   </p>
-                )}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShareDialogOpen(true)}
-                >
-                  Quản lý liên kết chia sẻ
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+                  <p className="text-sm leading-relaxed">
+                    {document.description}
+                  </p>
+                </div>
+              )}
 
-          {/* Public document notice */}
-          {isOwner && document.isPublic && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Chia sẻ tài liệu</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Tài liệu này đã được công khai. Mọi người đều có thể xem mà
-                  không cần liên kết chia sẻ riêng.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {/* Category */}
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">Danh mục</p>
+                  <Badge variant="outline" className="font-normal">
+                    {document.category?.name || 'Chưa phân loại'}
+                  </Badge>
+                </div>
 
-          {/* Owner: Update metadata - Using DocumentEditSheet */}
+                {/* Language */}
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">Ngôn ngữ</p>
+                  <span className="font-medium">
+                    {document.language
+                      ? getLanguageName(document.language)
+                      : 'N/A'}
+                  </span>
+                </div>
+
+                {/* Uploader */}
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">Người đăng</p>
+                  <span className="font-medium">
+                    {document.uploader.firstName} {document.uploader.lastName}
+                  </span>
+                </div>
+
+                {/* Upload date */}
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">Ngày đăng</p>
+                  <span>
+                    {new Date(document.createdAt).toLocaleDateString('vi-VN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tags */}
+              {(document.tags || []).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Thẻ
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {document.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Owner Management Section */}
           {isOwner && (
             <Card>
-              <CardHeader className="space-y-1">
+              <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Chỉnh sửa tài liệu</span>
+                  <span>Quản lý tài liệu</span>
                   <Button
                     size="sm"
                     variant="outline"
@@ -859,57 +879,113 @@ export function DocumentDetailPage(): ReactElement {
                     Chỉnh sửa
                   </Button>
                 </CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  Chỉnh sửa thông tin, tệp đính kèm và phân tích AI.
-                </p>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 gap-3 text-sm">
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <span className="text-muted-foreground">Tiêu đề</span>
-                    <span className="line-clamp-1 font-medium">
-                      {document.title}
+              <CardContent className="space-y-4">
+                {/* Status */}
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-sm">
+                    Trạng thái
+                  </span>
+                  <Badge variant={document.isPublic ? 'default' : 'secondary'}>
+                    {document.isPublic ? 'Công khai' : 'Riêng tư'}
+                  </Badge>
+                </div>
+
+                {/* Download Cost */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Điểm tải xuống
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <span className="text-muted-foreground">Danh mục</span>
-                    <span className="font-medium">
-                      {document.category?.name || 'Chưa chọn'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <span className="text-muted-foreground">Ngôn ngữ</span>
-                    <span className="font-medium uppercase">
-                      {document.language}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <span className="text-muted-foreground">Trạng thái</span>
-                    <span className="font-medium">
-                      {document.isPublic ? 'Công khai' : 'Riêng tư'}
-                    </span>
+                    {!isEditingDownloadCost ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {document.originalDownloadCost !== undefined &&
+                          document.originalDownloadCost !== null
+                            ? `${document.originalDownloadCost} điểm`
+                            : `${document.systemDefaultDownloadCost ?? 0} (mặc định)`}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={handleStartEditDownloadCost}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={editDownloadCost ?? ''}
+                          onChange={e => {
+                            const value = e.target.value;
+                            setEditDownloadCost(
+                              value === '' ? null : parseInt(value, 10),
+                            );
+                          }}
+                          placeholder="Mặc định"
+                          className="h-8 w-20"
+                        />
+                        <Button
+                          size="icon"
+                          variant="default"
+                          className="h-8 w-8"
+                          onClick={handleSaveDownloadCost}
+                          disabled={isSavingDownloadCost}
+                        >
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-8 w-8"
+                          onClick={handleCancelEditDownloadCost}
+                          disabled={isSavingDownloadCost}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {(document.tags || []).length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs">Thẻ</p>
-                    <div className="flex flex-wrap gap-1">
-                      {document.tags.slice(0, 5).map(tag => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                      {document.tags.length > 5 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{document.tags.length - 5}
-                        </Badge>
-                      )}
+
+                {/* Share Link */}
+                {!document.isPublic && (
+                  <div className="space-y-2 border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-sm">
+                        Chia sẻ riêng tư
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShareDialogOpen(true)}
+                      >
+                        Quản lý
+                      </Button>
                     </div>
+                    {activeShareLink && (
+                      <div className="bg-muted/40 rounded-md p-2 text-xs">
+                        <p className="text-muted-foreground truncate">
+                          {shareLinkUrl}
+                        </p>
+                        {shareExpiresAtLabel && (
+                          <p className="text-muted-foreground mt-1">
+                            Hết hạn: {shareExpiresAtLabel}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {document.isPublic && (
+                  <p className="text-muted-foreground border-t pt-4 text-xs">
+                    Tài liệu công khai - mọi người đều có thể xem.
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -925,133 +1001,8 @@ export function DocumentDetailPage(): ReactElement {
             />
           )}
 
-          {/* Download Cost Settings - Owner Only */}
-          {isOwner && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Điểm tải xuống</span>
-                  {!isEditingDownloadCost && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleStartEditDownloadCost}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isEditingDownloadCost ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={editDownloadCost ?? ''}
-                        onChange={e => {
-                          const value = e.target.value;
-                          setEditDownloadCost(
-                            value === '' ? null : parseInt(value, 10),
-                          );
-                        }}
-                        placeholder="Mặc định hệ thống"
-                        className="w-full"
-                      />
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      Để trống để sử dụng cài đặt mặc định của hệ thống.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleSaveDownloadCost}
-                        disabled={isSavingDownloadCost}
-                        className="flex-1"
-                      >
-                        <Save className="mr-1 h-4 w-4" />
-                        {isSavingDownloadCost ? 'Đang lưu...' : 'Lưu'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCancelEditDownloadCost}
-                        disabled={isSavingDownloadCost}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground text-sm">
-                        Chi phí tải xuống
-                      </span>
-                      <span className="font-medium">
-                        {document.originalDownloadCost !== undefined &&
-                        document.originalDownloadCost !== null
-                          ? `${document.originalDownloadCost} điểm`
-                          : `${document.systemDefaultDownloadCost ?? 0} điểm (mặc định)`}
-                      </span>
-                    </div>
-                    {document.originalDownloadCost === null ||
-                    document.originalDownloadCost === undefined ? (
-                      <p className="text-muted-foreground text-xs">
-                        Đang sử dụng giá mặc định của hệ thống. Bạn có thể đặt
-                        giá riêng cho tài liệu này.
-                      </p>
-                    ) : (
-                      <p className="text-muted-foreground text-xs">
-                        Giá tùy chỉnh. Để trống khi chỉnh sửa để sử dụng mặc
-                        định hệ thống ({document.systemDefaultDownloadCost ?? 0}{' '}
-                        điểm).
-                      </p>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* AI Analysis */}
           {aiAnalysis && <DocumentAIAnalysis analysis={aiAnalysis} />}
-
-          {/* Document Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Thống kê tài liệu</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Lượt tải</span>
-                <span className="font-medium">{document.downloadCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Lượt xem</span>
-                <span className="font-medium">{document.viewCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">
-                  Đánh giá trung bình
-                </span>
-                <span className="font-medium">
-                  {document.averageRating.toFixed(1)}/5
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">
-                  Tổng đánh giá
-                </span>
-                <span className="font-medium">{document.totalRatings}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Bình luận</span>
-                <span className="font-medium">{comments.length}</span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

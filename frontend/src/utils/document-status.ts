@@ -1,4 +1,4 @@
-import { DocumentModerationStatus } from '@/types/database.types';
+import type { DocumentModerationStatus } from '@/types/database.types';
 
 export interface DocumentStatusInfo {
   label: string;
@@ -9,7 +9,18 @@ export interface DocumentStatusInfo {
 export function getDocumentStatusInfo(
   isApproved: boolean,
   moderationStatus?: DocumentModerationStatus,
+  needsReModeration?: boolean,
 ): DocumentStatusInfo {
+  // If document requires re-moderation (e.g., user changed privacy),
+  // always show "Chờ kiểm duyệt lại" regardless of previous approval
+  if (needsReModeration) {
+    return {
+      label: 'Chờ kiểm duyệt lại',
+      variant: 'secondary',
+      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    };
+  }
+
   // If document is approved, show approved status
   if (isApproved) {
     return {

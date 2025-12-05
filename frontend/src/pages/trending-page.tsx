@@ -165,7 +165,7 @@ export function TrendingPage(): ReactElement {
           <div>
             <h1 className="flex items-center gap-2 text-3xl font-bold">
               <TrendingUp className="text-primary h-8 w-8" />
-              Trending Documents
+              Tài liệu phổ biến
             </h1>
             <p className="text-muted-foreground mt-1">
               Khám phá những tài liệu phổ biến và phát triển nhanh nhất
@@ -205,7 +205,7 @@ export function TrendingPage(): ReactElement {
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
             <TrendingUp className="text-primary h-8 w-8" />
-            Trending Documents
+            Tài liệu phổ biến
           </h1>
           <p className="text-muted-foreground mt-1">
             Khám phá những tài liệu phổ biến và phát triển nhanh nhất
