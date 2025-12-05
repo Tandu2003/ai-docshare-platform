@@ -33,7 +33,7 @@ export type { ApiResponse, PaginationMeta, BaseMeta } from './interfaces';
 // ============================================================================
 // Utils
 // ============================================================================
-export { ErrorUtils } from './utils';
+export { ErrorUtils, LoggerUtils, AppLogger } from './utils';
 
 // ============================================================================
 // Filters

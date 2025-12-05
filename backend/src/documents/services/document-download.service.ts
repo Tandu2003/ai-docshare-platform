@@ -923,7 +923,7 @@ export class DocumentDownloadService {
     try {
       await this.pointsService.spendOnDownload({
         userId,
-        document: document as any,
+        document: document,
         performedById: isAdmin ? userId : undefined,
         bypass,
       });

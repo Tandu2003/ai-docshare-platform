@@ -1,9 +1,10 @@
 import { AppModule } from '@/app.module';
+import { LoggerUtils } from '@/common/utils';
 import fastifyCookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import fastifyMultipart from '@fastify/multipart';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -11,11 +12,21 @@ import {
 } from '@nestjs/platform-fastify';
 
 async function bootstrap() {
+  // Configure logger based on environment
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const logger: Array<'log' | 'error' | 'warn' | 'debug' | 'verbose'> =
+    isDevelopment
+      ? ['log', 'error', 'warn', 'debug', 'verbose']
+      : ['error', 'warn'];
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
       trustProxy: true,
     }),
+    {
+      logger,
+    },
   );
 
   const fastifyInstance = app.getHttpAdapter().getInstance();
@@ -69,7 +80,7 @@ async function bootstrap() {
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.warn(
+        LoggerUtils.consoleWarn(
           `CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`,
         );
         callback(new Error('Not allowed by CORS'), false);
@@ -100,10 +111,18 @@ async function bootstrap() {
   );
 
   const port = process.env.PORT ?? 8080;
+
+  // Log startup info only in development
+  if (isDevelopment) {
+    const logger = new Logger('Bootstrap');
+    logger.log(`Application starting on port ${port}`);
+    logger.log(`Environment: ${process.env.NODE_ENV ?? 'development'}`);
+  }
+
   await app.listen(port, '0.0.0.0');
 }
 
 bootstrap().catch(error => {
-  console.error('Error starting application:', error);
+  LoggerUtils.consoleError('Error starting application:', error);
   process.exit(1);
 });

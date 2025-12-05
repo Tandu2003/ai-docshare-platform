@@ -207,9 +207,7 @@ export class PdfPreviewService {
       pageCount,
       previewSizes:
         availableSizes.length > 0
-          ? (Array.from(
-              new Set([...availableSizes, 'medium']),
-            ) as PreviewSize[])
+          ? Array.from(new Set([...availableSizes, 'medium']))
           : ['small', 'medium', 'large'],
       processingStart: options?.processingStart,
       sourceType: options?.sourceType ?? 'PDF',
