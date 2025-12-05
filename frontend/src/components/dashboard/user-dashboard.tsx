@@ -172,7 +172,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ stats }) => {
       </div>
 
       {/* Document Status */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

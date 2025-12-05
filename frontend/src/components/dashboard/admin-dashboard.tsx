@@ -134,7 +134,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
       </div>
 
       {/* System Status */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -201,28 +201,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Hoạt động hệ thống gần đây</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {stats.userActivity.slice(0, 5).map((activity, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">{activity.description}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {new Date(activity.timestamp).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

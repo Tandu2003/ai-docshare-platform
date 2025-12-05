@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
 import { AdminOnly } from '@/components/common/permission-gate';
-import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
 import { PopularCategories } from '@/components/dashboard/popular-categories';
 import { RecentDocuments } from '@/components/dashboard/recent-documents';
@@ -124,9 +123,9 @@ export const DashboardPage: React.FC = () => {
       {!isAdmin && <UserDashboard stats={stats} />}
 
       {/* Common sections for both admin and user */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-1">
         {/* Recent Documents - Show for everyone */}
-        <div className="lg:col-span-2">
+        <div>
           <RecentDocuments
             documents={stats.recentDocuments}
             isLoading={loading}
@@ -139,13 +138,6 @@ export const DashboardPage: React.FC = () => {
             categories={stats.popularCategories}
             isLoading={loading}
           />
-        </div>
-      </div>
-
-      {/* Activity Feed - Show for everyone */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <div className="md:col-span-2">
-          <ActivityFeed activities={stats.userActivity} isLoading={loading} />
         </div>
       </div>
 
