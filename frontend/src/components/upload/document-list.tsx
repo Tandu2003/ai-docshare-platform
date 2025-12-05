@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 
 import {
   Bot,
+  Coins,
   Download,
+  Edit,
   File,
   FileArchive,
   FileAudio,
@@ -17,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { DocumentEditSheet } from '@/components/documents/document-edit-sheet';
+import { EditDownloadCostDialog } from '@/components/documents/edit-download-cost-dialog';
 import { EmptyState } from '@/components/common/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +34,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  getDocumentById,
+  type DocumentView,
+} from '@/services/document.service';
 import { DocumentsService, type Document } from '@/services/files.service';
 import { formatDate } from '@/utils/date';
 import { getDocumentStatusInfo, getStatusIcon } from '@/utils/document-status';
@@ -53,6 +61,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editCostDialogOpen, setEditCostDialogOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null,
+  );
+  const [selectedDocument, setSelectedDocument] = useState<DocumentView | null>(
+    null,
+  );
 
   const limit = 10;
 
@@ -388,6 +404,30 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           Tải xuống
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          onClick={async () => {
+                            setSelectedDocumentId(document.id);
+                            try {
+                              const doc = await getDocumentById(document.id);
+                              setSelectedDocument(doc);
+                              setEditSheetOpen(true);
+                            } catch (error) {
+                              console.error('Failed to load document:', error);
+                            }
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Chỉnh sửa tài liệu
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedDocumentId(document.id);
+                            setEditCostDialogOpen(true);
+                          }}
+                        >
+                          <Coins className="mr-2 h-4 w-4" />
+                          Chỉnh sửa điểm
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={() => handleDelete(document.id)}
                           disabled={deletingId === document.id}
                           className="text-destructive"
@@ -432,6 +472,31 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </div>
         )}
       </CardContent>
+
+      {/* Edit Download Cost Dialog */}
+      {selectedDocumentId && (
+        <EditDownloadCostDialog
+          open={editCostDialogOpen}
+          onOpenChange={setEditCostDialogOpen}
+          documentId={selectedDocumentId}
+          onUpdated={() => {
+            loadDocuments(page, searchTerm);
+          }}
+        />
+      )}
+
+      {/* Document Edit Sheet */}
+      {selectedDocument && (
+        <DocumentEditSheet
+          open={editSheetOpen}
+          onOpenChange={setEditSheetOpen}
+          document={selectedDocument}
+          onDocumentUpdated={updatedDoc => {
+            setSelectedDocument(updatedDoc);
+            loadDocuments(page, searchTerm);
+          }}
+        />
+      )}
     </Card>
   );
 };

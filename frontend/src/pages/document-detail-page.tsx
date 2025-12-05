@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
-import { Edit2, Save, X } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -13,7 +13,6 @@ import { DocumentShareDialog } from '@/components/documents/document-share-dialo
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
 import { getSocket } from '@/lib/socket';
@@ -58,9 +57,6 @@ export function DocumentDetailPage(): ReactElement {
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isCheckingDownloadStatus, setIsCheckingDownloadStatus] =
     useState(false);
-  const [isEditingDownloadCost, setIsEditingDownloadCost] = useState(false);
-  const [editDownloadCost, setEditDownloadCost] = useState<number | null>(null);
-  const [isSavingDownloadCost, setIsSavingDownloadCost] = useState(false);
 
   const apiKey = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -596,47 +592,6 @@ export function DocumentDetailPage(): ReactElement {
     setDocument(prev => (prev ? { ...prev, shareLink: undefined } : prev));
   };
 
-  const handleSaveDownloadCost = async () => {
-    if (!documentId) return;
-
-    try {
-      setIsSavingDownloadCost(true);
-      const updatedDocument = await DocumentsService.updateDocument(
-        documentId,
-        {
-          downloadCost: editDownloadCost,
-        },
-      );
-      // Update local state with new originalDownloadCost
-      setDocument(prev =>
-        prev
-          ? {
-              ...prev,
-              originalDownloadCost:
-                updatedDocument.originalDownloadCost ?? editDownloadCost,
-            }
-          : prev,
-      );
-      setIsEditingDownloadCost(false);
-      toast.success('Đã cập nhật điểm tải xuống');
-    } catch (error: any) {
-      console.error('Failed to update download cost:', error);
-      toast.error(error.message || 'Không thể cập nhật điểm tải xuống');
-    } finally {
-      setIsSavingDownloadCost(false);
-    }
-  };
-
-  const handleCancelEditDownloadCost = () => {
-    setIsEditingDownloadCost(false);
-    setEditDownloadCost(document?.originalDownloadCost ?? null);
-  };
-
-  const handleStartEditDownloadCost = () => {
-    setEditDownloadCost(document?.originalDownloadCost ?? null);
-    setIsEditingDownloadCost(true);
-  };
-
   // Handler for document update from edit sheet
   const handleDocumentUpdated = (updatedDocument: DocumentView) => {
     setDocument(updatedDocument);
@@ -904,27 +859,7 @@ export function DocumentDetailPage(): ReactElement {
               <CardTitle>Thông tin tài liệu</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Description */}
-              {document.description && (
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs font-medium">
-                    Mô tả
-                  </p>
-                  <p className="text-sm leading-relaxed">
-                    {document.description}
-                  </p>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {/* Category */}
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">Danh mục</p>
-                  <Badge variant="outline" className="font-normal">
-                    {document.category?.name || 'Chưa phân loại'}
-                  </Badge>
-                </div>
-
                 {/* Language */}
                 <div className="space-y-1">
                   <p className="text-muted-foreground text-xs">Ngôn ngữ</p>
@@ -932,26 +867,6 @@ export function DocumentDetailPage(): ReactElement {
                     {document.language
                       ? getLanguageName(document.language)
                       : 'N/A'}
-                  </span>
-                </div>
-
-                {/* Uploader */}
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">Người đăng</p>
-                  <span className="font-medium">
-                    {document.uploader.firstName} {document.uploader.lastName}
-                  </span>
-                </div>
-
-                {/* Upload date */}
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">Ngày đăng</p>
-                  <span>
-                    {new Date(document.createdAt).toLocaleDateString('vi-VN', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
                   </span>
                 </div>
 
@@ -966,14 +881,6 @@ export function DocumentDetailPage(): ReactElement {
                       month: 'long',
                       day: 'numeric',
                     })}
-                  </span>
-                </div>
-
-                {/* File count */}
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">Số lượng file</p>
-                  <span className="font-medium">
-                    {document.files?.length || 0} file
                   </span>
                 </div>
 
@@ -1038,18 +945,6 @@ export function DocumentDetailPage(): ReactElement {
                   )}
               </div>
 
-              {/* Rejection reason */}
-              {document.rejectionReason && (
-                <div className="border-destructive/50 bg-destructive/10 space-y-1 rounded-md border p-3">
-                  <p className="text-destructive text-xs font-medium">
-                    Lý do từ chối
-                  </p>
-                  <p className="text-destructive text-sm">
-                    {document.rejectionReason}
-                  </p>
-                </div>
-              )}
-
               {/* ZIP file info */}
               {document.zipFileUrl && (
                 <div className="bg-muted/50 space-y-1 rounded-md border p-3">
@@ -1061,22 +956,6 @@ export function DocumentDetailPage(): ReactElement {
                       ? `Tạo lúc: ${new Date(document.zipFileCreatedAt).toLocaleString('vi-VN')}`
                       : 'Đã có sẵn'}
                   </p>
-                </div>
-              )}
-
-              {/* Tags */}
-              {(document.tags || []).length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-muted-foreground text-xs font-medium">
-                    Thẻ
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {document.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
               )}
             </CardContent>
@@ -1119,167 +998,6 @@ export function DocumentDetailPage(): ReactElement {
                       </div>
                     </div>
                   ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Owner Management Section */}
-        {isOwner && (
-          <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Quản lý tài liệu</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditSheetOpen(true)}
-                  >
-                    <Edit2 className="mr-1 h-4 w-4" />
-                    Chỉnh sửa
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Trạng thái
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={document.isPublic ? 'default' : 'secondary'}
-                    >
-                      {document.isPublic ? 'Công khai' : 'Riêng tư'}
-                    </Badge>
-                    {document.isDraft && (
-                      <Badge variant="outline">Bản nháp</Badge>
-                    )}
-                    {document.isPremium && (
-                      <Badge variant="default" className="bg-yellow-500">
-                        Premium
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* Moderation Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Trạng thái kiểm duyệt
-                  </span>
-                  <Badge
-                    variant={
-                      document.moderationStatus === 'APPROVED'
-                        ? 'default'
-                        : document.moderationStatus === 'REJECTED'
-                          ? 'destructive'
-                          : 'secondary'
-                    }
-                  >
-                    {document.moderationStatus === 'APPROVED'
-                      ? 'Đã duyệt'
-                      : document.moderationStatus === 'REJECTED'
-                        ? 'Đã từ chối'
-                        : 'Chờ duyệt'}
-                  </Badge>
-                </div>
-
-                {/* Download Cost */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-sm">
-                      Điểm tải xuống
-                    </span>
-                    {!isEditingDownloadCost ? (
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {document.originalDownloadCost !== undefined &&
-                          document.originalDownloadCost !== null
-                            ? `${document.originalDownloadCost} điểm`
-                            : `${document.systemDefaultDownloadCost ?? 0} (mặc định)`}
-                        </span>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          onClick={handleStartEditDownloadCost}
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={0}
-                          value={editDownloadCost ?? ''}
-                          onChange={e => {
-                            const value = e.target.value;
-                            setEditDownloadCost(
-                              value === '' ? null : parseInt(value, 10),
-                            );
-                          }}
-                          placeholder="Mặc định"
-                          className="h-8 w-20"
-                        />
-                        <Button
-                          size="icon"
-                          variant="default"
-                          className="h-8 w-8"
-                          onClick={handleSaveDownloadCost}
-                          disabled={isSavingDownloadCost}
-                        >
-                          <Save className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={handleCancelEditDownloadCost}
-                          disabled={isSavingDownloadCost}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Share Link */}
-                {!document.isPublic && (
-                  <div className="space-y-2 border-t pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground text-sm">
-                        Chia sẻ riêng tư
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShareDialogOpen(true)}
-                      >
-                        Quản lý
-                      </Button>
-                    </div>
-                    {activeShareLink && (
-                      <div className="bg-muted/40 rounded-md p-2 text-xs">
-                        <p className="text-muted-foreground truncate">
-                          {shareLinkUrl}
-                        </p>
-                        {shareExpiresAtLabel && (
-                          <p className="text-muted-foreground mt-1">
-                            Hết hạn: {shareExpiresAtLabel}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {document.isPublic && (
-                  <p className="text-muted-foreground border-t pt-4 text-xs">
-                    Tài liệu công khai - mọi người đều có thể xem.
-                  </p>
-                )}
             </CardContent>
           </Card>
         )}
