@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
-import { Edit2 } from 'lucide-react';
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -11,7 +10,6 @@ import { DocumentEditSheet } from '@/components/documents/document-edit-sheet';
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal';
 import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
@@ -31,7 +29,6 @@ import {
   type DocumentView,
   type ShareDocumentResponse,
 } from '@/services/document.service';
-import { DocumentsService } from '@/services/files.service';
 import { RatingService } from '@/services/rating.service';
 import { UploadService } from '@/services/upload.service';
 import type { AIAnalysis, Comment } from '@/types';
@@ -85,13 +82,6 @@ export function DocumentDetailPage(): ReactElement {
     }
     return window.location.href;
   }, [activeShareLink?.token, apiKey, document?.id, location.pathname]);
-
-  const shareExpiresAtLabel = useMemo(() => {
-    if (!activeShareLink?.expiresAt) return null;
-    const expiresAtDate = new Date(activeShareLink.expiresAt);
-    if (Number.isNaN(expiresAtDate.getTime())) return null;
-    return expiresAtDate.toLocaleString();
-  }, [activeShareLink?.expiresAt]);
 
   useEffect(() => {
     const fetchDocumentData = async () => {
