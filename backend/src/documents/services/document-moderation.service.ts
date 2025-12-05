@@ -143,10 +143,17 @@ export class DocumentModerationService {
 
     const skip = (page - 1) * limit;
 
+    // Build where clause based on status
+    // REJECTED documents may have isPublic: false, so we don't filter by isPublic for REJECTED status
     const where: Prisma.DocumentWhereInput = {
-      isPublic: true,
       moderationStatus: status,
     };
+
+    // Only filter by isPublic for PENDING and APPROVED statuses
+    // REJECTED documents are typically set to isPublic: false, so we include all
+    if (status !== DocumentModerationStatus.REJECTED) {
+      where.isPublic = true;
+    }
 
     if (categoryId) where.categoryId = categoryId;
     if (uploaderId) where.uploaderId = uploaderId;
@@ -193,9 +200,9 @@ export class DocumentModerationService {
             moderationStatus: DocumentModerationStatus.PENDING,
           },
         }),
+        // REJECTED documents may have isPublic: false, so don't filter by isPublic
         this.prisma.document.count({
           where: {
-            isPublic: true,
             moderationStatus: DocumentModerationStatus.REJECTED,
           },
         }),
