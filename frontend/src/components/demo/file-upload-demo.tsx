@@ -60,7 +60,7 @@ const FileUploadDemo: React.FC = () => {
 
     setIsCreatingDocument(true);
     try {
-      const document = await DocumentsService.createDocument(documentData);
+      await DocumentsService.createDocument(documentData);
       alert('Tạo tài liệu thành công!');
 
       // Reset form

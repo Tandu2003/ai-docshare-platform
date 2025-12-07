@@ -100,26 +100,12 @@ function createSocket(): void {
     isConnecting = false;
   });
 
-  socket.on('disconnect', reason => {
+  socket.on('disconnect', () => {
     isConnecting = false;
   });
 
-  socket.on('connect_error', error => {
+  socket.on('connect_error', () => {
     isConnecting = false;
-    if (error.message.includes('CORS')) {
-    }
-  });
-
-  // Handle successful auth acknowledgment from server
-  socket.on('auth:success', (data: { userId: string }) => {
-  });
-
-  // Handle auth failure
-  socket.on('auth:failed', (data: { message: string }) => {
-  });
-
-  // Debug: Log all socket events
-  socket.onAny((eventName, ...args) => {
   });
 }
 
@@ -128,7 +114,6 @@ function createSocket(): void {
  * Call this when user logs in or token is refreshed
  */
 export function reconnectSocket(): void {
-
   if (socket) {
     socket.disconnect();
     socket.removeAllListeners();
@@ -144,7 +129,6 @@ export function reconnectSocket(): void {
  * Call this when user logs out
  */
 export function disconnectSocket(): void {
-
   if (socket) {
     socket.disconnect();
     socket.removeAllListeners();
@@ -183,7 +167,6 @@ export function isSocketConnected(): boolean {
 export function joinDocumentRoom(documentId: string): void {
   if (socket?.connected) {
     socket.emit('document:join', { documentId });
-  } else {
   }
 }
 

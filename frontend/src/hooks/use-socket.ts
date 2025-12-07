@@ -108,34 +108,3 @@ export function useSocketEvent<T = any>(
   }, [event, isAuthenticated]);
 }
 
-/**
- * Hook to get socket connection status
- */
-export function useSocketStatus() {
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const socket = getSocket();
-
-    const handleConnect = () => {
-    };
-
-    const handleDisconnect = (reason: string) => {
-    };
-
-    const handleError = (error: Error) => {
-    };
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('connect_error', handleError);
-
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('connect_error', handleError);
-    };
-  }, [isAuthenticated]);
-}

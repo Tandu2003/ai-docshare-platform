@@ -143,30 +143,10 @@ export function SocketProvider({
         }
       };
 
-      const handleAuthSuccess = (data: { userId: string }) => {
-      };
-
-      const handleAuthFailed = (data: { message: string }) => {
-      };
-
-      const handleConnect = () => {
-      };
-
-      const handleDisconnect = (reason: string) => {
-      };
-
-      socket.on('connect', handleConnect);
-      socket.on('disconnect', handleDisconnect);
       socket.on('notification', handleNotification);
-      socket.on('auth:success', handleAuthSuccess);
-      socket.on('auth:failed', handleAuthFailed);
 
       return () => {
-        socket.off('connect', handleConnect);
-        socket.off('disconnect', handleDisconnect);
         socket.off('notification', handleNotification);
-        socket.off('auth:success', handleAuthSuccess);
-        socket.off('auth:failed', handleAuthFailed);
       };
     } else if (!isAuthenticated) {
       disconnectSocket();
