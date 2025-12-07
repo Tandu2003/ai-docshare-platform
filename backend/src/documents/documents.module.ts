@@ -1,16 +1,3 @@
-/**
- * @fileoverview Documents Module
- * @description Handles document management, comments, ratings, sharing, and moderation
- * @module documents
- */
-
-// ============================================================================
-// Third-party imports
-// ============================================================================
-
-// ============================================================================
-// Local imports - Controllers
-// ============================================================================
 import {
   AdminDocumentsController,
   DocumentAccessController,
@@ -19,9 +6,6 @@ import {
   DocumentManagementController,
   DocumentSharingController,
 } from './controllers';
-// ============================================================================
-// Local imports - Services
-// ============================================================================
 import { DocumentsService } from './documents.service';
 import {
   DocumentCommentService,
@@ -32,13 +16,7 @@ import {
   DocumentSearchService,
   DocumentSharingService,
 } from './services';
-// ============================================================================
-// Internal module imports
-// ============================================================================
 import { AIModule } from '@/ai/ai.module';
-// ============================================================================
-// Local imports - Guards
-// ============================================================================
 import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
 import { CategoriesModule } from '@/categories/categories.module';
 import { CloudflareR2Service } from '@/common/cloudflare-r2.service';

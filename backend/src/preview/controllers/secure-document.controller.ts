@@ -41,10 +41,6 @@ export class SecureDocumentController {
 
   constructor(private readonly secureDocumentService: SecureDocumentService) {}
 
-  /**
-   * Get a secure, short-lived download URL (30 seconds)
-   * This URL should be used immediately to start the download
-   */
   @Post('download/:documentId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -118,10 +114,6 @@ export class SecureDocumentController {
     }
   }
 
-  /**
-   * Generate a one-time download token
-   * Token valid for 30 seconds
-   */
   @Post('token/:documentId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -190,10 +182,6 @@ export class SecureDocumentController {
     }
   }
 
-  /**
-   * Stream document file directly using token
-   * No URL exposed - file streams through backend
-   */
   @Get('stream/:token')
   @ApiOperation({
     summary: 'Stream document using download token',
@@ -265,9 +253,6 @@ export class SecureDocumentController {
     }
   }
 
-  /**
-   * Stream document file directly (authenticated, no token needed)
-   */
   @Get('stream/document/:documentId/:fileIndex')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -342,9 +327,6 @@ export class SecureDocumentController {
     }
   }
 
-  /**
-   * Validate document access without downloading
-   */
   @Get('access/:documentId')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({

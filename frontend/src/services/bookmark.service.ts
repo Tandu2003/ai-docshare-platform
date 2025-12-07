@@ -1,14 +1,11 @@
 import type { ApiResponse } from '@/types/api.types';
 import { apiClient } from '@/utils/api-client';
-
 export const BOOKMARKS_UPDATED_EVENT = 'bookmarks:updated';
-
 const emitBookmarksUpdated = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(BOOKMARKS_UPDATED_EVENT));
   }
 };
-
 export interface BookmarkWithDocument {
   id: string;
   userId: string;

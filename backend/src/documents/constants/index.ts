@@ -1,38 +1,17 @@
-/**
- * Document Module - Constants
- *
- * Following Clean Code Commandment #6: Single Source of Truth
- * All document-related constants are defined here.
- * Using SCREAMING_SNAKE_CASE as per TypeScript Coding Standards.
- */
-
-// ============================================================================
-// Pagination Constants
-// ============================================================================
-
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_LIMIT = 10;
 export const MAX_LIMIT = 100;
-
-// ============================================================================
 // Download Constants
-// ============================================================================
-
 export const DOWNLOAD_LINK_EXPIRY_HOURS = 24;
 export const MAX_DOWNLOAD_RETRIES = 3;
 export const DOWNLOAD_CHUNK_SIZE = 1024 * 1024; // 1MB
-
-// ============================================================================
 // Share Link Constants
-// ============================================================================
 
 export const DEFAULT_SHARE_LINK_EXPIRY_DAYS = 7;
 export const MAX_SHARE_LINK_EXPIRY_DAYS = 365;
 export const SHARE_LINK_TOKEN_LENGTH = 32;
 
-// ============================================================================
 // Moderation Constants
-// ============================================================================
 
 export const MODERATION_THRESHOLDS = {
   AUTO_APPROVE: 80,
@@ -47,9 +26,7 @@ export const MODERATION_STATUSES = {
   REJECTED: 'REJECTED',
 } as const;
 
-// ============================================================================
 // File Constants
-// ============================================================================
 
 export const ALLOWED_FILE_TYPES = [
   'application/pdf',
@@ -72,23 +49,17 @@ export const MAX_FILE_SIZE_MB = 100;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export const MAX_FILES_PER_DOCUMENT = 10;
 
-// ============================================================================
 // Rating Constants
-// ============================================================================
 
 export const MIN_RATING = 1;
 export const MAX_RATING = 5;
 
-// ============================================================================
 // Comment Constants
-// ============================================================================
 
 export const MAX_COMMENT_LENGTH = 5000;
 export const MAX_COMMENT_DEPTH = 3;
 
-// ============================================================================
 // Search Constants
-// ============================================================================
 
 export const SEARCH_DEFAULTS = {
   MIN_QUERY_LENGTH: 2,
@@ -98,9 +69,7 @@ export const SEARCH_DEFAULTS = {
   HYBRID_SEARCH_WEIGHT_TEXT: 0.3,
 } as const;
 
-// ============================================================================
 // Error Messages
-// ============================================================================
 
 export const DOCUMENT_ERROR_MESSAGES = {
   NOT_FOUND: 'Không tìm thấy tài liệu',
@@ -122,9 +91,7 @@ export const DOCUMENT_ERROR_MESSAGES = {
   MODERATION_REJECTED: 'Tài liệu đã bị từ chối',
 } as const;
 
-// ============================================================================
 // Success Messages
-// ============================================================================
 
 export const DOCUMENT_SUCCESS_MESSAGES = {
   CREATED: 'Tài liệu đã được tạo thành công',
@@ -140,9 +107,7 @@ export const DOCUMENT_SUCCESS_MESSAGES = {
   REJECTED: 'Tài liệu đã bị từ chối',
 } as const;
 
-// ============================================================================
 // Type exports for type safety
-// ============================================================================
 
 export type ModerationStatus =
   (typeof MODERATION_STATUSES)[keyof typeof MODERATION_STATUSES];

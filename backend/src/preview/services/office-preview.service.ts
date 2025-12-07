@@ -1,11 +1,3 @@
-/**
- * Office Preview Generator Service
- *
- * Handles Office document preview generation (DOCX, DOC, PPTX, PPT, XLSX, XLS):
- * - Convert Office documents to PDF using LibreOffice/unoconv
- * - Delegate PDF preview generation to PdfPreviewService
- */
-
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -29,9 +21,6 @@ export class OfficePreviewService {
     private readonly pdfPreviewService: PdfPreviewService,
   ) {}
 
-  /**
-   * Generate previews from Office documents
-   */
   async generateOfficePreviews(
     documentId: string,
     file: FileInfo & { mimeType: string },
@@ -118,9 +107,6 @@ export class OfficePreviewService {
     }
   }
 
-  /**
-   * Convert Office document to PDF
-   */
   private async convertToPdf(
     inputPath: string,
     tmpDir: string,
@@ -170,9 +156,6 @@ export class OfficePreviewService {
     return pdfPath;
   }
 
-  /**
-   * Try unoconv conversion with daemon
-   */
   private async tryUnoconvConversion(
     inputPath: string,
     tmpDir: string,
@@ -237,9 +220,6 @@ export class OfficePreviewService {
     return null;
   }
 
-  /**
-   * Try standard LibreOffice conversion
-   */
   private async tryLibreOfficeConversion(
     inputPath: string,
     tmpDir: string,
@@ -269,9 +249,6 @@ export class OfficePreviewService {
     }
   }
 
-  /**
-   * Try alternative LibreOffice options
-   */
   private async tryAlternativeLibreOffice(
     inputPath: string,
     tmpDir: string,
@@ -303,9 +280,6 @@ export class OfficePreviewService {
     }
   }
 
-  /**
-   * Try unoconv without daemon
-   */
   private async tryUnoconvNoDaemon(
     inputPath: string,
     tmpDir: string,
@@ -334,9 +308,6 @@ export class OfficePreviewService {
     return null;
   }
 
-  /**
-   * Find PDF file in directory
-   */
   private async findPdfInDir(tmpDir: string): Promise<string | null> {
     const expectedPdf = path.join(tmpDir, 'input.pdf');
     if (await this.utilService.fileExists(expectedPdf)) {

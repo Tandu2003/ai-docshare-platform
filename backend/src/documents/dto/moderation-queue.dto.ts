@@ -11,11 +11,9 @@ export class ModerationQueueQueryDto {
   @IsOptional()
   @IsNumberString()
   page?: string;
-
   @IsOptional()
   @IsNumberString()
   limit?: string;
-
   @IsOptional()
   @IsString()
   categoryId?: string;

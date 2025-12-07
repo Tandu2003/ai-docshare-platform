@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';

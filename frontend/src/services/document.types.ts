@@ -1,20 +1,16 @@
 import type { AIAnalysis, DocumentModerationStatus } from '@/types';
-
 import type { UploadedFile } from './upload.service';
-
 export interface PaginatedDocuments {
   files: UploadedFile[];
   total: number;
   page: number;
   limit: number;
 }
-
 export interface DocumentShareLink {
   token?: string;
   expiresAt: string;
   isRevoked?: boolean;
 }
-
 export interface DocumentPreview {
   id: string;
   documentId: string;

@@ -1,10 +1,8 @@
 import { apiClient } from '@/utils/api-client';
-
 import type {
   ShareDocumentRequest,
   ShareDocumentResponse,
 } from './document.types';
-
 export const createDocumentShareLink = async (
   documentId: string,
   payload: ShareDocumentRequest,
@@ -13,11 +11,9 @@ export const createDocumentShareLink = async (
     `/documents/${documentId}/share-link`,
     payload,
   );
-
   if (!response.data) {
     throw new Error('Không có dữ liệu trả về từ API');
   }
-
   return response.data;
 };
 

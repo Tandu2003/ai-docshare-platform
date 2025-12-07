@@ -1,11 +1,8 @@
 import { FileQuestion } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
 import { Button } from '@/components/ui/button';
-
 export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="mx-auto max-w-md text-center">

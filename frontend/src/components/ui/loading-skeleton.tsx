@@ -1,7 +1,5 @@
 import { cn } from '@/lib/utils';
-
 type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
-
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
@@ -10,13 +8,11 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
     />
   );
 }
-
 interface LoadingCardProps {
   showIcon?: boolean;
   showDescription?: boolean;
   className?: string;
 }
-
 export function LoadingCard({
   showIcon = true,
   showDescription = true,

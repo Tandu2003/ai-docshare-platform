@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-
 import {
   ArrowLeft,
   ChevronLeft,
@@ -12,7 +11,6 @@ import {
   SortDesc,
 } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-
 import { DocumentGrid } from '@/components/documents/document-grid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';

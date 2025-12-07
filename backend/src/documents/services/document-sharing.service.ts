@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document Sharing Service
- * @description Handles document share link operations
- * @module documents/services/document-sharing
- */
-
 import { randomBytes } from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -15,7 +9,6 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DocumentShareLink } from '@prisma/client';
 
-/** Share document options */
 interface ShareDocumentOptions {
   readonly expiresAt?: string;
   readonly expiresInMinutes?: number;
@@ -51,13 +44,6 @@ export class DocumentSharingService {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Create or update a share link for a document
-   * @param documentId - Document ID
-   * @param userId - User ID (must be document owner)
-   * @param options - Share options
-   * @returns Share link details
-   */
   async createOrUpdateShareLink(
     documentId: string,
     userId: string,
@@ -123,12 +109,6 @@ export class DocumentSharingService {
     }
   }
 
-  /**
-   * Revoke a share link
-   * @param documentId - Document ID
-   * @param userId - User ID (must be document owner)
-   * @returns Success status
-   */
   async revokeShareLink(
     documentId: string,
     userId: string,
@@ -178,12 +158,6 @@ export class DocumentSharingService {
     }
   }
 
-  /**
-   * Validate a share link
-   * @param documentId - Document ID
-   * @param token - Share token
-   * @returns Validated share link or null
-   */
   async validateShareLink(
     documentId: string,
     token: string,
@@ -226,12 +200,6 @@ export class DocumentSharingService {
     }
   }
 
-  /**
-   * Get share link info for a document
-   * @param documentId - Document ID
-   * @param userId - User ID (must be document owner)
-   * @returns Share link info or null
-   */
   async getShareLinkInfo(
     documentId: string,
     userId: string,
@@ -271,12 +239,6 @@ export class DocumentSharingService {
     }
   }
 
-  /**
-   * Check if a share link grants access
-   * @param documentId - Document ID
-   * @param apiKey - API key (share token)
-   * @returns True if access is granted
-   */
   async checkShareAccess(
     documentId: string,
     apiKey?: string,
@@ -289,11 +251,6 @@ export class DocumentSharingService {
     return shareLink !== null;
   }
 
-  /**
-   * Get active share link for internal use
-   * @param documentId - Document ID
-   * @returns Active share link or null
-   */
   async getActiveShareLink(
     documentId: string,
   ): Promise<DocumentShareLink | null> {

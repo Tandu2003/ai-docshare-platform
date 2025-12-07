@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document CRUD Service
- * @description Handles core document CRUD operations
- * @module documents/services/document-crud
- */
-
 import { CreateDocumentDto } from '../dto/create-document.dto';
 import { UpdateDocumentDto } from '../dto/update-document.dto';
 import { DocumentSearchService } from './document-search.service';
@@ -103,12 +97,6 @@ export class DocumentCrudService {
     private readonly searchService: DocumentSearchService,
   ) {}
 
-  /**
-   * Create a document from uploaded files
-   * @param createDocumentDto - Document creation data
-   * @param userId - User ID
-   * @returns Created document
-   */
   async createDocument(
     createDocumentDto: CreateDocumentDto,
     userId: string,
@@ -215,14 +203,6 @@ export class DocumentCrudService {
     }
   }
 
-  /**
-   * Update a document
-   * @param documentId - Document ID
-   * @param userId - User ID
-   * @param updateData - Update data
-   * @param userRole - Optional user role
-   * @returns Updated document
-   */
   async updateDocument(
     documentId: string,
     userId: string,
@@ -315,12 +295,6 @@ export class DocumentCrudService {
     }
   }
 
-  /**
-   * Delete a document
-   * @param documentId - Document ID
-   * @param userId - User ID
-   * @returns Success status
-   */
   async deleteDocument(
     documentId: string,
     userId: string,
@@ -362,10 +336,6 @@ export class DocumentCrudService {
     }
   }
 
-  /**
-   * Get or create default category
-   * @returns Default category
-   */
   async getOrCreateDefaultCategory(): Promise<{
     id: string;
     name: string;
@@ -419,10 +389,6 @@ export class DocumentCrudService {
     return files;
   }
 
-  /**
-   * Run background tasks after document creation
-   * These tasks are not required for the immediate response
-   */
   private async runBackgroundTasks(
     document: any,
     userId: string,

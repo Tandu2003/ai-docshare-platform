@@ -7,13 +7,11 @@ export interface VerificationEmailData {
   email: string;
   verificationToken: string;
 }
-
 export interface PasswordResetEmailData {
   firstName: string;
   email: string;
   resetToken: string;
 }
-
 export interface WelcomeEmailData {
   firstName: string;
   email: string;
@@ -32,9 +30,6 @@ export class MailService {
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
   }
 
-  /**
-   * Send email verification
-   */
   async sendVerificationEmail(data: VerificationEmailData): Promise<void> {
     const verificationUrl = `${this.frontendUrl}/auth/verify-email?token=${data.verificationToken}`;
 
@@ -61,9 +56,6 @@ export class MailService {
     }
   }
 
-  /**
-   * Send password reset email
-   */
   async sendPasswordResetEmail(data: PasswordResetEmailData): Promise<void> {
     const resetUrl = `${this.frontendUrl}/auth/reset-password?token=${data.resetToken}`;
 
@@ -90,9 +82,6 @@ export class MailService {
     }
   }
 
-  /**
-   * Send welcome email after successful verification
-   */
   async sendWelcomeEmail(data: WelcomeEmailData): Promise<void> {
     try {
       await this.mailerService.sendMail({
@@ -114,9 +103,6 @@ export class MailService {
     }
   }
 
-  /**
-   * Send notification email for successful password reset
-   */
   async sendPasswordResetConfirmationEmail(
     data: WelcomeEmailData,
   ): Promise<void> {

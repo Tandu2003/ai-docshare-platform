@@ -40,9 +40,6 @@ export class FilesService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  /**
-   * Upload multiple files to storage and save metadata
-   */
   async uploadFiles(files: UploadedFile[], userId: string) {
     try {
       this.logger.log(`Uploading ${files.length} files for user: ${userId}`);
@@ -69,9 +66,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Upload single file to storage and save metadata
-   */
   async uploadFile(file: UploadedFile, userId: string) {
     try {
       this.logger.log(
@@ -170,9 +164,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Get download URL for a file
-   */
   async getDownloadUrl(fileId: string) {
     try {
       const file = await this.prisma.file.findUnique({
@@ -190,9 +181,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Get secure preview/access URL for a file (with expiration)
-   */
   async getSecureFileUrl(
     fileId: string,
     userId?: string,
@@ -250,9 +238,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Add secure URLs to file objects for API responses
-   */
   async addSecureUrlsToFiles(
     files: any[],
     options: { userId?: string; allowSharedAccess?: boolean } = {},
@@ -287,9 +272,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Get file by ID
-   */
   async getFile(fileId: string): Promise<any> {
     const file = await this.prisma.file.findUnique({
       where: { id: fileId },
@@ -302,9 +284,6 @@ export class FilesService {
     return file;
   }
 
-  /**
-   * Validate uploaded file
-   */
   private validateFile(file: UploadedFile) {
     this.logger.log(
       `Validating file: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`,
@@ -371,9 +350,6 @@ export class FilesService {
     this.logger.log(`File validation passed for: ${file.originalname}`);
   }
 
-  /**
-   * Upload avatar for user
-   */
   async uploadAvatar(file: UploadedFile, userId: string) {
     try {
       this.logger.log(`Uploading avatar for user: ${userId}`);
@@ -448,9 +424,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Validate avatar file
-   */
   private validateAvatarFile(file: UploadedFile) {
     this.logger.log(
       `Validating avatar: ${file.originalname}, type: ${file.mimetype}, size: ${file.size}`,
@@ -482,9 +455,6 @@ export class FilesService {
     this.logger.log(`Avatar validation passed for: ${file.originalname}`);
   }
 
-  /**
-   * Get allowed file types
-   */
   getAllowedTypes(): { types: string[]; description: string } {
     const allowedTypes = [
       // PDF files
@@ -533,9 +503,6 @@ export class FilesService {
     };
   }
 
-  /**
-   * Increment view count for a file
-   */
   async incrementViewCount(
     fileId: string,
     userId?: string,
@@ -641,9 +608,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Generate unique key for file storage
-   */
   private generateUniqueKey(prefix: string, originalName: string): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);

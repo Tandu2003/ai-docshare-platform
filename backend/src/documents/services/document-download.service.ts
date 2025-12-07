@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document Download Service
- * @description Handles document download operations including streaming and ZIP creation
- * @module documents/services/document-download
- */
-
 import { Readable } from 'stream';
 import { DocumentSharingService } from './document-sharing.service';
 import { CloudflareR2Service } from '@/common/cloudflare-r2.service';
@@ -91,11 +85,6 @@ export class DocumentDownloadService {
     private readonly sharingService: DocumentSharingService,
   ) {}
 
-  /**
-   * Prepare document download with all its files
-   * @param documentId - Document ID
-   * @returns Document and files info
-   */
   async prepareDocumentDownload(
     documentId: string,
   ): Promise<DocumentDownloadInfo> {
@@ -147,15 +136,6 @@ export class DocumentDownloadService {
     };
   }
 
-  /**
-   * Initialize a download - creates pending record
-   * @param documentId - Document ID
-   * @param userId - Optional user ID
-   * @param ipAddress - Client IP
-   * @param userAgent - Client user agent
-   * @param referrer - Referrer URL
-   * @returns Download ID and status
-   */
   async initDownload(
     documentId: string,
     userId?: string,
@@ -205,12 +185,6 @@ export class DocumentDownloadService {
     }
   }
 
-  /**
-   * Confirm a download - marks successful and handles points
-   * @param downloadId - Download record ID
-   * @param userId - Optional user ID
-   * @returns Confirmation status
-   */
   async confirmDownload(
     downloadId: string,
     userId?: string,
@@ -298,12 +272,6 @@ export class DocumentDownloadService {
     }
   }
 
-  /**
-   * Cancel a pending download
-   * @param downloadId - Download record ID
-   * @param userId - Optional user ID
-   * @returns Success status
-   */
   async cancelDownload(
     downloadId: string,
     userId?: string,
@@ -345,12 +313,6 @@ export class DocumentDownloadService {
     }
   }
 
-  /**
-   * Get download URL for a document
-   * @param documentId - Document ID
-   * @param userId - Optional user ID
-   * @returns Download URL info
-   */
   async getDownloadUrl(
     documentId: string,
     userId?: string,
@@ -391,16 +353,6 @@ export class DocumentDownloadService {
     }
   }
 
-  /**
-   * Prepare streaming download
-   * @param documentId - Document ID
-   * @param userId - User ID
-   * @param ipAddress - Client IP
-   * @param userAgent - Client user agent
-   * @param referrer - Referrer URL
-   * @param apiKey - Share link API key
-   * @returns Streaming download data
-   */
   async prepareStreamingDownload(
     documentId: string,
     userId: string,
@@ -480,11 +432,6 @@ export class DocumentDownloadService {
     }
   }
 
-  /**
-   * Get effective download cost for a document
-   * @param documentId - Document ID
-   * @returns Effective download cost
-   */
   async getEffectiveDownloadCost(documentId: string): Promise<number> {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },

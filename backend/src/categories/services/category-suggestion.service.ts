@@ -1,12 +1,3 @@
-/**
- * Category Suggestion Service
- *
- * Handles category suggestion logic:
- * - Suggest categories for existing documents
- * - Suggest best category from content
- * - Get categories for selection UI
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ForbiddenException,
@@ -17,10 +8,6 @@ import {
 @Injectable()
 export class CategorySuggestionService {
   constructor(private readonly prisma: PrismaService) {}
-
-  /**
-   * Suggest categories for an existing document
-   */
   async suggestCategoriesForDocument(documentId: string, userId?: string) {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
@@ -113,9 +100,6 @@ export class CategorySuggestionService {
     };
   }
 
-  /**
-   * Suggest best category from content data
-   */
   async suggestBestCategoryFromContent(contentData: {
     title?: string;
     description?: string;
@@ -225,9 +209,6 @@ export class CategorySuggestionService {
     };
   }
 
-  /**
-   * Get categories for selection UI
-   */
   async getCategoriesForSelection(): Promise<
     Array<{
       id: string;
@@ -261,9 +242,6 @@ export class CategorySuggestionService {
     }));
   }
 
-  /**
-   * Tokenize string for Vietnamese-friendly matching
-   */
   private tokenize(s: string): string[] {
     return s
       .toLowerCase()

@@ -1,14 +1,11 @@
 import { ReactNode } from 'react';
-
 import { usePermissions } from '@/hooks/use-permissions';
-
 interface PermissionGateProps {
   children: ReactNode;
   action?: string; // kept for backward compatibility (ignored in simplified RBAC)
   subject?: string; // kept for backward compatibility (ignored)
   fallback?: ReactNode;
 }
-
 // Simplified generic gate: with only two roles (admin/user) we default to admin-only
 // for any explicit gating previously done via action/subject. If more granular
 // ownership checks are needed, use the specific *PermissionGate components below.

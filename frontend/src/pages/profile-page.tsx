@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactElement } from 'react';
-
 import {
   ArrowDownRight,
   ArrowUpRight,

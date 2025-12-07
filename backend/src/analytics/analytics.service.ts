@@ -12,11 +12,8 @@ const RANGE_TO_DAYS: Record<string, number> = {
   '90d': 90,
   '1y': 365,
 };
-
 const DEFAULT_RANGE = '30d';
-
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 const subtractDays = (date: Date, days: number) =>
   new Date(date.getTime() - days * MS_PER_DAY);
 
@@ -101,18 +98,10 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Get dashboard overview for admin
-   * @delegates DashboardAnalyticsService.getDashboardOverview
-   */
   async getDashboardOverview(): Promise<any> {
     return this.dashboardService.getDashboardOverview();
   }
 
-  /**
-   * Get user-specific dashboard overview
-   * @delegates DashboardAnalyticsService.getUserDashboardOverview
-   */
   async getUserDashboardOverview(userId: string): Promise<any> {
     return this.dashboardService.getUserDashboardOverview(userId);
   }
@@ -387,10 +376,6 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Get trending analytics
-   * @delegates TrendingAnalyticsService.getTrendingAnalytics
-   */
   async getTrendingAnalytics(range?: string): Promise<any> {
     return this.trendingService.getTrendingAnalytics(range);
   }

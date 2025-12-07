@@ -1,13 +1,9 @@
 import { useCallback } from 'react';
-
 import { useAppSelector } from './use-redux';
-
 export const usePermissions = () => {
   const user = useAppSelector(state => state.auth.user);
-
   const isAdmin = useCallback(() => user?.role?.name === 'admin', [user]);
   const isUser = useCallback(() => user?.role?.name === 'user', [user]);
-
   // Document specific permissions
   const canViewDocument = useCallback(
     (document: any) => {

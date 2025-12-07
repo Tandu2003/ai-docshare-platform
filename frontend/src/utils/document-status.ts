@@ -1,11 +1,9 @@
 import type { DocumentModerationStatus } from '@/types/database.types';
-
 export interface DocumentStatusInfo {
   label: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   className: string;
 }
-
 export function getDocumentStatusInfo(
   isApproved: boolean,
   moderationStatus?: DocumentModerationStatus,

@@ -1,21 +1,17 @@
 import { useState } from 'react';
-
 import { PageHeader } from '@/components/common/page-header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from '@/components/upload/file-upload';
-
 export const UploadPage: React.FC = () => {
   const [uploadStatus, setUploadStatus] = useState<{
     type: 'success' | 'error' | null;
     message: string;
   }>({ type: null, message: '' });
-
   const handleUploadComplete = (document: any) => {
     setUploadStatus({
       type: 'success',
       message: `Tài liệu "${document.title}" đã được tạo thành công!`,
     });
-
     // Clear status after 5 seconds
     setTimeout(() => {
       setUploadStatus({ type: null, message: '' });

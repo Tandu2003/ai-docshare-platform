@@ -16,7 +16,6 @@ export class CloudflareR2Service {
   private readonly logger = new Logger(CloudflareR2Service.name);
   private readonly s3Client: S3Client;
   public readonly bucketName: string;
-
   constructor(private configService: ConfigService) {
     try {
       const endpoint = this.configService.get<string>('CLOUDFLARE_R2_ENDPOINT');
@@ -205,9 +204,6 @@ export class CloudflareR2Service {
     }
   }
 
-  /**
-   * Upload buffer to R2
-   */
   async uploadBuffer(
     buffer: Buffer,
     key: string,
@@ -237,9 +233,6 @@ export class CloudflareR2Service {
     }
   }
 
-  /**
-   * Get file stream from R2
-   */
   async getFileStream(storageUrl: string): Promise<Readable> {
     try {
       const key = this.extractKeyFromUrl(storageUrl);

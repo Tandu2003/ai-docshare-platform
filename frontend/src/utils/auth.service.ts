@@ -11,11 +11,9 @@ import type {
   VerifyEmailDto,
 } from '@/types';
 import { apiClient } from '@/utils/api-client';
-
 // We need to access the store to get the access token
 // This is a simple way to access the store from outside React components
 let store: AppStore | null = null;
-
 export const setStore = (reduxStore: AppStore): void => {
   store = reduxStore;
 };
@@ -23,9 +21,6 @@ export const setStore = (reduxStore: AppStore): void => {
 class AuthService {
   private userData: User | null = null;
 
-  /**
-   * Register a new user
-   */
   async register(registerData: RegisterDto): Promise<LoginResponse> {
     const response = await apiClient.post<{ user: any; accessToken: string }>(
       API_ENDPOINTS.AUTH.REGISTER,
@@ -50,9 +45,6 @@ class AuthService {
     throw new Error(response.message || 'Registration failed');
   }
 
-  /**
-   * Login user
-   */
   async login(loginData: LoginDto): Promise<LoginResponse> {
     const response = await apiClient.post<{ user: any; accessToken: string }>(
       API_ENDPOINTS.AUTH.LOGIN,
@@ -77,9 +69,6 @@ class AuthService {
     throw new Error(response.message || 'Login failed');
   }
 
-  /**
-   * Logout user
-   */
   async logout(): Promise<{ message?: string }> {
     try {
       const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
@@ -92,9 +81,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Get current user profile
-   */
   async getCurrentUser(): Promise<User> {
     try {
       const response = await apiClient.get<User>(API_ENDPOINTS.AUTH.ME);
@@ -111,9 +97,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Refresh access token
-   */
   async refreshToken(): Promise<string> {
     try {
       const response = await apiClient.post<{ accessToken: string }>(
@@ -134,10 +117,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Initialize authentication state on app startup
-   * Always try to refresh token first to validate session
-   */
   async initializeAuth(): Promise<{ user: User; token: string } | null> {
     try {
       // Always try to refresh token first to validate current session
@@ -162,16 +141,10 @@ class AuthService {
     }
   }
 
-  /**
-   * Check if user is authenticated
-   */
   isAuthenticated(): boolean {
     return !!this.userData;
   }
 
-  /**
-   * Get stored access token (from Redux store)
-   */
   getAccessToken(): string | null {
     if (store) {
       return store.getState().auth.accessToken ?? null;
@@ -179,24 +152,15 @@ class AuthService {
     return null;
   }
 
-  /**
-   * Get stored user data (from memory)
-   */
   getUserData(): User | null {
     return this.userData;
   }
 
-  /**
-   * Clear auth data (public method for API client)
-   */
   clearAuthData(): void {
     this.userData = null;
     apiClient.clearAuth();
   }
 
-  /**
-   * Check if user has specific permission
-   */
   hasPermission(permission: string): boolean {
     const user = this.getUserData();
     if (!user?.role?.permissions) return false;
@@ -204,17 +168,11 @@ class AuthService {
     return user.role.permissions.some(p => p.action === permission);
   }
 
-  /**
-   * Check if user has specific role
-   */
   hasRole(roleName: string): boolean {
     const user = this.getUserData();
     return user?.role?.name === roleName;
   }
 
-  /**
-   * Forgot password - Send reset password email
-   */
   async forgotPassword(
     forgotPasswordData: ForgotPasswordDto,
   ): Promise<{ message: string }> {
@@ -238,9 +196,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Reset password with token
-   */
   async resetPassword(
     resetPasswordData: ResetPasswordDto,
   ): Promise<{ message: string }> {
@@ -260,9 +215,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Verify email with token
-   */
   async verifyEmail(
     verifyEmailData: VerifyEmailDto,
   ): Promise<{ message: string }> {
@@ -282,9 +234,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Resend verification email
-   */
   async resendVerification(
     resendData: ResendVerificationDto,
   ): Promise<{ message: string }> {
@@ -304,9 +253,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Update user profile
-   */
   async updateProfile(profileData: {
     email?: string;
     firstName?: string;
@@ -334,9 +280,6 @@ class AuthService {
     }
   }
 
-  /**
-   * Change password
-   */
   async changePassword(passwordData: {
     currentPassword: string;
     newPassword: string;

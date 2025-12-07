@@ -1,12 +1,3 @@
-/**
- * PDF Preview Generator Service
- *
- * Handles PDF-specific preview generation:
- * - Convert PDF pages to images using pdftoppm/ImageMagick
- * - Generate multiple size variants
- * - Extract text preview from PDF
- */
-
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -41,9 +32,6 @@ export class PdfPreviewService {
     private readonly utilService: PreviewUtilService,
   ) {}
 
-  /**
-   * Generate previews from PDF file
-   */
   async generatePdfPreviews(
     documentId: string,
     file: FileInfo,
@@ -150,9 +138,6 @@ export class PdfPreviewService {
     }
   }
 
-  /**
-   * Generate preview for a single page
-   */
   private async generatePagePreview(
     documentId: string,
     pdfPath: string,
@@ -275,9 +260,6 @@ export class PdfPreviewService {
     };
   }
 
-  /**
-   * Convert PDF page to multiple size variants
-   */
   private async convertPdfPageToVariants(
     pdfPath: string,
     tmpDir: string,
@@ -345,9 +327,6 @@ export class PdfPreviewService {
     };
   }
 
-  /**
-   * Convert a single PDF page to image
-   */
   private async convertPdfPageToImage(
     pdfPath: string,
     outputPath: string,
@@ -427,9 +406,6 @@ export class PdfPreviewService {
     }
   }
 
-  /**
-   * Generate text preview from PDF
-   */
   private async generatePdfTextPreview(
     documentId: string,
     pdfPath: string,
@@ -494,9 +470,6 @@ export class PdfPreviewService {
     }
   }
 
-  /**
-   * Get PDF page count using pdfinfo
-   */
   private async getPdfPageCount(pdfPath: string): Promise<number> {
     try {
       const { stdout } = await this.utilService.runCommandWithTimeout(
@@ -515,9 +488,6 @@ export class PdfPreviewService {
     return this.maxPreviewPages;
   }
 
-  /**
-   * Create placeholder previews when conversion fails
-   */
   async createPlaceholderPreviews(
     documentId: string,
     fileName?: string,

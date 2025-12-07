@@ -1,11 +1,3 @@
-/**
- * Similarity Text Extraction Service
- *
- * Handles text extraction for similarity comparison:
- * - Extract text from document files
- * - Extract text for embedding generation
- */
-
 import { ContentExtractorService } from '../../ai/content-extractor.service';
 import { CloudflareR2Service } from '../../common/cloudflare-r2.service';
 import { Injectable, Logger } from '@nestjs/common';
@@ -13,16 +5,10 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class SimilarityTextExtractionService {
   private readonly logger = new Logger(SimilarityTextExtractionService.name);
-
   constructor(
     private readonly contentExtractor: ContentExtractorService,
     private readonly r2Service: CloudflareR2Service,
   ) {}
-
-  /**
-   * Extract text content from files
-   * @param limitText - If true, limit text length to prevent memory issues
-   */
   async extractTextFromFiles(
     files: any[],
     limitText: boolean = false,
@@ -76,9 +62,6 @@ export class SimilarityTextExtractionService {
     return textContents.join('\n\n').trim();
   }
 
-  /**
-   * Extract text for embedding - improved to use actual file content
-   */
   async extractTextForEmbedding(document: any): Promise<string> {
     const parts: string[] = [];
 

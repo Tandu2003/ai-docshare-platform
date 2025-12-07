@@ -1,9 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { toast } from 'sonner';
-
 import type { AuthState, LoginDto, RegisterDto, User } from '@/types';
 import { authService } from '@/utils';
-
 // Initial state - Don't set authenticated immediately, let initializeAuth handle it
 const initialState: AuthState = {
   user: null,
@@ -11,7 +9,6 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
 };
-
 // Async thunks
 export const registerUser = createAsyncThunk(
   'auth/register',

@@ -1,12 +1,3 @@
-/**
- * Query Processor Service
- *
- * Handles query preprocessing and normalization:
- * - Query tokenization
- * - Text normalization
- * - Query variants generation
- */
-
 import { Injectable } from '@nestjs/common';
 
 export interface QueryVariants {
@@ -23,9 +14,6 @@ export interface QueryVariants {
 
 @Injectable()
 export class QueryProcessorService {
-  /**
-   * Prepare multiple query variants for comprehensive search
-   */
   prepareQueryVariants(query: string): QueryVariants {
     const trimmed = query.trim();
 
@@ -80,9 +68,6 @@ export class QueryProcessorService {
     };
   }
 
-  /**
-   * Expand tokens with heuristics for better matching
-   */
   private expandTokens(lowerTokens: string[]): string[] {
     const expandedTokens: string[] = [];
     const suffixHeuristics = ['js', 'ts', 'py', 'rb', 'go', 'net', 'sql', 'db'];
@@ -120,16 +105,10 @@ export class QueryProcessorService {
     return expandedTokens;
   }
 
-  /**
-   * Create condensed version of text for matching
-   */
   condense(value: string): string {
     return value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
   }
 
-  /**
-   * Calculate token coverage in source text
-   */
   calculateTokenCoverage(source: string, tokens: string[]): number {
     if (tokens.length === 0) return 0;
     const lowerSource = source.toLowerCase();

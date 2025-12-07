@@ -1,13 +1,3 @@
-/**
- * Category Query Service
- *
- * Handles category query operations:
- * - Find all categories
- * - Find category by ID
- * - Get category with documents
- * - Get categories for selection UI
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -35,9 +25,6 @@ interface CategoryWithMetrics extends CategoryWithParent {
 export class CategoryQueryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Attach metrics (document count, downloads, views) to categories
-   */
   async attachMetrics(
     categories: CategoryWithParent[],
   ): Promise<CategoryWithMetrics[]> {
@@ -86,9 +73,6 @@ export class CategoryQueryService {
     });
   }
 
-  /**
-   * Map category to response format
-   */
   mapCategoryResponse(category: CategoryWithMetrics) {
     return {
       id: category.id,
@@ -115,9 +99,6 @@ export class CategoryQueryService {
     };
   }
 
-  /**
-   * Find all categories with optional active filter
-   */
   async findAll(includeInactive = true) {
     const categories = await this.prisma.category.findMany({
       where: includeInactive
@@ -144,9 +125,6 @@ export class CategoryQueryService {
     );
   }
 
-  /**
-   * Find category by ID
-   */
   async findById(id: string) {
     const category = await this.prisma.category.findUnique({
       where: { id },
@@ -170,9 +148,6 @@ export class CategoryQueryService {
     return this.mapCategoryResponse(categoryWithMetrics);
   }
 
-  /**
-   * Get category with paginated documents
-   */
   async getCategoryWithDocuments(params: {
     id: string;
     page?: number;
@@ -264,9 +239,6 @@ export class CategoryQueryService {
     };
   }
 
-  /**
-   * Get all categories for selection UI
-   */
   async getCategoriesForSelection(): Promise<
     Array<{
       id: string;

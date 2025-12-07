@@ -5,9 +5,6 @@ import { ResponseHelper } from './response.helper';
 import { FastifyReply } from 'fastify';
 
 export class HttpErrorHelper {
-  /**
-   * Bad Request response (400)
-   */
   static badRequest(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.BAD_REQUEST,
@@ -15,10 +12,6 @@ export class HttpErrorHelper {
   ): FastifyReply {
     return ResponseHelper.error(res, message, HTTP_STATUS.BAD_REQUEST, error);
   }
-
-  /**
-   * Unauthorized response (401)
-   */
   static unauthorized(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.UNAUTHORIZED,
@@ -26,9 +19,6 @@ export class HttpErrorHelper {
     return ResponseHelper.error(res, message, HTTP_STATUS.UNAUTHORIZED);
   }
 
-  /**
-   * Forbidden response (403)
-   */
   static forbidden(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.FORBIDDEN,
@@ -36,9 +26,6 @@ export class HttpErrorHelper {
     return ResponseHelper.error(res, message, HTTP_STATUS.FORBIDDEN);
   }
 
-  /**
-   * Not Found response (404)
-   */
   static notFound(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.NOT_FOUND,
@@ -46,9 +33,6 @@ export class HttpErrorHelper {
     return ResponseHelper.error(res, message, HTTP_STATUS.NOT_FOUND);
   }
 
-  /**
-   * Validation Error response (422)
-   */
   static validationError(
     res: FastifyReply,
     errors: any,
@@ -62,9 +46,6 @@ export class HttpErrorHelper {
     );
   }
 
-  /**
-   * Conflict response (409)
-   */
   static conflict(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.CONFLICT,
@@ -73,9 +54,6 @@ export class HttpErrorHelper {
     return ResponseHelper.error(res, message, HTTP_STATUS.CONFLICT, error);
   }
 
-  /**
-   * Too Many Requests response (429)
-   */
   static tooManyRequests(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.TOO_MANY_REQUESTS,
@@ -83,9 +61,6 @@ export class HttpErrorHelper {
     return ResponseHelper.error(res, message, HTTP_STATUS.TOO_MANY_REQUESTS);
   }
 
-  /**
-   * Internal Server Error response (500)
-   */
   static internalError(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.INTERNAL_ERROR,
@@ -99,9 +74,6 @@ export class HttpErrorHelper {
     );
   }
 
-  /**
-   * Handle AppError instances automatically
-   */
   static handleAppError(res: FastifyReply, error: AppError): FastifyReply {
     const statusCode = error.statusCode;
     const message = error.message;
@@ -111,9 +83,6 @@ export class HttpErrorHelper {
     return ResponseHelper.error(res, message, statusCode, errorData);
   }
 
-  /**
-   * Handle any error type safely
-   */
   static handleError(res: FastifyReply, error: unknown): FastifyReply {
     const normalizedError = ErrorUtils.normalizeError(error);
     return this.handleAppError(res, normalizedError);

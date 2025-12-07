@@ -2,14 +2,14 @@ import { AnalyticsService } from '@/analytics/analytics.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { AdminOnly, RoleGuard } from '@/common/authorization';
 import { ResponseHelper } from '@/common/helpers/response.helper';
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { FastifyReply } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user?: {
@@ -17,7 +17,6 @@ interface AuthenticatedRequest extends FastifyRequest {
     [key: string]: any;
   };
 }
-
 @ApiTags('Analytics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -56,10 +55,7 @@ export class AnalyticsController {
     required: false,
     description: 'Time range for analytics (7d, 30d, 90d, 1y)',
   })
-  async getAnalytics(
-    @Query('range') range: string,
-    @Res() res: FastifyReply,
-  ) {
+  async getAnalytics(@Query('range') range: string, @Res() res: FastifyReply) {
     const analytics = await this.analyticsService.getAnalytics(range);
     return ResponseHelper.success(res, analytics);
   }
@@ -71,10 +67,7 @@ export class AnalyticsController {
     required: false,
     description: 'Time range for trending documents (7d, 30d, 90d, 1y)',
   })
-  async getTrending(
-    @Query('range') range: string,
-    @Res() res: FastifyReply,
-  ) {
+  async getTrending(@Query('range') range: string, @Res() res: FastifyReply) {
     const trending = await this.analyticsService.getTrendingAnalytics(range);
     return ResponseHelper.success(res, trending);
   }

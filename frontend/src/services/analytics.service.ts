@@ -1,18 +1,15 @@
 import { apiClient } from '@/utils/api-client';
-
 export interface AnalyticsTimeframe {
   range: string;
   startDate: string;
   endDate: string;
 }
-
 export interface AnalyticsCategory {
   name: string;
   icon: string;
   count: number;
   percentage: number;
 }
-
 export interface AnalyticsLanguage {
   code: string;
   count: number;

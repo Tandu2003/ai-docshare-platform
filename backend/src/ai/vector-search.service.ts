@@ -149,9 +149,6 @@ export class VectorSearchService {
     };
   }
 
-  /**
-   * Perform vector similarity search using pgvector
-   */
   async vectorSearch(
     options: VectorSearchOptions,
   ): Promise<VectorSearchResult[]> {
@@ -297,9 +294,6 @@ export class VectorSearchService {
     }
   }
 
-  /**
-   * Fallback similarity calculation in application layer when pgvector is unavailable.
-   */
   private async computeSimilarityFallback(
     queryEmbedding: number[],
     documentIds: string[],
@@ -363,9 +357,6 @@ export class VectorSearchService {
     return dotProduct / denominator;
   }
 
-  /**
-   * Perform hybrid search (combine vector + traditional text search)
-   */
   async hybridSearch(
     options: VectorSearchOptions,
     vectorWeight = 0.7,
@@ -502,13 +493,6 @@ export class VectorSearchService {
     }
   }
 
-  /**
-   * Traditional text-based search (for hybrid search)
-   */
-  /**
-   * Perform keyword-based search using Prisma filters.
-   * Exposed for services that need plain text fallback.
-   */
   async keywordSearch(
     options: VectorSearchOptions,
   ): Promise<Array<{ documentId: string; textScore: number }>> {
@@ -806,9 +790,6 @@ export class VectorSearchService {
     return filteredResults;
   }
 
-  /**
-   * Save search history with embedding
-   */
   private async saveSearchHistory(
     options: VectorSearchOptions,
     queryEmbedding: number[],
@@ -838,9 +819,6 @@ export class VectorSearchService {
     }
   }
 
-  /**
-   * Get search cache key
-   */
   private getSearchCacheKey(
     type: string,
     options: VectorSearchOptions,
@@ -849,9 +827,6 @@ export class VectorSearchService {
     return `${type}:${options.query}:${filterStr}:${options.limit || 10}:${options.threshold || 0.5}`;
   }
 
-  /**
-   * Get results from cache
-   */
   private getFromCache(key: string): any {
     const cached = this.searchCache.get(key);
     if (!cached) return null;
@@ -865,9 +840,6 @@ export class VectorSearchService {
     return cached.data;
   }
 
-  /**
-   * Cache search results
-   */
   private cacheResults(key: string, data: any): void {
     // Implement LRU-like behavior
     if (this.searchCache.size >= this.maxCacheSize) {
@@ -881,9 +853,6 @@ export class VectorSearchService {
     });
   }
 
-  /**
-   * Update search metrics
-   */
   private updateMetrics(latency: number): void {
     const totalSearches = this.metrics.totalSearches;
     this.metrics.averageLatency =
@@ -891,24 +860,15 @@ export class VectorSearchService {
       totalSearches;
   }
 
-  /**
-   * Get search metrics
-   */
   getMetrics(): SearchMetrics {
     return { ...this.metrics };
   }
 
-  /**
-   * Clear search cache
-   */
   clearCache(): void {
     this.searchCache.clear();
     this.logger.log('Search cache cleared');
   }
 
-  /**
-   * Get documents by IDs with full details
-   */
   async getDocumentsByIds(documentIds: string[]): Promise<any[]> {
     const documents = await this.prisma.document.findMany({
       where: {

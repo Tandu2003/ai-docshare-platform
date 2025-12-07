@@ -1,4 +1,3 @@
-// Base API Response Interface
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
@@ -12,7 +11,6 @@ export interface ApiResponse<T = unknown> {
     totalPages?: number;
   };
 }
-
 // Pagination Meta
 export interface PaginationMeta {
   page: number;

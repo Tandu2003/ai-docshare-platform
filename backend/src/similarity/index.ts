@@ -1,30 +1,13 @@
-/**
- * Similarity Module - Centralized exports
- */
-
-// ============================================================================
-// Services
-// ============================================================================
 export { SimilarityService } from './similarity.service';
 export { SimilarityJobService } from './similarity-job.service';
 export {
   SimilarityAlgorithmService,
   SimilarityTextExtractionService,
 } from './services';
-
-// ============================================================================
 // Controllers
-// ============================================================================
 export { SimilarityController } from './controllers/similarity.controller';
-
-// ============================================================================
 // Module
-// ============================================================================
 export { SimilarityModule } from './similarity.module';
-
-// ============================================================================
-// Interfaces & Types
-// ============================================================================
 export type {
   SimilarDocument,
   SimilarityCheckResult,
@@ -32,9 +15,7 @@ export type {
   SimilarityJobStatusType,
 } from './interfaces';
 
-// ============================================================================
 // Constants
-// ============================================================================
 export {
   SIMILARITY_THRESHOLDS,
   DEFAULT_SIMILARITY_THRESHOLD,

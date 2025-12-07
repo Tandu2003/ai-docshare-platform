@@ -1,7 +1,6 @@
 import type { DocumentModerationStatus } from '@/types';
 import { ApiResponse } from '@/types/api.types';
 import { apiClient } from '@/utils/api-client';
-
 export interface FileUploadResult {
   id: string;
   originalName: string;
@@ -11,7 +10,6 @@ export interface FileUploadResult {
   storageUrl: string;
   fileHash: string;
 }
-
 export interface AvatarUploadResult {
   id: string;
   avatarUrl: string;
@@ -106,9 +104,6 @@ export interface PaginatedDocuments {
 }
 
 export class FilesService {
-  /**
-   * Upload files to storage
-   */
   static async uploadFiles(
     files: File[],
   ): Promise<ApiResponse<FileUploadResult[]>> {
@@ -140,9 +135,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Upload avatar for user
-   */
   static async uploadAvatar(
     file: File,
   ): Promise<ApiResponse<AvatarUploadResult>> {
@@ -173,9 +165,6 @@ export class FilesService {
 }
 
 export class DocumentsService {
-  /**
-   * Create a document from uploaded files
-   */
   static async createDocument(documentData: CreateDocumentData): Promise<any> {
     try {
       const response = await apiClient.post('/documents/create', documentData);
@@ -185,9 +174,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Get user's documents with pagination
-   */
   static async getUserDocuments(
     page: number = 1,
     limit: number = 10,
@@ -207,9 +193,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Get public documents with pagination and filters
-   */
   static async getPublicDocuments(
     page: number = 1,
     limit: number = 10,
@@ -251,9 +234,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Search documents using vector/traditional/hybrid search
-   */
   static async searchDocuments(
     query: string,
     page: number = 1,
@@ -307,9 +287,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Delete a document
-   */
   static async deleteDocument(documentId: string): Promise<void> {
     try {
       const response = await apiClient.delete<{
@@ -325,9 +302,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Update a document
-   */
   static async updateDocument(
     documentId: string,
     updateData: UpdateDocumentData,
@@ -345,9 +319,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Download all files of a document with proper tracking
-   */
   static async downloadDocument(documentId: string): Promise<void> {
     try {
       // Step 1: Get download URL without tracking
@@ -385,9 +356,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Download file from URL using blob method
-   */
   private static async downloadFileFromUrl(
     downloadUrl: string,
     fileName: string,
@@ -421,9 +389,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Track document view
-   */
   static async trackDocumentView(
     documentId: string,
     referrer?: string,

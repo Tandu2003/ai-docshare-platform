@@ -1,19 +1,7 @@
-/**
- * Preview Module Interfaces
- *
- * Centralized type definitions for the preview system
- */
-
 import { PreviewStatus } from '@prisma/client';
 
-// ============================================================================
-// Preview Image Types
-// ============================================================================
-
 export type PreviewSize = 'small' | 'medium' | 'large';
-
 export type SourceType = 'PDF' | 'DOCX' | 'PPTX' | 'IMAGE' | 'TEXT';
-
 export interface PreviewMetadata {
   pageCount: number;
   processingTimeMs: number;
@@ -40,10 +28,6 @@ export interface PreviewVariants {
   large: string;
 }
 
-// ============================================================================
-// Preview Generation Types
-// ============================================================================
-
 export interface PreviewGenerationResult {
   success: boolean;
   documentId: string;
@@ -64,10 +48,6 @@ export interface FileInfo {
   mimeType?: string;
 }
 
-// ============================================================================
-// Preview Status Types
-// ============================================================================
-
 export interface PreviewStatusResult {
   status: PreviewStatus;
   error?: string;
@@ -87,10 +67,6 @@ export interface PreviewStreamResult {
   contentLength?: number;
 }
 
-// ============================================================================
-// Command Execution Types
-// ============================================================================
-
 export interface CommandOptions {
   timeoutMs?: number;
   retries?: number;
@@ -105,9 +81,7 @@ export interface CommandResult {
   stderr: string;
 }
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 export const PREVIEW_SIZES: Record<PreviewSize, number> = {
   small: 200,

@@ -6,16 +6,13 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 @Injectable()
 export class DatabaseInitService implements OnModuleInit {
   private readonly logger = new Logger(DatabaseInitService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly roleService: RoleService,
     private readonly categoriesService: CategoriesService,
   ) {}
-
   async onModuleInit() {
     this.logger.log('🔄 Đang khởi tạo cơ sở dữ liệu...');
-
     try {
       await this.initializeRoles();
       await this.initializeCategories();

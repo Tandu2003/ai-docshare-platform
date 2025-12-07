@@ -1,17 +1,14 @@
 import { apiClient } from '@/utils/api-client';
-
 export interface PointTransactionDocument {
   id: string;
   title: string;
 }
-
 export interface PointTransactionPerformedBy {
   id: string;
   firstName: string;
   lastName: string;
   username: string;
 }
-
 export interface PointTransactionUser {
   id: string;
   firstName: string;

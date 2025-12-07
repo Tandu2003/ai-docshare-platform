@@ -1,8 +1,6 @@
 import { LucideIcon } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
@@ -13,7 +11,6 @@ interface EmptyStateProps {
   };
   className?: string;
 }
-
 export function EmptyState({
   icon: Icon,
   title,

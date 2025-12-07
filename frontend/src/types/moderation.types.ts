@@ -1,11 +1,9 @@
 import type { AIAnalysis, DocumentModerationStatus } from './database.types';
-
 export interface ModerationSummary {
   pendingDocuments: number;
   rejectedDocuments: number;
   approvedToday: number;
 }
-
 export interface ModerationUploader {
   id: string;
   username?: string | null;
@@ -15,7 +13,6 @@ export interface ModerationUploader {
   email?: string | null;
   isVerified?: boolean;
 }
-
 export interface ModerationCategory {
   id: string;
   name: string;

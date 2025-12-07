@@ -1,10 +1,7 @@
 import { useEffect, type ReactElement, type ReactNode } from 'react';
-
 import { toast } from 'sonner';
-
 import { useAuth } from '@/hooks/use-auth';
 import { disconnectSocket, getSocket, reconnectSocket } from '@/lib/socket';
-
 interface NotificationEvent {
   type:
     | 'view'
@@ -40,10 +37,6 @@ interface SocketProviderProps {
   children: ReactNode;
 }
 
-/**
- * SocketProvider - Manages socket connection and global notification handling
- * This component should wrap the main app content after AuthInitializer
- */
 export function SocketProvider({
   children,
 }: SocketProviderProps): ReactElement {

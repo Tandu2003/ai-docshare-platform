@@ -10,7 +10,6 @@ export interface AIAnalysisRequest {
   fileIds: string[];
   userId: string;
 }
-
 export interface AIAnalysisResponse {
   success: boolean;
   data: DocumentAnalysisResult & {
@@ -35,9 +34,6 @@ export class AIService {
     private categoriesService: CategoriesService,
   ) {}
 
-  /**
-   * Analyze documents using AI and return metadata suggestions
-   */
   async analyzeDocuments(
     request: AIAnalysisRequest,
   ): Promise<AIAnalysisResponse> {
@@ -194,9 +190,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Save AI analysis to database
-   */
   async saveAnalysis(
     documentId: string,
     analysis: DocumentAnalysisResult,
@@ -247,10 +240,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Generate and save embedding for a document
-   * This is automatically called when document content changes
-   */
   async generateAndSaveEmbedding(documentId: string): Promise<void> {
     try {
       this.logger.log(`Generating embedding for document: ${documentId}`);
@@ -339,17 +328,11 @@ export class AIService {
     }
   }
 
-  /**
-   * Regenerate embedding for a document (when content is updated)
-   */
   async regenerateEmbedding(documentId: string): Promise<void> {
     this.logger.log(`Regenerating embedding for document: ${documentId}`);
     await this.generateAndSaveEmbedding(documentId);
   }
 
-  /**
-   * Get AI analysis for a document
-   */
   async getAnalysis(documentId: string) {
     try {
       const analysis = await this.prisma.aIAnalysis.findUnique({
@@ -363,9 +346,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Apply AI moderation settings to determine document status
-   */
   async applyModerationSettings(
     documentId: string,
     moderationScore: number,
@@ -483,9 +463,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Check similarity for moderation decisions
-   */
   private async checkSimilarityForModeration(documentId: string): Promise<{
     shouldReject: boolean;
     requiresManualReview: boolean;
@@ -559,9 +536,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Test AI service connection
-   */
   async testConnection(): Promise<{ gemini: boolean }> {
     try {
       const geminiStatus = await this.geminiService.testConnection();
@@ -577,16 +551,10 @@ export class AIService {
     }
   }
 
-  /**
-   * Get Prisma service instance for debugging
-   */
   getPrismaService() {
     return this.prisma;
   }
 
-  /**
-   * Get files that belong to a user for AI analysis
-   */
   async getUserFilesForAnalysis(userId: string) {
     try {
       const files = await this.prisma.file.findMany({
@@ -620,9 +588,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Find user's files by name (useful when multiple users have same document)
-   */
   async findUserFilesByName(userId: string, fileName: string) {
     try {
       const files = await this.prisma.file.findMany({

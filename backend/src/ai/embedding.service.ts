@@ -9,7 +9,6 @@ export interface EmbeddingMetrics {
   averageLatency: number;
   cacheHits: number;
 }
-
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name);
@@ -49,10 +48,6 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Generate embedding vector for text using Google's embedding model
-   * Returns 768-dimensional vector (text-embedding-004 default)
-   */
   async generateEmbedding(text: string): Promise<number[]> {
     const startTime = Date.now();
     this.metrics.totalRequests++;
@@ -111,9 +106,6 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Generate embedding using real Google Generative AI embedding API with retry
-   */
   private async generateEmbeddingWithRetry(
     text: string,
     maxRetries = 3,
@@ -156,9 +148,6 @@ export class EmbeddingService {
     throw lastError || new Error('Failed to generate embedding after retries');
   }
 
-  /**
-   * Generate embedding using the actual Google embedContent API
-   */
   private async generateRealEmbedding(text: string): Promise<number[]> {
     if (!this.genAI) {
       throw new Error('Gemini API not initialized');
@@ -186,16 +175,10 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Sleep utility for retry delays
-   */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  /**
-   * Generate embeddings for multiple texts in batch with concurrency control
-   */
   async generateEmbeddingsBatch(
     texts: string[],
     concurrency = 5,
@@ -241,19 +224,12 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Get cache key for text
-   * Uses full text hash to avoid collisions between texts with same prefix
-   */
   private getCacheKey(text: string): string {
     // Use full text hash for cache key to avoid collisions
     // Also include model name in case model changes
     return `${this.model}:${this.simpleHash(text)}`;
   }
 
-  /**
-   * Cache embedding result
-   */
   private cacheEmbedding(key: string, embedding: number[]): void {
     // Implement LRU-like behavior: remove oldest if cache is full
     if (this.embeddingCache.size >= this.maxCacheSize) {
@@ -263,9 +239,6 @@ export class EmbeddingService {
     this.embeddingCache.set(key, embedding);
   }
 
-  /**
-   * Update metrics
-   */
   private updateMetrics(latency: number, success: boolean): void {
     if (success) {
       this.metrics.successfulRequests++;
@@ -278,25 +251,15 @@ export class EmbeddingService {
       totalSuccessful;
   }
 
-  /**
-   * Get embedding metrics
-   */
   getMetrics(): EmbeddingMetrics {
     return { ...this.metrics };
   }
 
-  /**
-   * Clear embedding cache
-   */
   clearCache(): void {
     this.embeddingCache.clear();
     this.logger.log('Embedding cache cleared');
   }
 
-  /**
-   * Generate placeholder embedding (deterministic hash-based)
-   * For development/testing when no API key is available
-   */
   private generatePlaceholderEmbedding(text: string): number[] {
     // Create a deterministic "embedding" based on text hash
     // This is NOT a real embedding but useful for development
@@ -316,9 +279,6 @@ export class EmbeddingService {
     return embedding.map(val => val / magnitude);
   }
 
-  /**
-   * Simple hash function for deterministic placeholders
-   */
   private simpleHash(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -329,25 +289,15 @@ export class EmbeddingService {
     return Math.abs(hash);
   }
 
-  /**
-   * Get embedding dimension for the configured model
-   */
   getEmbeddingDimension(): number {
     // Google's text-embedding-004 uses 768 dimensions
     return 768;
   }
 
-  /**
-   * Get the current embedding model name
-   */
   getModelName(): string {
     return this.model;
   }
 
-  /**
-   * Generate embedding vector strictly - throws error instead of falling back to placeholder
-   * Use this for migration to ensure we only save real embeddings
-   */
   async generateEmbeddingStrict(text: string): Promise<number[]> {
     const startTime = Date.now();
     this.metrics.totalRequests++;
@@ -398,9 +348,6 @@ export class EmbeddingService {
     return embedding;
   }
 
-  /**
-   * Check if the embedding service is properly configured with a valid API key
-   */
   isConfigured(): boolean {
     return !!(this.apiKey && this.genAI);
   }

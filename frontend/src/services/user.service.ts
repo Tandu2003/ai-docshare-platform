@@ -1,5 +1,4 @@
 import { apiClient } from '@/utils/api-client';
-
 export interface User {
   id: string;
   email: string;

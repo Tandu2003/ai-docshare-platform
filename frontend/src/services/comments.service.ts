@@ -1,11 +1,9 @@
 import type { Comment } from '@/types';
 import { apiClient } from '@/utils/api-client';
-
 export interface CreateCommentRequest {
   content: string;
   parentId?: string;
 }
-
 export class CommentsService {
   static async getComments(documentId: string): Promise<Comment[]> {
     const response = await apiClient.get<Comment[]>(
@@ -16,7 +14,6 @@ export class CommentsService {
     }
     return response.data;
   }
-
   static async addComment(
     documentId: string,
     payload: CreateCommentRequest,

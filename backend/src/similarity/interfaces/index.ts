@@ -1,14 +1,3 @@
-/**
- * Similarity Module - Interfaces and Types
- */
-
-// ============================================================================
-// Similarity Interfaces
-// ============================================================================
-
-/**
- * Similar document result
- */
 export interface SimilarDocument {
   readonly documentId: string;
   readonly title: string;
@@ -17,10 +6,6 @@ export interface SimilarDocument {
   readonly uploaderName: string;
   readonly createdAt: Date;
 }
-
-/**
- * Similarity check result
- */
 export interface SimilarityCheckResult {
   readonly documentId: string;
   readonly hasSimilar: boolean;
@@ -28,9 +13,6 @@ export interface SimilarityCheckResult {
   readonly similarDocuments: SimilarDocument[];
 }
 
-/**
- * Similarity job status
- */
 export interface SimilarityJobStatus {
   readonly jobId: string;
   readonly documentId: string;
@@ -40,10 +22,6 @@ export interface SimilarityJobStatus {
   readonly completedAt: Date | null;
   readonly error: string | null;
 }
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export type SimilarityJobStatusType =
   | 'pending'

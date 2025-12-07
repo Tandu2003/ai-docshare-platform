@@ -1,5 +1,4 @@
 import { apiClient } from '@/utils/api-client';
-
 export const getSecureFileUrl = async (fileId: string): Promise<string> => {
   try {
     const response = await apiClient.get<{
@@ -7,7 +6,6 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
       data: { secureUrl: string };
       message?: string;
     }>(`/documents/files/${fileId}/secure-url`);
-
     if (response.data?.success) {
       return response.data.data.secureUrl;
     } else {

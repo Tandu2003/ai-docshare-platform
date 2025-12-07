@@ -1,12 +1,10 @@
 import { ReactNode } from 'react';
-
 interface PageHeaderProps {
   title: string;
   description?: string;
   children?: ReactNode;
   className?: string;
 }
-
 export function PageHeader({
   title,
   description,

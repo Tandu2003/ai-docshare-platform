@@ -5,7 +5,6 @@ import {
   useState,
   type ReactElement,
 } from 'react';
-
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,7 +15,6 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';

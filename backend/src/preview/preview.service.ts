@@ -1,4 +1,3 @@
-// For PDF to image conversion
 import { ChildProcess, exec, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -75,10 +74,6 @@ export class PreviewService {
     private readonly previewUtilService: PreviewUtilService,
   ) {}
 
-  /**
-   * Generate preview images for a document's first N pages
-   * Supports PDF, DOC, DOCX, PPT, PPTX
-   */
   async generatePreviews(documentId: string): Promise<PreviewGenerationResult> {
     this.logger.log(`Starting preview generation for document: ${documentId}`);
     const processingStart = Date.now();
@@ -242,9 +237,6 @@ export class PreviewService {
     }
   }
 
-  /**
-   * Get preview images for a document with short-lived signed URLs
-   */
   async getDocumentPreviews(documentId: string): Promise<PreviewImage[]> {
     const previews = await this.prisma.documentPreview.findMany({
       where: {
@@ -335,9 +327,6 @@ export class PreviewService {
     return previewsWithUrls;
   }
 
-  /**
-   * Get a single preview image with very short-lived signed URL
-   */
   async getPreviewImage(
     documentId: string,
     pageNumber: number,
@@ -371,9 +360,6 @@ export class PreviewService {
     };
   }
 
-  /**
-   * Stream preview image directly (for secure access without exposing URL)
-   */
   async streamPreviewImage(
     documentId: string,
     pageNumber: number,
@@ -404,9 +390,6 @@ export class PreviewService {
     };
   }
 
-  /**
-   * Check if previews exist for a document
-   */
   async hasPreviewsReady(documentId: string): Promise<boolean> {
     const count = await this.prisma.documentPreview.count({
       where: {
@@ -423,9 +406,6 @@ export class PreviewService {
     return count > 0;
   }
 
-  /**
-   * Get preview generation status
-   */
   async getPreviewStatus(documentId: string): Promise<{
     status: PreviewStatus;
     error?: string;
@@ -490,10 +470,6 @@ export class PreviewService {
     };
   }
 
-  /**
-   * Generate preview from PDF file
-   * @delegates PdfPreviewService.generatePdfPreviews
-   */
   private async generatePdfPreviews(
     documentId: string,
     file: {
@@ -515,13 +491,6 @@ export class PreviewService {
     );
   }
 
-  /**
-   * Generate preview from Office documents (DOC, DOCX, PPT, PPTX)
-   */
-  /**
-   * Generate preview from Office documents (DOC, DOCX, PPT, PPTX)
-   * @delegates OfficePreviewService.generateOfficePreviews
-   */
   private async generateOfficePreviews(
     documentId: string,
     file: {
@@ -542,10 +511,6 @@ export class PreviewService {
     );
   }
 
-  /**
-   * Generate preview from text file (TXT, MD, CSV, etc.)
-   * @delegates TextPreviewService.generateTextPreviews
-   */
   private async generateTextPreviews(
     documentId: string,
     file: {
@@ -566,10 +531,6 @@ export class PreviewService {
     );
   }
 
-  /**
-   * Create preview from image file (image is its own preview)
-   * @delegates ImagePreviewService.createImagePreview
-   */
   private async createImagePreview(
     documentId: string,
     file: {
@@ -590,10 +551,6 @@ export class PreviewService {
     );
   }
 
-  /**
-   * Create placeholder previews when conversion fails
-   * @delegates PdfPreviewService.createPlaceholderPreviews
-   */
   private async createPlaceholderPreviews(
     documentId: string,
     fileName?: string,
@@ -606,9 +563,6 @@ export class PreviewService {
     );
   }
 
-  /**
-   * Convert PDF page to image using pdftoppm or ImageMagick
-   */
   private async convertPdfPageToImage(
     pdfPath: string,
     outputPath: string,
@@ -873,9 +827,6 @@ export class PreviewService {
     }
   }
 
-  /**
-   * Helper to write stream to file
-   */
   private async streamToFile(
     stream: Readable,
     filePath: string,
@@ -888,9 +839,6 @@ export class PreviewService {
     });
   }
 
-  /**
-   * Run shell command with timeout, retries, and hard kill on hang
-   */
   private async runCommandWithTimeout(
     command: string,
     options?: {
@@ -1109,9 +1057,6 @@ export class PreviewService {
     return 'DOCX';
   }
 
-  /**
-   * Get image dimensions from buffer (basic implementation)
-   */
   private getImageDimensions(buffer: Buffer): {
     width?: number;
     height?: number;
@@ -1141,9 +1086,6 @@ export class PreviewService {
     return {};
   }
 
-  /**
-   * Check if mime type is previewable
-   */
   private isPreviewableFormat(mimeType: string): boolean {
     return (
       mimeType === 'application/pdf' ||
@@ -1153,9 +1095,6 @@ export class PreviewService {
     );
   }
 
-  /**
-   * Check if mime type is text format
-   */
   private isTextFormat(mimeType: string): boolean {
     const textFormats = [
       'text/plain',
@@ -1169,9 +1108,6 @@ export class PreviewService {
     return textFormats.includes(mimeType) || mimeType.startsWith('text/');
   }
 
-  /**
-   * Check if mime type is Office format
-   */
   private isOfficeFormat(mimeType: string): boolean {
     const officeFormats = [
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
@@ -1184,9 +1120,6 @@ export class PreviewService {
     return officeFormats.includes(mimeType);
   }
 
-  /**
-   * Get file extension from mime type
-   */
   private getExtensionFromMimeType(mimeType: string): string {
     const mimeToExt: Record<string, string> = {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
@@ -1203,9 +1136,6 @@ export class PreviewService {
     return mimeToExt[mimeType] || '.bin';
   }
 
-  /**
-   * Delete previews for a document
-   */
   async deletePreviews(documentId: string): Promise<void> {
     const previews = await this.prisma.documentPreview.findMany({
       where: { documentId },
@@ -1246,9 +1176,6 @@ export class PreviewService {
     });
   }
 
-  /**
-   * Regenerate previews for a document
-   */
   async regeneratePreviews(
     documentId: string,
   ): Promise<PreviewGenerationResult> {

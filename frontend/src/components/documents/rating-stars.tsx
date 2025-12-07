@@ -1,7 +1,5 @@
 import { useState } from 'react';
-
 import { Star } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -9,7 +7,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-
 interface RatingStarsProps {
   rating: number;
   averageRating?: number;

@@ -1,19 +1,7 @@
-/**
- * Users Module - Constants
- */
-
-// ============================================================================
-// Pagination Constants
-// ============================================================================
-
 export const DEFAULT_USERS_PAGE = 1;
 export const DEFAULT_USERS_LIMIT = 10;
 export const MAX_USERS_LIMIT = 100;
-
-// ============================================================================
 // Sort Options
-// ============================================================================
-
 export const USERS_SORT_FIELDS = {
   CREATED_AT: 'createdAt',
   UPDATED_AT: 'updatedAt',
@@ -22,15 +10,12 @@ export const USERS_SORT_FIELDS = {
   EMAIL: 'email',
   USERNAME: 'username',
 } as const;
-
 export const SORT_ORDER = {
   ASC: 'asc',
   DESC: 'desc',
 } as const;
 
-// ============================================================================
 // Error Messages
-// ============================================================================
 
 export const USER_ERROR_MESSAGES = {
   NOT_FOUND: 'Không tìm thấy người dùng',
@@ -42,9 +27,7 @@ export const USER_ERROR_MESSAGES = {
   INVALID_STATUS: 'Trạng thái không hợp lệ',
 } as const;
 
-// ============================================================================
 // Success Messages
-// ============================================================================
 
 export const USER_SUCCESS_MESSAGES = {
   CREATED: 'Tạo người dùng thành công',
@@ -55,9 +38,7 @@ export const USER_SUCCESS_MESSAGES = {
   STATUS_UPDATED: 'Cập nhật trạng thái người dùng thành công',
 } as const;
 
-// ============================================================================
 // Type exports
-// ============================================================================
 
 export type UsersSortField =
   (typeof USERS_SORT_FIELDS)[keyof typeof USERS_SORT_FIELDS];

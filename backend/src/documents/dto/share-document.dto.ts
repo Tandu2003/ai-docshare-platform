@@ -13,11 +13,9 @@ export class ShareDocumentDto {
   @Min(1)
   @Max(60 * 24 * 30)
   expiresInMinutes?: number;
-
   @IsOptional()
   @IsDateString()
   expiresAt?: string;
-
   @IsOptional()
   @IsBoolean()
   regenerateToken?: boolean;

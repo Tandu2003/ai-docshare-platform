@@ -1,29 +1,12 @@
-/**
- * Points Module - Constants
- */
-
-// ============================================================================
-// Default Point Values
-// ============================================================================
-
 export const DEFAULT_UPLOAD_REWARD = 5;
 export const DEFAULT_DOWNLOAD_COST = 1;
 export const DEFAULT_DOWNLOAD_REWARD = 1;
 export const INITIAL_USER_POINTS = 10;
-
-// ============================================================================
-// Transaction Types
-// ============================================================================
-
 export const POINT_TRANSACTION_TYPES = {
   CREDIT: 'CREDIT',
   DEBIT: 'DEBIT',
 } as const;
-
-// ============================================================================
 // Transaction Reasons
-// ============================================================================
-
 export const POINT_TRANSACTION_REASONS = {
   UPLOAD: 'UPLOAD',
   DOWNLOAD: 'DOWNLOAD',
@@ -34,9 +17,7 @@ export const POINT_TRANSACTION_REASONS = {
   REFUND: 'REFUND',
 } as const;
 
-// ============================================================================
 // Error Messages
-// ============================================================================
 
 export const POINTS_ERROR_MESSAGES = {
   INSUFFICIENT_BALANCE: 'Số dư điểm không đủ',
@@ -46,9 +27,7 @@ export const POINTS_ERROR_MESSAGES = {
   CANNOT_DOWNLOAD_OWN: 'Bạn không thể tải xuống tài liệu của chính mình',
 } as const;
 
-// ============================================================================
 // Success Messages
-// ============================================================================
 
 export const POINTS_SUCCESS_MESSAGES = {
   POINTS_AWARDED: 'Đã cộng điểm thành công',
@@ -56,9 +35,7 @@ export const POINTS_SUCCESS_MESSAGES = {
   ADJUSTMENT_COMPLETE: 'Điều chỉnh điểm hoàn tất',
 } as const;
 
-// ============================================================================
 // Pagination
-// ============================================================================
 
 export const DEFAULT_TRANSACTIONS_PAGE = 1;
 export const DEFAULT_TRANSACTIONS_LIMIT = 10;

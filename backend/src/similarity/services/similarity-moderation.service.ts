@@ -1,23 +1,10 @@
-/**
- * Similarity Moderation Service
- *
- * Handles admin/moderation operations for similarity:
- * - Get similarity results for moderation
- * - Process admin decisions on similarity
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class SimilarityModerationService {
   private readonly logger = new Logger(SimilarityModerationService.name);
-
   constructor(private readonly prisma: PrismaService) {}
-
-  /**
-   * Get similarity results for admin review
-   */
   async getSimilarityResultsForModeration(documentId: string) {
     try {
       const similarities = await this.prisma.documentSimilarity.findMany({
@@ -73,9 +60,6 @@ export class SimilarityModerationService {
     }
   }
 
-  /**
-   * Process admin decision on similarity
-   */
   async processSimilarityDecision(
     similarityId: string,
     adminId: string,

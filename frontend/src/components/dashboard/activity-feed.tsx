@@ -7,17 +7,14 @@ import {
   Upload,
   User,
 } from 'lucide-react';
-
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/loading-skeleton';
 import type { DashboardActivity } from '@/types';
-
 interface ActivityFeedProps {
   activities: DashboardActivity[];
   isLoading?: boolean;
 }
-
 const getActivityIcon = (action: string) => {
   switch (action) {
     case 'upload':

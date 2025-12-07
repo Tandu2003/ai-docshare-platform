@@ -9,13 +9,11 @@ export class PreviewInitializationService implements OnModuleInit {
   private readonly logger = new Logger(PreviewInitializationService.name);
   private readonly batchSize = 5; // Process 5 documents at a time
   private readonly delayBetweenBatches = 2000; // 2 seconds between batches
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly previewService: PreviewService,
     private readonly configService: ConfigService,
   ) {}
-
   onModuleInit(): void {
     // Check if auto-initialization is enabled (default: true)
     const autoInit = this.configService.get<boolean>('PREVIEW_AUTO_INIT', true);
@@ -33,9 +31,6 @@ export class PreviewInitializationService implements OnModuleInit {
     });
   }
 
-  /**
-   * Find and generate previews for all documents that don't have previews
-   */
   async initializeMissingPreviews(): Promise<void> {
     this.logger.log(
       'Starting preview initialization for documents without previews...',
@@ -186,9 +181,6 @@ export class PreviewInitializationService implements OnModuleInit {
     }
   }
 
-  /**
-   * Generate preview for a single document with error handling
-   */
   private async generatePreviewSafely(
     documentId: string,
     title: string,
@@ -205,9 +197,6 @@ export class PreviewInitializationService implements OnModuleInit {
     }
   }
 
-  /**
-   * Manual trigger to regenerate all failed previews
-   */
   async regenerateFailedPreviews(): Promise<{
     processed: number;
     success: number;
@@ -247,9 +236,6 @@ export class PreviewInitializationService implements OnModuleInit {
     };
   }
 
-  /**
-   * Regenerate ALL previews (force regenerate including completed)
-   */
   async regenerateAllPreviews(): Promise<{
     processed: number;
     success: number;
@@ -330,9 +316,6 @@ export class PreviewInitializationService implements OnModuleInit {
     };
   }
 
-  /**
-   * Get preview initialization status
-   */
   async getInitializationStatus(): Promise<{
     pending: number;
     processing: number;

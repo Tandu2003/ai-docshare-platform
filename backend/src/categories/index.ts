@@ -1,34 +1,14 @@
-/**
- * Categories Module - Centralized exports
- */
-
-// ============================================================================
-// Services
-// ============================================================================
 export { CategoriesService } from './categories.service';
 export {
   CategorySuggestionService,
   DefaultCategoriesService,
 } from './services';
-
-// ============================================================================
 // Controllers
-// ============================================================================
 export { CategoriesController } from './controllers/categories.controller';
-
-// ============================================================================
 // Module
-// ============================================================================
 export { CategoriesModule } from './categories.module';
-
-// ============================================================================
 // DTOs
-// ============================================================================
 export { CreateCategoryDto, UpdateCategoryDto } from './dto';
-
-// ============================================================================
-// Interfaces & Types
-// ============================================================================
 export type {
   CategoryWithParent,
   CategoryWithMetrics,
@@ -37,9 +17,7 @@ export type {
   CategoryTreeNode,
 } from './interfaces';
 
-// ============================================================================
 // Constants
-// ============================================================================
 export {
   DEFAULT_CATEGORY_NAME,
   DEFAULT_CATEGORY_DESCRIPTION,

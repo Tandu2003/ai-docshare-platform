@@ -1,10 +1,3 @@
-/**
- * Text Preview Generator Service
- *
- * Handles text file preview generation (TXT, MD, CSV, etc.):
- * - Create image from text content using ImageMagick
- */
-
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -39,9 +32,6 @@ export class TextPreviewService {
     private readonly pdfPreviewService: PdfPreviewService,
   ) {}
 
-  /**
-   * Generate preview from text file
-   */
   async generateTextPreviews(
     documentId: string,
     file: FileInfo & { mimeType: string },
@@ -188,9 +178,6 @@ export class TextPreviewService {
     }
   }
 
-  /**
-   * Convert text to image using ImageMagick
-   */
   private async convertTextToImage(
     textContent: string,
     outputPath: string,
@@ -246,9 +233,6 @@ export class TextPreviewService {
     }
   }
 
-  /**
-   * Upload variant sizes
-   */
   private async uploadVariants(
     outputPath: string,
     previewKey: string,
@@ -290,9 +274,6 @@ export class TextPreviewService {
     return variantKeys;
   }
 
-  /**
-   * Wrap text to specified width
-   */
   private wrapText(text: string, maxWidth: number): string {
     const lines = text.split('\n');
     const wrappedLines: string[] = [];

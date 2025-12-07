@@ -1,10 +1,3 @@
-/**
- * Similarity Service
- *
- * Main facade service for similarity operations.
- * Delegates to specialized sub-services for different functionality domains.
- */
-
 import {
   SimilarityDetectionService,
   SimilarityEmbeddingService,
@@ -48,28 +41,16 @@ export class SimilarityService implements OnModuleInit {
 
   // ==================== Embedding Operations ====================
 
-  /**
-   * Generate embedding for a document
-   * Delegates to SimilarityEmbeddingService
-   */
   async generateDocumentEmbedding(documentId: string): Promise<number[]> {
     return this.embeddingService.generateDocumentEmbedding(documentId);
   }
 
-  /**
-   * Process similarity detection in background
-   * Delegates to SimilarityEmbeddingService
-   */
   async processSimilarityDetection(documentId: string): Promise<void> {
     return this.embeddingService.processSimilarityDetection(documentId);
   }
 
   // ==================== Detection Operations ====================
 
-  /**
-   * Detect similar documents for a given document
-   * Delegates to SimilarityDetectionService
-   */
   async detectSimilarDocuments(
     documentId: string,
   ): Promise<SimilarityDetectionResult> {
@@ -78,18 +59,10 @@ export class SimilarityService implements OnModuleInit {
 
   // ==================== Moderation Operations ====================
 
-  /**
-   * Get similarity results for admin review
-   * Delegates to SimilarityModerationService
-   */
   async getSimilarityResultsForModeration(documentId: string): Promise<any> {
     return this.moderationService.getSimilarityResultsForModeration(documentId);
   }
 
-  /**
-   * Process admin decision on similarity
-   * Delegates to SimilarityModerationService
-   */
   async processSimilarityDecision(
     similarityId: string,
     adminId: string,

@@ -1,21 +1,16 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-
 import { LoginForm } from '@/components/auth';
-
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-
   // Get callback URL from query params or state
   const callbackFromQuery = searchParams.get('callback');
   const callbackFromState = location.state?.from?.pathname;
-
   // Decode callback URL from query params if available
   const callbackUrl = callbackFromQuery
     ? decodeURIComponent(callbackFromQuery)
     : callbackFromState || '/dashboard';
-
   const handleSuccess = () => {
     navigate(callbackUrl, { replace: true });
   };

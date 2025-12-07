@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-
 import {
   getCurrentUser,
   loginUser,
@@ -12,9 +11,7 @@ import {
   selectUser,
 } from '@/store/slices';
 import type { LoginDto, RegisterDto } from '@/types';
-
 import { useAppDispatch, useAppSelector } from './use-redux';
-
 interface UseAuthReturn {
   auth: ReturnType<typeof selectAuth>;
   user: ReturnType<typeof selectUser>;

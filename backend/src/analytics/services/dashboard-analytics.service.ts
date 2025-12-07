@@ -1,11 +1,3 @@
-/**
- * Dashboard Analytics Service
- *
- * Handles dashboard-related analytics:
- * - Admin dashboard overview
- * - User-specific dashboard data
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { AnalyticsUtilService } from './analytics-util.service';
 import { Injectable } from '@nestjs/common';
@@ -16,10 +8,6 @@ export class DashboardAnalyticsService {
     private readonly prisma: PrismaService,
     private readonly utilService: AnalyticsUtilService,
   ) {}
-
-  /**
-   * Get admin dashboard overview
-   */
   async getDashboardOverview() {
     const currentDate = new Date();
     const startOfCurrentMonth = this.utilService.startOfMonth(currentDate);
@@ -150,9 +138,6 @@ export class DashboardAnalyticsService {
     };
   }
 
-  /**
-   * Get user-specific dashboard overview
-   */
   async getUserDashboardOverview(userId: string) {
     const [
       userDocumentsCount,
@@ -269,9 +254,6 @@ export class DashboardAnalyticsService {
     };
   }
 
-  /**
-   * Build category statistics from aggregates
-   */
   private async buildCategoryStats(
     categoryAggregates: Array<{
       categoryId: string;
@@ -312,9 +294,6 @@ export class DashboardAnalyticsService {
     });
   }
 
-  /**
-   * Map activity logs to response format
-   */
   private mapActivityLogs(
     activityLogsRaw: Array<{
       id: string;
@@ -359,9 +338,6 @@ export class DashboardAnalyticsService {
     }));
   }
 
-  /**
-   * Map notifications to response format
-   */
   private mapNotifications(
     notificationsRaw: Array<{
       id: string;

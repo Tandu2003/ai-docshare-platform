@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactElement } from 'react';
-
 import {
 	Dialog,
 	DialogContent,
@@ -12,7 +11,6 @@ import type {
 	PreviewStatus,
 } from '@/services/document.service';
 import { PreviewService } from '@/services/preview.service';
-
 interface DocumentPreviewModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;

@@ -1,16 +1,6 @@
-/**
- * Preview Module - Centralized exports
- *
- * This module handles document preview generation and secure document access.
- */
-
-// ============================================================================
-// Services
-// ============================================================================
 export { PreviewService } from './preview.service';
 export { PreviewInitializationService } from './preview-initialization.service';
 export { SecureDocumentService } from './secure-document.service';
-
 // Domain-specific preview services
 export {
   PreviewUtilService,
@@ -19,16 +9,10 @@ export {
   ImagePreviewService,
   TextPreviewService,
 } from './services';
-
-// ============================================================================
 // Controllers
-// ============================================================================
 export { PreviewController } from './controllers/preview.controller';
 export { SecureDocumentController } from './controllers/secure-document.controller';
 
-// ============================================================================
-// Interfaces & Types
-// ============================================================================
 export type {
   PreviewImage,
   PreviewMetadata,
@@ -51,7 +35,5 @@ export {
   TEXT_FORMATS,
 } from './interfaces';
 
-// ============================================================================
 // Module
-// ============================================================================
 export { PreviewModule } from './preview.module';

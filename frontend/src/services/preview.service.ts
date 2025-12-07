@@ -1,23 +1,19 @@
 import { apiClient } from '@/utils/api-client';
-
 import type {
   DocumentPreview,
   PreviewStatus as PreviewStatusType,
 } from './document.types';
-
 export interface PreviewsResponse {
   documentId: string;
   previews: DocumentPreview[];
   count: number;
   expiresIn: number; // seconds
 }
-
 export interface PreviewPageResponse {
   url: string;
   expiresAt: string;
   mimeType: string;
 }
-
 export interface PreviewStatusResponse {
   status: PreviewStatusType;
   error?: string;
@@ -53,14 +49,7 @@ export interface AccessCheckResponse {
   level: 'preview' | 'download' | 'full';
 }
 
-/**
- * Preview Service - handles document preview images and secure document access
- */
 export class PreviewService {
-  /**
-   * Get preview images for a document
-   * Returns short-lived signed URLs (30 seconds)
-   */
   static async getDocumentPreviews(
     documentId: string,
     apiKey?: string,
@@ -77,9 +66,6 @@ export class PreviewService {
     return response.data;
   }
 
-  /**
-   * Get a specific preview page image URL
-   */
   static async getPreviewPage(
     documentId: string,
     pageNumber: number,
@@ -97,9 +83,6 @@ export class PreviewService {
     return response.data;
   }
 
-  /**
-   * Get preview generation status
-   */
   static async getPreviewStatus(
     documentId: string,
   ): Promise<PreviewStatusResponse> {
@@ -114,9 +97,6 @@ export class PreviewService {
     return response.data;
   }
 
-  /**
-   * Trigger preview generation (owner only)
-   */
   static async generatePreviews(documentId: string): Promise<void> {
     const response = await apiClient.post(`/preview/${documentId}/generate`);
 
@@ -125,9 +105,6 @@ export class PreviewService {
     }
   }
 
-  /**
-   * Regenerate previews (owner only)
-   */
   static async regeneratePreviews(documentId: string): Promise<void> {
     const response = await apiClient.post(`/preview/${documentId}/regenerate`);
 
@@ -136,10 +113,6 @@ export class PreviewService {
     }
   }
 
-  /**
-   * Get secure download URL (30 second expiry)
-   * Must be used immediately after receiving
-   */
   static async getSecureDownloadUrl(
     documentId: string,
     apiKey?: string,
@@ -157,9 +130,6 @@ export class PreviewService {
     return response.data;
   }
 
-  /**
-   * Generate download token (30 second expiry)
-   */
   static async generateDownloadToken(
     documentId: string,
   ): Promise<DownloadTokenResponse> {
@@ -174,9 +144,6 @@ export class PreviewService {
     return response.data;
   }
 
-  /**
-   * Check document access permissions
-   */
   static async checkAccess(
     documentId: string,
     level: 'preview' | 'download' | 'full' = 'preview',
@@ -194,10 +161,6 @@ export class PreviewService {
     return response.data;
   }
 
-  /**
-   * Download document using secure URL
-   * Opens download in new tab or triggers browser download
-   */
   static async downloadSecurely(
     documentId: string,
     fileName?: string,
@@ -221,9 +184,6 @@ export class PreviewService {
     return { success: true, fileName: downloadInfo.fileName };
   }
 
-  /**
-   * Stream download using token (alternative method)
-   */
   static async downloadWithToken(
     documentId: string,
     fileName?: string,

@@ -11,11 +11,9 @@ export class UpdateDocumentDto {
   @IsOptional()
   @IsString()
   title?: string;
-
   @IsOptional()
   @IsString()
   description?: string;
-
   @IsOptional()
   @IsString()
   categoryId?: string;

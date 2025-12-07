@@ -5,4 +5,3 @@ export * from '../document-download.service';
 export * from '../document-share.service';
 export * from '../document-similarity.service';
 export { DocumentsService, FilesService } from '../files.service';
-

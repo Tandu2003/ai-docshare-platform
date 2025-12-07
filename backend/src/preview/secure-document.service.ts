@@ -15,7 +15,6 @@ export interface DocumentAccessResult {
   reason?: string;
   accessType?: 'owner' | 'public' | 'share_link' | 'admin';
 }
-
 export interface SecureDownloadResult {
   url: string;
   fileName: string;
@@ -39,13 +38,6 @@ export class SecureDocumentService {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Validate if user has access to a document
-   * @param documentId - Document ID
-   * @param userId - User ID (optional for anonymous access)
-   * @param apiKey - Share link API key (optional)
-   * @param accessLevel - Required access level: 'preview' | 'download' | 'full'
-   */
   async validateDocumentAccess(
     documentId: string,
     userId?: string,
@@ -142,9 +134,6 @@ export class SecureDocumentService {
     }
   }
 
-  /**
-   * Check if user is document owner
-   */
   async isDocumentOwner(documentId: string, userId: string): Promise<boolean> {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
@@ -154,10 +143,6 @@ export class SecureDocumentService {
     return document?.uploaderId === userId;
   }
 
-  /**
-   * Get a secure, short-lived download URL for a file
-   * URL expires in 30 seconds - must be used immediately
-   */
   async getSecureDownloadUrl(
     documentId: string,
     userId: string,
@@ -228,10 +213,6 @@ export class SecureDocumentService {
     );
   }
 
-  /**
-   * Stream document file directly through backend
-   * Never exposes direct storage URLs
-   */
   async streamDocumentFile(
     documentId: string,
     fileIndex: number,
@@ -285,10 +266,6 @@ export class SecureDocumentService {
     };
   }
 
-  /**
-   * Generate a one-time download token
-   * Valid for 30 seconds
-   */
   async generateDownloadToken(
     documentId: string,
     userId: string,
@@ -320,9 +297,6 @@ export class SecureDocumentService {
     };
   }
 
-  /**
-   * Validate and decode a download token
-   */
   validateDownloadToken(token: string): {
     valid: boolean;
     documentId?: string;

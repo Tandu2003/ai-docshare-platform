@@ -5,7 +5,6 @@ import {
   useState,
   type ReactElement,
 } from 'react';
-
 import {
   Calendar,
   Clock,
@@ -17,7 +16,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';

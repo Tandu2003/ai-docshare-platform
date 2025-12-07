@@ -12,7 +12,6 @@ export class RegisterDto {
   @IsEmail({}, { message: 'Email phải là địa chỉ email hợp lệ' })
   @Transform(({ value }) => value?.toLowerCase().trim())
   email: string;
-
   @IsString({ message: 'Tên người dùng phải là chuỗi ký tự' })
   @IsNotEmpty({ message: 'Tên người dùng là bắt buộc' })
   @MinLength(3, { message: 'Tên người dùng phải có ít nhất 3 ký tự' })

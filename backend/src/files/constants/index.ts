@@ -1,19 +1,6 @@
-/**
- * Files Module - Constants
- */
-
-// ============================================================================
-// File Size Limits
-// ============================================================================
-
 export const MAX_FILE_SIZE_MB = 100;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export const MAX_FILES_PER_UPLOAD = 10;
-
-// ============================================================================
-// Allowed MIME Types
-// ============================================================================
-
 export const ALLOWED_MIME_TYPES = [
   // Documents
   'application/pdf',
@@ -37,9 +24,7 @@ export const ALLOWED_MIME_TYPES = [
   'application/x-rar-compressed',
 ] as const;
 
-// ============================================================================
 // Storage Paths
-// ============================================================================
 
 export const STORAGE_PATHS = {
   UPLOADS: 'uploads',
@@ -47,9 +32,7 @@ export const STORAGE_PATHS = {
   THUMBNAILS: 'thumbnails',
 } as const;
 
-// ============================================================================
 // Error Messages
-// ============================================================================
 
 export const FILE_ERROR_MESSAGES = {
   NOT_FOUND: 'Không tìm thấy tệp',
@@ -61,18 +44,14 @@ export const FILE_ERROR_MESSAGES = {
   DUPLICATE: 'Tệp này đã tồn tại',
 } as const;
 
-// ============================================================================
 // Success Messages
-// ============================================================================
 
 export const FILE_SUCCESS_MESSAGES = {
   UPLOADED: 'Tải lên tệp thành công',
   DELETED: 'Xóa tệp thành công',
 } as const;
 
-// ============================================================================
 // Type exports
-// ============================================================================
 
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 export type StoragePath = (typeof STORAGE_PATHS)[keyof typeof STORAGE_PATHS];

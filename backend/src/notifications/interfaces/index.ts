@@ -1,14 +1,3 @@
-/**
- * Notifications Module - Interfaces and Types
- */
-
-// ============================================================================
-// Event Interfaces
-// ============================================================================
-
-/**
- * View event
- */
 export interface ViewEvent {
   readonly type: 'view';
   readonly documentId: string;
@@ -16,10 +5,6 @@ export interface ViewEvent {
   readonly userId?: string;
   readonly count?: number;
 }
-
-/**
- * Download event
- */
 export interface DownloadEvent {
   readonly type: 'download';
   readonly documentId: string;
@@ -27,9 +12,6 @@ export interface DownloadEvent {
   readonly count?: number;
 }
 
-/**
- * Moderation event
- */
 export interface ModerationEvent {
   readonly type: 'moderation';
   readonly documentId: string;
@@ -38,9 +20,6 @@ export interface ModerationEvent {
   readonly reason?: string | null;
 }
 
-/**
- * Comment event
- */
 export interface CommentEvent {
   readonly type: 'comment';
   readonly documentId: string;
@@ -52,9 +31,6 @@ export interface CommentEvent {
   readonly isReply?: boolean;
 }
 
-/**
- * Reply event
- */
 export interface ReplyEvent {
   readonly type: 'reply';
   readonly documentId: string;
@@ -66,9 +42,6 @@ export interface ReplyEvent {
   readonly content: string;
 }
 
-/**
- * Comment like event
- */
 export interface CommentLikeEvent {
   readonly type: 'comment_like';
   readonly documentId: string;
@@ -78,22 +51,14 @@ export interface CommentLikeEvent {
   readonly likerId: string;
 }
 
-// ============================================================================
 // Realtime Document Events
-// ============================================================================
 
-/**
- * New comment event for realtime
- */
 export interface NewCommentEvent {
   readonly type: 'new_comment';
   readonly documentId: string;
   readonly comment: unknown;
 }
 
-/**
- * Comment updated event for realtime
- */
 export interface CommentUpdatedEvent {
   readonly type: 'comment_updated';
   readonly documentId: string;
@@ -103,18 +68,11 @@ export interface CommentUpdatedEvent {
   readonly likerId?: string;
 }
 
-/**
- * Comment deleted event for realtime
- */
 export interface CommentDeletedEvent {
   readonly type: 'comment_deleted';
   readonly documentId: string;
   readonly commentId: string;
 }
-
-// ============================================================================
-// Union Types
-// ============================================================================
 
 export type NotificationEvent =
   | ViewEvent
@@ -128,10 +86,6 @@ export type DocumentRealtimeEvent =
   | NewCommentEvent
   | CommentUpdatedEvent
   | CommentDeletedEvent;
-
-// ============================================================================
-// Notification Types
-// ============================================================================
 
 export type NotificationType =
   | 'view'

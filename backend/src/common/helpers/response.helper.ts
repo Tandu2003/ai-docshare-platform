@@ -7,14 +7,10 @@ import {
 import { FastifyReply } from 'fastify';
 
 export class ResponseHelper {
-  /**
-   * Convert BigInt values to strings to make them JSON-serializable
-   */
   private static convertBigIntsToString(obj: any): any {
     if (obj === null || obj === undefined) {
       return obj;
     }
-
     if (obj instanceof Date) {
       return obj.toISOString();
     }
@@ -40,9 +36,6 @@ export class ResponseHelper {
     return obj;
   }
 
-  /**
-   * Success response
-   */
   static success<T>(
     res: FastifyReply,
     data?: T,
@@ -62,9 +55,6 @@ export class ResponseHelper {
     return res.status(statusCode).send(response);
   }
 
-  /**
-   * Created response
-   */
   static created<T>(
     res: FastifyReply,
     data?: T,
@@ -73,9 +63,6 @@ export class ResponseHelper {
     return this.success(res, data, message, HTTP_STATUS.CREATED);
   }
 
-  /**
-   * Updated response
-   */
   static updated<T>(
     res: FastifyReply,
     data?: T,
@@ -84,9 +71,6 @@ export class ResponseHelper {
     return this.success(res, data, message, HTTP_STATUS.OK);
   }
 
-  /**
-   * Deleted response
-   */
   static deleted(
     res: FastifyReply,
     message: string = HTTP_MESSAGES.DELETED,
@@ -94,9 +78,6 @@ export class ResponseHelper {
     return this.success(res, null, message, HTTP_STATUS.OK);
   }
 
-  /**
-   * Paginated response
-   */
   static paginated<T>(
     res: FastifyReply,
     data: T[],
@@ -117,9 +98,6 @@ export class ResponseHelper {
     return res.status(HTTP_STATUS.OK).send(response);
   }
 
-  /**
-   * Error response
-   */
   static error(
     res: FastifyReply,
     message: string = 'Đã xảy ra lỗi',

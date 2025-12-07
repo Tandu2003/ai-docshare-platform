@@ -1,28 +1,15 @@
-/**
- * Analytics Utility Service
- *
- * Shared utility functions for analytics calculations
- */
-
 import { Injectable } from '@nestjs/common';
 
-// ============================================================================
 // Constants
-// ============================================================================
-
 export const RANGE_TO_DAYS: Record<string, number> = {
   '7d': 7,
   '30d': 30,
   '90d': 90,
   '1y': 365,
 };
-
 export const DEFAULT_RANGE = '30d';
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-// ============================================================================
 // Time Range Result Interface
-// ============================================================================
 
 export interface TimeRangeResult {
   range: string;
@@ -35,32 +22,20 @@ export interface TimeRangeResult {
 
 @Injectable()
 export class AnalyticsUtilService {
-  /**
-   * Subtract days from a date
-   */
   subtractDays(date: Date, days: number): Date {
     return new Date(date.getTime() - days * MS_PER_DAY);
   }
 
-  /**
-   * Subtract months from a date
-   */
   subtractMonths(date: Date, months: number): Date {
     const result = new Date(date);
     result.setMonth(result.getMonth() - months);
     return result;
   }
 
-  /**
-   * Get start of month
-   */
   startOfMonth(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
   }
 
-  /**
-   * Get end of month
-   */
   endOfMonth(date: Date): Date {
     return new Date(
       date.getFullYear(),
@@ -73,16 +48,10 @@ export class AnalyticsUtilService {
     );
   }
 
-  /**
-   * Format month label
-   */
   formatMonthLabel(date: Date): string {
     return date.toLocaleString('en', { month: 'short' });
   }
 
-  /**
-   * Resolve time range from string
-   */
   resolveRange(range: string | undefined): TimeRangeResult {
     const normalized = range?.toLowerCase();
     const days =
@@ -106,18 +75,12 @@ export class AnalyticsUtilService {
     };
   }
 
-  /**
-   * Get day key for grouping
-   */
   getDayKey(d: Date): string {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate())
       .toISOString()
       .slice(0, 10);
   }
 
-  /**
-   * Get activity description
-   */
   getActivityDescription(activity: {
     user?: {
       firstName: string | null;
@@ -158,9 +121,6 @@ export class AnalyticsUtilService {
     }
   }
 
-  /**
-   * Calculate percentage change
-   */
   calculateChange(current: number, previous: number): number {
     if (previous > 0) {
       return Number((((current - previous) / previous) * 100).toFixed(1));
@@ -168,9 +128,6 @@ export class AnalyticsUtilService {
     return current > 0 ? 100 : 0;
   }
 
-  /**
-   * Calculate percentage of total
-   */
   calculatePercentage(count: number, total: number): number {
     return total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0;
   }

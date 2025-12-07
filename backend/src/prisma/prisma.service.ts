@@ -15,7 +15,6 @@ export class PrismaService
     });
     super({ adapter });
   }
-
   async onModuleInit(): Promise<void> {
     await this.$connect();
   }

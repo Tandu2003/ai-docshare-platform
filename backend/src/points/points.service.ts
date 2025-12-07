@@ -6,12 +6,10 @@ import { Document, PointTxnReason, PointTxnType, Prisma } from '@prisma/client';
 @Injectable()
 export class PointsService {
   private readonly logger = new Logger(PointsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly systemSettings: SystemSettingsService,
   ) {}
-
   async getBalance(userId: string): Promise<{ balance: number }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -303,24 +301,6 @@ export class PointsService {
     });
   }
 
-  /**
-   * Award points to document uploader when someone successfully downloads their document.
-   * This should only be called once per unique (downloaderId, documentId) pair.
-   *
-   * The reward equals the document's downloadCost (or system default if not set).
-   * This way, uploader receives exactly what the downloader paid.
-   *
-   * Flow:
-   * 1. Check if this downloader has already triggered a reward for this document
-   * 2. If not, award points to the uploader equal to the document's downloadCost
-   * 3. Mark the download as rewarded to prevent double rewards
-   *
-   * @param uploaderId - The user who uploaded the document (receives the reward)
-   * @param documentId - The document being downloaded
-   * @param downloaderId - The user who downloaded the document
-   * @param downloadId - The download record ID to mark as rewarded
-   * @param downloadCost - The actual cost paid by downloader (document.downloadCost or system default)
-   */
   async awardUploaderOnDownload(
     uploaderId: string,
     documentId: string,
@@ -409,10 +389,6 @@ export class PointsService {
     }
   }
 
-  /**
-   * Check if a user has already successfully downloaded a document
-   * (to determine if they should be charged again or get free re-download)
-   */
   async hasSuccessfulDownload(
     userId: string,
     documentId: string,

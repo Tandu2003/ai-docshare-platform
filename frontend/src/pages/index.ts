@@ -4,7 +4,6 @@ export * from './login';
 export * from './not-found';
 export * from './register';
 export * from './unauthorized';
-
 export { ForgotPasswordPage } from './forgot-password';
 export { ResendVerificationPage } from './resend-verification';
 export { ResetPasswordPage } from './reset-password';

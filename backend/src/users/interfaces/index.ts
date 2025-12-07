@@ -1,23 +1,9 @@
-/**
- * Users Module - Interfaces and Types
- */
-
 import { Role, User } from '@prisma/client';
 
-// ============================================================================
-// User Interfaces
-// ============================================================================
-
-/**
- * User with role information
- */
 export interface UserWithRole extends Omit<User, 'password'> {
   readonly role: Pick<Role, 'id' | 'name' | 'description'>;
 }
 
-/**
- * User statistics
- */
 export interface UserStatistics {
   readonly documentsCount: number;
   readonly ratingsCount: number;
@@ -28,9 +14,6 @@ export interface UserStatistics {
   readonly totalPoints: number;
 }
 
-/**
- * User activity item
- */
 export interface UserActivity {
   readonly id: string;
   readonly type: UserActivityType;
@@ -40,9 +23,6 @@ export interface UserActivity {
   readonly createdAt: Date;
 }
 
-/**
- * Pagination metadata for users
- */
 export interface UserPaginationMeta {
   readonly page: number;
   readonly limit: number;
@@ -52,17 +32,10 @@ export interface UserPaginationMeta {
   readonly hasPrev: boolean;
 }
 
-/**
- * Users list response
- */
 export interface UsersListResponse {
   readonly users: UserWithRole[];
   readonly pagination: UserPaginationMeta;
 }
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export type UserActivityType =
   | 'document_upload'

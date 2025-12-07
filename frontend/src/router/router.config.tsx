@@ -1,5 +1,4 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-
 import { MainLayout, ProtectedRoute } from '@/components/layout';
 import {
   AdminDashboardPage,

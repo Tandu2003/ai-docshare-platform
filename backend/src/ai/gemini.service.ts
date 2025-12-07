@@ -42,9 +42,6 @@ export class GeminiService {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
-  /**
-   * Analyze document content from file URLs and generate metadata
-   */
   async analyzeDocumentFromFiles(
     fileUrls: string[],
   ): Promise<DocumentAnalysisResult> {
@@ -200,9 +197,6 @@ export class GeminiService {
     }
   }
 
-  /**
-   * Create analysis prompt with extracted content
-   */
   private createAnalysisPromptWithContent(
     contents: Array<{
       fileName: string;
@@ -326,9 +320,6 @@ Please analyze all provided document content and provide a consolidated response
 `;
   }
 
-  /**
-   * Create analysis prompt for Gemini
-   */
   private createAnalysisPrompt(): string {
     return `
 Analyze the provided document(s) and extract the following information in JSON format.
@@ -363,9 +354,6 @@ Please analyze all provided files and provide a consolidated response in valid J
 `;
   }
 
-  /**
-   * Parse Gemini response to extract structured data
-   */
   private parseAnalysisResult(text: string): DocumentAnalysisResult {
     try {
       // Clean the response text to extract JSON
@@ -472,17 +460,11 @@ Please analyze all provided files and provide a consolidated response in valid J
     }
   }
 
-  /**
-   * Sanitize string fields
-   */
   private sanitizeString(value: any, maxLength: number): string {
     if (typeof value !== 'string') return '';
     return value.trim().substring(0, maxLength);
   }
 
-  /**
-   * Test Gemini connection
-   */
   async testConnection(): Promise<boolean> {
     try {
       const modelName =

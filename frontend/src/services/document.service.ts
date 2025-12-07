@@ -1,4 +1,3 @@
-// Re-export all document-related services and types for backward compatibility
 export * from './document.types';
 export * from './document-core.service';
 export * from './document-moderation.service';

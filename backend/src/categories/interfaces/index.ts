@@ -1,32 +1,14 @@
-/**
- * Categories Module - Interfaces and Types
- */
-
 import { Category } from '@prisma/client';
 
-// ============================================================================
-// Category Interfaces
-// ============================================================================
-
-/**
- * Category with parent information
- */
 export interface CategoryWithParent extends Category {
   readonly parent: Pick<Category, 'id' | 'name' | 'icon' | 'color'> | null;
 }
-
-/**
- * Category with metrics
- */
 export interface CategoryWithMetrics extends CategoryWithParent {
   readonly documentCount: number;
   readonly totalDownloads: number;
   readonly totalViews: number;
 }
 
-/**
- * Category suggestion from AI
- */
 export interface CategorySuggestion {
   readonly categoryId: string | null;
   readonly categoryName: string | null;
@@ -34,9 +16,6 @@ export interface CategorySuggestion {
   readonly allSuggestions: CategorySuggestionItem[];
 }
 
-/**
- * Individual category suggestion item
- */
 export interface CategorySuggestionItem {
   readonly id: string;
   readonly name: string;
@@ -47,9 +26,6 @@ export interface CategorySuggestionItem {
   readonly confidence: number;
 }
 
-/**
- * Category tree node for hierarchical display
- */
 export interface CategoryTreeNode {
   readonly id: string;
   readonly name: string;

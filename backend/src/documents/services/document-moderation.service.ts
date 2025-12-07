@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document Moderation Service
- * @description Handles document moderation operations including auto-moderation
- * @module documents/services/document-moderation
- */
-
 import { AIService } from '@/ai/ai.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { FilesService } from '@/files/files.service';
@@ -17,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
-/** Moderation queue options */
 interface ModerationQueueOptions {
   readonly page?: number;
   readonly limit?: number;
@@ -123,11 +116,6 @@ export class DocumentModerationService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  /**
-   * Get moderation queue with pagination and filtering
-   * @param options - Queue options
-   * @returns Moderation queue data
-   */
   async getModerationQueue(
     options: ModerationQueueOptions,
   ): Promise<ModerationQueueResponse> {
@@ -244,11 +232,6 @@ export class DocumentModerationService {
     }
   }
 
-  /**
-   * Get document details for moderation
-   * @param documentId - Document ID
-   * @returns Document details
-   */
   async getDocumentForModeration(documentId: string): Promise<any> {
     try {
       const document = await this.prisma.document.findUnique({
@@ -326,13 +309,6 @@ export class DocumentModerationService {
     }
   }
 
-  /**
-   * Approve a document
-   * @param documentId - Document ID
-   * @param adminId - Admin user ID
-   * @param options - Approval options
-   * @returns Updated document
-   */
   async approveDocument(
     documentId: string,
     adminId: string,
@@ -389,13 +365,6 @@ export class DocumentModerationService {
     }
   }
 
-  /**
-   * Reject a document
-   * @param documentId - Document ID
-   * @param adminId - Admin user ID
-   * @param options - Rejection options
-   * @returns Updated document
-   */
   async rejectDocument(
     documentId: string,
     adminId: string,
@@ -461,11 +430,6 @@ export class DocumentModerationService {
     }
   }
 
-  /**
-   * Check if document should be auto-approved or auto-rejected
-   * @param documentId - Document ID
-   * @returns Auto-moderation decision
-   */
   async checkAutoModeration(documentId: string): Promise<AutoModerationResult> {
     try {
       const aiSettings = await this.systemSettings.getAIModerationSettings();
@@ -526,11 +490,6 @@ export class DocumentModerationService {
     }
   }
 
-  /**
-   * Trigger AI moderation analysis for a document
-   * @param documentId - Document ID
-   * @returns Analysis result
-   */
   async generateModerationAnalysis(documentId: string): Promise<any> {
     try {
       const document = await this.prisma.document.findUnique({

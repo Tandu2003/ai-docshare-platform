@@ -1,7 +1,3 @@
-/**
- * Bookmarks Module - Interfaces and Types
- */
-
 import {
   Bookmark,
   BookmarkFolder,
@@ -10,21 +6,10 @@ import {
   User,
 } from '@prisma/client';
 
-// ============================================================================
-// Bookmark Interfaces
-// ============================================================================
-
-/**
- * Bookmark with full document information
- */
 export interface BookmarkWithDocument extends Bookmark {
   readonly folder: Pick<BookmarkFolder, 'id' | 'name'> | null;
   readonly document: BookmarkDocument;
 }
-
-/**
- * Document info for bookmark
- */
 export interface BookmarkDocument {
   readonly id: string;
   readonly title: string;
@@ -46,34 +31,22 @@ export interface BookmarkDocument {
   >;
 }
 
-/**
- * Bookmark folder with count
- */
 export interface BookmarkFolderWithCount extends BookmarkFolder {
   readonly bookmarkCount: number;
 }
 
-/**
- * Bookmark statistics
- */
 export interface BookmarkStats {
   readonly total: number;
   readonly uncategorized: number;
   readonly folders: BookmarkFolderStat[];
 }
 
-/**
- * Folder stat item
- */
 export interface BookmarkFolderStat {
   readonly id: string;
   readonly name: string;
   readonly count: number;
 }
 
-/**
- * Get bookmarks options
- */
 export interface GetBookmarksOptions {
   readonly folderId?: string;
   readonly search?: string;

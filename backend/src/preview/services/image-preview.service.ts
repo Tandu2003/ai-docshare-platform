@@ -1,11 +1,3 @@
-/**
- * Image Preview Generator Service
- *
- * Handles image file preview generation:
- * - Resize images to multiple variants
- * - Upload to R2 storage
- */
-
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -35,9 +27,6 @@ export class ImagePreviewService {
     private readonly utilService: PreviewUtilService,
   ) {}
 
-  /**
-   * Create preview from image file
-   */
   async createImagePreview(
     documentId: string,
     file: FileInfo & { mimeType: string },

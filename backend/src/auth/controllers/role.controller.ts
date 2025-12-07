@@ -17,7 +17,6 @@ interface Permission {
   subject: string;
   conditions?: Record<string, any>;
 }
-
 @Controller('roles')
 @AdminOnly()
 @UseGuards(JwtAuthGuard, RoleGuard)

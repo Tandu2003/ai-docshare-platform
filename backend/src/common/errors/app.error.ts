@@ -1,14 +1,7 @@
-/**
- * Base application error class
- *
- * All domain-specific errors should extend this class.
- * Following Clean Code Commandment #9: Fail loudly and clearly.
- */
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
   public readonly timestamp: Date;
-
   constructor(
     message: string,
     statusCode: number = 500,
@@ -24,9 +17,6 @@ export class AppError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 
-  /**
-   * Convert error to JSON-serializable object
-   */
   toJSON(): Record<string, unknown> {
     return {
       name: this.name,

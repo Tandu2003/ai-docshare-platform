@@ -1,5 +1,4 @@
 import { apiClient } from '@/utils/api-client';
-
 export interface DocumentAnalysisResult {
   title?: string;
   description?: string;
@@ -14,7 +13,6 @@ export interface DocumentAnalysisResult {
   suggestedCategoryName?: string | null;
   categoryConfidence?: number;
 }
-
 export interface AIAnalysisResponse {
   success: boolean;
   data: DocumentAnalysisResult;
@@ -27,9 +25,6 @@ export interface AIAnalysisRequest {
 }
 
 export class AIService {
-  /**
-   * Analyze documents using AI to generate metadata
-   */
   static async analyzeDocument(request: AIAnalysisRequest): Promise<any> {
     try {
       // Validate request
@@ -55,9 +50,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Get AI analysis for a document
-   */
   static async getDocumentAnalysis(
     documentId: string,
   ): Promise<DocumentAnalysisResult | null> {
@@ -74,9 +66,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Test AI service connection
-   */
   static async testConnection(): Promise<{ gemini: boolean }> {
     try {
       const response = await apiClient.get<{ gemini: boolean }>(
@@ -93,9 +82,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Get user's files that can be analyzed
-   */
   static async getUserFilesForAnalysis(): Promise<{
     success: boolean;
     files: Array<{
@@ -132,9 +118,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Search user's files by name
-   */
   static async searchUserFiles(fileName: string): Promise<{
     success: boolean;
     files: Array<{
@@ -173,9 +156,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Format AI analysis data for display
-   */
   static formatAnalysisForDisplay(analysis: DocumentAnalysisResult): {
     title: string;
     description: string;
@@ -200,9 +180,6 @@ export class AIService {
     };
   }
 
-  /**
-   * Merge user input with AI suggestions
-   */
   static mergeWithUserInput(
     userInput: {
       title?: string;
@@ -228,9 +205,6 @@ export class AIService {
     };
   }
 
-  /**
-   * Validate AI analysis confidence
-   */
   static isHighConfidenceAnalysis(
     analysis: DocumentAnalysisResult,
     threshold: number = 0.7,
@@ -238,9 +212,6 @@ export class AIService {
     return (analysis.confidence || 0) >= threshold;
   }
 
-  /**
-   * Extract file extensions from file names
-   */
   static getSupportedFileTypes(): string[] {
     return [
       'pdf',
@@ -260,9 +231,6 @@ export class AIService {
     ];
   }
 
-  /**
-   * Check if file type is supported by AI analysis
-   */
   static isFileTypeSupported(fileName: string): boolean {
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (!extension) return false;
@@ -270,9 +238,6 @@ export class AIService {
     return this.getSupportedFileTypes().includes(extension);
   }
 
-  /**
-   * Format file size for display
-   */
   static formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
 
@@ -283,16 +248,10 @@ export class AIService {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  /**
-   * Get vector search info badge text
-   */
   static getVectorSearchInfo(): string {
     return 'Sử dụng AI Embeddings (768 dimensions) với text-embedding-004 model';
   }
 
-  /**
-   * Check if embedding is supported for document
-   */
   static isEmbeddingSupported(document: {
     aiAnalysis?: { summary?: string; keyPoints?: string[] };
   }): boolean {

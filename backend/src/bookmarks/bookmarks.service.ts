@@ -11,7 +11,6 @@ interface GetBookmarksOptions {
   search?: string;
   documentId?: string;
 }
-
 interface BookmarkStats {
   total: number;
   uncategorized: number;

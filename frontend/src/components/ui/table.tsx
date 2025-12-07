@@ -1,7 +1,5 @@
 import { type ComponentProps } from 'react';
-
 import { cn } from '@/lib/utils';
-
 function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
     <div
@@ -16,7 +14,6 @@ function Table({ className, ...props }: ComponentProps<'table'>) {
     </div>
   );
 }
-
 function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
   return (
     <thead

@@ -1,5 +1,4 @@
 import type { DocumentModerationStatus } from './database.types';
-
 export interface DashboardUserSummary {
   id: string;
   username?: string;
@@ -7,7 +6,6 @@ export interface DashboardUserSummary {
   lastName?: string | null;
   avatar?: string | null;
 }
-
 export interface DashboardCategory {
   id: string;
   name: string;

@@ -10,7 +10,6 @@ export class DownloadDocumentDto {
   @IsOptional()
   @IsString()
   ipAddress?: string;
-
   @ApiProperty({
     description: 'User agent string',
     example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',

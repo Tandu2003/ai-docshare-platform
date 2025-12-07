@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-
 import {
   AlertCircle,
   CheckCircle,
@@ -7,7 +6,6 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
-
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -227,10 +225,6 @@ interface AICategorySuggestionsProps {
   className?: string;
 }
 
-/**
- * Standalone AI category suggestions component.
- * Use this when you already have a document and want to show AI suggestions.
- */
 export function AICategorySuggestions({
   documentId,
   currentCategoryId,

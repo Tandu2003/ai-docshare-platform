@@ -1,11 +1,3 @@
-/**
- * Search History Service
- *
- * Manages search history storage and retrieval:
- * - Save user search history
- * - Track search embeddings
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -18,16 +10,12 @@ export interface SaveSearchHistoryOptions {
   resultsCount: number;
   filters?: Record<string, any>;
 }
-
 @Injectable()
 export class SearchHistoryService {
   private readonly logger = new Logger(SearchHistoryService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Save search history record
-   */
   async saveSearchHistory(options: SaveSearchHistoryOptions): Promise<void> {
     try {
       if (!options.userId) return;
@@ -51,9 +39,6 @@ export class SearchHistoryService {
     }
   }
 
-  /**
-   * Get user search history
-   */
   async getUserSearchHistory(userId: string, limit = 50) {
     return this.prisma.searchHistory.findMany({
       where: { userId },
@@ -62,9 +47,6 @@ export class SearchHistoryService {
     });
   }
 
-  /**
-   * Get popular search queries
-   */
   async getPopularSearches(limit = 10) {
     const results = await this.prisma.searchHistory.groupBy({
       by: ['query'],

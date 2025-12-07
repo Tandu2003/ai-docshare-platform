@@ -17,7 +17,6 @@ export interface MultipartFile {
   size: number;
   originalname: string;
 }
-
 @Injectable()
 export class FastifyFileInterceptor implements NestInterceptor {
   constructor(

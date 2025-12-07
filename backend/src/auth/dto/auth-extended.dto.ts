@@ -11,12 +11,10 @@ export class ForgotPasswordDto {
   @IsNotEmpty({ message: 'Email is required' })
   email: string;
 }
-
 export class ResetPasswordDto {
   @IsString({ message: 'Reset token must be a string' })
   @IsNotEmpty({ message: 'Reset token is required' })
   token: string;
-
   @IsString({ message: 'Password must be a string' })
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @IsNotEmpty({ message: 'Password is required' })

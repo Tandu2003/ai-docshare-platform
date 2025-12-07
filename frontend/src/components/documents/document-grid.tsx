@@ -9,7 +9,6 @@ import {
   Star,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

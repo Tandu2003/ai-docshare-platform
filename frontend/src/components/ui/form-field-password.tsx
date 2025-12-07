@@ -1,22 +1,18 @@
 import { forwardRef, type ComponentProps } from 'react';
-
 import { InputPassword } from '@/components/ui/input-password';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-
 interface FormFieldPasswordProps
   extends ComponentProps<typeof InputPassword> {
   label?: string;
   error?: string;
   helperText?: string;
 }
-
 export const FormFieldPassword = forwardRef<
   HTMLInputElement,
   FormFieldPasswordProps
 >(({ label, error, helperText, className, id, ...props }, ref) => {
   const inputId = id || `field-${Math.random().toString(36).substr(2, 9)}`;
-
   return (
     <div className="space-y-2">
       {label && (

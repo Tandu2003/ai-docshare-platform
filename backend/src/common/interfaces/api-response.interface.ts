@@ -11,7 +11,6 @@ export interface ApiResponse<T = any> {
     totalPages?: number;
   };
 }
-
 export interface PaginationMeta {
   timestamp: string;
   page: number;

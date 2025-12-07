@@ -7,7 +7,6 @@ import type {
   DashboardUserSummary,
 } from '@/types';
 import { apiClient } from '@/utils/api-client';
-
 interface DashboardOverviewApiResponse {
   totalDocuments: number;
   totalUsers: number;

@@ -1,27 +1,8 @@
-/**
- * Points Module - Interfaces and Types
- */
-
 import { PointTxnReason, PointTxnType } from '@prisma/client';
 
-// ============================================================================
-// Balance Interfaces
-// ============================================================================
-
-/**
- * User balance response
- */
 export interface UserBalance {
   readonly balance: number;
 }
-
-// ============================================================================
-// Transaction Interfaces
-// ============================================================================
-
-/**
- * Point transaction item
- */
 export interface PointTransaction {
   readonly id: string;
   readonly userId: string;
@@ -44,9 +25,6 @@ export interface PointTransaction {
   } | null;
 }
 
-/**
- * Transaction list result
- */
 export interface TransactionListResult {
   readonly items: PointTransaction[];
   readonly total: number;
@@ -54,9 +32,6 @@ export interface TransactionListResult {
   readonly limit: number;
 }
 
-/**
- * List transactions options
- */
 export interface ListTransactionsOptions {
   readonly page?: number;
   readonly limit?: number;
@@ -68,22 +43,12 @@ export interface ListTransactionsOptions {
   readonly to?: Date;
 }
 
-// ============================================================================
-// Admin Interfaces
-// ============================================================================
-
-/**
- * Manual adjustment payload
- */
 export interface ManualAdjustmentPayload {
   readonly userId: string;
   readonly amount: number;
   readonly reason: string;
 }
 
-/**
- * Points statistics
- */
 export interface PointsStatistics {
   readonly totalPointsAwarded: number;
   readonly totalPointsDeducted: number;
@@ -92,9 +57,6 @@ export interface PointsStatistics {
   readonly topEarners: TopEarner[];
 }
 
-/**
- * Top earner item
- */
 export interface TopEarner {
   readonly userId: string;
   readonly username: string;

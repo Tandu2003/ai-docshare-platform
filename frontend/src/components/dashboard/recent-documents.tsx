@@ -1,17 +1,14 @@
 import { Calendar, Download, Eye, Star, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/loading-skeleton';
 import type { DashboardDocument } from '@/types';
-
 interface RecentDocumentsProps {
   documents: DashboardDocument[];
   isLoading?: boolean;
 }
-
 export function RecentDocuments({
   documents,
   isLoading = false,

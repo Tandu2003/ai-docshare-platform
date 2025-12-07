@@ -1,8 +1,4 @@
 import { apiClient } from '@/utils/api-client';
-
-/**
- * Embedding metrics interface
- */
 export interface EmbeddingMetrics {
   totalRequests: number;
   successfulRequests: number;
@@ -10,10 +6,6 @@ export interface EmbeddingMetrics {
   averageLatency: number;
   cacheHits: number;
 }
-
-/**
- * Search metrics interface
- */
 export interface SearchMetrics {
   totalSearches: number;
   vectorSearches: number;
@@ -23,17 +15,11 @@ export interface SearchMetrics {
   cacheHits: number;
 }
 
-/**
- * Combined metrics response
- */
 export interface CombinedMetrics {
   embedding: EmbeddingMetrics;
   search: SearchMetrics;
 }
 
-/**
- * Regenerate embedding response
- */
 export interface RegenerateEmbeddingResponse {
   success: boolean;
   documentId: string;
@@ -41,13 +27,7 @@ export interface RegenerateEmbeddingResponse {
   message: string;
 }
 
-/**
- * Embedding Service for AI vector operations
- */
 export class EmbeddingService {
-  /**
-   * Regenerate embedding for a specific document
-   */
   static async regenerateEmbedding(
     documentId: string,
   ): Promise<RegenerateEmbeddingResponse> {
@@ -70,9 +50,6 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Get embedding and search metrics
-   */
   static async getMetrics(): Promise<CombinedMetrics> {
     try {
       const response =
@@ -121,9 +98,6 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Clear all caches (embedding and search)
-   */
   static async clearCaches(): Promise<{ success: boolean; message: string }> {
     try {
       const response = await apiClient.post<{
@@ -143,9 +117,6 @@ export class EmbeddingService {
     }
   }
 
-  /**
-   * Format metrics for display
-   */
   static formatMetricsForDisplay(metrics: CombinedMetrics): {
     embedding: {
       totalRequests: string;
@@ -209,9 +180,6 @@ export class EmbeddingService {
     };
   }
 
-  /**
-   * Check if metrics indicate good performance
-   */
   static isPerformanceGood(metrics: CombinedMetrics): {
     embedding: boolean;
     search: boolean;

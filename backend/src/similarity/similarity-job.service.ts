@@ -6,15 +6,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 @Injectable()
 export class SimilarityJobService {
   private readonly logger = new Logger(SimilarityJobService.name);
-
   constructor(
     private prisma: PrismaService,
     private similarityService: SimilarityService,
   ) {}
-
-  /**
-   * Process pending similarity jobs immediately (called directly, not via cron)
-   */
   async processPendingJobs() {
     try {
       this.logger.log('Processing pending similarity jobs');
@@ -50,9 +45,6 @@ export class SimilarityJobService {
     }
   }
 
-  /**
-   * Clean up old completed jobs (older than 30 days)
-   */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanupOldJobs() {
     try {
@@ -74,9 +66,6 @@ export class SimilarityJobService {
     }
   }
 
-  /**
-   * Queue similarity detection for a document
-   */
   async queueSimilarityDetection(documentId: string) {
     try {
       // Check if job already exists
@@ -115,10 +104,6 @@ export class SimilarityJobService {
     }
   }
 
-  /**
-   * Run similarity detection immediately for a specific document (synchronous)
-   * This is used when we need results before moderation decision
-   */
   async runSimilarityDetectionSync(documentId: string): Promise<void> {
     try {
       this.logger.log(

@@ -1,18 +1,5 @@
-/**
- * Documents Service
- *
- * Main service handling all document-related operations.
- * Orchestrates domain services for specific operations.
- */
-
-// ============================================================================
-// Node.js Built-in Modules
-// ============================================================================
 import { randomBytes } from 'crypto';
 import { Readable } from 'stream';
-// ============================================================================
-// Internal Modules
-// ============================================================================
 import { AIService } from '../ai/ai.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import {
@@ -25,9 +12,6 @@ import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PreviewService } from '../preview/preview.service';
 import { PrismaService } from '../prisma/prisma.service';
-// ============================================================================
-// Local Imports
-// ============================================================================
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ShareDocumentDto } from './dto/share-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -43,9 +27,6 @@ import {
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PointsService } from '@/points/points.service';
 import { SimilarityJobService } from '@/similarity/similarity-job.service';
-// ============================================================================
-// Third-party Libraries
-// ============================================================================
 import {
   BadRequestException,
   forwardRef,
@@ -91,10 +72,64 @@ export class DocumentsService {
     private sharingService: DocumentSharingService,
   ) {}
 
-  /**
-   * Create a document from uploaded files
-   */
-  async createDocument(createDocumentDto: CreateDocumentDto, userId: string) {
+  async createDocument(
+    createDocumentDto: CreateDocumentDto,
+    userId: string,
+  ): Promise<{
+    id: string;
+    title: string;
+    description: string | null;
+    uploaderId: string;
+    categoryId: string;
+    isPublic: boolean;
+    isApproved: boolean;
+    moderationStatus: DocumentModerationStatus;
+    tags: string[];
+    language: string;
+    downloadCost: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+    uploader: {
+      id: string;
+      username: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+    category: {
+      id: string;
+      name: string;
+      icon: string | null;
+      color: string | null;
+      parentId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    files: Array<{
+      id: string;
+      originalName: string;
+      fileName: string;
+      mimeType: string;
+      fileSize: bigint;
+      storageUrl: string;
+      uploaderId: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    aiSuggestedCategory: {
+      categoryId: string | null;
+      categoryName: string | null;
+      confidence: number;
+      allSuggestions: Array<{
+        id: string;
+        name: string;
+        icon: string | null;
+        color: string | null;
+        parentId: string | null;
+        score: number;
+        confidence: number;
+      }>;
+    } | null;
+  }> {
     try {
       const {
         title,
@@ -293,10 +328,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Run post-creation tasks in background
-   * These tasks don't need to block the response to the user
-   */
   private async runPostCreationTasks(
     document: any,
     userId: string,
@@ -378,9 +409,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Process provided AI analysis and apply moderation
-   */
   private async processProvidedAIAnalysis(
     document: any,
     aiAnalysis: any,
@@ -423,9 +451,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Process auto AI analysis for public documents
-   */
   private async processAutoAIAnalysis(
     document: any,
     fileIds: string[],
@@ -510,9 +535,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Apply AI moderation and update document status
-   */
   private async applyAIModeration(
     document: any,
     moderationScore: number,
@@ -578,18 +600,10 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Comments: list for a document
-   * @deprecated Use DocumentCommentService.getComments directly
-   */
   async getComments(documentId: string, userId?: string): Promise<any[]> {
     return this.commentService.getComments(documentId, userId);
   }
 
-  /**
-   * Comments: add
-   * @deprecated Use DocumentCommentService.addComment directly
-   */
   async addComment(
     documentId: string,
     userId: string,
@@ -598,39 +612,31 @@ export class DocumentsService {
     return this.commentService.addComment(documentId, userId, dto);
   }
 
-  /**
-   * Comments: toggle like (like/unlike)
-   * @deprecated Use DocumentCommentService.likeComment directly
-   */
-  async likeComment(documentId: string, commentId: string, userId: string) {
+  async likeComment(
+    documentId: string,
+    commentId: string,
+    userId: string,
+  ): Promise<{ isLiked: boolean; likesCount: number }> {
     return this.commentService.likeComment(documentId, commentId, userId);
   }
 
-  /**
-   * Comments: edit
-   * @deprecated Use DocumentCommentService.editComment directly
-   */
   async editComment(
     documentId: string,
     commentId: string,
     userId: string,
     dto: { content: string },
-  ) {
+  ): Promise<{ id: string; content: string; isEdited: boolean }> {
     return this.commentService.editComment(documentId, commentId, userId, dto);
   }
 
-  /**
-   * Comments: delete (soft)
-   * @deprecated Use DocumentCommentService.deleteComment directly
-   */
-  async deleteComment(documentId: string, commentId: string, userId: string) {
+  async deleteComment(
+    documentId: string,
+    commentId: string,
+    userId: string,
+  ): Promise<void> {
     return this.commentService.deleteComment(documentId, commentId, userId);
   }
 
-  /**
-   * Ratings: get current user's rating
-   * @deprecated Use DocumentCommentService.getUserRating directly
-   */
   async getUserRating(
     documentId: string,
     userId: string,
@@ -638,10 +644,6 @@ export class DocumentsService {
     return this.commentService.getUserRating(documentId, userId);
   }
 
-  /**
-   * Ratings: set current user's rating and update document aggregates
-   * @deprecated Use DocumentCommentService.setUserRating directly
-   */
   async setUserRating(
     documentId: string,
     userId: string,
@@ -650,26 +652,14 @@ export class DocumentsService {
     return this.commentService.setUserRating(documentId, userId, ratingValue);
   }
 
-  /**
-   * Prepare document download with all its files
-   * @deprecated Use DocumentDownloadService.prepareDocumentDownload directly
-   */
   async prepareDocumentDownload(documentId: string): Promise<any> {
     return this.downloadService.prepareDocumentDownload(documentId);
   }
 
-  /**
-   * Get or create default category
-   * @deprecated Use DocumentCrudService.getOrCreateDefaultCategory directly
-   */
   private async getOrCreateDefaultCategory(): Promise<any> {
     return this.crudService.getOrCreateDefaultCategory();
   }
 
-  /**
-   * Get user's documents with pagination
-   * @deprecated Use DocumentQueryService.getUserDocuments directly
-   */
   async getUserDocuments(
     userId: string,
     page: number = 1,
@@ -678,10 +668,6 @@ export class DocumentsService {
     return this.queryService.getUserDocuments(userId, page, limit);
   }
 
-  /**
-   * Get public documents with pagination and filters
-   * @deprecated Use DocumentQueryService.getPublicDocuments directly
-   */
   async getPublicDocuments(
     page: number = 1,
     limit: number = 10,
@@ -702,10 +688,6 @@ export class DocumentsService {
     );
   }
 
-  /**
-   * Track document view
-   * @deprecated Use DocumentQueryService.viewDocument directly
-   */
   async viewDocument(
     documentId: string,
     userId?: string,
@@ -722,10 +704,6 @@ export class DocumentsService {
     );
   }
 
-  /**
-   * Get document details with files
-   * @deprecated Use DocumentQueryService.getDocumentById directly
-   */
   async getDocumentById(
     documentId: string,
     userId?: string,
@@ -740,10 +718,6 @@ export class DocumentsService {
     );
   }
 
-  /**
-   * Create or update a share link for a document
-   * @deprecated Use DocumentSharingService.createOrUpdateShareLink directly
-   */
   async createOrUpdateShareLink(
     documentId: string,
     userId: string,
@@ -756,21 +730,13 @@ export class DocumentsService {
     });
   }
 
-  /**
-   * Revoke existing share link
-   * @deprecated Use DocumentSharingService.revokeShareLink directly
-   */
   async revokeShareLink(
     documentId: string,
     userId: string,
-  ): Promise<{ success: boolean }> {
+  ): Promise<{ success: boolean; message?: string }> {
     return this.sharingService.revokeShareLink(documentId, userId);
   }
 
-  /**
-   * Validate share token for a document
-   * @deprecated Use DocumentSharingService.validateShareLink directly
-   */
   async validateShareLink(
     documentId: string,
     token: string,
@@ -785,9 +751,6 @@ export class DocumentsService {
     return randomBytes(24).toString('hex');
   }
 
-  /**
-   * Download document - creates zip file with all document files and tracks download
-   */
   async downloadDocument(
     documentId: string,
     userId?: string, // Make userId optional for guest users
@@ -963,10 +926,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Get moderation queue data for admin review
-   * @delegates DocumentModerationService.getModerationQueue
-   */
   async getModerationQueue(options: {
     page?: number;
     limit?: number;
@@ -975,46 +934,126 @@ export class DocumentsService {
     status?: DocumentModerationStatus;
     sort?: 'createdAt' | 'title' | 'uploader';
     order?: 'asc' | 'desc';
-  }): Promise<any> {
+  }): Promise<{
+    summary: {
+      pendingDocuments: number;
+      rejectedDocuments: number;
+      approvedToday: number;
+    };
+    documents: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      isPublic: boolean;
+      isApproved: boolean;
+      moderationStatus: DocumentModerationStatus;
+      moderatedAt: string | null;
+      moderatedById: string | null;
+      moderationNotes: string | null;
+      rejectionReason: string | null;
+      tags: string[];
+      language: string;
+      createdAt: string;
+      updatedAt: string;
+      category: { id: string; name: string } | null;
+      uploader: {
+        id: string;
+        username: string;
+        firstName: string | null;
+        lastName: string | null;
+        avatar: string | null;
+        email: string;
+        isVerified: boolean;
+      };
+      aiAnalysis: unknown | null;
+      files: Array<{
+        id: string;
+        originalName: string;
+        mimeType: string;
+        fileSize: bigint;
+        order: number;
+        thumbnailUrl: string | null;
+      }>;
+    }>;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }> {
     return this.moderationService.getModerationQueue(options);
   }
 
-  /**
-   * Get document detail for moderation
-   * @delegates DocumentModerationService.getDocumentForModeration
-   */
-  async getDocumentForModeration(documentId: string): Promise<any> {
+  async getDocumentForModeration(documentId: string): Promise<{
+    id: string;
+    title: string;
+    description: string | null;
+    uploaderId: string;
+    categoryId: string;
+    isPublic: boolean;
+    isApproved: boolean;
+    moderationStatus: DocumentModerationStatus;
+    tags: string[];
+    language: string;
+    downloadCost: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+    moderatedAt: Date | null;
+    moderationNotes: string | null;
+    uploader: {
+      id: string;
+      username: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+    category: {
+      id: string;
+      name: string;
+    } | null;
+    files: Array<{
+      id: string;
+      originalName: string;
+      fileName: string;
+      mimeType: string;
+      fileSize: bigint;
+    }>;
+  }> {
     return this.moderationService.getDocumentForModeration(documentId);
   }
 
-  /**
-   * Approve a document and publish it
-   * @delegates DocumentModerationService.approveDocument
-   */
   async approveDocumentModeration(
     documentId: string,
     adminId: string,
     options: { notes?: string; publish?: boolean } = {},
-  ): Promise<any> {
+  ): Promise<{
+    id: string;
+    title: string;
+    isApproved: boolean;
+    moderationStatus: DocumentModerationStatus;
+    moderatedAt: Date | null;
+    moderationNotes: string | null;
+  }> {
     return this.moderationService.approveDocument(documentId, adminId, options);
   }
 
-  /**
-   * Reject a document and optionally add notes
-   * @delegates DocumentModerationService.rejectDocument
-   */
   async rejectDocumentModeration(
     documentId: string,
     adminId: string,
     options: { reason: string; notes?: string },
-  ): Promise<any> {
+  ): Promise<{
+    id: string;
+    title: string;
+    isApproved: boolean;
+    moderationStatus: DocumentModerationStatus;
+    moderatedAt: Date | null;
+    moderationNotes: string | null;
+  }> {
     return this.moderationService.rejectDocument(documentId, adminId, options);
   }
 
-  /**
-   * Check if document should be auto-approved or auto-rejected based on AI analysis and similarity
-   * @delegates DocumentModerationService.checkAutoModeration
-   */
   async checkAutoModeration(documentId: string): Promise<{
     shouldAutoApprove: boolean;
     shouldAutoReject: boolean;
@@ -1023,18 +1062,20 @@ export class DocumentsService {
     return this.moderationService.checkAutoModeration(documentId);
   }
 
-  /**
-   * Trigger AI moderation analysis for a document
-   * @delegates DocumentModerationService.generateModerationAnalysis
-   */
-  async generateModerationAnalysis(documentId: string): Promise<any> {
+  async generateModerationAnalysis(documentId: string): Promise<{
+    success: boolean;
+    analysis: unknown | null;
+    processedFiles: number;
+    processingTime: number;
+    autoModeration: { action: string; reason: string } | null;
+  }> {
     return this.moderationService.generateModerationAnalysis(documentId);
   }
 
-  /**
-   * Delete a document
-   */
-  async deleteDocument(documentId: string, userId: string) {
+  async deleteDocument(
+    documentId: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       this.logger.log(`Deleting document ${documentId} by user ${userId}`);
 
@@ -1107,9 +1148,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Create ZIP file download URL for multiple files
-   */
   private async createZipDownload(
     files: any[],
     documentId: string,
@@ -1212,10 +1250,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Get download URL for a document without tracking download
-   * @delegates DocumentDownloadService.getDownloadUrl
-   */
   async getDownloadUrl(
     documentId: string,
     userId?: string,
@@ -1227,10 +1261,6 @@ export class DocumentsService {
     return this.downloadService.getDownloadUrl(documentId, userId);
   }
 
-  /**
-   * Initialize a download - creates a pending download record (success=false)
-   * @delegates DocumentDownloadService.initDownload
-   */
   async initDownload(
     documentId: string,
     userId?: string,
@@ -1247,10 +1277,6 @@ export class DocumentsService {
     );
   }
 
-  /**
-   * Confirm a download - marks the download as successful, deducts points, and increments count
-   * @delegates DocumentDownloadService.confirmDownload
-   */
   async confirmDownload(
     downloadId: string,
     userId?: string,
@@ -1258,10 +1284,6 @@ export class DocumentsService {
     return this.downloadService.confirmDownload(downloadId, userId);
   }
 
-  /**
-   * Cancel/cleanup a pending download - called when download fails or is cancelled
-   * @delegates DocumentDownloadService.cancelDownload
-   */
   async cancelDownload(
     downloadId: string,
     userId?: string,
@@ -1269,10 +1291,6 @@ export class DocumentsService {
     return this.downloadService.cancelDownload(downloadId, userId);
   }
 
-  /**
-   * Prepare streaming download - validates permissions, checks points, creates pending download record
-   * @delegates DocumentDownloadService.prepareStreamingDownload
-   */
   async prepareStreamingDownload(
     documentId: string,
     userId: string,
@@ -1300,9 +1318,6 @@ export class DocumentsService {
     );
   }
 
-  /**
-   * Search documents using vector search
-   */
   async searchDocuments(
     query: string,
     page: number = 1,
@@ -1316,7 +1331,52 @@ export class DocumentsService {
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     },
-  ) {
+  ): Promise<{
+    documents: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      isPublic: boolean;
+      isApproved: boolean;
+      moderationStatus: DocumentModerationStatus;
+      tags: string[];
+      language: string;
+      createdAt: Date;
+      updatedAt: Date;
+      uploaderId: string;
+      categoryId: string;
+      category: {
+        id: string;
+        name: string;
+        icon: string | null;
+        color: string | null;
+      } | null;
+      uploader: {
+        id: string;
+        username: string;
+        firstName: string | null;
+        lastName: string | null;
+      };
+      downloadCount: number;
+      downloadCost: number;
+      viewCount: number;
+      averageRating: number | null;
+      files: Array<{
+        id: string;
+        originalName: string;
+        fileName: string;
+        mimeType: string;
+        fileSize: number;
+        secureUrl?: string;
+        secureUrlExpiresAt?: Date;
+      }>;
+      similarityScore?: number;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+    searchMethod: string;
+  }> {
     try {
       const normalizedQuery = query.trim();
       const skip = (page - 1) * limit;
@@ -1520,9 +1580,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Generate and save document embedding for vector search
-   */
   private async generateDocumentEmbedding(documentId: string): Promise<void> {
     try {
       this.logger.log(`Generating embedding for document ${documentId}`);
@@ -1602,15 +1659,47 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Update a document (only by owner or admin)
-   */
   async updateDocument(
     documentId: string,
     userId: string,
     updateData: UpdateDocumentDto,
     userRole?: string,
-  ) {
+  ): Promise<{
+    id: string;
+    title: string;
+    description: string | null;
+    isPublic: boolean;
+    isApproved: boolean;
+    moderationStatus: DocumentModerationStatus;
+    tags: string[];
+    language: string;
+    downloadCost: number;
+    originalDownloadCost: number | null;
+    systemDefaultDownloadCost: number;
+    createdAt: Date;
+    updatedAt: Date;
+    uploader: {
+      id: string;
+      username: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+    category: {
+      id: string;
+      name: string;
+      icon: string | null;
+      color: string | null;
+    } | null;
+    files: Array<{
+      id: string;
+      originalName: string;
+      fileName: string;
+      mimeType: string;
+      fileSize: bigint;
+      order: number;
+    }>;
+    needsReModeration: boolean;
+  }> {
     try {
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -1760,10 +1849,6 @@ export class DocumentsService {
     }
   }
 
-  /**
-   * Get effective download cost for a document (from document or system default)
-   * @delegates DocumentDownloadService.getEffectiveDownloadCost
-   */
   async getEffectiveDownloadCost(documentId: string): Promise<number> {
     return this.downloadService.getEffectiveDownloadCost(documentId);
   }

@@ -1,12 +1,3 @@
-/**
- * Category CRUD Service
- *
- * Handles category CRUD operations:
- * - Create category
- * - Update category
- * - Delete category
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
@@ -26,9 +17,6 @@ export class CategoryCrudService {
     private readonly categoryQueryService: CategoryQueryService,
   ) {}
 
-  /**
-   * Validate user role for category operations
-   */
   private validateRole(user: any, requiredRoles: string[]): void {
     if (!user || !user.role) {
       throw new ForbiddenException(
@@ -44,9 +32,6 @@ export class CategoryCrudService {
     }
   }
 
-  /**
-   * Validate parent category
-   */
   private async validateParent(
     categoryId: string | undefined,
     parentId?: string,
@@ -70,9 +55,6 @@ export class CategoryCrudService {
     }
   }
 
-  /**
-   * Create a new category
-   */
   async createCategory(dto: CreateCategoryDto, user?: any) {
     this.validateRole(user, ['admin']);
 
@@ -107,9 +89,6 @@ export class CategoryCrudService {
     return this.categoryQueryService.mapCategoryResponse(categoryWithMetrics);
   }
 
-  /**
-   * Update an existing category
-   */
   async updateCategory(id: string, dto: UpdateCategoryDto, user?: any) {
     this.validateRole(user, ['admin']);
 
@@ -184,9 +163,6 @@ export class CategoryCrudService {
     return this.categoryQueryService.mapCategoryResponse(categoryWithMetrics);
   }
 
-  /**
-   * Delete a category
-   */
   async deleteCategory(id: string, user?: any) {
     this.validateRole(user, ['admin']);
 

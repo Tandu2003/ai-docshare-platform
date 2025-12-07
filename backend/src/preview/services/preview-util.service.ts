@@ -1,14 +1,3 @@
-/**
- * Preview Utility Service
- *
- * Handles common utility functions for preview generation:
- * - File operations (stream to file, file existence check)
- * - Command execution with timeout and retries
- * - Image dimension extraction
- * - Metadata building and parsing
- * - Format detection helpers
- */
-
 import { ChildProcess, exec, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -35,9 +24,6 @@ export class PreviewUtilService {
   // File Operations
   // ============================================================================
 
-  /**
-   * Write stream to file
-   */
   async streamToFile(stream: Readable, filePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const writeStream = fs.createWriteStream(filePath);
@@ -47,9 +33,6 @@ export class PreviewUtilService {
     });
   }
 
-  /**
-   * Check if file exists
-   */
   async fileExists(filePath: string): Promise<boolean> {
     return fs.promises
       .access(filePath)
@@ -57,9 +40,6 @@ export class PreviewUtilService {
       .catch(() => false);
   }
 
-  /**
-   * Delay helper
-   */
   async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -68,9 +48,6 @@ export class PreviewUtilService {
   // Command Execution
   // ============================================================================
 
-  /**
-   * Run shell command with timeout, retries, and hard kill on hang
-   */
   async runCommandWithTimeout(
     command: string,
     options?: CommandOptions,
@@ -160,9 +137,6 @@ export class PreviewUtilService {
     throw lastError || new Error('Unknown command error');
   }
 
-  /**
-   * Check if a command is available
-   */
   async isCommandAvailable(command: string): Promise<boolean> {
     try {
       await this.runCommandWithTimeout(`command -v ${command}`, {
@@ -175,9 +149,6 @@ export class PreviewUtilService {
     }
   }
 
-  /**
-   * Start LibreOffice daemon for unoconv
-   */
   startSofficeDaemon(tmpDir: string): ChildProcess | null {
     try {
       const child = spawn(
@@ -208,9 +179,6 @@ export class PreviewUtilService {
   // Image Operations
   // ============================================================================
 
-  /**
-   * Resize image using ImageMagick
-   */
   async resizeImage(
     inputPath: string,
     outputPath: string,
@@ -230,9 +198,6 @@ export class PreviewUtilService {
     }
   }
 
-  /**
-   * Get image dimensions from buffer (basic JPEG implementation)
-   */
   getImageDimensions(buffer: Buffer): { width?: number; height?: number } {
     try {
       // Check for JPEG
@@ -261,9 +226,6 @@ export class PreviewUtilService {
   // Metadata Operations
   // ============================================================================
 
-  /**
-   * Build preview metadata
-   */
   buildMetadata(params: {
     pageCount: number;
     processingStart?: number;
@@ -282,9 +244,6 @@ export class PreviewUtilService {
     };
   }
 
-  /**
-   * Parse metadata from string
-   */
   parseMetadata(metadataString?: string | null): PreviewMetadata | undefined {
     if (!metadataString) return undefined;
     try {
@@ -294,9 +253,6 @@ export class PreviewUtilService {
     }
   }
 
-  /**
-   * Get variant key for preview path
-   */
   getVariantKey(previewPath: string, size: PreviewSize): string {
     if (size === 'medium') return previewPath;
     const ext = path.extname(previewPath) || '.jpg';
@@ -308,9 +264,6 @@ export class PreviewUtilService {
   // Format Detection
   // ============================================================================
 
-  /**
-   * Check if mime type is previewable
-   */
   isPreviewableFormat(mimeType: string): boolean {
     return (
       mimeType === 'application/pdf' ||
@@ -320,23 +273,14 @@ export class PreviewUtilService {
     );
   }
 
-  /**
-   * Check if mime type is Office format
-   */
   isOfficeFormat(mimeType: string): boolean {
     return OFFICE_FORMATS.includes(mimeType);
   }
 
-  /**
-   * Check if mime type is text format
-   */
   isTextFormat(mimeType: string): boolean {
     return TEXT_FORMATS.includes(mimeType) || mimeType.startsWith('text/');
   }
 
-  /**
-   * Get source type from mime type
-   */
   getSourceType(mimeType: string): SourceType {
     if (mimeType === 'application/pdf') return 'PDF';
     if (mimeType.startsWith('image/')) return 'IMAGE';
@@ -351,9 +295,6 @@ export class PreviewUtilService {
     return 'DOCX';
   }
 
-  /**
-   * Get file extension from mime type
-   */
   getExtensionFromMimeType(mimeType: string): string {
     return MIME_TO_EXT[mimeType] || '.bin';
   }

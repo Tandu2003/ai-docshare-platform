@@ -16,7 +16,6 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email?: string;
-
   @ApiPropertyOptional({
     description: 'Tên đăng nhập',
     example: 'johndoe',

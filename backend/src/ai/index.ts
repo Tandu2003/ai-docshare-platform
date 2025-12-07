@@ -1,13 +1,3 @@
-/**
- * AI Module - Centralized exports
- *
- * This module provides AI-powered services for document analysis,
- * embeddings generation, and vector search capabilities.
- */
-
-// ============================================================================
-// Services
-// ============================================================================
 export { AIService } from './ai.service';
 export { GeminiService } from './gemini.service';
 export { EmbeddingService } from './embedding.service';
@@ -20,15 +10,9 @@ export {
   SearchHistoryService,
   SearchMetricsService,
 } from './services';
-
-// ============================================================================
 // Controllers
-// ============================================================================
 export { AIController } from './controllers/ai.controller';
 
-// ============================================================================
-// Interfaces & Types
-// ============================================================================
 export type {
   AIAnalysisRequest,
   AIAnalysisResponse,
@@ -43,7 +27,5 @@ export type {
   ModerationAction,
 } from './interfaces';
 
-// ============================================================================
 // DTOs
-// ============================================================================
 export { AnalyzeDocumentDto } from './dto';

@@ -1,11 +1,9 @@
 import { apiClient } from '@/utils/api-client';
-
 export interface GetNotificationsParams {
   page?: number;
   limit?: number;
   onlyUnread?: boolean;
 }
-
 export async function getMyNotifications(params: GetNotificationsParams = {}) {
   const { page = 1, limit = 20, onlyUnread } = params;
   const query = new URLSearchParams();
@@ -15,7 +13,6 @@ export async function getMyNotifications(params: GetNotificationsParams = {}) {
   const res = await apiClient.get(`/notifications?${query.toString()}`);
   return res.data;
 }
-
 export async function markNotificationAsRead(notificationId: string) {
   const res = await apiClient.patch(`/notifications/${notificationId}/read`);
   return res.data;

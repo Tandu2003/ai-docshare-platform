@@ -1,11 +1,3 @@
-/**
- * Default Categories Service
- *
- * Handles default category initialization:
- * - Defines default category structure
- * - Initializes categories on server start
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -29,9 +21,6 @@ export class DefaultCategoriesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Initialize default categories if none exist
-   */
   async initializeDefaultCategories(): Promise<void> {
     const existingCount = await this.prisma.category.count();
 
@@ -76,9 +65,6 @@ export class DefaultCategoriesService {
     this.logger.log('Default categories initialized successfully');
   }
 
-  /**
-   * Get default categories structure
-   */
   private getDefaultCategories(): DefaultCategory[] {
     return [
       {

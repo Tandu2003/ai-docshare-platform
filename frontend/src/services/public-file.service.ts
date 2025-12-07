@@ -1,14 +1,11 @@
 import { apiClient } from '@/utils/api-client';
-
 import { UploadedFile } from './upload.service';
-
 export interface PaginatedPublicFiles {
   files: UploadedFile[];
   total: number;
   page: number;
   limit: number;
 }
-
 export const getPublicFiles = async (
   page = 1,
   limit = 10,

@@ -1,5 +1,4 @@
 import { api } from '@/config/api';
-
 export interface UploadFileData {
   title?: string;
   description?: string;
@@ -8,7 +7,6 @@ export interface UploadFileData {
   tags?: string[];
   language?: string;
 }
-
 export interface UploadedFile {
   id: string;
   originalName: string;
@@ -42,9 +40,6 @@ export interface FilesListResponse {
 }
 
 export class UploadService {
-  /**
-   * Upload files (single or multiple)
-   */
   static async uploadFiles(
     files: File[],
     data: UploadFileData = {},
@@ -108,9 +103,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Upload a single file (for backward compatibility)
-   */
   static async uploadSingleFile(
     file: File,
     data: UploadFileData = {},
@@ -123,9 +115,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Upload multiple files (for backward compatibility)
-   */
   static async uploadMultipleFiles(
     files: File[],
     data: UploadFileData = {},
@@ -138,9 +127,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Get user's uploaded files
-   */
   static async getUserFiles(
     page: number = 1,
     limit: number = 20,
@@ -172,9 +158,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Get file details
-   */
   static async getFile(fileId: string): Promise<UploadedFile> {
     try {
       const response = await api.get<UploadedFile>(`/upload/file/${fileId}`);
@@ -191,9 +174,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Get download URL
-   */
   static async getDownloadUrl(fileId: string): Promise<string> {
     try {
       const response = await api.get<{ downloadUrl: string }>(
@@ -212,9 +192,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Delete file
-   */
   static async deleteFile(fileId: string): Promise<void> {
     try {
       const response = await api.delete<void>(`/upload/file/${fileId}`);
@@ -227,9 +204,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Get allowed file types
-   */
   static async getAllowedTypes(): Promise<string[]> {
     try {
       const response = await api.get<{ types: string[]; description: string }>(
@@ -247,10 +221,6 @@ export class UploadService {
     }
   }
 
-  /**
-   * Format file size
-   * Can handle number or string input (for BigInt string values)
-   */
   static formatFileSize(bytes: number | string): string {
     // Convert string to number if needed
     const bytesNum = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
@@ -264,9 +234,6 @@ export class UploadService {
     return parseFloat((bytesNum / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  /**
-   * Get file type icon
-   */
   static getFileIcon(mimeType: string): string {
     if (mimeType.startsWith('image/')) return '🖼️';
     if (mimeType.includes('pdf')) return '📄';
@@ -279,9 +246,6 @@ export class UploadService {
     return '📁';
   }
 
-  /**
-   * Validate file before upload
-   */
   static validateFile(
     file: File,
     allowedTypes: string[],

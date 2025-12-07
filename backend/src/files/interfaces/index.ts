@@ -1,14 +1,3 @@
-/**
- * Files Module - Interfaces and Types
- */
-
-// ============================================================================
-// File Interfaces
-// ============================================================================
-
-/**
- * Uploaded file interface compatible with both Express.Multer and Fastify
- */
 export interface UploadedFile {
   readonly originalname: string;
   readonly filename?: string;
@@ -16,10 +5,6 @@ export interface UploadedFile {
   readonly buffer: Buffer;
   readonly size: number;
 }
-
-/**
- * File upload result
- */
 export interface FileUploadResult {
   readonly id: string;
   readonly originalName: string;
@@ -29,18 +14,12 @@ export interface FileUploadResult {
   readonly fileHash: string;
 }
 
-/**
- * Multiple files upload result
- */
 export interface FilesUploadResult {
   readonly success: boolean;
   readonly data: FileUploadResult[];
   readonly message: string;
 }
 
-/**
- * File metadata
- */
 export interface FileMetadata {
   readonly id: string;
   readonly originalName: string;
@@ -55,9 +34,6 @@ export interface FileMetadata {
   readonly updatedAt: Date;
 }
 
-/**
- * Secure file URL result
- */
 export interface SecureFileUrlResult {
   readonly url: string;
   readonly expiresAt: Date;

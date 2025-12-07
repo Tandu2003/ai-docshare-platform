@@ -1,14 +1,3 @@
-/**
- * Analytics Module - Interfaces and Types
- */
-
-// ============================================================================
-// Dashboard Interfaces
-// ============================================================================
-
-/**
- * Dashboard overview data
- */
 export interface DashboardOverview {
   readonly totalDocuments: number;
   readonly totalUsers: number;
@@ -19,10 +8,6 @@ export interface DashboardOverview {
   readonly activityLogs: ActivityLogItem[];
   readonly adminStats?: AdminStats;
 }
-
-/**
- * Recent document for dashboard
- */
 export interface RecentDocument {
   readonly id: string;
   readonly title: string;
@@ -44,9 +29,6 @@ export interface RecentDocument {
   } | null;
 }
 
-/**
- * Category statistics
- */
 export interface CategoryStat {
   readonly id: string;
   readonly name: string;
@@ -57,9 +39,6 @@ export interface CategoryStat {
   readonly viewCount: number;
 }
 
-/**
- * Activity log item
- */
 export interface ActivityLogItem {
   readonly id: string;
   readonly action: string;
@@ -76,9 +55,6 @@ export interface ActivityLogItem {
   } | null;
 }
 
-/**
- * Admin-specific stats
- */
 export interface AdminStats {
   readonly newUsersThisMonth: number;
   readonly newDocumentsThisMonth: number;
@@ -88,22 +64,12 @@ export interface AdminStats {
   readonly pendingReports: number;
 }
 
-// ============================================================================
-// Trend Interfaces
-// ============================================================================
-
-/**
- * Document trends data
- */
 export interface DocumentTrends {
   readonly range: string;
   readonly data: TrendDataPoint[];
   readonly summary: TrendSummary;
 }
 
-/**
- * Trend data point
- */
 export interface TrendDataPoint {
   readonly date: string;
   readonly uploads: number;
@@ -111,9 +77,6 @@ export interface TrendDataPoint {
   readonly views: number;
 }
 
-/**
- * Trend summary
- */
 export interface TrendSummary {
   readonly totalUploads: number;
   readonly totalDownloads: number;
@@ -123,13 +86,6 @@ export interface TrendSummary {
   readonly viewsChange: number;
 }
 
-// ============================================================================
-// User Analytics Interfaces
-// ============================================================================
-
-/**
- * User analytics data
- */
 export interface UserAnalytics {
   readonly userId: string;
   readonly documentsUploaded: number;
@@ -139,9 +95,6 @@ export interface UserAnalytics {
   readonly topDocuments: TopDocument[];
 }
 
-/**
- * Top document item
- */
 export interface TopDocument {
   readonly id: string;
   readonly title: string;
@@ -150,9 +103,7 @@ export interface TopDocument {
   readonly averageRating: number | null;
 }
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 export const ANALYTICS_RANGES = {
   WEEK: '7d',

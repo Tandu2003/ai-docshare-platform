@@ -11,12 +11,10 @@ export class CreateCategoryDto {
   @IsString()
   @MaxLength(100)
   name!: string;
-
   @IsOptional()
   @IsString()
   @MaxLength(255)
   description?: string;
-
   @IsOptional()
   @IsString()
   icon?: string;

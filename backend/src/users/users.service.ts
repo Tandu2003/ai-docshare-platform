@@ -16,7 +16,6 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
-
   async getUsers(query: GetUsersQueryDto) {
     const {
       page = 1,

@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document Comment Service
- * @description Handles all comment and rating operations for documents
- * @module documents/services/document-comment
- */
-
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -13,12 +7,10 @@ import {
   Logger,
 } from '@nestjs/common';
 
-/** DTO for adding a comment */
 interface AddCommentDto {
   readonly content: string;
   readonly parentId?: string;
 }
-
 /** DTO for editing a comment */
 interface EditCommentDto {
   readonly content: string;
@@ -58,12 +50,6 @@ export class DocumentCommentService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  /**
-   * Get all comments for a document
-   * @param documentId - Document ID
-   * @param userId - Optional user ID for checking like status
-   * @returns Array of comments with nested replies
-   */
   async getComments(
     documentId: string,
     userId?: string,
@@ -128,13 +114,6 @@ export class DocumentCommentService {
     }
   }
 
-  /**
-   * Add a comment to a document
-   * @param documentId - Document ID
-   * @param userId - User ID
-   * @param dto - Comment data
-   * @returns Created comment
-   */
   async addComment(
     documentId: string,
     userId: string,
@@ -241,13 +220,6 @@ export class DocumentCommentService {
     }
   }
 
-  /**
-   * Toggle like on a comment
-   * @param documentId - Document ID
-   * @param commentId - Comment ID
-   * @param userId - User ID
-   * @returns Updated comment with like status
-   */
   async likeComment(
     documentId: string,
     commentId: string,
@@ -282,14 +254,6 @@ export class DocumentCommentService {
     }
   }
 
-  /**
-   * Edit a comment
-   * @param documentId - Document ID
-   * @param commentId - Comment ID
-   * @param userId - User ID
-   * @param dto - Updated content
-   * @returns Updated comment
-   */
   async editComment(
     documentId: string,
     commentId: string,
@@ -326,12 +290,6 @@ export class DocumentCommentService {
     }
   }
 
-  /**
-   * Delete a comment (soft delete)
-   * @param documentId - Document ID
-   * @param commentId - Comment ID
-   * @param userId - User ID
-   */
   async deleteComment(
     documentId: string,
     commentId: string,
@@ -361,12 +319,6 @@ export class DocumentCommentService {
     }
   }
 
-  /**
-   * Get user's rating for a document
-   * @param documentId - Document ID
-   * @param userId - User ID
-   * @returns Rating value
-   */
   async getUserRating(
     documentId: string,
     userId: string,
@@ -387,13 +339,6 @@ export class DocumentCommentService {
     }
   }
 
-  /**
-   * Set user's rating for a document
-   * @param documentId - Document ID
-   * @param userId - User ID
-   * @param ratingValue - Rating value (1-5)
-   * @returns Updated rating
-   */
   async setUserRating(
     documentId: string,
     userId: string,

@@ -10,14 +10,12 @@ export interface EmbeddingMigrationStatus {
   isRegenerationRequired: boolean;
   modelsFound: string[];
 }
-
 export interface RegenerationProgress {
   total: number;
   completed: number;
   failed: number;
   percentage: number;
 }
-
 @Injectable()
 export class EmbeddingMigrationService implements OnModuleInit {
   private readonly logger = new Logger(EmbeddingMigrationService.name);
@@ -35,9 +33,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Check embedding model consistency on module initialization
-   */
   async onModuleInit() {
     // Check if auto migration is enabled (default: true)
     const autoMigrate =
@@ -83,9 +78,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     }
   }
 
-  /**
-   * Check if embedding model has changed and if regeneration is required
-   */
   async checkEmbeddingModelConsistency(): Promise<EmbeddingMigrationStatus> {
     const currentModel = this.embeddingService.getModelName();
 
@@ -121,9 +113,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     };
   }
 
-  /**
-   * Start background regeneration of all outdated embeddings
-   */
   private async startBackgroundRegeneration() {
     if (this.isRegenerating) {
       this.logger.warn('⚠️ Regeneration đang chạy, bỏ qua yêu cầu mới');
@@ -209,9 +198,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     }
   }
 
-  /**
-   * Regenerate embedding for a specific document
-   */
   private async regenerateEmbeddingForDocument(
     documentId: string,
   ): Promise<void> {
@@ -288,9 +274,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     );
   }
 
-  /**
-   * Manually trigger regeneration of all embeddings (for admin use)
-   */
   regenerateAllEmbeddings(): {
     success: boolean;
     message: string;
@@ -314,9 +297,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     };
   }
 
-  /**
-   * Force regeneration of all embeddings regardless of model (for admin use)
-   */
   async forceRegenerateAllEmbeddings(): Promise<{
     success: boolean;
     message: string;
@@ -416,9 +396,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
     }
   }
 
-  /**
-   * Get current regeneration progress
-   */
   getRegenerationProgress(): {
     isRunning: boolean;
     progress: RegenerationProgress;
@@ -429,16 +406,10 @@ export class EmbeddingMigrationService implements OnModuleInit {
     };
   }
 
-  /**
-   * Get embedding model status
-   */
   async getEmbeddingModelStatus(): Promise<EmbeddingMigrationStatus> {
     return this.checkEmbeddingModelConsistency();
   }
 
-  /**
-   * Sleep utility for delays
-   */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

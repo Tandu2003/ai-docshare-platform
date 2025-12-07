@@ -8,16 +8,10 @@ export interface SystemSettingValue {
   category?: string;
   isPublic?: boolean;
 }
-
 @Injectable()
 export class SystemSettingsService {
   private readonly logger = new Logger(SystemSettingsService.name);
-
   constructor(private prisma: PrismaService) {}
-
-  /**
-   * Get a system setting by key
-   */
   async getSetting(key: string): Promise<string | null> {
     try {
       const setting = await this.prisma.systemSetting.findUnique({
@@ -30,9 +24,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Get a system setting with default value
-   */
   async getSettingWithDefault(
     key: string,
     defaultValue: string,
@@ -41,9 +32,6 @@ export class SystemSettingsService {
     return value || defaultValue;
   }
 
-  /**
-   * Get a numeric system setting with default value
-   */
   async getNumericSetting(key: string, defaultValue: number): Promise<number> {
     const value = await this.getSetting(key);
     if (!value) return defaultValue;
@@ -52,9 +40,6 @@ export class SystemSettingsService {
     return isNaN(parsed) ? defaultValue : parsed;
   }
 
-  /**
-   * Get a boolean system setting with default value
-   */
   async getBooleanSetting(
     key: string,
     defaultValue: boolean,
@@ -65,9 +50,6 @@ export class SystemSettingsService {
     return value.toLowerCase() === 'true';
   }
 
-  /**
-   * Set a system setting
-   */
   async setSetting(setting: SystemSettingValue): Promise<void> {
     try {
       await this.prisma.systemSetting.upsert({
@@ -94,9 +76,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Get all settings by category
-   */
   async getSettingsByCategory(category: string): Promise<SystemSettingValue[]> {
     try {
       const settings = await this.prisma.systemSetting.findMany({
@@ -120,9 +99,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Get AI moderation settings
-   */
   async getAIModerationSettings() {
     return {
       autoApprovalThreshold: await this.getNumericSetting(
@@ -178,9 +154,6 @@ export class SystemSettingsService {
     };
   }
 
-  /**
-   * Get points system settings
-   */
   async getPointsSettings() {
     return {
       uploadReward: await this.getNumericSetting('points.upload_reward', 5),
@@ -189,9 +162,6 @@ export class SystemSettingsService {
     };
   }
 
-  /**
-   * Get all settings categories
-   */
   async getSettingsCategories(): Promise<string[]> {
     try {
       const categories = await this.prisma.systemSetting.findMany({
@@ -207,9 +177,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Get all settings
-   */
   async getAllSettings(): Promise<SystemSettingValue[]> {
     try {
       const settings = await this.prisma.systemSetting.findMany({
@@ -229,9 +196,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Delete a system setting
-   */
   async deleteSetting(key: string): Promise<void> {
     try {
       await this.prisma.systemSetting.delete({
@@ -245,9 +209,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Bulk update settings
-   */
   async updateSettings(settings: SystemSettingValue[]): Promise<void> {
     try {
       for (const setting of settings) {
@@ -261,9 +222,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Initialize default system settings
-   */
   async initializeDefaultSettings(): Promise<void> {
     const defaultSettings: SystemSettingValue[] = [
       // AI Moderation Settings
@@ -353,7 +311,8 @@ export class SystemSettingsService {
       {
         key: 'ai.enable_similarity_check',
         value: 'true',
-        description: 'Enable similarity checking (legacy, use individual toggles)',
+        description:
+          'Enable similarity checking (legacy, use individual toggles)',
         category: 'ai',
         isPublic: false,
       },

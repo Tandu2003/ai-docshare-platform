@@ -1,15 +1,8 @@
 import { io, Socket } from 'socket.io-client';
-
 import { API_CONFIG } from '@/config/api.config';
 import { authService } from '@/utils/auth.service';
-
 let socket: Socket | null = null;
 let isConnecting = false;
-
-/**
- * Get current socket instance
- * Returns existing socket or creates a new one if authenticated
- */
 export function getSocket(): Socket {
   if (!socket) {
     // Try to create socket if we have a token
@@ -28,10 +21,6 @@ export function getSocket(): Socket {
   return socket!;
 }
 
-/**
- * Wait for socket to be connected
- * Returns a promise that resolves when socket is connected
- */
 export function waitForSocketConnection(timeout = 5000): Promise<Socket> {
   return new Promise((resolve, reject) => {
     const sock = getSocket();
@@ -60,9 +49,6 @@ export function waitForSocketConnection(timeout = 5000): Promise<Socket> {
   });
 }
 
-/**
- * Create a new socket connection with current auth token
- */
 function createSocket(): void {
   if (isConnecting) return;
 
@@ -109,10 +95,6 @@ function createSocket(): void {
   });
 }
 
-/**
- * Reconnect socket with new auth token
- * Call this when user logs in or token is refreshed
- */
 export function reconnectSocket(): void {
   if (socket) {
     socket.disconnect();
@@ -124,10 +106,6 @@ export function reconnectSocket(): void {
   createSocket();
 }
 
-/**
- * Disconnect and cleanup socket
- * Call this when user logs out
- */
 export function disconnectSocket(): void {
   if (socket) {
     socket.disconnect();
@@ -138,10 +116,6 @@ export function disconnectSocket(): void {
   isConnecting = false;
 }
 
-/**
- * Update socket auth without full reconnection
- * This sends an auth update message to the server
- */
 export function updateSocketAuth(): void {
   const token = authService.getAccessToken() || '';
 
@@ -153,27 +127,16 @@ export function updateSocketAuth(): void {
   }
 }
 
-/**
- * Check if socket is connected
- */
 export function isSocketConnected(): boolean {
   return socket?.connected ?? false;
 }
 
-/**
- * Join a document room to receive realtime updates
- * @param documentId The document ID to join
- */
 export function joinDocumentRoom(documentId: string): void {
   if (socket?.connected) {
     socket.emit('document:join', { documentId });
   }
 }
 
-/**
- * Leave a document room
- * @param documentId The document ID to leave
- */
 export function leaveDocumentRoom(documentId: string): void {
   if (socket?.connected) {
     socket.emit('document:leave', { documentId });

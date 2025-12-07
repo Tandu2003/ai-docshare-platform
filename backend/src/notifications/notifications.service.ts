@@ -9,14 +9,12 @@ export interface ViewEvent {
   userId?: string;
   count?: number;
 }
-
 export interface DownloadEvent {
   type: 'download';
   documentId: string;
   userId?: string;
   count?: number;
 }
-
 export interface ModerationEvent {
   type: 'moderation';
   documentId: string;
@@ -113,10 +111,6 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Emit realtime event to all viewers of a specific document
-   * This is used for broadcasting comments, likes, etc. to everyone viewing the document
-   */
   emitToDocument(documentId: string, event: DocumentRealtimeEvent): void {
     try {
       const room = `document:${documentId}`;

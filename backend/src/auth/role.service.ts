@@ -6,16 +6,13 @@ export interface Permission {
   subject: string;
   conditions?: Record<string, any>;
 }
-
 export interface RolePermissions {
   role: string;
   permissions: Permission[];
 }
-
 @Injectable()
 export class RoleService {
   constructor(private prisma: PrismaService) {}
-
   async createRole(
     name: string,
     description: string,

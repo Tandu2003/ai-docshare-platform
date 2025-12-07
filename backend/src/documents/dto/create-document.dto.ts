@@ -11,11 +11,9 @@ import {
 export class CreateDocumentDto {
   @IsString()
   title: string;
-
   @IsOptional()
   @IsString()
   description?: string;
-
   @IsArray()
   @IsString({ each: true })
   fileIds: string[];

@@ -1,8 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react';
-
 import { Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getDocumentById, type DocumentView } from '@/services/document.service';
 import { DocumentsService } from '@/services/files.service';
-
 interface EditDownloadCostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

@@ -9,7 +9,6 @@ export class UpdateUserStatusDto {
   @IsOptional()
   @IsBoolean({ message: 'Trạng thái hoạt động phải là boolean' })
   isActive?: boolean;
-
   @ApiPropertyOptional({
     description: 'Trạng thái xác thực email',
     example: true,

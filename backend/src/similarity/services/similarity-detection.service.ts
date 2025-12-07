@@ -1,11 +1,3 @@
-/**
- * Similarity Detection Service
- *
- * Handles similarity detection:
- * - Detect similar documents
- * - Find exact file hash matches
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { SimilarityAlgorithmService } from './similarity-algorithm.service';
 import { SimilarityTextExtractionService } from './similarity-text-extraction.service';
@@ -44,9 +36,6 @@ export class SimilarityDetectionService {
     private readonly textExtractionService: SimilarityTextExtractionService,
   ) {}
 
-  /**
-   * Detect similar documents for a given document
-   */
   async detectSimilarDocuments(
     documentId: string,
   ): Promise<SimilarityDetectionResult> {
@@ -139,9 +128,6 @@ export class SimilarityDetectionService {
     }
   }
 
-  /**
-   * Find documents with exact file hash matches
-   */
   async findExactFileHashMatches(
     sourceFiles: any[],
   ): Promise<Array<{ documentId: string; document: any }>> {
@@ -191,9 +177,6 @@ export class SimilarityDetectionService {
     return exactMatches;
   }
 
-  /**
-   * Compare source document with other documents
-   */
   private async compareDocuments(
     documentId: string,
     sourceDocument: any,
@@ -290,9 +273,6 @@ export class SimilarityDetectionService {
     return similarities;
   }
 
-  /**
-   * Compare with a single target document
-   */
   private async compareWithTarget(
     sourceHashes: Set<string>,
     sourceTextContent: string,
@@ -400,9 +380,6 @@ export class SimilarityDetectionService {
     return null;
   }
 
-  /**
-   * Save similarity results to database
-   */
   private async saveSimilarityResults(
     sourceDocumentId: string,
     similarities: Array<{ documentId: string; similarityScore: number }>,

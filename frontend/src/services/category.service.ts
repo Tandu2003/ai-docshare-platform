@@ -1,6 +1,5 @@
 import type { CategoryWithStats } from '@/types';
 import { apiClient } from '@/utils/api-client';
-
 interface CategoryApiResponse {
   id: string;
   name: string;
@@ -16,7 +15,6 @@ interface CategoryApiResponse {
   createdAt: string;
   updatedAt: string;
 }
-
 type CategoryListResponse = CategoryApiResponse[];
 
 export interface CategoryPayload {

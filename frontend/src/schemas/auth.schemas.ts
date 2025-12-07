@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 // Register schema
 export const registerSchema = z
   .object({
@@ -9,7 +8,6 @@ export const registerSchema = z
       .email('Please enter a valid email address')
       .toLowerCase()
       .trim(),
-
     username: z
       .string()
       .min(3, 'Username must be at least 3 characters long')

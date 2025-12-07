@@ -36,9 +36,6 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
-  /**
-   * Register a new user
-   */
   async register(registerDto: RegisterDto): Promise<{ message: string }> {
     const { email, username, password, firstName, lastName } = registerDto;
 
@@ -92,9 +89,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Login user
-   */
   async login(loginDto: LoginDto): Promise<LoginResponse> {
     const { emailOrUsername, password } = loginDto;
 
@@ -133,9 +127,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Refresh access token
-   */
   async refreshToken(refreshToken: string): Promise<AuthTokens> {
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken, {
@@ -165,9 +156,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Validate user for JWT strategy
-   */
   async validateUser(payload: JwtPayload): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -231,7 +219,13 @@ export class AuthService {
     }
   }
 
-  private async getDefaultRole() {
+  private async getDefaultRole(): Promise<{
+    id: string;
+    name: string;
+    permissions: unknown;
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
     const role = await this.prisma.role.findUnique({
       where: { name: this.defaultRoleName },
     });
@@ -254,7 +248,33 @@ export class AuthService {
     return bcrypt.compare(password, hashedPassword);
   }
 
-  private async findUserByEmailOrUsername(emailOrUsername: string) {
+  private async findUserByEmailOrUsername(emailOrUsername: string): Promise<{
+    id: string;
+    email: string;
+    username: string;
+    password: string;
+    firstName: string | null;
+    lastName: string | null;
+    avatar: string | null;
+    bio: string | null;
+    website: string | null;
+    location: string | null;
+    roleId: string;
+    isVerified: boolean;
+    isActive: boolean;
+    isDeleted: boolean;
+    lastLoginAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    pointsBalance: number;
+    resetToken: string | null;
+    resetExpires: Date | null;
+    role: {
+      id: string;
+      name: string;
+      permissions: unknown;
+    };
+  } | null> {
     return this.prisma.user.findFirst({
       where: {
         OR: [{ email: emailOrUsername }, { username: emailOrUsername }],
@@ -342,9 +362,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Verify email with token
-   */
   async verifyEmail(
     verifyEmailDto: VerifyEmailDto,
   ): Promise<{ message: string }> {
@@ -395,9 +412,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Resend verification email
-   */
   async resendVerification(
     resendDto: ResendVerificationDto,
   ): Promise<{ message: string }> {
@@ -455,9 +469,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Forgot password - send reset email
-   */
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ message: string }> {
@@ -510,9 +521,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Reset password with token
-   */
   async resetPassword(
     resetPasswordDto: ResetPasswordDto,
   ): Promise<{ message: string }> {
@@ -565,13 +573,33 @@ export class AuthService {
     }
   }
 
-  /**
-   * Update user profile
-   */
   async updateProfile(
     userId: string,
     updateProfileDto: UpdateProfileDto,
-  ): Promise<any> {
+  ): Promise<{
+    id: string;
+    email: string;
+    username: string;
+    firstName: string | null;
+    lastName: string | null;
+    avatar: string | null;
+    bio: string | null;
+    website: string | null;
+    location: string | null;
+    roleId: string;
+    isVerified: boolean;
+    isActive: boolean;
+    isDeleted: boolean;
+    lastLoginAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    pointsBalance: number;
+    role: {
+      id: string;
+      name: string;
+      permissions: string[];
+    };
+  }> {
     const { email, firstName, lastName, avatar, bio, website, location } =
       updateProfileDto;
 
@@ -623,6 +651,7 @@ export class AuthService {
       return {
         ...userWithoutPassword,
         role: {
+          id: user.role.id,
           name: user.role.name,
           permissions: Array.isArray(user.role.permissions)
             ? user.role.permissions
@@ -639,9 +668,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Change user password
-   */
   async changePassword(
     userId: string,
     changePasswordDto: ChangePasswordDto,

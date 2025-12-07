@@ -1,15 +1,11 @@
-// Database types based on Prisma schema
 export type Actions = string;
 export type Subjects = string;
-
 export type DocumentModerationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
 export interface Permission {
   action: Actions;
   subject: Subjects;
   conditions?: Record<string, any>;
 }
-
 export interface Role {
   id: string;
   name: string;

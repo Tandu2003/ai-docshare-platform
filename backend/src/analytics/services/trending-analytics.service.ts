@@ -1,11 +1,3 @@
-/**
- * Trending Analytics Service
- *
- * Handles trending document calculations:
- * - Score-based trending
- * - Growth analysis
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { AnalyticsUtilService } from './analytics-util.service';
 import { Injectable } from '@nestjs/common';
@@ -16,10 +8,6 @@ export class TrendingAnalyticsService {
     private readonly prisma: PrismaService,
     private readonly utilService: AnalyticsUtilService,
   ) {}
-
-  /**
-   * Get trending analytics
-   */
   async getTrendingAnalytics(range?: string) {
     const {
       range: normalizedRange,
@@ -177,9 +165,6 @@ export class TrendingAnalyticsService {
     };
   }
 
-  /**
-   * Build count map from grouped results
-   */
   private buildCountMap(
     groupedResults: Array<{
       documentId: string;

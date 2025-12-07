@@ -78,9 +78,6 @@ export class NotificationsGateway
     this.logger.log(`Client disconnected: ${socket.id}`);
   }
 
-  /**
-   * Handle auth update from client when token is refreshed or user logs in
-   */
   @SubscribeMessage('auth:update')
   handleAuthUpdate(
     @ConnectedSocket() socket: Socket,
@@ -103,9 +100,6 @@ export class NotificationsGateway
     }
   }
 
-  /**
-   * Handle ping from client for connection testing
-   */
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() socket: Socket): {
     event: string;
@@ -118,9 +112,6 @@ export class NotificationsGateway
     };
   }
 
-  /**
-   * Handle joining a document room for realtime updates
-   */
   @SubscribeMessage('document:join')
   handleDocumentJoin(
     @ConnectedSocket() socket: Socket,
@@ -133,9 +124,6 @@ export class NotificationsGateway
     }
   }
 
-  /**
-   * Handle leaving a document room
-   */
   @SubscribeMessage('document:leave')
   handleDocumentLeave(
     @ConnectedSocket() socket: Socket,
@@ -148,9 +136,6 @@ export class NotificationsGateway
     }
   }
 
-  /**
-   * Authenticate socket using token from handshake
-   */
   private authenticateSocket(socket: Socket): void {
     try {
       const token = socket.handshake?.auth?.token || null;
@@ -166,9 +151,6 @@ export class NotificationsGateway
     }
   }
 
-  /**
-   * Authenticate socket with a specific token
-   */
   private authenticateSocketWithToken(socket: Socket, token: string): void {
     try {
       const payload: any = this.jwtService.verify(token);

@@ -1,6 +1,5 @@
 import { Document } from '@/services/files.service';
 import { apiClient } from '@/utils/api-client';
-
 export interface CategorySummary {
   id: string;
   name: string;
@@ -64,9 +63,6 @@ export interface CategorySuggestionsResponse {
   };
 }
 
-/**
- * Fetch all categories (admin - includes inactive)
- */
 export async function fetchCategories(
   includeInactive = true,
 ): Promise<CategorySummary[]> {
@@ -76,17 +72,11 @@ export async function fetchCategories(
   return response.data ?? [];
 }
 
-/**
- * Fetch public categories (active only)
- */
 export async function fetchPublicCategories(): Promise<CategorySummary[]> {
   const response = await apiClient.get<CategorySummary[]>('/categories/public');
   return response.data ?? [];
 }
 
-/**
- * Fetch category detail with paginated documents
- */
 export async function fetchCategoryDetail(
   id: string,
   params?: {
@@ -106,9 +96,6 @@ export async function fetchCategoryDetail(
   return response.data;
 }
 
-/**
- * Get AI category suggestions for a document
- */
 export async function fetchCategorySuggestions(
   documentId: string,
 ): Promise<CategorySuggestionsResponse> {
@@ -121,9 +108,6 @@ export async function fetchCategorySuggestions(
   return response.data;
 }
 
-/**
- * Create a new category (admin only)
- */
 export async function createCategory(data: {
   name: string;
   description?: string;
@@ -140,9 +124,6 @@ export async function createCategory(data: {
   return response.data;
 }
 
-/**
- * Update a category (admin only)
- */
 export async function updateCategory(
   id: string,
   data: {
@@ -165,9 +146,6 @@ export async function updateCategory(
   return response.data;
 }
 
-/**
- * Delete a category (admin only)
- */
 export async function deleteCategory(id: string): Promise<void> {
   await apiClient.delete(`/categories/${id}`);
 }

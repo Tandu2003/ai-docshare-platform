@@ -5,7 +5,6 @@ import {
   useState,
   type ReactElement,
 } from 'react';
-
 import {
   BarChart3,
   Calendar,

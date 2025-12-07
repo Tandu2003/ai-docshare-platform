@@ -1,4 +1,3 @@
-// User role and permissions
 export interface Permission {
   action:
     | 'create'

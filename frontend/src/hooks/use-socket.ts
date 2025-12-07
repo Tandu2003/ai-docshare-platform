@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
-
 import type { Socket } from 'socket.io-client';
-
 import { disconnectSocket, getSocket, reconnectSocket } from '@/lib/socket';
-
 import { useAuth } from './use-auth';
-
-/**
- * Hook to manage socket connection based on auth state
- * Automatically reconnects when user logs in and disconnects when user logs out
- */
 export function useSocket() {
   const { isAuthenticated, accessToken } = useAuth();
   const previousAuthRef = useRef(isAuthenticated);
   const previousTokenRef = useRef(accessToken);
   const socketRef = useRef<Socket | null>(null);
-
   // Initialize socket when auth state changes
   useEffect(() => {
     const wasAuthenticated = previousAuthRef.current;
@@ -75,10 +66,6 @@ export function useSocket() {
   };
 }
 
-/**
- * Hook to subscribe to a specific socket event
- * Automatically cleans up on unmount
- */
 export function useSocketEvent<T = any>(
   event: string,
   handler: (data: T) => void,

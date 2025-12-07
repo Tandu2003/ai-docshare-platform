@@ -14,7 +14,6 @@ export class CreateUserDto {
   })
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email: string;
-
   @ApiProperty({
     description: 'Tên đăng nhập',
     example: 'johndoe',

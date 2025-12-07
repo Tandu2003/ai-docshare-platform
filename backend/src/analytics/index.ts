@@ -1,12 +1,4 @@
-/**
- * Analytics Module - Centralized exports
- */
-
-// ============================================================================
-// Services
-// ============================================================================
 export { AnalyticsService } from './analytics.service';
-
 // Domain-specific analytics services
 export {
   AnalyticsUtilService,
@@ -14,20 +6,10 @@ export {
   TrendingAnalyticsService,
   ActivityAnalyticsService,
 } from './services';
-
-// ============================================================================
 // Controllers
-// ============================================================================
 export { AnalyticsController } from './controllers/analytics.controller';
-
-// ============================================================================
 // Module
-// ============================================================================
 export { AnalyticsModule } from './analytics.module';
-
-// ============================================================================
-// Interfaces & Types
-// ============================================================================
 export type {
   DashboardOverview,
   RecentDocument,

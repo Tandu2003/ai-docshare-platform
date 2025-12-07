@@ -7,9 +7,7 @@ import {
   Users,
 } from 'lucide-react';
 import { type ComponentType } from 'react';
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 interface StatCardProps {
   title: string;
   value: string | number;

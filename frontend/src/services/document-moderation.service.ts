@@ -5,12 +5,10 @@ import type {
   ModerationQueueResponse,
 } from '@/types';
 import { apiClient } from '@/utils/api-client';
-
 export const getModerationQueue = async (
   params: ModerationQueueParams = {},
 ): Promise<ModerationQueueResponse> => {
   const searchParams = new URLSearchParams();
-
   if (params.page) searchParams.set('page', String(params.page));
   if (params.limit) searchParams.set('limit', String(params.limit));
   if (params.categoryId) searchParams.set('categoryId', params.categoryId);

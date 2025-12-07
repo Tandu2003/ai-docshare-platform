@@ -1,11 +1,3 @@
-/**
- * Activity Analytics Service
- *
- * Handles daily activity and metric-based analytics:
- * - Daily activity tracking
- * - Top documents by metric (downloads/views)
- */
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { AnalyticsUtilService } from './analytics-util.service';
 import { Injectable } from '@nestjs/common';
@@ -16,10 +8,6 @@ export class ActivityAnalyticsService {
     private readonly prisma: PrismaService,
     private readonly utilService: AnalyticsUtilService,
   ) {}
-
-  /**
-   * Get daily activity statistics
-   */
   async getDailyActivity(range?: string) {
     const {
       startDate,
@@ -76,9 +64,6 @@ export class ActivityAnalyticsService {
     };
   }
 
-  /**
-   * Get top documents by metric (downloads or views)
-   */
   async getTopDocumentsByMetric(
     metric: 'downloads' | 'views',
     range?: string,
@@ -179,9 +164,6 @@ export class ActivityAnalyticsService {
     };
   }
 
-  /**
-   * Initialize day series map
-   */
   private initializeDaySeriesMap(
     startDate: Date,
     endDate: Date,

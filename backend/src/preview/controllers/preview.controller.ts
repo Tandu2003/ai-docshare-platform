@@ -48,9 +48,6 @@ export class PreviewController {
     private readonly previewInitializationService: PreviewInitializationService,
   ) {}
 
-  /**
-   * Get preview images for a document (public access for approved documents)
-   */
   @Get(':documentId')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get preview images for a document' })
@@ -117,9 +114,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Get a specific preview page image
-   */
   @Get(':documentId/page/:pageNumber')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get a specific preview page' })
@@ -185,9 +179,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Stream preview image directly (no URL exposed)
-   */
   @Get(':documentId/stream/:pageNumber')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Stream preview image directly' })
@@ -255,9 +246,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Get preview generation status
-   */
   @Get(':documentId/status')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get preview generation status' })
@@ -292,9 +280,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Manually trigger preview generation (owner only)
-   */
   @Post(':documentId/generate')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -351,9 +336,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Regenerate previews (owner or admin only)
-   */
   @Post(':documentId/regenerate')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -410,9 +392,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Admin: Get preview initialization status
-   */
   @Get('admin/status')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
@@ -437,9 +416,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Admin: Trigger preview initialization for all missing previews
-   */
   @Post('admin/initialize')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
@@ -473,9 +449,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Admin: Regenerate all failed previews
-   */
   @Post('admin/regenerate-failed')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
@@ -503,9 +476,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * Admin: Force regenerate ALL document previews
-   */
   @Post('admin/regenerate-all')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
@@ -540,9 +510,6 @@ export class PreviewController {
     }
   }
 
-  /**
-   * TEST ONLY: Trigger regenerate all (remove in production)
-   */
   @Post('test/regenerate-all')
   @Public()
   @ApiOperation({ summary: 'TEST: Trigger regenerate all previews (no auth)' })

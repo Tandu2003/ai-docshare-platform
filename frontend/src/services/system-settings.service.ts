@@ -1,6 +1,5 @@
 import { api } from '@/config/api';
 import { AISettings } from '@/types/database.types';
-
 export interface SystemSetting {
   key: string;
   value: string;
@@ -8,16 +7,13 @@ export interface SystemSetting {
   category?: string;
   isPublic?: boolean;
 }
-
 export interface SystemSettingsResponse {
   settings: SystemSetting[];
   category: string;
 }
-
 export interface AllSettingsResponse {
   settings: SystemSetting[];
 }
-
 export interface CategoriesResponse {
   categories: string[];
 }
@@ -31,17 +27,11 @@ export interface PointsSettings {
 export class SystemSettingsService {
   private static readonly BASE_URL = '/settings';
 
-  /**
-   * Get all system settings
-   */
   static async getAllSettings(): Promise<AllSettingsResponse> {
     const response = await api.get(`${this.BASE_URL}/admin/all`);
     return response.data as AllSettingsResponse;
   }
 
-  /**
-   * Get settings by category
-   */
   static async getSettingsByCategory(
     category: string,
   ): Promise<SystemSettingsResponse> {
@@ -51,61 +41,37 @@ export class SystemSettingsService {
     return response.data as SystemSettingsResponse;
   }
 
-  /**
-   * Get settings categories
-   */
   static async getCategories(): Promise<CategoriesResponse> {
     const response = await api.get(`${this.BASE_URL}/admin/categories`);
     return response.data as CategoriesResponse;
   }
 
-  /**
-   * Get AI moderation settings
-   */
   static async getAIModerationSettings(): Promise<AISettings> {
     const response = await api.get(`${this.BASE_URL}/admin`);
     return response.data as AISettings;
   }
 
-  /**
-   * Update a single setting
-   */
   static async updateSetting(setting: SystemSetting): Promise<void> {
     await api.post(`${this.BASE_URL}/admin`, setting);
   }
 
-  /**
-   * Bulk update settings
-   */
   static async updateSettings(settings: SystemSetting[]): Promise<void> {
     await api.put(`${this.BASE_URL}/admin`, settings);
   }
 
-  /**
-   * Delete a setting
-   */
   static async deleteSetting(key: string): Promise<void> {
     await api.delete(`${this.BASE_URL}/admin/${key}`);
   }
 
-  /**
-   * Initialize default settings
-   */
   static async initializeDefaults(): Promise<void> {
     await api.post(`${this.BASE_URL}/admin/initialize-defaults`);
   }
 
-  /**
-   * Get points settings
-   */
   static async getPointsSettings(): Promise<PointsSettings> {
     const response = await api.get(`${this.BASE_URL}/admin/points`);
     return response.data as PointsSettings;
   }
 
-  /**
-   * Update AI settings
-   */
   static async updateAISettings(settings: Partial<AISettings>): Promise<void> {
     const systemSettings: SystemSetting[] = [];
 
@@ -212,9 +178,6 @@ export class SystemSettingsService {
     }
   }
 
-  /**
-   * Update points settings
-   */
   static async updatePointsSettings(
     settings: Partial<PointsSettings>,
   ): Promise<void> {

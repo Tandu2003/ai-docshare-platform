@@ -1,7 +1,5 @@
 import { apiClient } from '@/utils/api-client';
-
 import type { SimilarityResult } from './document.types';
-
 export const getSimilarityResults = async (
   documentId: string,
 ): Promise<SimilarityResult[]> => {
@@ -9,15 +7,12 @@ export const getSimilarityResults = async (
     const response = await apiClient.get<SimilarityResult[]>(
       `/similarity/results/${documentId}`,
     );
-
     if (response.data && Array.isArray(response.data)) {
       return response.data;
     }
-
     if (Array.isArray(response)) {
       return response;
     }
-
     return [];
   } catch {
     return [];

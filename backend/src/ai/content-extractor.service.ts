@@ -11,14 +11,9 @@ export interface ExtractedContent {
     characters?: number;
   };
 }
-
 @Injectable()
 export class ContentExtractorService {
   private readonly logger = new Logger(ContentExtractorService.name);
-
-  /**
-   * Extract text content from various file types
-   */
   async extractContent(
     buffer: Buffer,
     mimeType: string,
@@ -59,9 +54,6 @@ export class ContentExtractorService {
     }
   }
 
-  /**
-   * Extract content from Word documents
-   */
   private async extractWordContent(buffer: Buffer): Promise<ExtractedContent> {
     try {
       const result = await mammoth.extractRawText({ buffer });
@@ -79,9 +71,6 @@ export class ContentExtractorService {
     }
   }
 
-  /**
-   * Extract content from Excel files
-   */
   private extractExcelContent(buffer: Buffer): ExtractedContent {
     try {
       const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -122,9 +111,6 @@ export class ContentExtractorService {
     }
   }
 
-  /**
-   * Extract content from PDF files
-   */
   private async extractPdfContent(buffer: Buffer): Promise<ExtractedContent> {
     try {
       const data = await pdfParse(buffer);
@@ -142,9 +128,6 @@ export class ContentExtractorService {
     }
   }
 
-  /**
-   * Extract content from text files
-   */
   private extractTextContent(buffer: Buffer): ExtractedContent {
     const text = buffer.toString('utf-8');
 
@@ -157,9 +140,6 @@ export class ContentExtractorService {
     };
   }
 
-  /**
-   * Extract content from PowerPoint files (basic implementation)
-   */
   private extractPowerPointContent(buffer: Buffer): ExtractedContent {
     void buffer;
     // For now, we'll return a placeholder since PowerPoint extraction is complex
@@ -177,9 +157,6 @@ export class ContentExtractorService {
     };
   }
 
-  /**
-   * Check if file type is supported for content extraction
-   */
   isSupportedFileType(mimeType: string): boolean {
     const supportedTypes = [
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -195,9 +172,6 @@ export class ContentExtractorService {
     return supportedTypes.includes(mimeType);
   }
 
-  /**
-   * Get supported file extensions
-   */
   getSupportedExtensions(): string[] {
     return ['docx', 'doc', 'xlsx', 'xls', 'pdf', 'txt', 'pptx', 'ppt'];
   }

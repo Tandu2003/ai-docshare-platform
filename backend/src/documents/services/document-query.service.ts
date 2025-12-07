@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document Query Service
- * @description Handles document query operations (get, list, view)
- * @module documents/services/document-query
- */
-
 import { DocumentSharingService } from './document-sharing.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { FilesService } from '@/files/files.service';
@@ -114,13 +108,6 @@ export class DocumentQueryService {
     private readonly previewService: PreviewService,
   ) {}
 
-  /**
-   * Get documents uploaded by a specific user
-   * @param userId - User ID
-   * @param page - Page number
-   * @param limit - Items per page
-   * @returns Paginated user documents
-   */
   async getUserDocuments(
     userId: string,
     page: number = 1,
@@ -169,15 +156,6 @@ export class DocumentQueryService {
     }
   }
 
-  /**
-   * Get public approved documents with filters
-   * @param page - Page number
-   * @param limit - Items per page
-   * @param userId - Optional user ID for ownership check
-   * @param userRole - Optional user role
-   * @param filters - Optional filters
-   * @returns Paginated public documents
-   */
   async getPublicDocuments(
     page: number = 1,
     limit: number = 10,
@@ -239,14 +217,6 @@ export class DocumentQueryService {
     }
   }
 
-  /**
-   * Get document details by ID
-   * @param documentId - Document ID
-   * @param userId - Optional user ID
-   * @param shareToken - Optional share token
-   * @param apiKey - Optional API key
-   * @returns Document details
-   */
   async getDocumentById(
     documentId: string,
     userId?: string,
@@ -277,15 +247,6 @@ export class DocumentQueryService {
     }
   }
 
-  /**
-   * Track document view
-   * @param documentId - Document ID
-   * @param userId - Optional user ID
-   * @param ipAddress - Client IP address
-   * @param userAgent - Client user agent
-   * @param referrer - Referrer URL
-   * @returns View tracking result
-   */
   async viewDocument(
     documentId: string,
     userId?: string,

@@ -1,37 +1,16 @@
-/**
- * Auth Module - Constants
- *
- * Following Clean Code Commandment #6: Single Source of Truth
- * Using SCREAMING_SNAKE_CASE as per TypeScript Coding Standards.
- */
-
-// ============================================================================
-// JWT Constants
-// ============================================================================
-
 export const JWT_ACCESS_TOKEN_EXPIRY = '15m';
 export const JWT_REFRESH_TOKEN_EXPIRY = '7d';
-
-// ============================================================================
 // Password Constants
-// ============================================================================
-
 export const PASSWORD_SALT_ROUNDS = 12;
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 128;
-
-// ============================================================================
 // Token Constants
-// ============================================================================
-
 export const VERIFICATION_TOKEN_LENGTH = 32;
 export const VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
 export const RESET_TOKEN_LENGTH = 32;
 export const RESET_TOKEN_EXPIRY_HOURS = 1;
 
-// ============================================================================
 // Rate Limiting Constants
-// ============================================================================
 
 export const AUTH_RATE_LIMITS = {
   LOGIN: { limit: 10, ttl: 60000 }, // 10 per minute
@@ -41,9 +20,7 @@ export const AUTH_RATE_LIMITS = {
   VERIFY_EMAIL: { limit: 5, ttl: 60000 }, // 5 per minute
 } as const;
 
-// ============================================================================
 // Role Constants
-// ============================================================================
 
 export const DEFAULT_ROLE_NAME = 'user';
 export const ADMIN_ROLE_NAME = 'admin';
@@ -54,9 +31,7 @@ export const ROLE_NAMES = {
   MODERATOR: 'moderator',
 } as const;
 
-// ============================================================================
 // Error Messages
-// ============================================================================
 
 export const AUTH_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: 'Thông tin đăng nhập không hợp lệ',
@@ -72,9 +47,7 @@ export const AUTH_ERROR_MESSAGES = {
   FORBIDDEN: 'Không có quyền truy cập',
 } as const;
 
-// ============================================================================
 // Success Messages
-// ============================================================================
 
 export const AUTH_SUCCESS_MESSAGES = {
   REGISTERED:
@@ -89,8 +62,6 @@ export const AUTH_SUCCESS_MESSAGES = {
   VERIFICATION_SENT: 'Email xác thực đã được gửi lại',
 } as const;
 
-// ============================================================================
 // Type exports
-// ============================================================================
 
 export type RoleName = (typeof ROLE_NAMES)[keyof typeof ROLE_NAMES];

@@ -1,20 +1,4 @@
-/**
- * Documents Module - Centralized exports
- *
- * This module handles all document-related operations including:
- * - CRUD operations
- * - Comments and ratings
- * - Share links
- * - Downloads
- * - Moderation
- * - Search
- */
-
-// ============================================================================
-// Services
-// ============================================================================
 export { DocumentsService } from './documents.service';
-
 // Domain-specific services
 export {
   DocumentCommentService,
@@ -25,9 +9,7 @@ export {
   DocumentSharingService,
 } from './services';
 
-// ============================================================================
 // Controllers
-// ============================================================================
 export {
   AdminDocumentsController,
   DocumentAccessController,
@@ -37,14 +19,10 @@ export {
   DocumentSharingController,
 } from './controllers';
 
-// ============================================================================
 // Module
-// ============================================================================
 export { DocumentsModule } from './documents.module';
 
-// ============================================================================
 // DTOs
-// ============================================================================
 export {
   CreateDocumentDto,
   UpdateDocumentDto,
@@ -59,9 +37,6 @@ export {
   ModerationQueueQueryDto,
 } from './dto';
 
-// ============================================================================
-// Interfaces & Types
-// ============================================================================
 export type {
   DocumentWithRelations,
   DocumentCounts,
@@ -90,9 +65,7 @@ export type {
   ViewTrackingResult,
 } from './interfaces';
 
-// ============================================================================
 // Constants
-// ============================================================================
 export {
   DEFAULT_PAGE,
   DEFAULT_LIMIT,

@@ -1,22 +1,9 @@
-/**
- * Similarity Algorithm Service
- *
- * Core similarity calculation algorithms:
- * - Cosine similarity for embeddings
- * - Text similarity (Jaccard, Levenshtein)
- * - Hash comparison
- */
-
 import * as crypto from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class SimilarityAlgorithmService {
   private readonly logger = new Logger(SimilarityAlgorithmService.name);
-
-  /**
-   * Calculate cosine similarity between two vectors
-   */
   calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
     if (vecA.length !== vecB.length) {
       this.logger.warn(
@@ -45,10 +32,6 @@ export class SimilarityAlgorithmService {
     return dotProduct / (normA * normB);
   }
 
-  /**
-   * Calculate text similarity using multiple methods
-   * Optimized to handle large texts without memory issues
-   */
   calculateTextSimilarity(text1: string, text2: string): number {
     if (!text1 || !text2) return 0;
     if (text1 === text2) return 1.0;
@@ -72,9 +55,6 @@ export class SimilarityAlgorithmService {
     return jaccard * 0.7 + levenshteinSimilarity * 0.3;
   }
 
-  /**
-   * Calculate Jaccard similarity between two texts
-   */
   private calculateJaccardSimilarity(text1: string, text2: string): number {
     const words1 = text1.split(/\s+/).slice(0, 500);
     const words2 = text2.split(/\s+/).slice(0, 500);
@@ -90,9 +70,6 @@ export class SimilarityAlgorithmService {
     return union.size > 0 ? intersection / union.size : 0;
   }
 
-  /**
-   * Calculate Levenshtein-based similarity
-   */
   private calculateLevenshteinSimilarity(
     text1: string,
     text2: string,
@@ -106,9 +83,6 @@ export class SimilarityAlgorithmService {
     return fallbackValue;
   }
 
-  /**
-   * Calculate Levenshtein distance between two strings
-   */
   private levenshteinDistance(str1: string, str2: string): number {
     const m = str1.length;
     const n = str2.length;
@@ -138,16 +112,10 @@ export class SimilarityAlgorithmService {
     return dp[m][n];
   }
 
-  /**
-   * Hash text content for comparison
-   */
   hashText(text: string): string {
     return crypto.createHash('sha256').update(text).digest('hex');
   }
 
-  /**
-   * Compare file hashes between two sets of files
-   */
   compareFileHashes(sourceFiles: any[], targetFiles: any[]): number {
     if (sourceFiles.length === 0 || targetFiles.length === 0) return 0;
 
@@ -174,9 +142,6 @@ export class SimilarityAlgorithmService {
     return matches / Math.max(sourceHashes.size, targetHashes.size);
   }
 
-  /**
-   * Calculate combined similarity score
-   */
   calculateCombinedScore(
     hashSimilarity: number,
     textSimilarity: number,

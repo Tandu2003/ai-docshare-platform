@@ -1,11 +1,3 @@
-/**
- * Similarity Embedding Service
- *
- * Handles embedding generation for documents:
- * - Generate document embeddings
- * - Background similarity processing
- */
-
 import { EmbeddingService } from '../../ai/embedding.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SimilarityDetectionService } from './similarity-detection.service';
@@ -15,7 +7,6 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class SimilarityEmbeddingService {
   private readonly logger = new Logger(SimilarityEmbeddingService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly embeddingService: EmbeddingService,
@@ -29,9 +20,6 @@ export class SimilarityEmbeddingService {
     this.detectionService = detectionService;
   }
 
-  /**
-   * Generate embedding for a document
-   */
   async generateDocumentEmbedding(documentId: string): Promise<number[]> {
     try {
       this.logger.log(`Generating embedding for document ${documentId}`);
@@ -106,9 +94,6 @@ export class SimilarityEmbeddingService {
     }
   }
 
-  /**
-   * Process similarity detection in background
-   */
   async processSimilarityDetection(documentId: string): Promise<void> {
     if (!this.detectionService) {
       throw new Error('Detection service not initialized');

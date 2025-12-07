@@ -1,9 +1,3 @@
-/**
- * @fileoverview Document Search Service
- * @description Handles document search operations including vector search and embeddings
- * @module documents/services/document-search
- */
-
 import { EmbeddingService } from '@/ai/embedding.service';
 import {
   HybridSearchResult,
@@ -78,16 +72,6 @@ export class DocumentSearchService {
     private readonly filesService: FilesService,
   ) {}
 
-  /**
-   * Search documents using hybrid vector and keyword search
-   * @param query - Search query
-   * @param page - Page number
-   * @param limit - Results per page
-   * @param userId - Optional user ID
-   * @param userRole - Optional user role
-   * @param filters - Optional search filters
-   * @returns Search results
-   */
   async searchDocuments(
     query: string,
     page: number = 1,
@@ -166,10 +150,6 @@ export class DocumentSearchService {
     }
   }
 
-  /**
-   * Generate and save document embedding for vector search
-   * @param documentId - Document ID
-   */
   async generateDocumentEmbedding(documentId: string): Promise<void> {
     try {
       this.logger.log(`Generating embedding for document ${documentId}`);
@@ -229,10 +209,6 @@ export class DocumentSearchService {
     }
   }
 
-  /**
-   * Regenerate embeddings for all approved documents
-   * @returns Number of documents processed
-   */
   async regenerateAllEmbeddings(): Promise<{
     processed: number;
     failed: number;
