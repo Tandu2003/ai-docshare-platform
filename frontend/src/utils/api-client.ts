@@ -177,6 +177,21 @@ class ApiClient {
   private handleAuthError(): void {
     // Clear token in token manager (which will update Redux)
     this.tokenManager.clearToken();
+
+    // Get current URL for callback after login
+    const currentPath = window.location.pathname + window.location.search;
+    const callbackUrl = encodeURIComponent(currentPath);
+
+    // Only redirect to login if not already on login/register page
+    const isAuthPage = currentPath.startsWith('/auth/') ||
+                       currentPath.startsWith('/login') ||
+                       currentPath.startsWith('/register');
+
+    if (!isAuthPage) {
+      // Redirect to login with callback URL
+      window.location.href = `/auth/login?callback=${callbackUrl}`;
+    }
+
     // Dispatch logout event
     window.dispatchEvent(new CustomEvent('auth:logout'));
   }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +27,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToRegister,
 }) => {
   const { login } = useAuth();
-  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -50,8 +49,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       if (result.meta.requestStatus === 'fulfilled') {
         reset();
+        // onSuccess callback will handle navigation to callback URL
         onSuccess?.();
-        navigate('/dashboard');
       }
     } catch (err) {
       // Error is handled by Redux and toast

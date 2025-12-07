@@ -25,7 +25,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect authenticated users away from auth pages
   if (!requireAuth && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    // Check if there's a callback URL in query params
+    const searchParams = new URLSearchParams(location.search);
+    const callbackUrl = searchParams.get('callback');
+    const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : '/dashboard';
+    return <Navigate to={redirectTo} replace />;
   }
 
   // Role gating (admin-only sections, etc.)
