@@ -3,6 +3,7 @@ import {
   HybridSearchResult,
   VectorSearchService,
 } from '@/ai/vector-search.service';
+import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { FilesService } from '@/files/files.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -70,6 +71,7 @@ export class DocumentSearchService {
     private readonly vectorSearchService: VectorSearchService,
     private readonly systemSettings: SystemSettingsService,
     private readonly filesService: FilesService,
+    private readonly embeddingTextBuilder: EmbeddingTextBuilderService,
   ) {}
 
   async searchDocuments(
@@ -424,20 +426,13 @@ export class DocumentSearchService {
     title: string;
     description: string | null;
     tags: string[];
-    aiAnalysis: { summary: string | null } | null;
+    aiAnalysis: { summary: string | null; keyPoints?: string[] | null } | null;
   }): string {
-    let textContent = '';
-
-    // Priority: AI analysis summary > description > title + tags
-    if (document.aiAnalysis?.summary) {
-      textContent = document.aiAnalysis.summary;
-    } else if (document.description) {
-      textContent = document.description;
-    } else {
-      textContent = `${document.title} ${document.tags.join(' ')}`;
-    }
-
-    // Always add title and tags for better context
-    return `${document.title} ${textContent} ${document.tags.join(' ')}`;
+    return this.embeddingTextBuilder.buildSearchEmbeddingText({
+      title: document.title,
+      description: document.description,
+      tags: document.tags,
+      aiAnalysis: document.aiAnalysis,
+    });
   }
 }

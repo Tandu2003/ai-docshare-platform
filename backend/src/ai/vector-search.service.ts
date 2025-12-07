@@ -1,5 +1,12 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
+import {
+  cosineSimilarity,
+  HYBRID_SEARCH_WEIGHTS,
+  KEYWORD_SCORE_WEIGHTS,
+  SEARCH_CACHE_CONFIG,
+  SEARCH_THRESHOLDS,
+} from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
@@ -46,8 +53,8 @@ export interface SearchMetrics {
 export class VectorSearchService {
   private readonly logger = new Logger(VectorSearchService.name);
   private readonly searchCache = new Map<string, any>();
-  private readonly maxCacheSize = 500;
-  private readonly cacheTTL = 5 * 60 * 1000; // 5 minutes
+  private readonly maxCacheSize = SEARCH_CACHE_CONFIG.MAX_SIZE;
+  private readonly cacheTTL = SEARCH_CACHE_CONFIG.TTL_MS;
   private metrics: SearchMetrics = {
     totalSearches: 0,
     vectorSearches: 0,
@@ -160,7 +167,12 @@ export class VectorSearchService {
     this.metrics.vectorSearches++;
 
     try {
-      const { query, limit = 10, threshold = 0.5, filters = {} } = options;
+      const {
+        query,
+        limit = 10,
+        threshold = SEARCH_THRESHOLDS.VECTOR_SEARCH,
+        filters = {},
+      } = options;
 
       // Check cache first
       const cacheKey = this.getSearchCacheKey('vector', options);
@@ -319,7 +331,7 @@ export class VectorSearchService {
         return;
       }
 
-      const similarity = this.cosineSimilarity(queryEmbedding, item.embedding);
+      const similarity = cosineSimilarity(queryEmbedding, item.embedding);
       if (Number.isFinite(similarity) && similarity >= threshold) {
         results.push({
           documentId: item.documentId,
@@ -333,33 +345,9 @@ export class VectorSearchService {
       .slice(0, limit);
   }
 
-  private cosineSimilarity(vectorA: number[], vectorB: number[]): number {
-    if (vectorA.length !== vectorB.length || vectorA.length === 0) {
-      return 0;
-    }
-
-    let dotProduct = 0;
-    let magnitudeA = 0;
-    let magnitudeB = 0;
-
-    for (let i = 0; i < vectorA.length; i++) {
-      const a = vectorA[i];
-      const b = vectorB[i];
-      dotProduct += a * b;
-      magnitudeA += a * a;
-      magnitudeB += b * b;
-    }
-
-    const denominator = Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB);
-    if (denominator === 0) {
-      return 0;
-    }
-    return dotProduct / denominator;
-  }
-
   async hybridSearch(
     options: VectorSearchOptions,
-    vectorWeight = 0.7,
+    vectorWeight = HYBRID_SEARCH_WEIGHTS.VECTOR_WEIGHT,
   ): Promise<HybridSearchResult[]> {
     const startTime = Date.now();
     this.metrics.totalSearches++;
@@ -761,12 +749,12 @@ export class VectorSearchService {
 
       const textScore = Math.min(
         1,
-        titleScore * 0.35 +
-          descriptionScore * 0.2 +
-          summaryScore * 0.25 +
-          keyPointScore * 0.1 +
-          tagScore * 0.05 +
-          suggestedTagScore * 0.05,
+        titleScore * KEYWORD_SCORE_WEIGHTS.TITLE +
+          descriptionScore * KEYWORD_SCORE_WEIGHTS.DESCRIPTION +
+          summaryScore * KEYWORD_SCORE_WEIGHTS.SUMMARY +
+          keyPointScore * KEYWORD_SCORE_WEIGHTS.KEY_POINTS +
+          tagScore * KEYWORD_SCORE_WEIGHTS.TAGS +
+          suggestedTagScore * KEYWORD_SCORE_WEIGHTS.SUGGESTED_TAGS,
       );
 
       return {

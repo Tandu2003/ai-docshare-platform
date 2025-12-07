@@ -1,35 +1,17 @@
 import * as crypto from 'crypto';
+import { cosineSimilarity, SIMILARITY_SCORE_WEIGHTS } from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class SimilarityAlgorithmService {
   private readonly logger = new Logger(SimilarityAlgorithmService.name);
+
+  /**
+   * Calculate cosine similarity between two vectors.
+   * @deprecated Use `cosineSimilarity` from `@/common` instead for consistency.
+   */
   calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
-    if (vecA.length !== vecB.length) {
-      this.logger.warn(
-        `Vector length mismatch: ${vecA.length} vs ${vecB.length}. Returning 0 similarity.`,
-      );
-      return 0;
-    }
-
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
-    }
-
-    normA = Math.sqrt(normA);
-    normB = Math.sqrt(normB);
-
-    if (normA === 0 || normB === 0) {
-      return 0;
-    }
-
-    return dotProduct / (normA * normB);
+    return cosineSimilarity(vecA, vecB);
   }
 
   calculateTextSimilarity(text1: string, text2: string): number {
@@ -142,13 +124,19 @@ export class SimilarityAlgorithmService {
     return matches / Math.max(sourceHashes.size, targetHashes.size);
   }
 
+  /**
+   * Calculate combined similarity score using centralized weights.
+   * Formula: max(weighted_sum, individual_scores)
+   */
   calculateCombinedScore(
     hashSimilarity: number,
     textSimilarity: number,
     embeddingSimilarity: number,
   ): number {
     return Math.max(
-      hashSimilarity * 0.3 + textSimilarity * 0.2 + embeddingSimilarity * 0.5,
+      hashSimilarity * SIMILARITY_SCORE_WEIGHTS.HASH +
+        textSimilarity * SIMILARITY_SCORE_WEIGHTS.TEXT +
+        embeddingSimilarity * SIMILARITY_SCORE_WEIGHTS.EMBEDDING,
       hashSimilarity,
       textSimilarity,
       embeddingSimilarity,

@@ -1,6 +1,12 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { SimilarityAlgorithmService } from './similarity-algorithm.service';
 import { SimilarityTextExtractionService } from './similarity-text-extraction.service';
+import {
+  cosineSimilarity,
+  SEARCH_LIMITS,
+  SIMILARITY_SCORE_WEIGHTS,
+  SIMILARITY_THRESHOLDS,
+} from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 
 export interface SimilarityResult {
@@ -27,8 +33,6 @@ export interface SimilarityDetectionResult {
 @Injectable()
 export class SimilarityDetectionService {
   private readonly logger = new Logger(SimilarityDetectionService.name);
-  private readonly SIMILARITY_THRESHOLD = 0.85;
-  private readonly MAX_SIMILAR_DOCUMENTS = 10;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -95,7 +99,10 @@ export class SimilarityDetectionService {
 
       // Sort and filter
       similarities.sort((a, b) => b.similarityScore - a.similarityScore);
-      const topSimilarities = similarities.slice(0, this.MAX_SIMILAR_DOCUMENTS);
+      const topSimilarities = similarities.slice(
+        0,
+        SEARCH_LIMITS.MAX_SIMILAR_DOCUMENTS,
+      );
 
       // Save results
       await this.saveSimilarityResults(documentId, topSimilarities);
@@ -308,7 +315,7 @@ export class SimilarityDetectionService {
       }
     }
 
-    if (hashSimilarity >= 0.9) {
+    if (hashSimilarity >= SIMILARITY_THRESHOLDS.HASH_MATCH) {
       return {
         documentId: targetDocument.id,
         similarityScore: hashSimilarity,
@@ -335,33 +342,34 @@ export class SimilarityDetectionService {
       // Ignore text extraction errors
     }
 
-    // Embedding similarity
+    // Embedding similarity - use shared cosineSimilarity function
     let embeddingSimilarity = 0;
     if (sourceEmbedding) {
       const targetEmbedding = await this.prisma.documentEmbedding.findUnique({
         where: { documentId: targetDocument.id },
       });
       if (targetEmbedding) {
-        embeddingSimilarity = this.algorithmService.calculateCosineSimilarity(
+        embeddingSimilarity = cosineSimilarity(
           sourceEmbedding.embedding,
           targetEmbedding.embedding,
         );
       }
     }
 
-    // Combined score
+    // Combined score using centralized weights
     const combinedScore = Math.max(
-      hashSimilarity * 0.3 + textSimilarity * 0.2 + embeddingSimilarity * 0.5,
+      hashSimilarity * SIMILARITY_SCORE_WEIGHTS.HASH +
+        textSimilarity * SIMILARITY_SCORE_WEIGHTS.TEXT +
+        embeddingSimilarity * SIMILARITY_SCORE_WEIGHTS.EMBEDDING,
       hashSimilarity,
       textSimilarity,
       embeddingSimilarity,
     );
 
-    const embeddingThreshold = 0.7;
     if (
-      combinedScore >= this.SIMILARITY_THRESHOLD ||
-      hashSimilarity > 0.5 ||
-      embeddingSimilarity >= embeddingThreshold
+      combinedScore >= SIMILARITY_THRESHOLDS.SIMILARITY_DETECTION ||
+      hashSimilarity > SIMILARITY_THRESHOLDS.HASH_INCLUDE ||
+      embeddingSimilarity >= SIMILARITY_THRESHOLDS.EMBEDDING_MATCH
     ) {
       const finalScore = Math.max(combinedScore, embeddingSimilarity);
       return {

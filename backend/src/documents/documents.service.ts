@@ -8,6 +8,7 @@ import {
 } from '../ai/vector-search.service';
 import { CategoriesService } from '../categories/categories.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { EmbeddingTextBuilderService } from '../common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PreviewService } from '../preview/preview.service';
@@ -70,6 +71,7 @@ export class DocumentsService {
     private queryService: DocumentQueryService,
     private searchService: DocumentSearchService,
     private sharingService: DocumentSharingService,
+    private embeddingTextBuilder: EmbeddingTextBuilderService,
   ) {}
 
   async createDocument(
@@ -1580,22 +1582,18 @@ export class DocumentsService {
     }
   }
 
+  /**
+   * Generate embedding for a document using unified EmbeddingTextBuilderService.
+   * This ensures consistent embedding generation across search and similarity detection.
+   */
   private async generateDocumentEmbedding(documentId: string): Promise<void> {
     try {
       this.logger.log(`Generating embedding for document ${documentId}`);
 
-      // Get document with files and AI analysis
+      // Get document with AI analysis (no need for files for search embedding)
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
         include: {
-          files: {
-            include: {
-              file: true,
-            },
-            orderBy: {
-              order: 'asc',
-            },
-          },
           aiAnalysis: true,
         },
       });
@@ -1607,20 +1605,18 @@ export class DocumentsService {
         return;
       }
 
-      // Build text content for embedding
-      // Priority: AI analysis summary > description > title + tags
-      let textContent = '';
-
-      if (document.aiAnalysis?.summary) {
-        textContent = document.aiAnalysis.summary;
-      } else if (document.description) {
-        textContent = document.description;
-      } else {
-        textContent = `${document.title} ${document.tags.join(' ')}`;
-      }
-
-      // Add title and tags for better context
-      textContent = `${document.title} ${textContent} ${document.tags.join(' ')}`;
+      // Use unified embedding text builder for consistent embedding generation
+      const textContent = this.embeddingTextBuilder.buildSearchEmbeddingText({
+        title: document.title,
+        description: document.description,
+        tags: document.tags,
+        aiAnalysis: document.aiAnalysis
+          ? {
+              summary: document.aiAnalysis.summary,
+              keyPoints: document.aiAnalysis.keyPoints,
+            }
+          : null,
+      });
 
       if (!textContent || textContent.trim().length === 0) {
         this.logger.warn(
