@@ -57,7 +57,6 @@ export function DocumentSearch({
         );
         setCategories(categoriesWithDocuments);
       } catch (error) {
-        console.error('Failed to load categories:', error);
       }
     };
     loadCategories();

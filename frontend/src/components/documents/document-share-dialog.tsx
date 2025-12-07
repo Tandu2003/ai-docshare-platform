@@ -86,7 +86,6 @@ export function DocumentShareDialog({
         addSuffix: true,
       });
     } catch (error) {
-      console.warn('Failed to format share link expiration', error);
       return null;
     }
   }, [shareLink?.expiresAt]);
@@ -101,7 +100,6 @@ export function DocumentShareDialog({
       await navigator.clipboard.writeText(shareUrl);
       toast.success('Đã sao chép đường dẫn chia sẻ vào clipboard.');
     } catch (error) {
-      console.error('Failed to copy share link', error);
       toast.error('Không thể sao chép đường dẫn. Vui lòng thử lại.');
     }
   };
@@ -136,7 +134,6 @@ export function DocumentShareDialog({
       setRegenerateToken(false);
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Failed to create share link', error);
       toast.error(error.message || 'Không thể tạo liên kết chia sẻ.');
     } finally {
       setIsSubmitting(false);
@@ -156,7 +153,6 @@ export function DocumentShareDialog({
       toast.success('Đã hủy liên kết chia sẻ.');
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Failed to revoke share link', error);
       toast.error(error.message || 'Không thể hủy liên kết chia sẻ.');
     } finally {
       setIsSubmitting(false);

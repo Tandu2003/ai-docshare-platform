@@ -193,7 +193,6 @@ export function AnalyticsPage(): ReactElement {
       setTopDownloads(topDl);
       setTopViews(topVw);
     } catch (err) {
-      console.error('Failed to load analytics', err);
       setError(
         err instanceof Error ? err.message : 'Không thể tải dữ liệu phân tích',
       );

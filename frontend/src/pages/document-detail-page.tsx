@@ -105,10 +105,9 @@ export function DocumentDetailPage(): ReactElement {
           const rating = await RatingService.getUserRating(documentId);
           setUserRating(rating);
         } catch (ratingError) {
-          console.warn('Could not load user rating', ratingError);
+          // Could not load user rating
         }
       } catch (error: any) {
-        console.error('Failed to fetch document:', error);
         toast.error(error.message || 'Không thể tải thông tin tài liệu.');
       } finally {
         setLoading(false);
@@ -131,7 +130,7 @@ export function DocumentDetailPage(): ReactElement {
         setBookmarkRecord(bookmark ?? null);
         setIsBookmarked(Boolean(bookmark));
       } catch (error) {
-        console.error('Failed to load bookmark status', error);
+        // Failed to load bookmark status
       }
     };
 
@@ -152,7 +151,6 @@ export function DocumentDetailPage(): ReactElement {
           await checkDownloadStatus(documentId);
         setHasDownloaded(downloaded);
       } catch (error) {
-        console.error('Failed to check download status', error);
         setHasDownloaded(false);
       } finally {
         setIsCheckingDownloadStatus(false);
@@ -172,26 +170,16 @@ export function DocumentDetailPage(): ReactElement {
     // Function to join document room
     const joinDocumentRoomSafe = () => {
       if (!isMounted) return;
-      console.log(
-        '🔌 Joining document room:',
-        documentId,
-        'Socket connected:',
-        socket.connected,
-        'Socket id:',
-        socket.id,
-      );
       socket.emit('document:join', { documentId });
     };
 
     // If already connected, join immediately
     if (socket.connected) {
-      console.log('🔌 Socket already connected, joining room immediately');
       joinDocumentRoomSafe();
     }
 
     // Always listen for connect event (for initial connect and reconnects)
     const handleConnect = () => {
-      console.log('🔌 Socket connect event fired, socket id:', socket.id);
       joinDocumentRoomSafe();
     };
 
@@ -209,8 +197,6 @@ export function DocumentDetailPage(): ReactElement {
     }
 
     const handleDocumentUpdate = (event: DocumentUpdateEvent) => {
-      console.log('📄 Document update received:', event);
-
       if (event.documentId !== documentId) return;
 
       switch (event.type) {
@@ -286,7 +272,6 @@ export function DocumentDetailPage(): ReactElement {
       socket.off('document:update', handleDocumentUpdate);
       if (socket.connected) {
         socket.emit('document:leave', { documentId });
-        console.log('🔌 Emitted document:leave for:', documentId);
       }
     };
   }, [documentId, user?.id]);
@@ -320,7 +305,6 @@ export function DocumentDetailPage(): ReactElement {
       }
       // Don't show any toast - download is triggered, user will see Save dialog
     } catch (error: any) {
-      console.error('Failed to download document:', error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
@@ -371,7 +355,6 @@ export function DocumentDetailPage(): ReactElement {
         toast.success('Đã lưu vào bookmark');
       }
     } catch (error) {
-      console.error('Failed to update bookmark', error);
       toast.error(
         error instanceof Error ? error.message : 'Không thể cập nhật bookmark',
       );
@@ -398,13 +381,14 @@ export function DocumentDetailPage(): ReactElement {
           text: document?.description,
           url: shareLinkUrl,
         })
-        .catch(error => console.warn('Share was cancelled or failed', error));
+        .catch(() => {
+          // Share was cancelled or failed
+        });
     } else {
       navigator.clipboard
         .writeText(shareLinkUrl)
         .then(() => toast.success('Đã sao chép đường dẫn chia sẻ.'))
-        .catch(error => {
-          console.error('Failed to copy link', error);
+        .catch(() => {
           toast.error('Không thể sao chép đường dẫn.');
         });
     }
@@ -429,7 +413,6 @@ export function DocumentDetailPage(): ReactElement {
 
       toast.success('Đã cập nhật đánh giá');
     } catch (err) {
-      console.error('Failed to set rating', err);
       toast.error('Không thể cập nhật đánh giá');
     } finally {
       setIsRatingLoading(false);
@@ -449,8 +432,7 @@ export function DocumentDetailPage(): ReactElement {
         // Comment will be added via realtime event (document:update)
         toast.success('Đã thêm bình luận');
       })
-      .catch(err => {
-        console.error('Failed to add comment', err);
+      .catch(() => {
         toast.error('Không thể thêm bình luận');
       });
   };
@@ -521,7 +503,6 @@ export function DocumentDetailPage(): ReactElement {
         updateCommentLike(prev, commentId, result.likesCount, result.isLiked),
       );
     } catch (err) {
-      console.error('Failed to toggle like comment', err);
       toast.error('Không thể thực hiện hành động');
       // Revert optimistic update
       setComments(prev =>
@@ -544,8 +525,7 @@ export function DocumentDetailPage(): ReactElement {
           : comment,
       ),
     );
-    CommentsService.editComment(documentId, commentId, content).catch(err => {
-      console.error('Failed to edit comment', err);
+    CommentsService.editComment(documentId, commentId, content).catch(() => {
       toast.error('Không thể sửa bình luận');
     });
   };
@@ -557,8 +537,7 @@ export function DocumentDetailPage(): ReactElement {
         comment.id === commentId ? { ...comment, isDeleted: true } : comment,
       ),
     );
-    CommentsService.deleteComment(documentId, commentId).catch(err => {
-      console.error('Failed to delete comment', err);
+    CommentsService.deleteComment(documentId, commentId).catch(() => {
       toast.error('Không thể xóa bình luận');
     });
   };

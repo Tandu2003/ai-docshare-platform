@@ -85,7 +85,6 @@ export function DocumentsPage(): ReactElement {
           );
 
           if (!response || !response.documents) {
-            console.error('Invalid search response:', response);
             if (reset) {
               setDocuments([]);
             }
@@ -115,7 +114,6 @@ export function DocumentsPage(): ReactElement {
           );
 
           if (!response || !response.documents) {
-            console.error('Invalid public documents response:', response);
             if (reset) {
               setDocuments([]);
             }
@@ -134,7 +132,6 @@ export function DocumentsPage(): ReactElement {
           setHasMore(pageNum < totalPages);
         }
       } catch (error) {
-        console.error('Failed to fetch documents:', error);
         // Fallback to empty array on error
         if (reset) {
           setDocuments([]);

@@ -121,7 +121,6 @@ export function TrendingPage(): ReactElement {
       const response = await getTrendingAnalytics(rangeValue);
       setData(response);
     } catch (err) {
-      console.error('Failed to load trending data', err);
       setError(
         err instanceof Error ? err.message : 'Không thể tải dữ liệu trending',
       );

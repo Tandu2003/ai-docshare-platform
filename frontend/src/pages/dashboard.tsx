@@ -27,7 +27,7 @@ export const DashboardPage: React.FC = () => {
     const permissions = usePermissions();
     isAdmin = permissions.isAdmin();
   } catch (error) {
-    console.warn('Failed to get permissions:', error);
+    // Failed to get permissions
   }
 
   const fetchDashboardData = async () => {
@@ -40,7 +40,6 @@ export const DashboardPage: React.FC = () => {
         : await getUserDashboardOverview();
       setStats(dashboardData);
     } catch (fetchError) {
-      console.error('Failed to fetch dashboard stats:', fetchError);
       const message =
         fetchError instanceof Error
           ? fetchError.message

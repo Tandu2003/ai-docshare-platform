@@ -53,7 +53,6 @@ export function SocketProvider({
   // Also handle notification subscriptions in the same effect to ensure proper timing
   useEffect(() => {
     if (isAuthenticated && accessToken) {
-      console.log(
         '🔌 SocketProvider: User authenticated, connecting socket...',
       );
       reconnectSocket();
@@ -62,7 +61,6 @@ export function SocketProvider({
       const socket = getSocket();
 
       const handleNotification = (event: NotificationEvent) => {
-        console.log('🔔 Received notification:', event);
 
         const navigateToDocument = (docId?: string) => {
           if (docId) {
@@ -144,24 +142,19 @@ export function SocketProvider({
             });
             break;
           default:
-            console.log('Unknown notification type:', event);
         }
       };
 
       const handleAuthSuccess = (data: { userId: string }) => {
-        console.log('🔐 Socket authenticated for user:', data.userId);
       };
 
       const handleAuthFailed = (data: { message: string }) => {
-        console.warn('🔐 Socket authentication failed:', data.message);
       };
 
       const handleConnect = () => {
-        console.log('🔌 SocketProvider: Socket connected, id:', socket.id);
       };
 
       const handleDisconnect = (reason: string) => {
-        console.log('🔌 SocketProvider: Socket disconnected:', reason);
       };
 
       socket.on('connect', handleConnect);
@@ -178,7 +171,6 @@ export function SocketProvider({
         socket.off('auth:failed', handleAuthFailed);
       };
     } else if (!isAuthenticated) {
-      console.log(
         '🔌 SocketProvider: User not authenticated, disconnecting socket...',
       );
       disconnectSocket();

@@ -274,7 +274,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         throw new Error('Tải lên thất bại');
       }
     } catch (error) {
-      console.error('Upload failed:', error);
       toast.error(error instanceof Error ? error.message : 'Tải lên thất bại');
       setFiles(prev =>
         prev.map(f =>
@@ -380,7 +379,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         throw new Error('Phân tích AI thất bại');
       }
     } catch (error) {
-      console.error('AI analysis error:', error);
       setAiAnalysis(prev => ({
         ...prev,
         isAnalyzing: false,
@@ -501,7 +499,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setAiAnalysis({ isAnalyzing: false, analysisResult: null, error: null });
       setUserEditedLanguage(false);
     } catch (error) {
-      console.error('Failed to create document:', error);
       toast.error(
         error instanceof Error ? error.message : 'Không thể tạo tài liệu',
       );

@@ -41,7 +41,6 @@ export const AIAnalysisComponent: React.FC<AIAnalysisComponentProps> = ({
       }
       setHasAnalyzed(true);
     } catch (error) {
-      console.error('AI analysis error:', error);
       setError(
         error instanceof Error ? error.message : 'Không thể phân tích tài liệu',
       );

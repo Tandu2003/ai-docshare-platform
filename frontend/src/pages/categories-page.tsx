@@ -104,7 +104,6 @@ export function CategoriesPage(): ReactElement {
         : await fetchPublicCategoriesApi();
       setCategories(sortCategories(data));
     } catch (fetchError) {
-      console.error('Failed to fetch categories:', fetchError);
       const message =
         fetchError instanceof Error
           ? fetchError.message
@@ -151,7 +150,6 @@ export function CategoriesPage(): ReactElement {
       resetForm();
       setIsCreateDialogOpen(false);
     } catch (createError) {
-      console.error('Failed to create category:', createError);
       const message =
         createError instanceof Error
           ? createError.message
@@ -189,7 +187,6 @@ export function CategoriesPage(): ReactElement {
       setIsEditDialogOpen(false);
       resetForm();
     } catch (updateError) {
-      console.error('Failed to update category:', updateError);
       const message =
         updateError instanceof Error
           ? updateError.message
@@ -207,7 +204,6 @@ export function CategoriesPage(): ReactElement {
       await deleteCategoryApi(categoryId);
       setCategories(prev => prev.filter(cat => cat.id !== categoryId));
     } catch (deleteError) {
-      console.error(`Failed to delete category ${categoryId}:`, deleteError);
       const message =
         deleteError instanceof Error
           ? deleteError.message

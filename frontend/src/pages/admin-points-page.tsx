@@ -159,7 +159,6 @@ export function AdminPointsPage(): ReactElement {
         setTransactions(res.items || []);
         setTotal(res.total || 0);
       } catch (err) {
-        console.error('Failed to load point transactions', err);
         setError(
           err instanceof Error
             ? err.message

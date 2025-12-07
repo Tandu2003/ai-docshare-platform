@@ -80,16 +80,6 @@ class ApiClient {
         const token = this.getAccessToken();
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
-
-          // Debug log to verify token is being sent
-          if (import.meta.env.DEV) {
-            console.log(
-              '[ApiClient] Sending request with token:',
-              token.substring(0, 20) + '...',
-            );
-          }
-        } else if (import.meta.env.DEV) {
-          console.log('[ApiClient] Sending request without token');
         }
         return config;
       },

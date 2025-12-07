@@ -71,7 +71,6 @@ export function DocumentPreviewModal({
 					setPreviews(result.previews);
 				}
 			} catch (err) {
-				console.warn('Failed to refresh previews on modal open:', err);
 				// Keep initial values on error
 				if (initialPreviews) {
 					setPreviews(initialPreviews);

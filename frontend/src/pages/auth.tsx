@@ -9,7 +9,6 @@ export const AuthPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
 
   const handleAuthSuccess = () => {
-    console.log('Auth success!');
   };
 
   if (isAuthenticated && user) {

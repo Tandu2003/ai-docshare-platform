@@ -68,7 +68,6 @@ export class UploadService {
     }
 
     try {
-      console.log('Uploading files to server:', {
         fileCount: files.length,
         totalSize: files.reduce((sum, file) => sum + file.size, 0),
         files: files.map(f => ({ name: f.name, size: f.size, type: f.type })),
@@ -84,18 +83,14 @@ export class UploadService {
         timeout: 60000 * 2, // 2 minutes
       });
 
-      console.log('Upload response received:', response.data);
-      console.log({ response });
       // Check if response is successful based on the success flag
       if (!response.data || !response.success) {
         const errorMessage = response.message || 'Invalid response from server';
-        console.error('Upload failed despite 201 status code:', errorMessage);
         throw new Error(errorMessage);
       }
 
       return response.data;
     } catch (error) {
-      console.error('Error in upload service:', error);
 
       // Handle specific error types
       if (error instanceof Error) {
@@ -129,7 +124,6 @@ export class UploadService {
       const result = await this.uploadFiles([file], data);
       return Array.isArray(result) ? result[0] : result;
     } catch (error) {
-      console.error('Error in uploadSingleFile:', error);
       throw error;
     }
   }
@@ -145,7 +139,6 @@ export class UploadService {
       const result = await this.uploadFiles(files, data);
       return Array.isArray(result) ? result : [result];
     } catch (error) {
-      console.error('Error in uploadMultipleFiles:', error);
       throw error;
     }
   }
@@ -178,7 +171,6 @@ export class UploadService {
 
       return response.data;
     } catch (error) {
-      console.error('Error fetching user files:', error);
       throw error instanceof Error
         ? error
         : new Error('Failed to fetch user files');
@@ -198,7 +190,6 @@ export class UploadService {
 
       return response.data;
     } catch (error) {
-      console.error(`Error fetching file with ID ${fileId}:`, error);
       throw error instanceof Error
         ? error
         : new Error('Failed to fetch file details');
@@ -220,7 +211,6 @@ export class UploadService {
 
       return response.data.downloadUrl;
     } catch (error) {
-      console.error(`Error getting download URL for file ${fileId}:`, error);
       throw error instanceof Error
         ? error
         : new Error('Failed to get download URL');
@@ -238,7 +228,6 @@ export class UploadService {
         throw new Error(response.message || 'Failed to delete file');
       }
     } catch (error) {
-      console.error(`Error deleting file ${fileId}:`, error);
       throw error instanceof Error ? error : new Error('Failed to delete file');
     }
   }
@@ -258,9 +247,7 @@ export class UploadService {
 
       return response.data.types;
     } catch (error) {
-      console.error('Error getting allowed file types:', error);
       // Return empty array as fallback to allow all file types
-      console.warn('Defaulting to accept all file types');
       return [];
     }
   }

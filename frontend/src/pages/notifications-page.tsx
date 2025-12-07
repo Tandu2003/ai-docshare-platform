@@ -83,7 +83,6 @@ export function NotificationsPage(): ReactElement {
 
         setNotifications(notificationsData);
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
       } finally {
         setLoading(false);
       }
@@ -209,7 +208,6 @@ export function NotificationsPage(): ReactElement {
         ),
       );
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
     }
   };
 
@@ -224,7 +222,6 @@ export function NotificationsPage(): ReactElement {
         ),
       );
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
     }
   };
 
@@ -235,7 +232,6 @@ export function NotificationsPage(): ReactElement {
         prev.filter(notif => notif.id !== notificationId),
       );
     } catch (error) {
-      console.error('Failed to delete notification:', error);
     }
   };
 
@@ -248,7 +244,6 @@ export function NotificationsPage(): ReactElement {
       );
       setSelectedNotifications([]);
     } catch (error) {
-      console.error('Failed to delete selected notifications:', error);
     }
   };
 
@@ -340,7 +335,6 @@ export function NotificationsPage(): ReactElement {
         return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
       return dateObj.toLocaleDateString();
     } catch (error) {
-      console.error('Error formatting time:', error, 'Date:', date);
       return 'Không xác định';
     }
   };

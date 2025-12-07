@@ -41,7 +41,6 @@ export const formatDate = (
   try {
     return format(date, dateFormat);
   } catch (error) {
-    console.error('[formatDate] Failed to format date', error);
     return '—';
   }
 };

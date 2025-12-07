@@ -88,7 +88,6 @@ export function ResetPasswordPage() {
         navigate('/login');
       }, 3000);
     } catch (error: any) {
-      console.error('Reset password error:', error);
       toast.error(error.message || 'Không thể đặt lại mật khẩu');
     } finally {
       setIsLoading(false);

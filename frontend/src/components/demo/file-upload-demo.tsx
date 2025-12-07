@@ -51,7 +51,6 @@ const FileUploadDemo: React.FC = () => {
     }
   };
 
-  console.log({ uploadedFiles, documentData });
 
   const handleCreateDocument = async () => {
     if (!documentData.title || uploadedFiles.length === 0) {
@@ -63,7 +62,6 @@ const FileUploadDemo: React.FC = () => {
     try {
       const document = await DocumentsService.createDocument(documentData);
       alert('Tạo tài liệu thành công!');
-      console.log('Created document:', document);
 
       // Reset form
       setSelectedFiles([]);

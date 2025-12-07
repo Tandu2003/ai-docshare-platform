@@ -36,14 +36,12 @@ export function waitForSocketConnection(timeout = 5000): Promise<Socket> {
   return new Promise((resolve, reject) => {
     const sock = getSocket();
 
-    console.log('🔌 waitForSocketConnection: Socket state:', {
       connected: sock.connected,
       disconnected: sock.disconnected,
       id: sock.id,
     });
 
     if (sock.connected) {
-      console.log(
         '🔌 waitForSocketConnection: Already connected, resolving immediately',
       );
       resolve(sock);
@@ -51,13 +49,11 @@ export function waitForSocketConnection(timeout = 5000): Promise<Socket> {
     }
 
     const timeoutId = setTimeout(() => {
-      console.log('🔌 waitForSocketConnection: Timeout reached');
       sock.off('connect', handleConnect);
       reject(new Error('Socket connection timeout'));
     }, timeout);
 
     const handleConnect = () => {
-      console.log('🔌 waitForSocketConnection: Connect event fired');
       clearTimeout(timeoutId);
       resolve(sock);
     };
@@ -66,7 +62,6 @@ export function waitForSocketConnection(timeout = 5000): Promise<Socket> {
 
     // Try to connect if not already connecting
     if (!sock.connected) {
-      console.log('🔌 waitForSocketConnection: Calling sock.connect()');
       sock.connect();
     }
   });
@@ -80,14 +75,12 @@ function createSocket(): void {
 
   const token = authService.getAccessToken() || '';
   if (!token) {
-    console.log('🔌 Cannot create socket: No auth token available');
     return;
   }
 
   isConnecting = true;
 
   const socketUrl = `${API_CONFIG.BASE_URL}/realtime`;
-  console.log(
     '🔌 Creating WebSocket connection:',
     socketUrl,
     'Token:',
@@ -116,36 +109,29 @@ function createSocket(): void {
 
   // Handle connection events
   socket.on('connect', () => {
-    console.log('🔌 WebSocket connected:', socket?.id);
     isConnecting = false;
   });
 
   socket.on('disconnect', reason => {
-    console.log('🔌 WebSocket disconnected:', reason);
     isConnecting = false;
   });
 
   socket.on('connect_error', error => {
-    console.error('🔌 WebSocket connection error:', error);
     isConnecting = false;
     if (error.message.includes('CORS')) {
-      console.error('CORS error detected. Check backend CORS configuration.');
     }
   });
 
   // Handle successful auth acknowledgment from server
   socket.on('auth:success', (data: { userId: string }) => {
-    console.log('🔌 Socket authenticated for user:', data.userId);
   });
 
   // Handle auth failure
   socket.on('auth:failed', (data: { message: string }) => {
-    console.warn('🔌 Socket auth failed:', data.message);
   });
 
   // Debug: Log all socket events
   socket.onAny((eventName, ...args) => {
-    console.log('🔌 Socket event received:', eventName, args);
   });
 }
 
@@ -154,7 +140,6 @@ function createSocket(): void {
  * Call this when user logs in or token is refreshed
  */
 export function reconnectSocket(): void {
-  console.log('🔌 Reconnecting socket with new token...');
 
   if (socket) {
     socket.disconnect();
@@ -171,7 +156,6 @@ export function reconnectSocket(): void {
  * Call this when user logs out
  */
 export function disconnectSocket(): void {
-  console.log('🔌 Disconnecting socket...');
 
   if (socket) {
     socket.disconnect();
@@ -190,7 +174,6 @@ export function updateSocketAuth(): void {
   const token = authService.getAccessToken() || '';
 
   if (socket?.connected) {
-    console.log('🔌 Updating socket auth...');
     socket.emit('auth:update', { token });
   } else {
     // If not connected, do a full reconnect
@@ -211,10 +194,8 @@ export function isSocketConnected(): boolean {
  */
 export function joinDocumentRoom(documentId: string): void {
   if (socket?.connected) {
-    console.log('🔌 Joining document room:', documentId);
     socket.emit('document:join', { documentId });
   } else {
-    console.warn('🔌 Cannot join document room: Socket not connected');
   }
 }
 
@@ -224,7 +205,6 @@ export function joinDocumentRoom(documentId: string): void {
  */
 export function leaveDocumentRoom(documentId: string): void {
   if (socket?.connected) {
-    console.log('🔌 Leaving document room:', documentId);
     socket.emit('document:leave', { documentId });
   }
 }

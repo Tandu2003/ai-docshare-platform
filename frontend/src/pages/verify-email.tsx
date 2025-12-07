@@ -52,7 +52,6 @@ export function VerifyEmailPage() {
           navigate('/login');
         }, 3000);
       } catch (err: any) {
-        console.error('Verify email error:', err);
         // Only set error after API call fails
         setError(err.message || 'Mã xác thực không hợp lệ hoặc đã hết hạn');
         setStatus('error');

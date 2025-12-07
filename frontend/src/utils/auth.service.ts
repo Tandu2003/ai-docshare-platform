@@ -86,7 +86,6 @@ class AuthService {
       return { message: response.message };
     } catch (error) {
       // Continue with logout even if server request fails
-      console.warn('Logout request failed:', error);
       return { message: 'Đăng xuất thành công!' }; // Fallback message
     } finally {
       this.clearAuthData();
@@ -100,7 +99,6 @@ class AuthService {
     try {
       if (import.meta.env.DEV) {
         const currentToken = this.getAccessToken();
-        console.log(
           '[AuthService] getCurrentUser - Current token from store:',
           currentToken ? currentToken.substring(0, 20) + '...' : 'null',
         );
@@ -117,7 +115,6 @@ class AuthService {
       throw new Error(response.message || 'Failed to get user profile');
     } catch (error: any) {
       if (import.meta.env.DEV) {
-        console.log('[AuthService] getCurrentUser error:', error);
       }
       throw this.handleAuthError(error);
     }
@@ -137,7 +134,6 @@ class AuthService {
         apiClient.setAuthToken(response.data.accessToken);
 
         if (import.meta.env.DEV) {
-          console.log(
             '[AuthService] refreshToken - Set new token:',
             response.data.accessToken.substring(0, 20) + '...',
           );
@@ -163,7 +159,6 @@ class AuthService {
       const newToken = await this.refreshToken();
 
       if (import.meta.env.DEV) {
-        console.log(
           '[AuthService] Refresh token result:',
           newToken ? newToken.substring(0, 20) + '...' : 'null',
         );
@@ -183,7 +178,6 @@ class AuthService {
       return null;
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.log('[AuthService] initializeAuth error:', error);
       }
       // Refresh failed, clear any stale data
       this.clearAuthData();

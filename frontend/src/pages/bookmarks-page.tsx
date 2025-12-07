@@ -98,7 +98,6 @@ export function BookmarksPage(): ReactElement {
       const data = await getUserBookmarks();
       setBookmarks(data);
     } catch (err) {
-      console.error('Failed to load bookmarks', err);
       setError(
         err instanceof Error ? err.message : 'Không thể tải danh sách đánh dấu',
       );
@@ -128,7 +127,6 @@ export function BookmarksPage(): ReactElement {
       setBookmarks(prev => prev.filter(bookmark => bookmark.id !== bookmarkId));
       toast.success('Đã xóa bookmark');
     } catch (err) {
-      console.error('Failed to delete bookmark', err);
       toast.error(
         err instanceof Error ? err.message : 'Không thể xóa bookmark',
       );

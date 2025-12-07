@@ -23,17 +23,14 @@ export function useSocket() {
 
     if (isAuthenticated && !wasAuthenticated) {
       // User just logged in - reconnect socket with new token
-      console.log('🔌 useSocket: User logged in, reconnecting socket...');
       reconnectSocket();
       socketRef.current = getSocket();
     } else if (!isAuthenticated && wasAuthenticated) {
       // User just logged out - disconnect socket
-      console.log('🔌 useSocket: User logged out, disconnecting socket...');
       disconnectSocket();
       socketRef.current = null;
     } else if (isAuthenticated && !socketRef.current) {
       // Already authenticated but no socket - create one
-      console.log('🔌 useSocket: Authenticated but no socket, creating...');
       socketRef.current = getSocket();
     }
   }, [isAuthenticated]);
@@ -51,7 +48,6 @@ export function useSocket() {
       accessToken !== previousToken &&
       socketRef.current?.connected
     ) {
-      console.log('🔌 useSocket: Token changed, updating socket auth...');
       socketRef.current.emit('auth:update', { token: accessToken });
     }
   }, [accessToken, isAuthenticated]);
@@ -101,7 +97,6 @@ export function useSocketEvent<T = any>(
     const socket = getSocket();
 
     const wrappedHandler = (data: T) => {
-      console.log(`🔔 Socket event "${event}":`, data);
       handlerRef.current(data);
     };
 
@@ -125,15 +120,12 @@ export function useSocketStatus() {
     const socket = getSocket();
 
     const handleConnect = () => {
-      console.log('🔌 Socket connected');
     };
 
     const handleDisconnect = (reason: string) => {
-      console.log('🔌 Socket disconnected:', reason);
     };
 
     const handleError = (error: Error) => {
-      console.error('🔌 Socket error:', error);
     };
 
     socket.on('connect', handleConnect);

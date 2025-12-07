@@ -59,7 +59,6 @@ export function SystemSettingsPage(): ReactElement {
       setPointsSettings(pointsResponse);
     } catch (error) {
       toast.error('Không thể tải cài đặt hệ thống');
-      console.error('Error loading system settings:', error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +72,6 @@ export function SystemSettingsPage(): ReactElement {
       toast.success('Cài đặt hệ thống đã được lưu thành công');
     } catch (error) {
       toast.error('Không thể lưu cài đặt hệ thống');
-      console.error('Error saving system settings:', error);
     } finally {
       setSaving(false);
     }
@@ -87,7 +85,6 @@ export function SystemSettingsPage(): ReactElement {
       toast.success('Đã khởi tạo cài đặt hệ thống mặc định');
     } catch (error) {
       toast.error('Không thể khởi tạo cài đặt hệ thống mặc định');
-      console.error('Error initializing system defaults:', error);
     } finally {
       setSaving(false);
     }

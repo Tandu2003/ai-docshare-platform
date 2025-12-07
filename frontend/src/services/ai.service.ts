@@ -37,7 +37,6 @@ export class AIService {
         throw new Error('No file IDs provided for analysis');
       }
 
-      console.log('Analyzing files with IDs:', request.fileIds);
 
       const response = await apiClient.post<AIAnalysisResponse>(
         '/ai/analyze-document',
@@ -50,7 +49,6 @@ export class AIService {
 
       throw new Error(response.message || 'Failed to analyze document');
     } catch (error) {
-      console.error('Error analyzing document:', error);
       throw error instanceof Error
         ? error
         : new Error('Failed to analyze document');
@@ -72,7 +70,6 @@ export class AIService {
 
       return null;
     } catch (error) {
-      console.error('Error getting document analysis:', error);
       return null;
     }
   }
@@ -92,7 +89,6 @@ export class AIService {
 
       return { gemini: false };
     } catch (error) {
-      console.error('Error testing AI connection:', error);
       return { gemini: false };
     }
   }
@@ -127,7 +123,6 @@ export class AIService {
         message: string;
       };
     } catch (error) {
-      console.error('Error getting user files:', error);
       return {
         success: false,
         files: [],
@@ -169,7 +164,6 @@ export class AIService {
         message: string;
       };
     } catch (error) {
-      console.error('Error searching user files:', error);
       return {
         success: false,
         files: [],

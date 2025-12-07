@@ -86,7 +86,6 @@ export function Sidebar({ className }: SidebarProps) {
       const stats = await getBookmarkStats();
       setBookmarkStats(stats);
     } catch (error) {
-      console.error('Failed to load bookmark stats', error);
     }
   }, [user]);
 

@@ -168,7 +168,6 @@ export const viewDocument = async (
     }
     return response.data;
   } catch (error) {
-    console.error('Failed to track document view', error);
     // Don't throw error for view tracking as it's not critical
     return { success: false, message: 'Không thể theo dõi lượt xem' };
   }
@@ -269,10 +268,10 @@ export const incrementViewCount = async (fileId: string): Promise<void> => {
     }>(`/documents/upload/view/${fileId}`);
 
     if (!response.data?.success) {
-      console.warn('View count increment failed:', response.data?.message);
+      // View count increment failed
     }
   } catch (error) {
-    console.error('Failed to increment view count', error);
+    // Failed to increment view count
   }
 };
 
@@ -295,7 +294,6 @@ export const getSecureFileUrl = async (fileId: string): Promise<string> => {
       );
     }
   } catch (error: any) {
-    console.error('Failed to get secure file URL', error);
     throw new Error(
       error.response?.data?.message || 'Không thể lấy URL tệp bảo mật.',
     );
@@ -313,30 +311,22 @@ export const getDownloadUrl = async (
   fileCount: number;
 }> => {
   try {
-    console.log('Getting download URL for document:', documentId);
-
     const response = await apiClient.post<{
       downloadUrl: string;
       fileName: string;
       fileCount: number;
     }>(`/documents/${documentId}/download-url`);
 
-    console.log('Download URL response:', response);
-
     if (response?.success && response?.data) {
-      console.log('Download URL extracted:', response.data);
       return {
         downloadUrl: response.data.downloadUrl,
         fileName: response.data.fileName,
         fileCount: response.data.fileCount,
       };
     } else {
-      console.error('Invalid response format:', response.data);
       throw new Error(response.message || 'Không thể lấy URL tải xuống');
     }
   } catch (error: any) {
-    console.error('API call failed:', error);
-    console.error('Error response:', error.response?.data);
     throw new Error(
       error.response?.data?.message || 'Không thể lấy URL tải xuống.',
     );
@@ -351,8 +341,6 @@ export const initDownload = async (
   documentId: string,
 ): Promise<{ downloadId: string; alreadyDownloaded: boolean }> => {
   try {
-    console.log('Initializing download for document:', documentId);
-
     const response = await apiClient.post<{
       downloadId: string;
       alreadyDownloaded: boolean;
@@ -363,13 +351,11 @@ export const initDownload = async (
     });
 
     if (response?.success && response?.data) {
-      console.log('Download initialized:', response.data);
       return response.data;
     }
 
     throw new Error(response.message || 'Không thể khởi tạo tải xuống');
   } catch (error: any) {
-    console.error('Failed to initialize download:', error);
     throw new Error(
       error.response?.data?.message || 'Không thể khởi tạo tải xuống.',
     );
@@ -384,27 +370,22 @@ export const confirmDownload = async (
   downloadId: string,
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    console.log('Confirming download:', downloadId);
-
     const response = await apiClient.post<{
       success: boolean;
       message: string;
     }>(`/documents/confirm-download/${downloadId}`);
 
     if (response?.success) {
-      console.log('Download confirmed successfully:', response.data);
       return response.data || { success: true, message: 'OK' };
     }
 
     // API returned success=false
-    console.warn('Download confirmation failed:', response.message);
     return { success: false, message: response.message || 'Xác nhận thất bại' };
   } catch (error: any) {
     const errorMessage =
       error.response?.data?.message ||
       error.message ||
       'Không thể xác nhận tải xuống';
-    console.error('Failed to confirm download:', errorMessage, error);
     // Return failure info but don't throw - file is already downloaded
     return { success: false, message: errorMessage };
   }
@@ -417,15 +398,12 @@ export const cancelDownload = async (
   downloadId: string,
 ): Promise<{ success: boolean }> => {
   try {
-    console.log('Cancelling download:', downloadId);
-
     const response = await apiClient.post<{ success: boolean }>(
       `/documents/cancel-download/${downloadId}`,
     );
 
     return response.data || { success: true };
   } catch (error: any) {
-    console.error('Failed to cancel download:', error);
     return { success: false };
   }
 };
@@ -438,8 +416,6 @@ export const trackDownloadCompletion = async (
   documentId: string,
 ): Promise<void> => {
   try {
-    console.log('Tracking download completion for document:', documentId);
-
     const response = await apiClient.post<{ success: boolean }>(
       `/documents/${documentId}/track-download`,
       {
@@ -450,12 +426,11 @@ export const trackDownloadCompletion = async (
     );
 
     if (response?.success) {
-      console.log('Download completion tracked successfully');
+      // Download completion tracked successfully
     } else {
-      console.warn('Failed to track download completion:', response.message);
+      // Failed to track download completion
     }
   } catch (error: any) {
-    console.error('Failed to track download completion:', error);
     // Don't throw error to avoid breaking the download flow
   }
 };
@@ -472,8 +447,6 @@ export const downloadDocument = async (
   fileCount: number;
 }> => {
   try {
-    console.log('Calling download API for document:', documentId);
-
     const response = await apiClient.post<{
       downloadUrl: string;
       fileName: string;
@@ -484,25 +457,18 @@ export const downloadDocument = async (
       referrer: window.location.href,
     });
 
-    console.log('API response:', response);
-    console.log('Response data:', response.data);
-
     if (response?.success && response?.data) {
-      console.log('Download data extracted:', response.data);
       return {
         downloadUrl: response.data.downloadUrl,
         fileName: response.data.fileName,
         fileCount: response.data.fileCount,
       };
     } else {
-      console.error('Invalid response format:', response.data);
       throw new Error(
         response.message || 'Không thể chuẩn bị tải xuống tài liệu',
       );
     }
   } catch (error: any) {
-    console.error('API call failed:', error);
-    console.error('Error response:', error.response?.data);
     throw new Error(
       error.response?.data?.message || 'Không thể chuẩn bị tải xuống tài liệu.',
     );
@@ -513,7 +479,6 @@ export const downloadDocument = async (
  * Test download URL by opening in new tab (for debugging)
  */
 export const testDownloadUrl = (url: string) => {
-  console.log('Testing download URL:', url);
   window.open(url, '_blank');
 };
 
@@ -565,8 +530,6 @@ export const trackDocumentView = async (
   referrer?: string,
 ): Promise<void> => {
   try {
-    console.log('Tracking view for document:', documentId);
-
     const response = await apiClient.post<{
       success: boolean;
       data: any;
@@ -576,12 +539,11 @@ export const trackDocumentView = async (
     });
 
     if (response?.success) {
-      console.log('View tracked successfully for document:', documentId);
+      // View tracked successfully
     } else {
-      console.warn('Failed to track view:', response.data?.message);
+      // Failed to track view
     }
   } catch (error: any) {
-    console.error('Error tracking view:', error);
     // Don't throw error to avoid breaking the user experience
   }
 };
@@ -596,8 +558,6 @@ export const checkDownloadStatus = async (
     const response = await apiClient.get<{ hasDownloaded: boolean }>(
       `/points/download-status/${documentId}`,
     );
-
-    console.log('Download status response:', response);
 
     // Handle both response formats:
     // 1. Direct data: { hasDownloaded: boolean }
@@ -619,7 +579,6 @@ export const checkDownloadStatus = async (
 
     return { hasDownloaded: false };
   } catch (error) {
-    console.error('Error checking download status:', error);
     return { hasDownloaded: false };
   }
 };
@@ -639,27 +598,18 @@ export const triggerFileDownload = async (
   let downloadId: string | null = null;
 
   try {
-    console.log('Starting download for document:', documentId);
-
     // Step 1: Initialize download tracking (creates pending record, deducts points)
     const initResult = await initDownload(documentId);
     downloadId = initResult.downloadId;
-    console.log('Download initialized:', {
-      downloadId,
-      alreadyDownloaded: initResult.alreadyDownloaded,
-    });
 
     // Step 2: Get download URL
     const downloadData = await getDownloadUrl(documentId);
-    console.log('Download data received:', downloadData);
 
     const fileName =
       downloadData.fileName || `${documentTitle || 'document'}.zip`;
 
     try {
       // Method 1: Fetch as blob and download (best for CORS and security)
-      console.log('Fetching file as blob from URL:', downloadData.downloadUrl);
-
       // Validate URL first
       if (
         !downloadData.downloadUrl ||
@@ -671,29 +621,15 @@ export const triggerFileDownload = async (
       }
 
       const response = await fetch(downloadData.downloadUrl);
-      console.log(
-        'Fetch response status:',
-        response.status,
-        response.statusText,
-      );
-      console.log(
-        'Fetch response headers:',
-        Object.fromEntries(response.headers.entries()),
-      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Fetch error response:', errorText);
         throw new Error(
           `HTTP ${response.status}: ${response.statusText}. Response: ${errorText}`,
         );
       }
 
       const blob = await response.blob();
-      console.log('Blob received:', {
-        size: blob.size,
-        type: blob.type,
-      });
 
       if (blob.size === 0) {
         throw new Error('Tệp tải xuống trống');
@@ -701,17 +637,11 @@ export const triggerFileDownload = async (
 
       // Create blob URL and trigger download
       const blobUrl = window.URL.createObjectURL(blob);
-      console.log('Blob URL created:', blobUrl);
 
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = fileName;
       link.style.display = 'none';
-
-      console.log('Download link created:', {
-        href: link.href,
-        download: link.download,
-      });
 
       document.body.appendChild(link);
       link.click();
@@ -722,10 +652,8 @@ export const triggerFileDownload = async (
 
       // Step 3: Confirm download completion AFTER successful file transfer
       // At this point, the file has been successfully fetched and saved to browser
-      console.log('Download successful, confirming completion...');
       if (downloadId) {
         const confirmResult = await confirmDownload(downloadId);
-        console.log(`Download confirmed: ${confirmResult.success}`);
         return {
           confirmed: confirmResult.success,
           message: confirmResult.success
@@ -734,17 +662,12 @@ export const triggerFileDownload = async (
         };
       }
 
-      console.log(`Downloaded ${fileName} but no downloadId to confirm`);
       return { confirmed: false, message: 'Không có downloadId để xác nhận' };
     } catch (fetchError) {
-      console.log('Blob method failed, trying direct download:', fetchError);
-
       // Method 2: Direct download link (fallback)
       try {
-        console.log('Trying window.open method...');
         const newWindow = window.open(downloadData.downloadUrl, '_blank');
         if (newWindow) {
-          console.log('Successfully opened download in new window');
 
           // Confirm download after window opened successfully
           if (downloadId) {
@@ -760,26 +683,17 @@ export const triggerFileDownload = async (
             confirmed: false,
             message: 'Không có downloadId để xác nhận',
           };
-        } else {
-          console.log('Window.open was blocked, trying direct link');
         }
       } catch (windowError) {
-        console.log('Window.open failed:', windowError);
+        // Window.open failed
       }
 
       // Method 3: Direct link click (last resort)
-      console.log('Trying direct link click...');
       const link = document.createElement('a');
       link.href = downloadData.downloadUrl;
       link.download = fileName;
       link.target = '_blank';
       link.style.display = 'none';
-
-      console.log('Created fallback download link:', {
-        href: link.href,
-        download: link.download,
-        target: link.target,
-      });
 
       document.body.appendChild(link);
       link.click();
@@ -788,7 +702,6 @@ export const triggerFileDownload = async (
       // Confirm download after link click (best effort for fallback method)
       if (downloadId) {
         const confirmResult = await confirmDownload(downloadId);
-        console.log(`Attempted direct download of ${fileName}`);
         return {
           confirmed: confirmResult.success,
           message: confirmResult.success
@@ -797,21 +710,15 @@ export const triggerFileDownload = async (
         };
       }
 
-      console.log(
-        `Attempted direct download of ${fileName} without confirmation`,
-      );
       return { confirmed: false, message: 'Không có downloadId để xác nhận' };
     }
   } catch (error) {
-    console.error('Không thể tải xuống tài liệu', error);
-
     // Cancel the pending download record if initialization succeeded but download failed
     if (downloadId) {
-      console.log('Cancelling failed download:', downloadId);
       try {
         await cancelDownload(downloadId);
       } catch (cancelError) {
-        console.error('Failed to cancel download:', cancelError);
+        // Failed to cancel download
       }
     }
 
@@ -872,10 +779,8 @@ export const getSimilarityResults = async (
     }
 
     // Return empty array if no data
-    console.warn('No similarity results found for document:', documentId);
     return [];
   } catch (error) {
-    console.error('Error fetching similarity results:', error);
     // Return empty array instead of throwing to prevent UI crash
     return [];
   }

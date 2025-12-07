@@ -330,7 +330,6 @@ export function AdminDashboardPage(): ReactElement {
       const warnings = await getSimilarityResults(documentId);
       setSimilarityWarnings(warnings);
     } catch (error) {
-      console.error('Error loading similarity warnings:', error);
       toast.error('Không thể tải cảnh báo tương đồng');
     } finally {
       setSimilarityLoading(false);

@@ -236,7 +236,6 @@ export class PreviewService {
 
       return { success: true, fileName: downloadInfo.fileName };
     } catch (error) {
-      console.error('Secure download failed:', error);
       throw error;
     }
   }
@@ -263,7 +262,6 @@ export class PreviewService {
 
       return { success: true };
     } catch (error) {
-      console.error('Token download failed:', error);
       throw error;
     }
   }

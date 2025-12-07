@@ -48,7 +48,6 @@ export function ResendVerificationPage() {
       toast.success(result.message);
       setIsEmailSent(true);
     } catch (error: any) {
-      console.error('Resend verification error:', error);
       toast.error(error.message || 'Không thể gửi email xác thực');
     } finally {
       setIsLoading(false);

@@ -54,7 +54,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       }
     } catch (err) {
       // Error is handled by Redux and toast
-      console.error('Login failed:', err);
     } finally {
       setIsSubmitting(false);
     }

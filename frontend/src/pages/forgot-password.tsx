@@ -45,7 +45,6 @@ export function ForgotPasswordPage() {
       toast.success(result.message);
       setIsEmailSent(true);
     } catch (error: any) {
-      console.error('Forgot password error:', error);
       toast.error(error.message || 'Không thể gửi email đặt lại mật khẩu');
     } finally {
       setIsLoading(false);

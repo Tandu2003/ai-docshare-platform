@@ -64,7 +64,6 @@ export class EmbeddingService {
         response.data?.message || 'Failed to regenerate embedding',
       );
     } catch (error) {
-      console.error('Error regenerating embedding:', error);
       throw error instanceof Error
         ? error
         : new Error('Failed to regenerate embedding');
@@ -102,7 +101,6 @@ export class EmbeddingService {
         },
       };
     } catch (error) {
-      console.error('Error getting metrics:', error);
       return {
         embedding: {
           totalRequests: 0,
@@ -139,7 +137,6 @@ export class EmbeddingService {
 
       throw new Error(response.data?.message || 'Failed to clear caches');
     } catch (error) {
-      console.error('Error clearing caches:', error);
       throw error instanceof Error
         ? error
         : new Error('Failed to clear caches');

@@ -173,7 +173,6 @@ export function TopRatedPage(): ReactElement {
         );
         setData(response);
       } catch (err) {
-        console.error('Failed to load top rated data', err);
         setError(
           err instanceof Error
             ? err.message

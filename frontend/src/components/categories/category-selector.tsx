@@ -59,7 +59,6 @@ export function CategorySelector({
         const data = await fetchPublicCategories();
         setCategories(data);
       } catch (err) {
-        console.error('Failed to load categories:', err);
         setError(err instanceof Error ? err.message : 'Không thể tải danh mục');
       } finally {
         setLoadingCategories(false);
@@ -77,7 +76,6 @@ export function CategorySelector({
       const response = await fetchCategorySuggestions(documentId);
       setSuggestions(response.suggestions);
     } catch (err) {
-      console.error('Failed to load category suggestions:', err);
       // Don't show error for suggestions - it's a nice-to-have feature
     } finally {
       setLoadingSuggestions(false);
@@ -250,7 +248,6 @@ export function AICategorySuggestions({
       const response = await fetchCategorySuggestions(documentId);
       setSuggestions(response.suggestions);
     } catch (err) {
-      console.error('Failed to load category suggestions:', err);
       setError(
         err instanceof Error ? err.message : 'Không thể tải gợi ý danh mục',
       );

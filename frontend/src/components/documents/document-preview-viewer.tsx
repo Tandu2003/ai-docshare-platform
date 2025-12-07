@@ -81,7 +81,7 @@ export function DocumentPreviewViewer({
       );
       setPreviews(result.previews);
     } catch (err) {
-      console.warn('Failed to refresh previews:', err);
+      // Failed to refresh previews
     }
   }, [documentId, apiKey, hasAccess, previewStatus]);
 
@@ -112,7 +112,7 @@ export function DocumentPreviewViewer({
           setPreviews(result.previews);
         }
       } catch (err) {
-        console.warn('Failed to poll preview status:', err);
+        // Failed to poll preview status
       }
     };
 

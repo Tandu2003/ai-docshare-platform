@@ -382,7 +382,6 @@ export function DocumentEditSheet({
         throw new Error(response.message || 'Phân tích thất bại');
       }
     } catch (error: any) {
-      console.error('AI Analysis error:', error);
       toast.error(error.message || 'Không thể phân tích tài liệu');
     } finally {
       setIsAnalyzing(false);
@@ -477,7 +476,6 @@ export function DocumentEditSheet({
         onOpenChange(false);
       }
     } catch (error: any) {
-      console.error('Failed to update document:', error);
       toast.error(error.message || 'Không thể cập nhật tài liệu');
     } finally {
       setIsSaving(false);

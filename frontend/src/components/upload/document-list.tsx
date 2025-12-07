@@ -95,7 +95,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       setPage(pageNum);
     } catch (err) {
       setError('Không thể tải danh sách tài liệu');
-      console.error('Error loading documents:', err);
     } finally {
       setLoading(false);
     }
@@ -120,7 +119,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       await DocumentsService.downloadDocument(document.id);
     } catch (err) {
       setError('Không thể tải tài liệu');
-      console.error('Error downloading document:', err);
     }
   };
 
@@ -141,7 +139,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       onDocumentDeleted?.(documentId);
     } catch (err) {
       setError('Không thể xóa tài liệu');
-      console.error('Error deleting document:', err);
     } finally {
       setDeletingId(null);
     }
@@ -411,7 +408,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                               setSelectedDocument(doc);
                               setEditSheetOpen(true);
                             } catch (error) {
-                              console.error('Failed to load document:', error);
+                              // Failed to load document
                             }
                           }}
                         >

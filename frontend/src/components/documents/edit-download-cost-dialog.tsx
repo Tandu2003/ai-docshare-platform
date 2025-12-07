@@ -48,7 +48,6 @@ export function EditDownloadCostDialog({
       setDocument(doc);
       setDownloadCost(doc.originalDownloadCost ?? null);
     } catch (error: any) {
-      console.error('Failed to load document:', error);
       toast.error(error.message || 'Không thể tải thông tin tài liệu');
     } finally {
       setLoading(false);
@@ -67,7 +66,6 @@ export function EditDownloadCostDialog({
       onUpdated?.();
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Failed to update download cost:', error);
       toast.error(error.message || 'Không thể cập nhật điểm tải xuống');
     } finally {
       setSaving(false);

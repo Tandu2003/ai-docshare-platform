@@ -124,7 +124,6 @@ export function ProfilePage(): ReactElement {
         setPointTxnsTotal(txnsRes.total || 0);
         setPointTxnsPage(1);
       } catch (error) {
-        console.error('Failed to fetch user data:', error);
       } finally {
         setLoading(false);
         setPointTxnsLoading(false);
@@ -147,7 +146,6 @@ export function ProfilePage(): ReactElement {
       setPointTxnsTotal(res.total);
       setPointTxnsPage(page);
     } catch (error) {
-      console.error('Failed to fetch point transactions:', error);
     } finally {
       setPointTxnsLoading(false);
     }
@@ -161,7 +159,6 @@ export function ProfilePage(): ReactElement {
     const handleBookmarksUpdated = () => {
       void getUserBookmarks()
         .then(bookmarks => setUserBookmarks(bookmarks))
-        .catch(error => console.error('Failed to refresh bookmarks', error));
     };
 
     window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);
@@ -174,7 +171,6 @@ export function ProfilePage(): ReactElement {
 
   const handleSaveProfile = () => {
     // In real app, this would update the user profile via API
-    console.log('Saving profile:', formData);
     setIsEditDialogOpen(false);
   };
 

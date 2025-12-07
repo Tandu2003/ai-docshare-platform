@@ -75,7 +75,6 @@ const loadRoles = useCallback(async () => {
     const rolesData = await userService.getRoles();
     setRoles(rolesData);
   } catch (error) {
-    console.error('Failed to load roles:', error);
     toast.error('Không thể tải danh sách vai trò');
   }
 }, []);

@@ -68,7 +68,6 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document }) => {
         );
         setHasDownloaded(downloaded);
       } catch (error) {
-        console.error('Failed to check download status', error);
         setHasDownloaded(false);
       }
     };

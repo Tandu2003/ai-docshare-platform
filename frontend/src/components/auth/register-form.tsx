@@ -58,7 +58,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       }
     } catch (err) {
       // Error is handled by Redux and toast
-      console.error('Registration failed:', err);
     } finally {
       setIsSubmitting(false);
     }

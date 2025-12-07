@@ -70,7 +70,6 @@ export function CategoryDetailPage(): ReactElement | null {
       });
       setData(result);
     } catch (err) {
-      console.error('Failed to load category detail:', err);
       setError(
         err instanceof Error ? err.message : 'Không thể tải chi tiết danh mục',
       );
