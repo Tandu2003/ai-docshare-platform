@@ -380,12 +380,6 @@ export function DocumentPreviewViewer({
             ))}
           </div>
         )}
-
-        {/* Security notice */}
-        <div className="bg-muted/50 px-4 py-2 text-center text-xs text-gray-500">
-          <Lock className="mr-1 inline-block h-3 w-3" />
-          Preview được bảo vệ • URL tự động hết hạn sau 30 giây
-        </div>
       </CardContent>
     </Card>
   );

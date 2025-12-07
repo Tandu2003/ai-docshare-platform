@@ -470,28 +470,34 @@ export class DocumentModerationService {
     try {
       const aiSettings = await this.systemSettings.getAIModerationSettings();
 
-      // Check similarity first if enabled
-      if (aiSettings.enableSimilarityCheck) {
-        const similarityCheck = await this.checkSimilarityForModeration(
-          documentId,
-          aiSettings,
-        );
+      // Check similarity with individual toggles for each checkpoint
+      const similarityCheck = await this.checkSimilarityForModeration(
+        documentId,
+        aiSettings,
+      );
 
-        if (similarityCheck.shouldAutoReject) {
-          return {
-            shouldAutoApprove: false,
-            shouldAutoReject: true,
-            reason: similarityCheck.reason,
-          };
-        }
+      // Auto-reject if enabled and threshold met
+      if (
+        similarityCheck.shouldAutoReject &&
+        aiSettings.enableSimilarityAutoReject
+      ) {
+        return {
+          shouldAutoApprove: false,
+          shouldAutoReject: true,
+          reason: similarityCheck.reason,
+        };
+      }
 
-        if (similarityCheck.requiresManualReview) {
-          return {
-            shouldAutoApprove: false,
-            shouldAutoReject: false,
-            reason: similarityCheck.reason,
-          };
-        }
+      // Manual review if enabled and threshold met
+      if (
+        similarityCheck.requiresManualReview &&
+        aiSettings.enableSimilarityManualReview
+      ) {
+        return {
+          shouldAutoApprove: false,
+          shouldAutoReject: false,
+          reason: similarityCheck.reason,
+        };
       }
 
       const analysis = await this.prisma.aIAnalysis.findUnique({
@@ -657,6 +663,8 @@ export class DocumentModerationService {
     aiSettings: {
       similarityAutoRejectThreshold: number;
       similarityManualReviewThreshold: number;
+      enableSimilarityAutoReject?: boolean;
+      enableSimilarityManualReview?: boolean;
     },
   ): Promise<SimilarityCheckResult> {
     try {

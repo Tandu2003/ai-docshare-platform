@@ -31,8 +31,9 @@ export function SystemSettingsPage(): ReactElement {
     enableContentAnalysis: true,
     enableSmartTags: true,
     confidenceThreshold: 70,
-    // Similarity settings
-    enableSimilarityCheck: true,
+    // Similarity settings - separate toggles
+    enableSimilarityAutoReject: true,
+    enableSimilarityManualReview: true,
     similarityAutoRejectThreshold: 90,
     similarityManualReviewThreshold: 70,
   });
@@ -364,30 +365,33 @@ export function SystemSettingsPage(): ReactElement {
 
             <Separator />
 
-            {/* Similarity Check Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label className="text-base font-medium">
-                    Kiểm tra tài liệu tương đồng
-                  </Label>
-                  <p className="text-muted-foreground text-sm">
-                    Kiểm tra và xử lý tài liệu có độ tương đồng cao với tài liệu
-                    đã có
-                  </p>
+            {/* Similarity Check Settings - Separate toggles for each checkpoint */}
+            <div className="space-y-6">
+              {/* Auto Reject Similarity Check */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium">
+                      Tự động từ chối tài liệu tương đồng
+                    </Label>
+                    <p className="text-muted-foreground text-sm">
+                      Tự động từ chối tài liệu có độ tương đồng cao với tài liệu
+                      đã có
+                    </p>
+                  </div>
+                  <Switch
+                    checked={aiSettings.enableSimilarityAutoReject}
+                    onCheckedChange={checked =>
+                      handleAISettingChange(
+                        'enableSimilarityAutoReject',
+                        checked,
+                      )
+                    }
+                  />
                 </div>
-                <Switch
-                  checked={aiSettings.enableSimilarityCheck}
-                  onCheckedChange={checked =>
-                    handleAISettingChange('enableSimilarityCheck', checked)
-                  }
-                />
-              </div>
 
-              {aiSettings.enableSimilarityCheck && (
-                <div className="border-muted space-y-4 border-l-2 pl-4">
-                  {/* Auto Reject Threshold */}
-                  <div className="space-y-2">
+                {aiSettings.enableSimilarityAutoReject && (
+                  <div className="border-muted space-y-2 border-l-2 pl-4">
                     <Label htmlFor="similarity-reject-threshold">
                       Ngưỡng tự động từ chối (
                       {aiSettings.similarityAutoRejectThreshold}%)
@@ -415,9 +419,36 @@ export function SystemSettingsPage(): ReactElement {
                       <span>100%</span>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Manual Review Threshold */}
-                  <div className="space-y-2">
+              <Separator />
+
+              {/* Manual Review Similarity Check */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium">
+                      Xem xét thủ công tài liệu tương đồng
+                    </Label>
+                    <p className="text-muted-foreground text-sm">
+                      Yêu cầu xem xét thủ công cho tài liệu có độ tương đồng cao
+                      (không tự động duyệt)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={aiSettings.enableSimilarityManualReview}
+                    onCheckedChange={checked =>
+                      handleAISettingChange(
+                        'enableSimilarityManualReview',
+                        checked,
+                      )
+                    }
+                  />
+                </div>
+
+                {aiSettings.enableSimilarityManualReview && (
+                  <div className="border-muted space-y-2 border-l-2 pl-4">
                     <Label htmlFor="similarity-review-threshold">
                       Ngưỡng xem xét thủ công (
                       {aiSettings.similarityManualReviewThreshold}%)
@@ -447,8 +478,8 @@ export function SystemSettingsPage(): ReactElement {
                       </span>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

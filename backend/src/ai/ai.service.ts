@@ -382,35 +382,38 @@ export class AIService {
         };
       }
 
-      // Check similarity first if enabled
-      if (settings.enableSimilarityCheck) {
-        const similarityCheck =
-          await this.checkSimilarityForModeration(documentId);
-        if (similarityCheck.shouldReject) {
-          await this.prisma.document.update({
-            where: { id: documentId },
-            data: { moderationStatus: 'REJECTED' },
-          });
+      // Check similarity with individual toggles for each checkpoint
+      const similarityCheck =
+        await this.checkSimilarityForModeration(documentId);
 
-          this.logger.log(
-            `Document ${documentId} auto-rejected due to similarity: ${similarityCheck.reason}`,
-          );
+      // Auto-reject if enabled and threshold met
+      if (similarityCheck.shouldReject && settings.enableSimilarityAutoReject) {
+        await this.prisma.document.update({
+          where: { id: documentId },
+          data: { moderationStatus: 'REJECTED' },
+        });
 
-          return {
-            status: 'rejected',
-            action: 'auto_rejected',
-            reason: similarityCheck.reason,
-          };
-        }
+        this.logger.log(
+          `Document ${documentId} auto-rejected due to similarity: ${similarityCheck.reason}`,
+        );
 
-        // If requires manual review due to similarity, don't auto-approve
-        if (similarityCheck.requiresManualReview) {
-          return {
-            status: 'pending',
-            action: 'manual_review',
-            reason: similarityCheck.reason,
-          };
-        }
+        return {
+          status: 'rejected',
+          action: 'auto_rejected',
+          reason: similarityCheck.reason,
+        };
+      }
+
+      // Manual review if enabled and threshold met
+      if (
+        similarityCheck.requiresManualReview &&
+        settings.enableSimilarityManualReview
+      ) {
+        return {
+          status: 'pending',
+          action: 'manual_review',
+          reason: similarityCheck.reason,
+        };
       }
 
       // Check confidence threshold
@@ -521,6 +524,7 @@ export class AIService {
       );
 
       // Auto-reject if similarity is above auto-reject threshold
+      // (Toggle check happens in applyModerationSettings)
       if (similarityPercent >= settings.similarityAutoRejectThreshold) {
         return {
           shouldReject: true,
@@ -530,6 +534,7 @@ export class AIService {
       }
 
       // Require manual review if similarity is above manual review threshold
+      // (Toggle check happens in applyModerationSettings)
       if (similarityPercent >= settings.similarityManualReviewThreshold) {
         return {
           shouldReject: false,

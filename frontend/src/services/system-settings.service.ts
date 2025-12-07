@@ -165,11 +165,19 @@ export class SystemSettingsService {
       });
     }
 
-    // Similarity settings
-    if (settings.enableSimilarityCheck !== undefined) {
+    // Similarity settings - separate toggles for each checkpoint
+    if (settings.enableSimilarityAutoReject !== undefined) {
       systemSettings.push({
-        key: 'ai.enable_similarity_check',
-        value: settings.enableSimilarityCheck.toString(),
+        key: 'ai.enable_similarity_auto_reject',
+        value: settings.enableSimilarityAutoReject.toString(),
+        category: 'ai',
+      });
+    }
+
+    if (settings.enableSimilarityManualReview !== undefined) {
+      systemSettings.push({
+        key: 'ai.enable_similarity_manual_review',
+        value: settings.enableSimilarityManualReview.toString(),
         category: 'ai',
       });
     }
@@ -186,6 +194,15 @@ export class SystemSettingsService {
       systemSettings.push({
         key: 'ai.similarity_manual_review_threshold',
         value: settings.similarityManualReviewThreshold.toString(),
+        category: 'ai',
+      });
+    }
+
+    // Legacy setting for backward compatibility
+    if (settings.enableSimilarityCheck !== undefined) {
+      systemSettings.push({
+        key: 'ai.enable_similarity_check',
+        value: settings.enableSimilarityCheck.toString(),
         category: 'ai',
       });
     }

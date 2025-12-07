@@ -153,9 +153,13 @@ export class SystemSettingsService {
         'ai.confidence_threshold',
         70,
       ),
-      // Similarity moderation settings
-      enableSimilarityCheck: await this.getBooleanSetting(
-        'ai.enable_similarity_check',
+      // Similarity moderation settings - separate toggles for each checkpoint
+      enableSimilarityAutoReject: await this.getBooleanSetting(
+        'ai.enable_similarity_auto_reject',
+        true,
+      ),
+      enableSimilarityManualReview: await this.getBooleanSetting(
+        'ai.enable_similarity_manual_review',
         true,
       ),
       similarityAutoRejectThreshold: await this.getNumericSetting(
@@ -165,6 +169,11 @@ export class SystemSettingsService {
       similarityManualReviewThreshold: await this.getNumericSetting(
         'ai.similarity_manual_review_threshold',
         70, // Require manual review if similarity >= 70%
+      ),
+      // Legacy setting for backward compatibility
+      enableSimilarityCheck: await this.getBooleanSetting(
+        'ai.enable_similarity_check',
+        true,
       ),
     };
   }
@@ -306,6 +315,45 @@ export class SystemSettingsService {
         key: 'ai.confidence_threshold',
         value: '70',
         description: 'Minimum confidence threshold for AI analysis (0-100)',
+        category: 'ai',
+        isPublic: false,
+      },
+      // Similarity moderation settings - separate toggles
+      {
+        key: 'ai.enable_similarity_auto_reject',
+        value: 'true',
+        description: 'Enable automatic rejection for highly similar documents',
+        category: 'ai',
+        isPublic: false,
+      },
+      {
+        key: 'ai.enable_similarity_manual_review',
+        value: 'true',
+        description: 'Enable manual review requirement for similar documents',
+        category: 'ai',
+        isPublic: false,
+      },
+      {
+        key: 'ai.similarity_auto_reject_threshold',
+        value: '90',
+        description:
+          'Similarity threshold for automatic rejection (0-100, percentage)',
+        category: 'ai',
+        isPublic: false,
+      },
+      {
+        key: 'ai.similarity_manual_review_threshold',
+        value: '70',
+        description:
+          'Similarity threshold for manual review requirement (0-100, percentage)',
+        category: 'ai',
+        isPublic: false,
+      },
+      // Legacy setting for backward compatibility
+      {
+        key: 'ai.enable_similarity_check',
+        value: 'true',
+        description: 'Enable similarity checking (legacy, use individual toggles)',
         category: 'ai',
         isPublic: false,
       },
