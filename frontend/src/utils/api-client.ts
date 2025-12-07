@@ -8,51 +8,7 @@ import axios, {
 import { API_CONFIG, HTTP_STATUS } from '@/config';
 import type { ApiResponse } from '@/types/api.types';
 
-// TokenManager is used for callback notifications to Redux store
-// The actual token retrieval is done directly from Redux store for synchronization
-class TokenManager {
-  private static instance: TokenManager;
-  private token: string | null = null;
-  private setTokenCallback: ((token: string) => void) | null = null;
-  private clearTokenCallback: (() => void) | null = null;
-
-  private constructor() {}
-
-  static getInstance(): TokenManager {
-    if (!TokenManager.instance) {
-      TokenManager.instance = new TokenManager();
-    }
-    return TokenManager.instance;
-  }
-
-  setToken(token: string): void {
-    this.token = token;
-    if (this.setTokenCallback) {
-      this.setTokenCallback(token);
-    }
-  }
-
-  getToken(): string | null {
-    return this.token;
-  }
-
-  clearToken(): void {
-    this.token = null;
-    if (this.clearTokenCallback) {
-      this.clearTokenCallback();
-    }
-  }
-
-  setCallbacks(
-    setToken: (token: string) => void,
-    clearToken: () => void,
-  ): void {
-    this.setTokenCallback = setToken;
-    this.clearTokenCallback = clearToken;
-  }
-
-  // Token is now accessed directly from Redux store via ApiClient.getTokenFromStore callback
-}
+import { TokenManager } from './token-manager';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -64,7 +20,7 @@ class ApiClient {
     this.client = axios.create({
       baseURL: API_CONFIG.BASE_URL,
       timeout: API_CONFIG.TIMEOUT,
-      withCredentials: true, // Important for httpOnly cookies
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -74,7 +30,6 @@ class ApiClient {
   }
 
   private setupInterceptors(): void {
-    // Request interceptor - Add auth token
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         const token = this.getAccessToken();
@@ -86,7 +41,6 @@ class ApiClient {
       error => Promise.reject(error),
     );
 
-    // Response interceptor - Handle token refresh and error formatting
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
       async error => {
@@ -111,7 +65,6 @@ class ApiClient {
           }
         }
 
-        // Extract error message from API response
         const apiError = this.extractErrorMessage(error);
         return Promise.reject(apiError);
       },
@@ -119,7 +72,6 @@ class ApiClient {
   }
 
   private getAccessToken(): string | null {
-    // Get token from Redux store if getter is available, otherwise fallback to TokenManager
     if (this.getTokenFromStore) {
       return this.getTokenFromStore();
     }
@@ -127,7 +79,6 @@ class ApiClient {
   }
 
   private async refreshToken(): Promise<string | null> {
-    // Prevent multiple refresh requests
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
@@ -152,7 +103,6 @@ class ApiClient {
 
       const { data } = response.data as ApiResponse<{ accessToken: string }>;
       if (data?.accessToken) {
-        // Update token in token manager (which will update Redux)
         this.tokenManager.setToken(data.accessToken);
         return data.accessToken;
       }
@@ -165,35 +115,39 @@ class ApiClient {
   }
 
   private handleAuthError(): void {
-    // Clear token in token manager (which will update Redux)
     this.tokenManager.clearToken();
 
-    // Get current URL for callback after login
     const currentPath = window.location.pathname + window.location.search;
     const callbackUrl = encodeURIComponent(currentPath);
 
-    // Only redirect to login if not already on login/register page
-    const isAuthPage = currentPath.startsWith('/auth/') ||
-                       currentPath.startsWith('/login') ||
-                       currentPath.startsWith('/register');
+    const isAuthPage =
+      currentPath.startsWith('/auth/') ||
+      currentPath.startsWith('/login') ||
+      currentPath.startsWith('/register');
 
     if (!isAuthPage) {
-      // Redirect to login with callback URL
       window.location.href = `/auth/login?callback=${callbackUrl}`;
     }
 
-    // Dispatch logout event
     window.dispatchEvent(new CustomEvent('auth:logout'));
   }
 
-  private extractErrorMessage(error: any): Error {
-    // Extract message from API response structure
+  private extractErrorMessage(error: unknown): Error {
     let message = 'Có lỗi xảy ra, vui lòng thử lại';
 
-    if (error.response?.data) {
-      const responseData = error.response.data;
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      error.response &&
+      typeof error.response === 'object' &&
+      'data' in error.response
+    ) {
+      const responseData = error.response.data as {
+        message?: string;
+        error?: string;
+      };
 
-      // Handle different response structures
       if (responseData.message) {
         message = responseData.message;
       } else if (responseData.error) {
@@ -201,7 +155,12 @@ class ApiClient {
       } else if (typeof responseData === 'string') {
         message = responseData;
       }
-    } else if (error.message) {
+    } else if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
       message = error.message;
     }
 
@@ -210,7 +169,6 @@ class ApiClient {
     return apiError;
   }
 
-  // Public methods
   async get<T>(
     url: string,
     config?: AxiosRequestConfig,
@@ -221,7 +179,7 @@ class ApiClient {
 
   async post<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.client.post<ApiResponse<T>>(url, data, config);
@@ -230,7 +188,7 @@ class ApiClient {
 
   async put<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.client.put<ApiResponse<T>>(url, data, config);
@@ -239,7 +197,7 @@ class ApiClient {
 
   async patch<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.client.patch<ApiResponse<T>>(url, data, config);
@@ -254,9 +212,7 @@ class ApiClient {
     return response.data;
   }
 
-  // Auth specific methods
   setAuthToken(token: string): void {
-    // Set token in TokenManager to trigger Redux callback
     this.tokenManager.setToken(token);
   }
 
@@ -264,7 +220,6 @@ class ApiClient {
     this.tokenManager.clearToken();
   }
 
-  // Method to connect with Redux store
   connectToRedux(
     setTokenAction: (token: string) => void,
     clearTokenAction: () => void,
@@ -274,14 +229,10 @@ class ApiClient {
     this.getTokenFromStore = getTokenFromStore;
   }
 
-  // Note: Synchronization is now handled via the getTokenFromStore callback
-  // passed to connectToRedux, so no manual sync method is needed
-
-  // File upload method
   async uploadFile<T>(
     url: string,
     file: File,
-    onUploadProgress?: (progressEvent: any) => void,
+    onUploadProgress?: (progressEvent: unknown) => void,
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
     formData.append('file', file);
@@ -297,5 +248,4 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient();

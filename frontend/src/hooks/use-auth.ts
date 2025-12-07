@@ -15,7 +15,22 @@ import type { LoginDto, RegisterDto } from '@/types';
 
 import { useAppDispatch, useAppSelector } from './use-redux';
 
-export const useAuth = () => {
+interface UseAuthReturn {
+  auth: ReturnType<typeof selectAuth>;
+  user: ReturnType<typeof selectUser>;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  accessToken: string | null;
+  login: (loginData: LoginDto) => Promise<unknown>;
+  register: (registerData: RegisterDto) => Promise<unknown>;
+  logout: () => Promise<unknown>;
+  fetchCurrentUser: () => Promise<unknown>;
+  hasPermission: (action: string, subject: string, conditions?: Record<string, unknown>) => boolean;
+  hasRole: (roleName: string) => boolean;
+  isAdmin: () => boolean;
+}
+
+export const useAuth = (): UseAuthReturn => {
   const dispatch = useAppDispatch();
   const auth = useAppSelector(selectAuth);
   const user = useAppSelector(selectUser);
@@ -50,37 +65,46 @@ export const useAuth = () => {
     return result;
   }, [dispatch]);
 
-  // Simple role helpers
   const hasPermission = useCallback(
-    (action: string, subject: string, conditions?: any): boolean => {
+    (action: string, subject: string, conditions?: Record<string, unknown>): boolean => {
       if (!user?.role?.permissions) return false;
 
-      // Handle both Permission[] and string[] formats
-      return user.role.permissions.some((p: any) => {
-        // If permissions are strings, check if action is in the string
+      return user.role.permissions.some((p: unknown) => {
         if (typeof p === 'string') {
           return p === action || p === 'manage';
         }
 
-        // If permissions are Permission objects
-        const matchesAction = p.action === action;
-        if (!matchesAction) return false;
+        if (
+          p &&
+          typeof p === 'object' &&
+          'action' in p &&
+          'subject' in p &&
+          typeof p.action === 'string' &&
+          typeof p.subject === 'string'
+        ) {
+          const permission = p as {
+            action: string;
+            subject: string;
+            conditions?: Record<string, unknown>;
+          };
 
-        // Compare case-insensitively; backend subjects are PascalCase
-        const matchesSubject =
-          typeof p.subject === 'string' &&
-          p.subject.toLowerCase() === subject.toLowerCase();
+          const matchesAction = permission.action === action;
+          if (!matchesAction) return false;
 
-        if (!matchesSubject) return false;
+          const matchesSubject =
+            permission.subject.toLowerCase() === subject.toLowerCase();
+          if (!matchesSubject) return false;
 
-        // Check conditions if provided
-        if (conditions && p.conditions) {
-          return Object.keys(conditions).every(
-            key => p.conditions![key] === conditions[key],
-          );
+          if (conditions && permission.conditions) {
+            return Object.keys(conditions).every(
+              key => permission.conditions![key] === conditions[key],
+            );
+          }
+
+          return true;
         }
 
-        return true;
+        return false;
       });
     },
     [user],

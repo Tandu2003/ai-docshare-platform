@@ -47,12 +47,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         password: data.password,
       });
 
-      if (result.meta.requestStatus === 'fulfilled') {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'meta' in result &&
+        result.meta &&
+        typeof result.meta === 'object' &&
+        'requestStatus' in result.meta &&
+        result.meta.requestStatus === 'fulfilled'
+      ) {
         reset();
         // onSuccess callback will handle navigation to callback URL
         onSuccess?.();
       }
-    } catch (err) {
+    } catch {
       // Error is handled by Redux and toast
     } finally {
       setIsSubmitting(false);

@@ -1,26 +1,9 @@
 import { apiClient } from '@/utils/api-client';
 
-export interface DocumentPreview {
-  id: string;
-  documentId: string;
-  pageNumber: number;
-  previewUrl: string;
-  mimeType: string;
-  width?: number;
-  height?: number;
-  variants?: {
-    small: string;
-    medium: string;
-    large: string;
-  };
-  metadata?: {
-    pageCount: number;
-    processingTimeMs: number;
-    previewSizes: string[];
-    sourceType: 'PDF' | 'DOCX' | 'PPTX' | 'IMAGE' | 'TEXT';
-    textPreviewPath?: string;
-  };
-}
+import type {
+  DocumentPreview,
+  PreviewStatus as PreviewStatusType,
+} from './document.types';
 
 export interface PreviewsResponse {
   documentId: string;
@@ -35,8 +18,8 @@ export interface PreviewPageResponse {
   mimeType: string;
 }
 
-export interface PreviewStatus {
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+export interface PreviewStatusResponse {
+  status: PreviewStatusType;
   error?: string;
   previewCount: number;
   metadata?: {
@@ -117,8 +100,10 @@ export class PreviewService {
   /**
    * Get preview generation status
    */
-  static async getPreviewStatus(documentId: string): Promise<PreviewStatus> {
-    const response = await apiClient.get<PreviewStatus>(
+  static async getPreviewStatus(
+    documentId: string,
+  ): Promise<PreviewStatusResponse> {
+    const response = await apiClient.get<PreviewStatusResponse>(
       `/preview/${documentId}/status`,
     );
 
@@ -218,26 +203,22 @@ export class PreviewService {
     fileName?: string,
     apiKey?: string,
   ): Promise<{ success: boolean; fileName: string }> {
-    try {
-      // Get secure download URL
-      const downloadInfo = await this.getSecureDownloadUrl(documentId, apiKey);
+    // Get secure download URL
+    const downloadInfo = await this.getSecureDownloadUrl(documentId, apiKey);
 
-      // Trigger download using the short-lived URL
-      const link = document.createElement('a');
-      link.href = downloadInfo.url;
-      link.download = fileName || downloadInfo.fileName;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
+    // Trigger download using the short-lived URL
+    const link = document.createElement('a');
+    link.href = downloadInfo.url;
+    link.download = fileName || downloadInfo.fileName;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
 
-      // Append to body, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    // Append to body, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-      return { success: true, fileName: downloadInfo.fileName };
-    } catch (error) {
-      throw error;
-    }
+    return { success: true, fileName: downloadInfo.fileName };
   }
 
   /**
@@ -247,22 +228,18 @@ export class PreviewService {
     documentId: string,
     fileName?: string,
   ): Promise<{ success: boolean }> {
-    try {
-      const tokenInfo = await this.generateDownloadToken(documentId);
+    const tokenInfo = await this.generateDownloadToken(documentId);
 
-      // Use the token to stream the file
-      const streamUrl = `/api/secure/stream/${tokenInfo.token}`;
+    // Use the token to stream the file
+    const streamUrl = `/api/secure/stream/${tokenInfo.token}`;
 
-      const link = document.createElement('a');
-      link.href = streamUrl;
-      link.download = fileName || 'document';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const link = document.createElement('a');
+    link.href = streamUrl;
+    link.download = fileName || 'document';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    return { success: true };
   }
 }
