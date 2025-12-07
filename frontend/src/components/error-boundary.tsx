@@ -1,4 +1,10 @@
-import React, { type ReactElement } from 'react';
+import {
+  Component,
+  type ComponentType,
+  type ErrorInfo,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -17,13 +23,13 @@ import {
 interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
-  errorInfo?: React.ErrorInfo;
+  errorInfo?: ErrorInfo;
 }
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<ErrorFallbackProps>;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  children: ReactNode;
+  fallback?: ComponentType<ErrorFallbackProps>;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface ErrorFallbackProps {
@@ -65,7 +71,7 @@ function DefaultErrorFallback({
   );
 }
 
-export class ErrorBoundary extends React.Component<
+export class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
@@ -81,7 +87,7 @@ export class ErrorBoundary extends React.Component<
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({
       error,
       errorInfo,
@@ -101,7 +107,7 @@ export class ErrorBoundary extends React.Component<
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
-  render(): React.ReactNode {
+  render(): ReactNode {
     if (this.state.hasError && this.state.error) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
       return (

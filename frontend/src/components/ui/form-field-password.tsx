@@ -1,17 +1,17 @@
-import React from 'react';
+import { forwardRef, type ComponentProps } from 'react';
 
 import { InputPassword } from '@/components/ui/input-password';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 interface FormFieldPasswordProps
-  extends React.ComponentProps<typeof InputPassword> {
+  extends ComponentProps<typeof InputPassword> {
   label?: string;
   error?: string;
   helperText?: string;
 }
 
-export const FormFieldPassword = React.forwardRef<
+export const FormFieldPassword = forwardRef<
   HTMLInputElement,
   FormFieldPasswordProps
 >(({ label, error, helperText, className, id, ...props }, ref) => {

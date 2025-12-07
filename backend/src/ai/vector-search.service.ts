@@ -11,7 +11,7 @@ export interface VectorSearchOptions {
   threshold?: number; // Minimum similarity score (0-1)
   recordHistory?: boolean;
   /** Internal flag to prevent double counting metrics when called from hybridSearch */
-  _isInternalCall?: boolean;
+  isInternalCall?: boolean;
   filters?: {
     categoryId?: string;
     tags?: string[];
@@ -157,7 +157,7 @@ export class VectorSearchService {
   ): Promise<VectorSearchResult[]> {
     const startTime = Date.now();
     // Only increment totalSearches if not an internal call from hybridSearch
-    if (!options._isInternalCall) {
+    if (!options.isInternalCall) {
       this.metrics.totalSearches++;
     }
     this.metrics.vectorSearches++;
@@ -404,7 +404,7 @@ export class VectorSearchService {
             query: variants.embeddingText || variants.trimmed,
             limit: limit * 2, // Get more results for better combination
             recordHistory: false,
-            _isInternalCall: true,
+            isInternalCall: true,
           }).catch(error => {
             this.logger.warn('Vector search failed in hybrid search:', error);
             return [];
@@ -412,7 +412,7 @@ export class VectorSearchService {
           this.keywordSearch({
             ...options,
             query: variants.trimmed,
-            _isInternalCall: true,
+            isInternalCall: true,
           }).catch(error => {
             this.logger.warn('Keyword search failed in hybrid search:', error);
             return [];
@@ -514,7 +514,7 @@ export class VectorSearchService {
   ): Promise<Array<{ documentId: string; textScore: number }>> {
     const startTime = Date.now();
     // Only increment totalSearches if not an internal call from hybridSearch
-    if (!options._isInternalCall) {
+    if (!options.isInternalCall) {
       this.metrics.totalSearches++;
     }
     this.metrics.keywordSearches++;
@@ -798,7 +798,7 @@ export class VectorSearchService {
 
     // Update metrics with latency
     const latency = Date.now() - startTime;
-    if (!options._isInternalCall) {
+    if (!options.isInternalCall) {
       this.updateMetrics(latency);
     }
     this.logger.log(`Keyword search completed in ${latency}ms`);

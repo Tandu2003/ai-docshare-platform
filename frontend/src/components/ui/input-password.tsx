@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { forwardRef, useState, type ComponentProps } from 'react';
 
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface InputPasswordProps
-  extends Omit<React.ComponentProps<'input'>, 'type'> {
+  extends Omit<ComponentProps<'input'>, 'type'> {
   showToggle?: boolean;
 }
 
-const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>(
+const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
   ({ className, showToggle = true, ...props }, ref) => {
-    const [showPassword, setShowPassword] = React.useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
       <div className="relative">

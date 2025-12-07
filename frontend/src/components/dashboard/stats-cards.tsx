@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
+import { type ComponentType } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -14,7 +15,7 @@ interface StatCardProps {
   value: string | number;
   change?: number;
   changeLabel?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   description?: string;
 }
 

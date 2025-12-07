@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentType,
+} from 'react';
 
 import {
   Archive,
@@ -62,7 +67,7 @@ interface SidebarProps {
 interface NavItem {
   title: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   badge?: string | number;
   children?: NavItem[];
 }

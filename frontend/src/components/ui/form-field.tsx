@@ -1,16 +1,16 @@
-import React from 'react';
+import { forwardRef, type ComponentProps } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
-interface FormFieldProps extends React.ComponentProps<'input'> {
+interface FormFieldProps extends ComponentProps<'input'> {
   label?: string;
   error?: string;
   helperText?: string;
 }
 
-export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
+export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
   ({ label, error, helperText, className, id, ...props }, ref) => {
     const inputId = id || `field-${Math.random().toString(36).substr(2, 9)}`;
 

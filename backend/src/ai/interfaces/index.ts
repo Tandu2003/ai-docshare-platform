@@ -81,7 +81,7 @@ export interface VectorSearchOptions {
   readonly threshold?: number;
   readonly recordHistory?: boolean;
   /** Internal flag to prevent double counting metrics */
-  readonly _isInternalCall?: boolean;
+  readonly isInternalCall?: boolean;
   readonly filters?: VectorSearchFilters;
 }
 
