@@ -1,9 +1,10 @@
 import { forwardRef, type ComponentProps } from 'react';
+
 import { InputPassword } from '@/components/ui/input-password';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-interface FormFieldPasswordProps
-  extends ComponentProps<typeof InputPassword> {
+
+interface FormFieldPasswordProps extends ComponentProps<typeof InputPassword> {
   label?: string;
   error?: string;
   helperText?: string;

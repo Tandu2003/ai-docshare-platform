@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
+
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis';
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
@@ -715,7 +717,7 @@ export function DocumentDetailPage(): ReactElement {
               {/* Comment input */}
               <div className="space-y-2">
                 <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-9 w-24 ml-auto" />
+                <Skeleton className="ml-auto h-9 w-24" />
               </div>
 
               {/* Comment items */}
@@ -822,149 +824,149 @@ export function DocumentDetailPage(): ReactElement {
       <div className="space-y-6">
         {/* Document Info - Visible to everyone */}
         <Card>
-            <CardHeader>
-              <CardTitle>Thông tin tài liệu</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {/* Language */}
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">Ngôn ngữ</p>
-                  <span className="font-medium">
-                    {document.language
-                      ? getLanguageName(document.language)
-                      : 'N/A'}
-                  </span>
-                </div>
+          <CardHeader>
+            <CardTitle>Thông tin tài liệu</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {/* Language */}
+              <div className="space-y-1">
+                <p className="text-muted-foreground text-xs">Ngôn ngữ</p>
+                <span className="font-medium">
+                  {document.language
+                    ? getLanguageName(document.language)
+                    : 'N/A'}
+                </span>
+              </div>
 
-                {/* Updated date */}
+              {/* Updated date */}
+              <div className="space-y-1">
+                <p className="text-muted-foreground text-xs">
+                  Cập nhật lần cuối
+                </p>
+                <span>
+                  {new Date(document.updatedAt).toLocaleDateString('vi-VN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+
+              {/* Total file size */}
+              {document.files && document.files.length > 0 && (
                 <div className="space-y-1">
                   <p className="text-muted-foreground text-xs">
-                    Cập nhật lần cuối
+                    Tổng dung lượng
                   </p>
-                  <span>
-                    {new Date(document.updatedAt).toLocaleDateString('vi-VN', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                  <span className="font-medium">
+                    {UploadService.formatFileSize(
+                      document.files.reduce((total, file) => {
+                        const size =
+                          typeof file.fileSize === 'string'
+                            ? parseInt(file.fileSize, 10)
+                            : file.fileSize || 0;
+                        return total + size;
+                      }, 0),
+                    )}
                   </span>
                 </div>
+              )}
 
-                {/* Total file size */}
-                {document.files && document.files.length > 0 && (
+              {/* Preview status */}
+              {document.previewStatus && (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs">
+                    Trạng thái preview
+                  </p>
+                  <Badge
+                    variant={
+                      document.previewStatus === 'COMPLETED'
+                        ? 'default'
+                        : document.previewStatus === 'FAILED'
+                          ? 'destructive'
+                          : 'secondary'
+                    }
+                    className="text-xs"
+                  >
+                    {document.previewStatus === 'COMPLETED'
+                      ? 'Hoàn thành'
+                      : document.previewStatus === 'PROCESSING'
+                        ? 'Đang xử lý'
+                        : document.previewStatus === 'FAILED'
+                          ? 'Thất bại'
+                          : 'Chờ xử lý'}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Preview count */}
+              {document.previewCount !== undefined &&
+                document.previewCount > 0 && (
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-xs">
-                      Tổng dung lượng
+                      Số trang preview
                     </p>
                     <span className="font-medium">
-                      {UploadService.formatFileSize(
-                        document.files.reduce((total, file) => {
-                          const size =
-                            typeof file.fileSize === 'string'
-                              ? parseInt(file.fileSize, 10)
-                              : file.fileSize || 0;
-                          return total + size;
-                        }, 0),
-                      )}
+                      {document.previewCount} trang
                     </span>
                   </div>
                 )}
+            </div>
 
-                {/* Preview status */}
-                {document.previewStatus && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs">
-                      Trạng thái preview
-                    </p>
-                    <Badge
-                      variant={
-                        document.previewStatus === 'COMPLETED'
-                          ? 'default'
-                          : document.previewStatus === 'FAILED'
-                            ? 'destructive'
-                            : 'secondary'
-                      }
-                      className="text-xs"
-                    >
-                      {document.previewStatus === 'COMPLETED'
-                        ? 'Hoàn thành'
-                        : document.previewStatus === 'PROCESSING'
-                          ? 'Đang xử lý'
-                          : document.previewStatus === 'FAILED'
-                            ? 'Thất bại'
-                            : 'Chờ xử lý'}
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Preview count */}
-                {document.previewCount !== undefined &&
-                  document.previewCount > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">
-                        Số trang preview
-                      </p>
-                      <span className="font-medium">
-                        {document.previewCount} trang
-                      </span>
-                    </div>
-                  )}
+            {/* ZIP file info */}
+            {document.zipFileUrl && (
+              <div className="bg-muted/50 space-y-1 rounded-md border p-3">
+                <p className="text-muted-foreground text-xs font-medium">
+                  File ZIP đã tạo
+                </p>
+                <p className="text-sm">
+                  {document.zipFileCreatedAt
+                    ? `Tạo lúc: ${new Date(document.zipFileCreatedAt).toLocaleString('vi-VN')}`
+                    : 'Đã có sẵn'}
+                </p>
               </div>
-
-              {/* ZIP file info */}
-              {document.zipFileUrl && (
-                <div className="bg-muted/50 space-y-1 rounded-md border p-3">
-                  <p className="text-muted-foreground text-xs font-medium">
-                    File ZIP đã tạo
-                  </p>
-                  <p className="text-sm">
-                    {document.zipFileCreatedAt
-                      ? `Tạo lúc: ${new Date(document.zipFileCreatedAt).toLocaleString('vi-VN')}`
-                      : 'Đã có sẵn'}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
         {/* File Details - Show all files */}
         {document.files && document.files.length > 0 && (
           <Card>
-              <CardHeader>
-                <CardTitle>Danh sách file</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {document.files
-                  .sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .map((file, index) => (
-                    <div
-                      key={file.id}
-                      className="flex items-start justify-between rounded-md border p-3"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground text-xs">
-                            #{index + 1}
-                          </span>
-                          <p className="text-sm font-medium">
-                            {file.originalName || file.fileName}
-                          </p>
-                        </div>
-                        <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                          <span>
-                            {UploadService.formatFileSize(
-                              typeof file.fileSize === 'string'
-                                ? parseInt(file.fileSize, 10)
-                                : file.fileSize || 0,
-                            )}
-                          </span>
-                          <span className="text-muted-foreground">•</span>
-                          <span>{file.mimeType}</span>
-                        </div>
+            <CardHeader>
+              <CardTitle>Danh sách file</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {document.files
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((file, index) => (
+                  <div
+                    key={file.id}
+                    className="flex items-start justify-between rounded-md border p-3"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-xs">
+                          #{index + 1}
+                        </span>
+                        <p className="text-sm font-medium">
+                          {file.originalName || file.fileName}
+                        </p>
+                      </div>
+                      <div className="text-muted-foreground flex items-center gap-3 text-xs">
+                        <span>
+                          {UploadService.formatFileSize(
+                            typeof file.fileSize === 'string'
+                              ? parseInt(file.fileSize, 10)
+                              : file.fileSize || 0,
+                          )}
+                        </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span>{file.mimeType}</span>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
             </CardContent>
           </Card>
         )}

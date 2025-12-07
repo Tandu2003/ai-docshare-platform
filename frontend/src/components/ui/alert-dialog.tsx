@@ -1,8 +1,12 @@
 'use client';
+
 import { type ComponentProps } from 'react';
+
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
 function AlertDialog({
   ...props
 }: ComponentProps<typeof AlertDialogPrimitive.Root>) {
@@ -59,10 +63,7 @@ function AlertDialogContent({
   );
 }
 
-function AlertDialogHeader({
-  className,
-  ...props
-}: ComponentProps<'div'>) {
+function AlertDialogHeader({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       data-slot="alert-dialog-header"
@@ -72,10 +73,7 @@ function AlertDialogHeader({
   );
 }
 
-function AlertDialogFooter({
-  className,
-  ...props
-}: ComponentProps<'div'>) {
+function AlertDialogFooter({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       data-slot="alert-dialog-footer"

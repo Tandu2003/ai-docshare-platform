@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
+
 import { RegisterForm } from '@/components/auth';
+
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const handleSuccess = () => {

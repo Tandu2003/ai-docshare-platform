@@ -1,5 +1,6 @@
 import type { CategoryWithStats } from '@/types';
 import { apiClient } from '@/utils/api-client';
+
 interface CategoryApiResponse {
   id: string;
   name: string;

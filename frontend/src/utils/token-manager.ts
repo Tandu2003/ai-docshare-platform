@@ -38,4 +38,3 @@ class TokenManager {
 }
 
 export { TokenManager };
-

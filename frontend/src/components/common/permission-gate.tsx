@@ -1,5 +1,7 @@
 import { ReactNode } from 'react';
+
 import { usePermissions } from '@/hooks/use-permissions';
+
 interface PermissionGateProps {
   children: ReactNode;
   action?: string; // kept for backward compatibility (ignored in simplified RBAC)

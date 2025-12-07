@@ -5,7 +5,9 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+
 /* eslint-disable react-refresh/only-export-components -- Error boundary must be a class component */
 
 interface ErrorBoundaryState {

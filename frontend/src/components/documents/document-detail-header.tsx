@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+
 import {
   ArrowLeft,
   Bookmark,
@@ -14,6 +15,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
 import { DocumentPermissionGate } from '@/components/common/permission-gate';
 import { RatingStars } from '@/components/documents/rating-stars';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

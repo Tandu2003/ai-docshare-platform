@@ -1,10 +1,12 @@
 import { Brain, Clock, Target, TrendingUp, Zap } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import type { AIAnalysis } from '@/types';
 import { getLanguageName } from '@/utils/language';
+
 interface DocumentAIAnalysisProps {
   analysis: AIAnalysis;
 }

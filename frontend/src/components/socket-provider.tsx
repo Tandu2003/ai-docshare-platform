@@ -1,7 +1,10 @@
 import { useEffect, type ReactElement, type ReactNode } from 'react';
+
 import { toast } from 'sonner';
+
 import { useAuth } from '@/hooks/use-auth';
 import { disconnectSocket, getSocket, reconnectSocket } from '@/lib/socket';
+
 interface NotificationEvent {
   type:
     | 'view'
@@ -52,7 +55,6 @@ export function SocketProvider({
       const socket = getSocket();
 
       const handleNotification = (event: NotificationEvent) => {
-
         const navigateToDocument = (docId?: string) => {
           if (docId) {
             window.location.href = `/documents/${docId}`;

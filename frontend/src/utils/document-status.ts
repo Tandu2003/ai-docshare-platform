@@ -1,4 +1,5 @@
 import type { DocumentModerationStatus } from '@/types/database.types';
+
 export interface DocumentStatusInfo {
   label: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';

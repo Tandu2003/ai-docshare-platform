@@ -1,5 +1,7 @@
 import { apiClient } from '@/utils/api-client';
+
 import { UploadedFile } from './upload.service';
+
 export interface PaginatedPublicFiles {
   files: UploadedFile[];
   total: number;

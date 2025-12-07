@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
+
 import type { Socket } from 'socket.io-client';
+
 import { disconnectSocket, getSocket, reconnectSocket } from '@/lib/socket';
+
 import { useAuth } from './use-auth';
+
 export function useSocket() {
   const { isAuthenticated, accessToken } = useAuth();
   const previousAuthRef = useRef(isAuthenticated);
@@ -94,4 +98,3 @@ export function useSocketEvent<T = any>(
     };
   }, [event, isAuthenticated]);
 }
-

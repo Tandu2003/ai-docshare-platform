@@ -1,5 +1,6 @@
 import { api } from '@/config/api';
 import { AISettings } from '@/types/database.types';
+
 export interface SystemSetting {
   key: string;
   value: string;

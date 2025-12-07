@@ -1,4 +1,5 @@
 import type { AIAnalysis, DocumentModerationStatus } from './database.types';
+
 export interface ModerationSummary {
   pendingDocuments: number;
   rejectedDocuments: number;

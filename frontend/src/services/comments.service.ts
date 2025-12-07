@@ -1,5 +1,6 @@
 import type { Comment } from '@/types';
 import { apiClient } from '@/utils/api-client';
+
 export interface CreateCommentRequest {
   content: string;
   parentId?: string;

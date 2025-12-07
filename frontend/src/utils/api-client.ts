@@ -4,9 +4,12 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
+
 import { API_CONFIG, HTTP_STATUS } from '@/config';
 import type { ApiResponse } from '@/types/api.types';
+
 import { TokenManager } from './token-manager';
+
 class ApiClient {
   private client: AxiosInstance;
   private refreshPromise: Promise<string | null> | null = null;

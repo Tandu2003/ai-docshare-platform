@@ -1,8 +1,10 @@
 import { TrendingUp } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/loading-skeleton';
 import { Progress } from '@/components/ui/progress';
 import type { DashboardCategory } from '@/types';
+
 interface PopularCategoriesProps {
   categories: DashboardCategory[];
   isLoading?: boolean;

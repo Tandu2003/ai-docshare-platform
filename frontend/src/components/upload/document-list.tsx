@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import {
   Bot,
   Coins,
@@ -18,9 +19,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { DocumentEditSheet } from '@/components/documents/document-edit-sheet';
 import { EditDownloadCostDialog } from '@/components/documents/edit-download-cost-dialog';
-import { EmptyState } from '@/components/common/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

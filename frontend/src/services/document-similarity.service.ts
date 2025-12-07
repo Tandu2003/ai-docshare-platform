@@ -1,5 +1,7 @@
 import { apiClient } from '@/utils/api-client';
+
 import type { SimilarityResult } from './document.types';
+
 export const getSimilarityResults = async (
   documentId: string,
 ): Promise<SimilarityResult[]> => {
@@ -61,4 +63,3 @@ export const generateDocumentEmbedding = async (
 
   return response.data;
 };
-

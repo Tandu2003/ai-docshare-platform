@@ -1,4 +1,5 @@
 import { apiClient } from '@/utils/api-client';
+
 export class RatingService {
   static async getUserRating(documentId: string): Promise<number> {
     const response = await apiClient.get<{ rating: number }>(

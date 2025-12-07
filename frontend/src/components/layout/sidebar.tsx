@@ -1,9 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type ComponentType,
-} from 'react';
+import { useCallback, useEffect, useState, type ComponentType } from 'react';
+
 import {
   Archive,
   BarChart3,
@@ -89,8 +85,7 @@ export function Sidebar({ className }: SidebarProps) {
     try {
       const stats = await getBookmarkStats();
       setBookmarkStats(stats);
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [user]);
 
   useEffect(() => {

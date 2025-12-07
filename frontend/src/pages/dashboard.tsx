@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import { AdminOnly } from '@/components/common/permission-gate';
 import { AdminDashboard } from '@/components/dashboard/admin-dashboard';
 import { PopularCategories } from '@/components/dashboard/popular-categories';
@@ -14,6 +15,7 @@ import {
   getUserDashboardOverview,
 } from '@/services/dashboard.service';
 import type { DashboardOverview } from '@/types';
+
 export const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);

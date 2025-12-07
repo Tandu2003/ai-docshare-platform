@@ -1,9 +1,10 @@
 import type { ReactElement } from 'react';
+
 import { PageHeader } from '@/components/common/page-header';
 import { DocumentList } from '@/components/upload/document-list';
+
 export function MyDocumentsPage(): ReactElement {
-  const handleFileDeleted = () => {
-  };
+  const handleFileDeleted = () => {};
   return (
     <div className="space-y-6">
       <PageHeader

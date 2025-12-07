@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+
 import {
   getCurrentUser,
   loginUser,
@@ -11,7 +12,9 @@ import {
   selectUser,
 } from '@/store/slices';
 import type { LoginDto, RegisterDto } from '@/types';
+
 import { useAppDispatch, useAppSelector } from './use-redux';
+
 interface UseAuthReturn {
   auth: ReturnType<typeof selectAuth>;
   user: ReturnType<typeof selectUser>;
@@ -22,7 +25,11 @@ interface UseAuthReturn {
   register: (registerData: RegisterDto) => Promise<unknown>;
   logout: () => Promise<unknown>;
   fetchCurrentUser: () => Promise<unknown>;
-  hasPermission: (action: string, subject: string, conditions?: Record<string, unknown>) => boolean;
+  hasPermission: (
+    action: string,
+    subject: string,
+    conditions?: Record<string, unknown>,
+  ) => boolean;
   hasRole: (roleName: string) => boolean;
   isAdmin: () => boolean;
 }
@@ -63,7 +70,11 @@ export const useAuth = (): UseAuthReturn => {
   }, [dispatch]);
 
   const hasPermission = useCallback(
-    (action: string, subject: string, conditions?: Record<string, unknown>): boolean => {
+    (
+      action: string,
+      subject: string,
+      conditions?: Record<string, unknown>,
+    ): boolean => {
       if (!user?.role?.permissions) return false;
 
       return user.role.permissions.some((p: unknown) => {

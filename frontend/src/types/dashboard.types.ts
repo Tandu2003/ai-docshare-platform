@@ -1,4 +1,5 @@
 import type { DocumentModerationStatus } from './database.types';
+
 export interface DashboardUserSummary {
   id: string;
   username?: string;

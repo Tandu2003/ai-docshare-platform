@@ -1,5 +1,6 @@
 import { Document } from '@/services/files.service';
 import { apiClient } from '@/utils/api-client';
+
 export interface CategorySummary {
   id: string;
   name: string;

@@ -1,9 +1,11 @@
 import { forwardRef, useState, type ComponentProps } from 'react';
+
 import { Eye, EyeOff } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-interface InputPasswordProps
-  extends Omit<ComponentProps<'input'>, 'type'> {
+
+interface InputPasswordProps extends Omit<ComponentProps<'input'>, 'type'> {
   showToggle?: boolean;
 }
 const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(

@@ -1,4 +1,5 @@
 import { api } from '@/config/api';
+
 export interface UploadFileData {
   title?: string;
   description?: string;
@@ -81,7 +82,6 @@ export class UploadService {
 
       return response.data;
     } catch (error) {
-
       // Handle specific error types
       if (error instanceof Error) {
         // Just rethrow if we've already created a specific error

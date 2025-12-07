@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,6 +16,7 @@ import { FormField } from '@/components/ui/form-field';
 import { FormFieldPassword } from '@/components/ui/form-field-password';
 import { useAuth } from '@/hooks';
 import { registerSchema, type RegisterFormData } from '@/schemas';
+
 interface RegisterFormProps {
   onSuccess?: () => void;
   onSwitchToLogin?: () => void;

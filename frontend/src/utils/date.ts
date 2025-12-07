@@ -1,4 +1,5 @@
 import { format, isValid, parseISO } from 'date-fns';
+
 const DEFAULT_FORMAT = 'dd/MM/yyyy';
 const normalizeToDate = (value?: string | number | Date | null) => {
   if (!value) {

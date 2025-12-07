@@ -5,6 +5,7 @@ import {
   useState,
   type ReactElement,
 } from 'react';
+
 import {
   Bookmark,
   BookmarkMinus,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

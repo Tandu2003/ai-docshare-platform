@@ -1,9 +1,11 @@
 import { apiClient } from '@/utils/api-client';
+
 import type {
   DocumentView,
   PaginatedDocuments,
   ViewDocumentRequest,
 } from './document.types';
+
 export const getDocuments = async (
   page = 1,
   limit = 10,

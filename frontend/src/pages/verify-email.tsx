@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+
 import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { authService } from '@/utils';
+
 type VerificationStatus = 'loading' | 'success' | 'error';
 export function VerifyEmailPage() {
   const [status, setStatus] = useState<VerificationStatus>('loading');

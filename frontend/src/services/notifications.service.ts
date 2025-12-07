@@ -1,4 +1,5 @@
 import { apiClient } from '@/utils/api-client';
+
 export interface GetNotificationsParams {
   page?: number;
   limit?: number;

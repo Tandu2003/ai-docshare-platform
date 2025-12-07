@@ -1,6 +1,7 @@
 import type { DocumentModerationStatus } from '@/types';
 import { ApiResponse } from '@/types/api.types';
 import { apiClient } from '@/utils/api-client';
+
 export interface FileUploadResult {
   id: string;
   originalName: string;
@@ -394,7 +395,6 @@ export class DocumentsService {
     referrer?: string,
   ): Promise<void> {
     try {
-
       const response = await apiClient.post<{
         success: boolean;
         data: any;

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+
 import { Coins, Edit, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
+
 import { AdminOnly } from '@/components/common/permission-gate';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';

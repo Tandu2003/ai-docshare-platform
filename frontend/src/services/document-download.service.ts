@@ -1,4 +1,5 @@
 import { apiClient } from '@/utils/api-client';
+
 export const getSecureFileUrl = async (fileId: string): Promise<string> => {
   try {
     const response = await apiClient.get<{

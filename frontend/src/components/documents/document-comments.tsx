@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import {
   Heart,
   MessageSquare,
@@ -6,6 +7,7 @@ import {
   Reply,
   Send,
 } from 'lucide-react';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

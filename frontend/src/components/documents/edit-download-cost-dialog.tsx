@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactElement } from 'react';
+
 import { Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,8 +14,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getDocumentById, type DocumentView } from '@/services/document.service';
+import {
+  getDocumentById,
+  type DocumentView,
+} from '@/services/document.service';
 import { DocumentsService } from '@/services/files.service';
+
 interface EditDownloadCostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,9 +107,7 @@ export function EditDownloadCostDialog({
                   value={downloadCost ?? ''}
                   onChange={e => {
                     const value = e.target.value;
-                    setDownloadCost(
-                      value === '' ? null : parseInt(value, 10),
-                    );
+                    setDownloadCost(value === '' ? null : parseInt(value, 10));
                   }}
                   placeholder={`Mặc định: ${document?.systemDefaultDownloadCost ?? 0} điểm`}
                 />
@@ -130,4 +134,3 @@ export function EditDownloadCostDialog({
     </Dialog>
   );
 }
-

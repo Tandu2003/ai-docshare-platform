@@ -5,11 +5,14 @@ import {
   useState,
   type ReactElement,
 } from 'react';
+
 import { useSearchParams } from 'react-router-dom';
+
 import { DocumentGrid } from '@/components/documents/document-grid';
 import { DocumentSearch } from '@/components/documents/document-search';
 import { DocumentsService, type Document } from '@/services/files.service';
 import type { SearchFilters } from '@/types';
+
 // Helper to parse filters from URL
 function parseFiltersFromUrl(searchParams: URLSearchParams): SearchFilters {
   return {

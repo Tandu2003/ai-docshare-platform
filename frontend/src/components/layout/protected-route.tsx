@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
+
 import { useAuth } from '@/hooks';
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
@@ -24,7 +26,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Check if there's a callback URL in query params
     const searchParams = new URLSearchParams(location.search);
     const callbackUrl = searchParams.get('callback');
-    const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : '/dashboard';
+    const redirectTo = callbackUrl
+      ? decodeURIComponent(callbackUrl)
+      : '/dashboard';
     return <Navigate to={redirectTo} replace />;
   }
 

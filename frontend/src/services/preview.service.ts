@@ -1,8 +1,10 @@
 import { apiClient } from '@/utils/api-client';
+
 import type {
   DocumentPreview,
   PreviewStatus as PreviewStatusType,
 } from './document.types';
+
 export interface PreviewsResponse {
   documentId: string;
   previews: DocumentPreview[];

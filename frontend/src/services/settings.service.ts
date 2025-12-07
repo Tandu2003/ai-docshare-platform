@@ -1,4 +1,5 @@
 import { apiClient } from '@/utils/api-client';
+
 export interface PointsSettings {
   uploadReward: number;
   downloadCost: number;

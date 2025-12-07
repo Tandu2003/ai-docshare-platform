@@ -1,6 +1,8 @@
 import { io, Socket } from 'socket.io-client';
+
 import { API_CONFIG } from '@/config/api.config';
 import { authService } from '@/utils/auth.service';
+
 let socket: Socket | null = null;
 let isConnecting = false;
 export function getSocket(): Socket {

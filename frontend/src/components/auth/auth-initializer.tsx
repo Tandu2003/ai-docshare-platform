@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import { useAppDispatch } from '@/hooks';
 import { store } from '@/store';
 import {
@@ -8,6 +9,7 @@ import {
   setAccessToken,
 } from '@/store/slices';
 import { apiClient } from '@/utils/api-client';
+
 interface AuthInitializerProps {
   children: React.ReactNode;
 }

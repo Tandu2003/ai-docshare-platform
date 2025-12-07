@@ -5,6 +5,7 @@ import {
   useState,
   type ReactElement,
 } from 'react';
+
 import {
   Bell,
   Check,
@@ -206,8 +207,7 @@ export function NotificationsPage(): ReactElement {
             : notif,
         ),
       );
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleMarkAllAsRead = async () => {
@@ -220,8 +220,7 @@ export function NotificationsPage(): ReactElement {
             : notif,
         ),
       );
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
@@ -230,8 +229,7 @@ export function NotificationsPage(): ReactElement {
       setNotifications(prev =>
         prev.filter(notif => notif.id !== notificationId),
       );
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleDeleteSelected = async () => {
@@ -242,8 +240,7 @@ export function NotificationsPage(): ReactElement {
         prev.filter(notif => !selectedNotifications.includes(notif.id)),
       );
       setSelectedNotifications([]);
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleSelectNotification = (

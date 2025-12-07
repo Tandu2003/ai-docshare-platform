@@ -1,4 +1,5 @@
 import { apiClient } from '@/utils/api-client';
+
 export interface DocumentAnalysisResult {
   title?: string;
   description?: string;
@@ -31,7 +32,6 @@ export class AIService {
       if (!request.fileIds || request.fileIds.length === 0) {
         throw new Error('No file IDs provided for analysis');
       }
-
 
       const response = await apiClient.post<AIAnalysisResponse>(
         '/ai/analyze-document',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 // Register schema
 export const registerSchema = z
   .object({

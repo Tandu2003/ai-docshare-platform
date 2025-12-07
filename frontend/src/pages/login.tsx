@@ -1,5 +1,7 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+
 import { LoginForm } from '@/components/auth';
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,7 +19,9 @@ export const LoginPage: React.FC = () => {
 
   const switchToRegister = () => {
     // Preserve callback URL when switching to register
-    const callbackParam = callbackFromQuery ? `?callback=${callbackFromQuery}` : '';
+    const callbackParam = callbackFromQuery
+      ? `?callback=${callbackFromQuery}`
+      : '';
     navigate(`/auth/register${callbackParam}`);
   };
 

@@ -1,8 +1,11 @@
 import { Menu } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
+
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+
 import { Sidebar } from './sidebar';
+
 export const MainLayout: React.FC = () => {
   return (
     <div className="bg-background flex h-screen">

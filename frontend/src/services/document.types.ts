@@ -1,5 +1,7 @@
 import type { AIAnalysis, DocumentModerationStatus } from '@/types';
+
 import type { UploadedFile } from './upload.service';
+
 export interface PaginatedDocuments {
   files: UploadedFile[];
   total: number;
@@ -140,4 +142,3 @@ export interface SimilarityResult {
   similarityType: string;
   createdAt: string;
 }
-

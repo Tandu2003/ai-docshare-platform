@@ -11,6 +11,7 @@ import type {
   VerifyEmailDto,
 } from '@/types';
 import { apiClient } from '@/utils/api-client';
+
 // We need to access the store to get the access token
 // This is a simple way to access the store from outside React components
 let store: AppStore | null = null;

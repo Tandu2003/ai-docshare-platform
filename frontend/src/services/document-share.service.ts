@@ -1,8 +1,10 @@
 import { apiClient } from '@/utils/api-client';
+
 import type {
   ShareDocumentRequest,
   ShareDocumentResponse,
 } from './document.types';
+
 export const createDocumentShareLink = async (
   documentId: string,
   payload: ShareDocumentRequest,
@@ -27,4 +29,3 @@ export const revokeDocumentShareLink = async (
     throw new Error(response.message || 'Failed to revoke share link');
   }
 };
-

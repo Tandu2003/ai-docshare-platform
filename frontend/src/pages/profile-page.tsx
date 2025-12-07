@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
+
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -156,8 +157,7 @@ export function ProfilePage(): ReactElement {
     }
 
     const handleBookmarksUpdated = () => {
-      void getUserBookmarks()
-        .then(bookmarks => setUserBookmarks(bookmarks))
+      void getUserBookmarks().then(bookmarks => setUserBookmarks(bookmarks));
     };
 
     window.addEventListener(BOOKMARKS_UPDATED_EVENT, handleBookmarksUpdated);

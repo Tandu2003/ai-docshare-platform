@@ -5,6 +5,7 @@ import type {
   ModerationQueueResponse,
 } from '@/types';
 import { apiClient } from '@/utils/api-client';
+
 export const getModerationQueue = async (
   params: ModerationQueueParams = {},
 ): Promise<ModerationQueueResponse> => {
@@ -90,4 +91,3 @@ export const generateModerationAnalysis = async (
 
   return response.data;
 };
-

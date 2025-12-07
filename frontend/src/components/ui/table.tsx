@@ -1,5 +1,7 @@
 import { type ComponentProps } from 'react';
+
 import { cn } from '@/lib/utils';
+
 function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
     <div
@@ -86,10 +88,7 @@ function TableCell({ className, ...props }: ComponentProps<'td'>) {
   );
 }
 
-function TableCaption({
-  className,
-  ...props
-}: ComponentProps<'caption'>) {
+function TableCaption({ className, ...props }: ComponentProps<'caption'>) {
   return (
     <caption
       data-slot="table-caption"

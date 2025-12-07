@@ -1,4 +1,5 @@
 import { apiClient } from '@/utils/api-client';
+
 export interface PointTransactionDocument {
   id: string;
   title: string;
