@@ -53,8 +53,6 @@ export function SocketProvider({
   // Also handle notification subscriptions in the same effect to ensure proper timing
   useEffect(() => {
     if (isAuthenticated && accessToken) {
-        '🔌 SocketProvider: User authenticated, connecting socket...',
-      );
       reconnectSocket();
 
       // Get socket and subscribe to events after reconnect
@@ -171,8 +169,6 @@ export function SocketProvider({
         socket.off('auth:failed', handleAuthFailed);
       };
     } else if (!isAuthenticated) {
-        '🔌 SocketProvider: User not authenticated, disconnecting socket...',
-      );
       disconnectSocket();
     }
   }, [isAuthenticated, accessToken]);

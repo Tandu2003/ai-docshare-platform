@@ -36,14 +36,7 @@ export function waitForSocketConnection(timeout = 5000): Promise<Socket> {
   return new Promise((resolve, reject) => {
     const sock = getSocket();
 
-      connected: sock.connected,
-      disconnected: sock.disconnected,
-      id: sock.id,
-    });
-
     if (sock.connected) {
-        '🔌 waitForSocketConnection: Already connected, resolving immediately',
-      );
       resolve(sock);
       return;
     }
@@ -81,11 +74,6 @@ function createSocket(): void {
   isConnecting = true;
 
   const socketUrl = `${API_CONFIG.BASE_URL}/realtime`;
-    '🔌 Creating WebSocket connection:',
-    socketUrl,
-    'Token:',
-    token ? 'present' : 'missing',
-  );
 
   // Disconnect existing socket if any
   if (socket) {

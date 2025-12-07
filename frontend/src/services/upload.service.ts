@@ -68,11 +68,6 @@ export class UploadService {
     }
 
     try {
-        fileCount: files.length,
-        totalSize: files.reduce((sum, file) => sum + file.size, 0),
-        files: files.map(f => ({ name: f.name, size: f.size, type: f.type })),
-      });
-
       const response = await api.post<
         FileUploadResponse[] | FileUploadResponse
       >('/upload', formData, {
