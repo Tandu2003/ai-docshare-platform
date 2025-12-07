@@ -170,7 +170,7 @@ export class DocumentQueryService {
         `Getting public documents, page ${page}, limit ${limit}, filters: ${JSON.stringify(filters)}`,
       );
 
-      const whereCondition = this.buildPublicDocumentsWhere(filters);
+      const whereCondition = await this.buildPublicDocumentsWhere(filters);
       const orderBy = this.buildOrderBy(filters);
 
       const [documents, total] = await Promise.all([
@@ -308,7 +308,9 @@ export class DocumentQueryService {
 
   // ============ Private Helper Methods ============
 
-  private buildPublicDocumentsWhere(filters?: DocumentListFilters): any {
+  private async buildPublicDocumentsWhere(
+    filters?: DocumentListFilters,
+  ): Promise<any> {
     const whereCondition: any = {
       isPublic: true,
       isApproved: true,
@@ -316,7 +318,18 @@ export class DocumentQueryService {
     };
 
     if (filters?.categoryId) {
-      whereCondition.categoryId = filters.categoryId;
+      // Get child categories to include documents from sub-categories
+      const childCategories = await this.prisma.category.findMany({
+        where: { parentId: filters.categoryId, isActive: true },
+        select: { id: true },
+      });
+
+      const categoryIds = [
+        filters.categoryId,
+        ...childCategories.map(c => c.id),
+      ];
+
+      whereCondition.categoryId = { in: categoryIds };
     }
 
     return whereCondition;

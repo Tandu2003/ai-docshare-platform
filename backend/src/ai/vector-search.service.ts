@@ -205,7 +205,18 @@ export class VectorSearchService {
       }
 
       if (filters.categoryId) {
-        documentFilters.categoryId = filters.categoryId;
+        // Get child categories to include documents from sub-categories
+        const childCategories = await this.prisma.category.findMany({
+          where: { parentId: filters.categoryId, isActive: true },
+          select: { id: true },
+        });
+
+        const categoryIds = [
+          filters.categoryId,
+          ...childCategories.map(c => c.id),
+        ];
+
+        documentFilters.categoryId = { in: categoryIds };
       }
 
       if (filters.tags && filters.tags.length > 0) {
@@ -511,7 +522,18 @@ export class VectorSearchService {
     }
 
     if (filters.categoryId) {
-      baseFilters.categoryId = filters.categoryId;
+      // Get child categories to include documents from sub-categories
+      const childCategories = await this.prisma.category.findMany({
+        where: { parentId: filters.categoryId, isActive: true },
+        select: { id: true },
+      });
+
+      const categoryIds = [
+        filters.categoryId,
+        ...childCategories.map(c => c.id),
+      ];
+
+      baseFilters.categoryId = { in: categoryIds };
     }
 
     if (filters.language) {
@@ -788,17 +810,27 @@ export class VectorSearchService {
     try {
       if (!options.userId) return;
 
-      await this.prisma.searchHistory.create({
-        data: {
-          userId: options.userId,
-          query: options.query,
-          queryEmbedding: queryEmbedding,
-          searchMethod,
-          vectorScore: highestScore || results[0]?.similarityScore || null,
-          resultsCount: results.length,
-          filters: options.filters || {},
-        },
-      });
+      // Use raw SQL to properly insert vector type
+      // pgvector requires format [0.1, 0.2, ...] not {"0.1", "0.2", ...}
+      const vectorString = `[${queryEmbedding.join(',')}]`;
+      const id = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 11)}`;
+      const score = highestScore ?? results[0]?.similarityScore ?? null;
+      const filtersJson = JSON.stringify(options.filters || {});
+
+      await this.prisma.$executeRaw`
+        INSERT INTO search_history (id, "userId", query, "queryEmbedding", "searchMethod", "vectorScore", "resultsCount", filters, "searchedAt")
+        VALUES (
+          ${id},
+          ${options.userId},
+          ${options.query},
+          ${vectorString}::vector,
+          ${searchMethod},
+          ${score},
+          ${results.length},
+          ${filtersJson}::jsonb,
+          NOW()
+        )
+      `;
 
       this.logger.log(`Saved search history for user ${options.userId}`);
     } catch (error) {

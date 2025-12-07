@@ -331,7 +331,18 @@ export class DocumentSearchService {
     }
 
     if (filters?.categoryId) {
-      where.categoryId = filters.categoryId;
+      // Get child categories to include documents from sub-categories
+      const childCategories = await this.prisma.category.findMany({
+        where: { parentId: filters.categoryId, isActive: true },
+        select: { id: true },
+      });
+
+      const categoryIds = [
+        filters.categoryId,
+        ...childCategories.map(c => c.id),
+      ];
+
+      where.categoryId = { in: categoryIds };
     }
 
     if (filters?.language) {

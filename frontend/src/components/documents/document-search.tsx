@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowDownAZ, ArrowUpAZ, FolderOpen, Search } from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, FolderOpen, Search, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,61 @@ export function DocumentSearch({
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Organize categories hierarchically
+  const organizedCategories = useMemo(() => {
+    // Separate parent and child categories
+    const parentCategories = categories.filter(cat => !cat.parentId);
+    const childCategories = categories.filter(cat => cat.parentId);
+
+    // Calculate total document count for parent categories (including children)
+    const parentWithChildCounts = parentCategories.map(parent => {
+      const children = childCategories.filter(c => c.parentId === parent.id);
+      const childDocCount = children.reduce(
+        (sum, c) => sum + c.documentCount,
+        0,
+      );
+      return {
+        ...parent,
+        totalDocumentCount: parent.documentCount + childDocCount,
+        children,
+      };
+    });
+
+    // Build organized list: parent followed by its children
+    const result: Array<
+      CategorySummary & {
+        isChild?: boolean;
+        totalDocumentCount?: number;
+        hasChildren?: boolean;
+      }
+    > = [];
+
+    parentWithChildCounts.forEach(parent => {
+      // Only add parent if it has documents (directly or via children)
+      if (parent.totalDocumentCount > 0) {
+        result.push({
+          ...parent,
+          hasChildren: parent.children.length > 0,
+        });
+        // Add children indented
+        parent.children.forEach(child => {
+          if (child.documentCount > 0) {
+            result.push({ ...child, isChild: true });
+          }
+        });
+      }
+    });
+
+    // Add orphan children (children whose parent has no documents)
+    childCategories.forEach(child => {
+      if (child.documentCount > 0 && !result.some(c => c.id === child.id)) {
+        result.push({ ...child, isChild: true });
+      }
+    });
+
+    return result;
+  }, [categories]);
+
   // Load categories on mount - only show categories with documents
   useEffect(() => {
     const loadCategories = async () => {
@@ -56,7 +111,9 @@ export function DocumentSearch({
           cat => cat.documentCount > 0,
         );
         setCategories(categoriesWithDocuments);
-      } catch (error) {}
+      } catch (error) {
+        console.error(error);
+      }
     };
     loadCategories();
   }, []);
@@ -254,13 +311,17 @@ export function DocumentSearch({
                     Tất cả danh mục
                   </span>
                 </SelectItem>
-                {categories.map(category => (
+                {organizedCategories.map(category => (
                   <SelectItem key={category.id} value={category.id}>
-                    <span className="flex items-center gap-2">
+                    <span
+                      className={`flex items-center gap-2 ${category.isChild ? 'pl-4' : ''}`}
+                    >
+                      <span>{category.isChild ? '└' : ''}</span>
                       <span>{category.icon || '📁'}</span>
                       {category.name}
                       <span className="text-muted-foreground text-xs">
-                        ({category.documentCount})
+                        ({category.totalDocumentCount ?? category.documentCount}
+                        {category.hasChildren ? '+' : ''})
                       </span>
                     </span>
                   </SelectItem>
@@ -316,22 +377,32 @@ export function DocumentSearch({
         {(filters.categoryId ||
           (filters.sortBy && filters.sortBy !== 'createdAt')) && (
           <div className="flex flex-wrap gap-2">
-            {filters.categoryId && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <span>
-                  {categories.find(c => c.id === filters.categoryId)?.icon ||
-                    '📁'}
-                </span>
-                {categories.find(c => c.id === filters.categoryId)?.name ||
-                  'Đang tải...'}
-                <button
-                  onClick={() => handleCategoryChange('all')}
-                  className="hover:text-destructive ml-1"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
+            {filters.categoryId &&
+              (() => {
+                const selectedCategory = organizedCategories.find(
+                  c => c.id === filters.categoryId,
+                );
+                return (
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
+                    <span>{selectedCategory?.icon || '📁'}</span>
+                    {selectedCategory?.name || 'Đang tải...'}
+                    {selectedCategory?.hasChildren && (
+                      <span className="text-muted-foreground text-xs">
+                        (+ danh mục con)
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleCategoryChange('all')}
+                      className="hover:text-destructive ml-1"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </Badge>
+                );
+              })()}
             {filters.sortBy && filters.sortBy !== 'createdAt' && (
               <Badge variant="outline" className="flex items-center gap-1">
                 Sắp xếp:{' '}
@@ -349,9 +420,6 @@ export function DocumentSearch({
             <span className="text-foreground font-medium">
               "{filters.query}"
             </span>
-            <Badge variant="secondary" className="ml-2">
-              Chế độ AI kết hợp
-            </Badge>
             {isLoading && (
               <div className="border-primary h-3 w-3 animate-spin rounded-full border-2 border-t-transparent"></div>
             )}
