@@ -104,21 +104,34 @@ export class SimilarityJobService {
     }
   }
 
-  async runSimilarityDetectionSync(documentId: string): Promise<void> {
+  runSimilarityDetectionSync(documentId: string): void {
     try {
       this.logger.log(
-        `Running synchronous similarity detection for document ${documentId}`,
+        `Queuing background similarity detection for document ${documentId}`,
       );
 
-      // Process directly without job queue
-      await this.similarityService.processSimilarityDetection(documentId);
+      // Run in background - don't block the request
+      // Use setImmediate to ensure it runs after current event loop
+      setImmediate(() => {
+        this.similarityService
+          .processSimilarityDetection(documentId)
+          .then(() => {
+            this.logger.log(
+              `Background similarity detection completed for document ${documentId}`,
+            );
+          })
+          .catch(error => {
+            this.logger.error(
+              `Error in background similarity detection for ${documentId}:`,
+              error.message,
+            );
+          });
+      });
 
-      this.logger.log(
-        `Synchronous similarity detection completed for document ${documentId}`,
-      );
+      this.logger.log(`Similarity detection queued for document ${documentId}`);
     } catch (error) {
       this.logger.error(
-        `Error in synchronous similarity detection for ${documentId}:`,
+        `Error queuing similarity detection for ${documentId}:`,
         error,
       );
       // Don't throw - just log the error, moderation should continue

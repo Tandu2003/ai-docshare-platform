@@ -45,46 +45,78 @@ export class GeminiService {
   async analyzeDocumentFromFiles(
     fileUrls: string[],
   ): Promise<DocumentAnalysisResult> {
+    const startTime = Date.now();
     try {
-      this.logger.log(`Analyzing ${fileUrls[0]} files with Gemini`);
+      this.logger.log(`Analyzing ${fileUrls.length} files with Gemini`);
 
       const modelName =
         this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
       this.logger.log(`Using Gemini model: ${modelName}`);
       const model = this.genAI.getGenerativeModel({ model: modelName });
 
-      // Extract content from files using R2Service directly instead of fetching signed URLs
+      // Timeout config (default 60s for content extraction, 30s for Gemini)
+      const extractionTimeout = parseInt(
+        this.configService.get<string>('AI_EXTRACTION_TIMEOUT') || '60000',
+        10,
+      );
+      const geminiTimeout = parseInt(
+        this.configService.get<string>('AI_GEMINI_TIMEOUT') || '30000',
+        10,
+      );
+
+      // Extract content from files with timeout
+      this.logger.log(
+        `Starting content extraction (timeout: ${extractionTimeout}ms)`,
+      );
+      const extractionStartTime = Date.now();
+
       const extractedContents = await Promise.all(
         fileUrls.map(async url => {
-          const maxRetries = 3;
+          const maxRetries = 2; // Giảm retry để nhanh hơn
+          const fileName = url.split('/').pop()?.split('?')[0] || 'unknown';
 
           for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-              // Extract storageUrl from signed URL if it's a signed URL
-              // If it's already a storageUrl, use it directly
-              let storageUrl = url;
+              const fileStartTime = Date.now();
 
-              // Check if it's a signed URL by looking for query parameters
-              if (url.includes('?X-Amz-')) {
-                // Extract base URL without query params
-                storageUrl = url.split('?')[0];
-              }
+              // Get file stream with timeout (url is already storageUrl from database)
+              this.logger.log(
+                `[${fileName}] Getting file stream from: ${url.substring(0, 100)}...`,
+              );
+              const fileStreamPromise = this.r2Service.getFileStream(url);
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(
+                  () => reject(new Error('File stream timeout')),
+                  extractionTimeout / 2,
+                ),
+              );
 
-              // Get file stream directly from R2
-              const fileStream = await this.r2Service.getFileStream(storageUrl);
+              const fileStream = (await Promise.race([
+                fileStreamPromise,
+                timeoutPromise,
+              ])) as any;
 
-              // Convert stream to buffer
+              // Convert stream to buffer with size limit (10MB max)
               const chunks: Buffer[] = [];
+              let totalSize = 0;
+              const maxSize = 10 * 1024 * 1024; // 10MB
+
               for await (const chunk of fileStream) {
+                totalSize += chunk.length;
+                if (totalSize > maxSize) {
+                  this.logger.warn(
+                    `[${fileName}] File too large (${totalSize} bytes), truncating...`,
+                  );
+                  break;
+                }
                 chunks.push(chunk);
               }
               const buffer = Buffer.concat(chunks);
+              this.logger.log(
+                `[${fileName}] Downloaded ${buffer.length} bytes in ${Date.now() - fileStartTime}ms`,
+              );
 
-              // Extract filename from URL for logging
-              const fileName =
-                storageUrl.split('/').pop()?.split('?')[0] || 'unknown';
-
-              // Try to get mimeType from file extension or use default
+              // Get mimeType from extension
               const fileExtension =
                 fileName.split('.').pop()?.toLowerCase() || '';
               const mimeTypeMap: Record<string, string> = {
@@ -101,16 +133,31 @@ export class GeminiService {
               const mimeType =
                 mimeTypeMap[fileExtension] || 'application/octet-stream';
 
-              // Extract text content from file
-              const extractedContent =
-                await this.contentExtractor.extractContent(
-                  buffer,
-                  mimeType,
-                  fileName,
-                );
+              // Extract text content with timeout
+              this.logger.log(
+                `[${fileName}] Extracting content (${mimeType})...`,
+              );
+              const extractStartTime = Date.now();
+
+              const extractPromise = this.contentExtractor.extractContent(
+                buffer,
+                mimeType,
+                fileName,
+              );
+              const extractTimeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(
+                  () => reject(new Error('Content extraction timeout')),
+                  extractionTimeout / 2,
+                ),
+              );
+
+              const extractedContent = await Promise.race([
+                extractPromise,
+                extractTimeoutPromise,
+              ]);
 
               this.logger.log(
-                `Extracted ${extractedContent.metadata?.words || 0} words from ${fileName}`,
+                `[${fileName}] Extracted ${extractedContent.metadata?.words || 0} words in ${Date.now() - extractStartTime}ms`,
               );
 
               return {
@@ -119,35 +166,23 @@ export class GeminiService {
                 metadata: extractedContent.metadata,
               };
             } catch (error) {
-              const fileName = url.split('/').pop()?.split('?')[0] || 'unknown';
-              const isNetworkError =
+              const isRetryable =
                 error.message?.includes('network') ||
                 error.message?.includes('ECONNRESET') ||
                 error.message?.includes('ETIMEDOUT') ||
-                error.message?.includes('ENOTFOUND') ||
-                error.message?.includes('ECONNREFUSED');
+                error.message?.includes('timeout');
 
-              if (attempt < maxRetries && isNetworkError) {
-                const retryDelay = Math.min(
-                  1000 * Math.pow(2, attempt - 1),
-                  5000,
-                ); // Exponential backoff, max 5s
+              if (attempt < maxRetries && isRetryable) {
+                const retryDelay = 2000;
                 this.logger.warn(
-                  `Retry ${attempt}/${maxRetries - 1} for ${fileName} after ${retryDelay}ms. Error: ${error.message}`,
+                  `[${fileName}] Retry ${attempt}/${maxRetries} after ${retryDelay}ms: ${error.message}`,
                 );
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
                 continue;
               }
 
-              // Log error with more details
               this.logger.error(
-                `Error processing file ${fileName} (attempt ${attempt}/${maxRetries}):`,
-                {
-                  url: url.substring(0, 100) + '...',
-                  error: error.message,
-                  errorName: error.name,
-                  stack: error.stack,
-                },
+                `[${fileName}] Failed after ${attempt} attempts: ${error.message}`,
               );
               break;
             }
@@ -155,6 +190,10 @@ export class GeminiService {
 
           return null;
         }),
+      );
+
+      this.logger.log(
+        `Content extraction completed in ${Date.now() - extractionStartTime}ms`,
       );
 
       // Filter out failed file processing
@@ -181,12 +220,30 @@ export class GeminiService {
         }[],
       );
 
-      // Generate content with text prompt only
-      const result = await model.generateContent(prompt);
+      // Generate content with timeout
+      this.logger.log(`Calling Gemini API (timeout: ${geminiTimeout}ms)...`);
+      const geminiStartTime = Date.now();
+
+      const generatePromise = model.generateContent(prompt);
+      const geminiTimeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(new Error(`Gemini API timeout after ${geminiTimeout}ms`)),
+          geminiTimeout,
+        ),
+      );
+
+      const result = (await Promise.race([
+        generatePromise,
+        geminiTimeoutPromise,
+      ])) as any;
       const response = result.response;
       const text = response.text();
 
-      this.logger.log('Gemini analysis completed successfully');
+      this.logger.log(
+        `Gemini API completed in ${Date.now() - geminiStartTime}ms`,
+      );
+      this.logger.log(`Total analysis time: ${Date.now() - startTime}ms`);
 
       return this.parseAnalysisResult(text);
     } catch (error) {
@@ -214,144 +271,144 @@ ${content.content}
       .join('\n');
 
     return `
-Analyze the following document(s) and extract the following information in JSON format.
+  Analyze the following document(s) and extract the following information in JSON format.
 
-IMPORTANT LANGUAGE REQUIREMENT:
-- You must respond in Vietnamese (tiếng Việt) only
-- All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
-- Set the field "language" strictly to "vi"
+  IMPORTANT LANGUAGE REQUIREMENT:
+  - You must respond in Vietnamese (tiếng Việt) only
+  - All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
+  - Set the field "language" strictly to "vi"
 
-${documentsText}
+  ${documentsText}
 
-Please provide the analysis in this exact JSON format:
+  Please provide the analysis in this exact JSON format:
 
-{
-  "title": "A clear, descriptive title for the document(s) (max 100 characters)",
-  "description": "A comprehensive description of the document content (max 500 characters)",
-  "tags": ["relevant", "keywords", "topics", "max 10 tags"],
-  "summary": "A detailed summary of the main content (max 1000 characters)",
-  "keyPoints": ["important", "key", "points", "from", "document"],
-  "difficulty": "beginner|intermediate|advanced",
-  "language": "en|vi|other",
-  "confidence": 0.95,
-  "reliabilityScore": 85,
-  "moderationScore": 85,
-  "safetyFlags": [],
-  "isSafe": true,
-  "recommendedAction": "approve|review|reject"
-}
+  {
+    "title": "A clear, descriptive title for the document(s) (max 100 characters)",
+    "description": "A comprehensive description of the document content (max 500 characters)",
+    "tags": ["relevant", "keywords", "topics", "max 10 tags"],
+    "summary": "A detailed summary of the main content (max 1000 characters)",
+    "keyPoints": ["important", "key", "points", "from", "document"],
+    "difficulty": "beginner|intermediate|advanced",
+    "language": "en|vi|other",
+    "confidence": 0.95,
+    "reliabilityScore": 85,
+    "moderationScore": 85,
+    "safetyFlags": [],
+    "isSafe": true,
+    "recommendedAction": "approve|review|reject"
+  }
 
-CONTENT SAFETY ANALYSIS REQUIREMENTS:
-You must thoroughly analyze the content for safety and appropriateness. Check for:
+  CONTENT SAFETY ANALYSIS REQUIREMENTS:
+  You must thoroughly analyze the content for safety and appropriateness. Check for:
 
-1. VIOLENCE & HARM:
-   - Graphic violence, gore, or disturbing imagery
-   - Instructions for violence or self-harm
-   - Threats or intimidation
+  1. VIOLENCE & HARM:
+    - Graphic violence, gore, or disturbing imagery
+    - Instructions for violence or self-harm
+    - Threats or intimidation
 
-2. HATE SPEECH & DISCRIMINATION:
-   - Content targeting specific groups based on race, religion, gender, etc.
-   - Derogatory language or slurs
-   - Incitement to discrimination
+  2. HATE SPEECH & DISCRIMINATION:
+    - Content targeting specific groups based on race, religion, gender, etc.
+    - Derogatory language or slurs
+    - Incitement to discrimination
 
-3. TERRORIST & EXTREMIST CONTENT:
-   - Instructions for making weapons or explosives
-   - Terrorist propaganda or recruitment material
-   - Extremist ideologies or manifestos
+  3. TERRORIST & EXTREMIST CONTENT:
+    - Instructions for making weapons or explosives
+    - Terrorist propaganda or recruitment material
+    - Extremist ideologies or manifestos
 
-4. INAPPROPRIATE SEXUAL CONTENT:
-   - Pornographic or sexually explicit material
-   - Sexual content involving minors
-   - Non-consensual sexual content
+  4. INAPPROPRIATE SEXUAL CONTENT:
+    - Pornographic or sexually explicit material
+    - Sexual content involving minors
+    - Non-consensual sexual content
 
-5. ILLEGAL ACTIVITIES:
-   - Instructions for illegal activities
-   - Drug manufacturing or distribution guides
-   - Fraud or scam instructions
+  5. ILLEGAL ACTIVITIES:
+    - Instructions for illegal activities
+    - Drug manufacturing or distribution guides
+    - Fraud or scam instructions
 
-6. MISINFORMATION & CONSPIRACY:
-   - Dangerous medical misinformation
-   - Conspiracy theories that could cause harm
-   - False information about elections or public safety
+  6. MISINFORMATION & CONSPIRACY:
+    - Dangerous medical misinformation
+    - Conspiracy theories that could cause harm
+    - False information about elections or public safety
 
-IMPORTANT: All safety flags must be written in Vietnamese (tiếng Việt). Use these Vietnamese terms:
-- "Bạo lực" for violence
-- "Đe dọa" for threats
-- "Khủng bố" for terrorism
-- "Kích động bạo lực" for incitement to violence
-- "Hoạt động bất hợp pháp" for illegal activities
-- "Nội dung khiêu dâm" for sexual content
-- "Thông tin sai lệch" for misinformation
-- "Nội dung thù hận" for hate speech
+  IMPORTANT: All safety flags must be written in Vietnamese (tiếng Việt). Use these Vietnamese terms:
+  - "Bạo lực" for violence
+  - "Đe dọa" for threats
+  - "Khủng bố" for terrorism
+  - "Kích động bạo lực" for incitement to violence
+  - "Hoạt động bất hợp pháp" for illegal activities
+  - "Nội dung khiêu dâm" for sexual content
+  - "Thông tin sai lệch" for misinformation
+  - "Nội dung thù hận" for hate speech
 
-SCORING SYSTEM:
-- moderationScore: 0-100 (0 = extremely dangerous, 100 = completely safe)
-- safetyFlags: Array of detected issues (empty if safe)
-- isSafe: true if moderationScore >= 70, false otherwise
-- confidence: 0-1 (how confident AI is about the analysis - should correlate with moderationScore)
-- reliabilityScore: 0-100 (AI's estimate of the document's reliability/accuracy/credibility)
-- recommendedAction:
-  - "approve": moderationScore >= 80 AND no critical safety flags
-  - "review": moderationScore 50-79 OR minor safety concerns
-  - "reject": moderationScore < 50 OR critical safety flags present
+  SCORING SYSTEM:
+  - moderationScore: 0-100 (0 = extremely dangerous, 100 = completely safe)
+  - safetyFlags: Array of detected issues (empty if safe)
+  - isSafe: true if moderationScore >= 70, false otherwise
+  - confidence: 0-1 (how confident AI is about the analysis - should correlate with moderationScore)
+  - reliabilityScore: 0-100 (AI's estimate of the document's reliability/accuracy/credibility)
+  - recommendedAction:
+    - "approve": moderationScore >= 80 AND no critical safety flags
+    - "review": moderationScore 50-79 OR minor safety concerns
+    - "reject": moderationScore < 50 OR critical safety flags present
 
-IMPORTANT CONFIDENCE LOGIC:
-- High moderationScore (80-100) + High confidence (0.8-1.0) = Safe content, AI is confident
-- Medium moderationScore (50-79) + Medium confidence (0.5-0.8) = Uncertain content, AI is somewhat confident
-- Low moderationScore (0-49) + High confidence (0.8-1.0) = Dangerous content, AI is confident it's dangerous
-- Low moderationScore (0-49) + Low confidence (0.0-0.5) = AI is uncertain about dangerous content
+  IMPORTANT CONFIDENCE LOGIC:
+  - High moderationScore (80-100) + High confidence (0.8-1.0) = Safe content, AI is confident
+  - Medium moderationScore (50-79) + Medium confidence (0.5-0.8) = Uncertain content, AI is somewhat confident
+  - Low moderationScore (0-49) + High confidence (0.8-1.0) = Dangerous content, AI is confident it's dangerous
+  - Low moderationScore (0-49) + Low confidence (0.0-0.5) = AI is uncertain about dangerous content
 
-Instructions:
-1. Generate a meaningful Vietnamese title that captures the main topic
-2. Write a clear Vietnamese description explaining the document content
-3. Extract relevant Vietnamese tags/keywords for searching
-4. Provide a comprehensive Vietnamese summary of the content
-5. List the most important key points in Vietnamese
-6. Assess the difficulty level based on content complexity
-7. Set the primary language to "vi"
-8. Provide a confidence score (0-1) for the analysis (how sure the AI is)
-9. Provide a reliabilityScore (0-100) estimating how reliable/trustworthy the document content is
-10. CRITICAL: Perform thorough content safety analysis and scoring
-11. Flag any inappropriate, harmful, or dangerous content IN VIETNAMESE
-12. Provide clear recommendation for moderation action
-13. IMPORTANT: All safety flags must be in Vietnamese, not English
+  Instructions:
+  1. Generate a meaningful Vietnamese title that captures the main topic
+  2. Write a clear Vietnamese description explaining the document content
+  3. Extract relevant Vietnamese tags/keywords for searching
+  4. Provide a comprehensive Vietnamese summary of the content
+  5. List the most important key points in Vietnamese
+  6. Assess the difficulty level based on content complexity
+  7. Set the primary language to "vi"
+  8. Provide a confidence score (0-1) for the analysis (how sure the AI is)
+  9. Provide a reliabilityScore (0-100) estimating how reliable/trustworthy the document content is
+  10. CRITICAL: Perform thorough content safety analysis and scoring
+  11. Flag any inappropriate, harmful, or dangerous content IN VIETNAMESE
+  12. Provide clear recommendation for moderation action
+  13. IMPORTANT: All safety flags must be in Vietnamese, not English
 
-Please analyze all provided document content and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
-`;
+  Please analyze all provided document content and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
+  `;
   }
 
   private createAnalysisPrompt(): string {
     return `
-Analyze the provided document(s) and extract the following information in JSON format.
+  Analyze the provided document(s) and extract the following information in JSON format.
 
-IMPORTANT LANGUAGE REQUIREMENT:
-- You must respond in Vietnamese (tiếng Việt) only
-- All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
-- Set the field "language" strictly to "vi"
+  IMPORTANT LANGUAGE REQUIREMENT:
+  - You must respond in Vietnamese (tiếng Việt) only
+  - All text fields (title, description, summary, keyPoints, tags) must be written in Vietnamese
+  - Set the field "language" strictly to "vi"
 
-{
-  "title": "A clear, descriptive title for the document (max 100 characters)",
-  "description": "A comprehensive description of the document content (max 500 characters)",
-  "tags": ["relevant", "keywords", "topics", "max 10 tags"],
-  "summary": "A detailed summary of the main content (max 1000 characters)",
-  "keyPoints": ["important", "key", "points", "from", "document"],
-  "difficulty": "beginner|intermediate|advanced",
-  "language": "en|vi|other",
-  "confidence": 0.95
-}
+  {
+    "title": "A clear, descriptive title for the document (max 100 characters)",
+    "description": "A comprehensive description of the document content (max 500 characters)",
+    "tags": ["relevant", "keywords", "topics", "max 10 tags"],
+    "summary": "A detailed summary of the main content (max 1000 characters)",
+    "keyPoints": ["important", "key", "points", "from", "document"],
+    "difficulty": "beginner|intermediate|advanced",
+    "language": "en|vi|other",
+    "confidence": 0.95
+  }
 
-Instructions:
-1. Generate a meaningful Vietnamese title that captures the main topic
-2. Write a clear Vietnamese description explaining the document content
-3. Extract relevant Vietnamese tags/keywords for searching
-4. Provide a comprehensive Vietnamese summary of the content
-5. List the most important key points in Vietnamese
-6. Assess the difficulty level based on content complexity
-7. Set the primary language to "vi"
-8. Provide a confidence score (0-1) for the analysis
+  Instructions:
+  1. Generate a meaningful Vietnamese title that captures the main topic
+  2. Write a clear Vietnamese description explaining the document content
+  3. Extract relevant Vietnamese tags/keywords for searching
+  4. Provide a comprehensive Vietnamese summary of the content
+  5. List the most important key points in Vietnamese
+  6. Assess the difficulty level based on content complexity
+  7. Set the primary language to "vi"
+  8. Provide a confidence score (0-1) for the analysis
 
-Please analyze all provided files and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
-`;
+  Please analyze all provided files and provide a consolidated response in valid JSON format only. Do not include any other text outside the JSON.
+  `;
   }
 
   private parseAnalysisResult(text: string): DocumentAnalysisResult {

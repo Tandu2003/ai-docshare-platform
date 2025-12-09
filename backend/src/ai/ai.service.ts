@@ -1,4 +1,5 @@
 import { CategoriesService } from '../categories/categories.service';
+import { EmbeddingStorageService } from '../common/services/embedding-storage.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,6 +33,7 @@ export class AIService {
     private systemSettings: SystemSettingsService,
     private embeddingService: EmbeddingService,
     private categoriesService: CategoriesService,
+    private embeddingStorage: EmbeddingStorageService,
   ) {}
 
   async analyzeDocuments(
@@ -93,33 +95,19 @@ export class AIService {
         );
       }
 
-      // Get secure URLs for files
-      this.logger.log(`Getting secure URLs for ${files.length} files`);
-      const fileUrls = await Promise.all(
-        files.map(async file => {
-          try {
-            this.logger.log(
-              `Getting secure URL for file ${file.id} (${file.originalName})`,
-            );
-            const secureUrl = await this.filesService.getSecureFileUrl(
-              file.id,
-              request.userId,
-            );
-            this.logger.log(`Successfully got secure URL for file ${file.id}`);
-            return secureUrl;
-          } catch (error) {
-            this.logger.error(
-              `Error getting secure URL for file ${file.id} (${file.originalName}):`,
-              error.message,
-            );
-            return null;
-          }
-        }),
-      );
+      // Get storage URLs directly from files (no need for signed URLs since we use R2 service internally)
+      this.logger.log(`Getting storage URLs for ${files.length} files`);
+      const validUrls = files
+        .filter(file => file.storageUrl)
+        .map(file => {
+          this.logger.log(
+            `File ${file.id} (${file.originalName}): ${file.storageUrl}`,
+          );
+          return file.storageUrl;
+        });
 
-      const validUrls = fileUrls.filter((url): url is string => url !== null);
       this.logger.log(
-        `Successfully generated ${validUrls.length} secure URLs out of ${files.length} files`,
+        `Found ${validUrls.length} valid storage URLs out of ${files.length} files`,
       );
 
       if (validUrls.length === 0) {
@@ -129,10 +117,15 @@ export class AIService {
       }
 
       this.logger.log(`Analyzing ${validUrls.length} files with Gemini AI`);
+      const geminiStartTime = Date.now();
 
       // Analyze with Gemini
       const analysisResult =
         await this.geminiService.analyzeDocumentFromFiles(validUrls);
+
+      this.logger.log(
+        `Gemini analysis completed in ${Date.now() - geminiStartTime}ms`,
+      );
 
       // Suggest best category based on analysis content
       this.logger.log('Suggesting best category based on analysis result...');
@@ -302,22 +295,13 @@ export class AIService {
       // Get current model name from embedding service
       const currentModel = this.embeddingService.getModelName();
 
-      // Save to database (upsert)
-      await this.prisma.documentEmbedding.upsert({
-        where: { documentId },
-        create: {
-          documentId,
-          embedding,
-          model: currentModel,
-          version: '1.0',
-        },
-        update: {
-          embedding,
-          model: currentModel,
-          version: '1.0',
-          updatedAt: new Date(),
-        },
-      });
+      // Save to database using shared service with proper vector formatting
+      await this.embeddingStorage.saveEmbedding(
+        documentId,
+        embedding,
+        currentModel,
+        '1.0',
+      );
 
       this.logger.log(
         `Embedding generated and saved for document: ${documentId}`,

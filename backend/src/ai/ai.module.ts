@@ -1,4 +1,5 @@
 import { CategoriesModule } from '../categories/categories.module';
+import { EmbeddingStorageService } from '../common/services/embedding-storage.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesModule } from '../files/files.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -29,6 +30,7 @@ import { ConfigModule } from '@nestjs/config';
     EmbeddingMigrationService,
     VectorSearchService,
     SystemSettingsService,
+    EmbeddingStorageService,
     QueryProcessorService,
     SearchCacheService,
     SearchHistoryService,

@@ -2,6 +2,7 @@ import { EmbeddingService } from '../../ai/embedding.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SimilarityDetectionService } from './similarity-detection.service';
 import { SimilarityTextExtractionService } from './similarity-text-extraction.service';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -13,6 +14,7 @@ export class SimilarityEmbeddingService {
     private readonly embeddingService: EmbeddingService,
     private readonly textExtractionService: SimilarityTextExtractionService,
     private readonly embeddingTextBuilder: EmbeddingTextBuilderService,
+    private readonly embeddingStorage: EmbeddingStorageService,
   ) {}
 
   // Detection service injected lazily to avoid circular dependency
@@ -37,19 +39,26 @@ export class SimilarityEmbeddingService {
     forceRegenerate = false,
   ): Promise<number[]> {
     try {
-      // Check if embedding already exists (avoid duplicate generation)
+      // Check if embedding already exists using raw query (Prisma can't handle vector type)
       if (!forceRegenerate) {
-        const existingEmbedding =
-          await this.prisma.documentEmbedding.findUnique({
-            where: { documentId },
-            select: { embedding: true, updatedAt: true },
-          });
+        const existing = await this.prisma.$queryRaw<
+          Array<{ embedding: string; updated_at: Date }>
+        >`
+          SELECT embedding::text, "updatedAt" as updated_at 
+          FROM document_embeddings 
+          WHERE "documentId" = ${documentId}
+        `;
 
-        if (existingEmbedding && existingEmbedding.embedding.length > 0) {
-          this.logger.log(
-            `Using existing embedding for document ${documentId} (updated: ${existingEmbedding.updatedAt})`,
-          );
-          return existingEmbedding.embedding;
+        if (existing.length > 0 && existing[0].embedding) {
+          // Parse vector string "[1,2,3]" to number[]
+          const embeddingStr = existing[0].embedding;
+          const parsed = JSON.parse(embeddingStr) as number[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.logger.log(
+              `Using existing embedding for document ${documentId} (updated: ${existing[0].updated_at})`,
+            );
+            return parsed;
+          }
         }
       }
 
@@ -119,11 +128,7 @@ export class SimilarityEmbeddingService {
         const embedding =
           await this.embeddingService.generateEmbedding(metadataText);
 
-        await this.prisma.documentEmbedding.upsert({
-          where: { documentId },
-          update: { embedding, updatedAt: new Date() },
-          create: { documentId, embedding },
-        });
+        await this.embeddingStorage.saveEmbedding(documentId, embedding);
 
         return embedding;
       }
@@ -131,11 +136,7 @@ export class SimilarityEmbeddingService {
       const embedding =
         await this.embeddingService.generateEmbedding(textContent);
 
-      await this.prisma.documentEmbedding.upsert({
-        where: { documentId },
-        update: { embedding, updatedAt: new Date() },
-        create: { documentId, embedding },
-      });
+      await this.embeddingStorage.saveEmbedding(documentId, embedding);
 
       this.logger.log(
         `Embedding generated and saved for document ${documentId} (${textContent.length} chars)`,

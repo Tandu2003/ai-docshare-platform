@@ -76,3 +76,4 @@ tsconfig.build.tsbuildinfo
 # ===== Uploads (if local) =====
 /uploads
 /temp-uploads
+/prisma/seed

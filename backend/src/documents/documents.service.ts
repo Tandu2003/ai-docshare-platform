@@ -8,6 +8,7 @@ import {
 } from '../ai/vector-search.service';
 import { CategoriesService } from '../categories/categories.service';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
+import { EmbeddingStorageService } from '../common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '../common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
@@ -72,6 +73,7 @@ export class DocumentsService {
     private searchService: DocumentSearchService,
     private sharingService: DocumentSharingService,
     private embeddingTextBuilder: EmbeddingTextBuilderService,
+    private embeddingStorage: EmbeddingStorageService,
   ) {}
 
   async createDocument(
@@ -433,9 +435,7 @@ export class DocumentsService {
       // When AI analysis is provided, run similarity detection and apply moderation
       if (wantsPublic) {
         try {
-          await this.similarityJobService.runSimilarityDetectionSync(
-            document.id,
-          );
+          this.similarityJobService.runSimilarityDetectionSync(document.id);
           this.logger.log(
             `Similarity detection completed for document ${document.id}`,
           );
@@ -510,9 +510,7 @@ export class DocumentsService {
 
         // Run similarity detection
         try {
-          await this.similarityJobService.runSimilarityDetectionSync(
-            document.id,
-          );
+          this.similarityJobService.runSimilarityDetectionSync(document.id);
           this.logger.log(
             `Similarity detection completed for document ${document.id}`,
           );
@@ -967,7 +965,7 @@ export class DocumentsService {
         email: string;
         isVerified: boolean;
       };
-      aiAnalysis: unknown | null;
+      aiAnalysis: null;
       files: Array<{
         id: string;
         originalName: string;
@@ -1066,7 +1064,7 @@ export class DocumentsService {
 
   async generateModerationAnalysis(documentId: string): Promise<{
     success: boolean;
-    analysis: unknown | null;
+    analysis: null;
     processedFiles: number;
     processingTime: number;
     autoModeration: { action: string; reason: string } | null;
@@ -1630,18 +1628,8 @@ export class DocumentsService {
         textContent.trim(),
       );
 
-      // Save embedding to database
-      await this.prisma.documentEmbedding.upsert({
-        where: { documentId },
-        update: {
-          embedding,
-          updatedAt: new Date(),
-        },
-        create: {
-          documentId,
-          embedding,
-        },
-      });
+      // Save embedding to database using shared service with proper vector formatting
+      await this.embeddingStorage.saveEmbedding(documentId, embedding);
 
       this.logger.log(
         `Embedding generated and saved for document ${documentId} (dimension: ${embedding.length})`,

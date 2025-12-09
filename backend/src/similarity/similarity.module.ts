@@ -11,6 +11,7 @@ import {
 } from './services';
 import { SimilarityJobService } from './similarity-job.service';
 import { SimilarityService } from './similarity.service';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { Module } from '@nestjs/common';
 
@@ -26,6 +27,7 @@ import { Module } from '@nestjs/common';
     SimilarityModerationService,
     SimilarityTextExtractionService,
     EmbeddingTextBuilderService,
+    EmbeddingStorageService,
   ],
   exports: [
     SimilarityService,

@@ -7,6 +7,7 @@ import {
   SEARCH_CACHE_CONFIG,
   SEARCH_THRESHOLDS,
 } from '@/common';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
@@ -67,6 +68,7 @@ export class VectorSearchService {
   constructor(
     private prisma: PrismaService,
     private embeddingService: EmbeddingService,
+    private embeddingStorage: EmbeddingStorageService,
   ) {}
 
   private prepareQueryVariants(query: string) {
@@ -323,29 +325,20 @@ export class VectorSearchService {
     threshold: number,
     limit: number,
   ): Promise<VectorSearchResult[]> {
-    const embeddings = await this.prisma.documentEmbedding.findMany({
-      where: {
-        documentId: {
-          in: documentIds,
-        },
-      },
-      select: {
-        documentId: true,
-        embedding: true,
-      },
-    });
+    const embeddingsMap =
+      await this.embeddingStorage.getEmbeddings(documentIds);
 
     const results: VectorSearchResult[] = [];
 
-    embeddings.forEach(item => {
-      if (!item.embedding || item.embedding.length === 0) {
+    embeddingsMap.forEach((embedding, documentId) => {
+      if (!embedding || embedding.length === 0) {
         return;
       }
 
-      const similarity = cosineSimilarity(queryEmbedding, item.embedding);
+      const similarity = cosineSimilarity(queryEmbedding, embedding);
       if (Number.isFinite(similarity) && similarity >= threshold) {
         results.push({
-          documentId: item.documentId,
+          documentId,
           similarityScore: similarity,
         });
       }

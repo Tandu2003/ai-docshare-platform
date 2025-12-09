@@ -7,6 +7,7 @@ import {
   SIMILARITY_SCORE_WEIGHTS,
   SIMILARITY_THRESHOLDS,
 } from '@/common';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { Injectable, Logger } from '@nestjs/common';
 
 export interface SimilarityResult {
@@ -38,6 +39,7 @@ export class SimilarityDetectionService {
     private readonly prisma: PrismaService,
     private readonly algorithmService: SimilarityAlgorithmService,
     private readonly textExtractionService: SimilarityTextExtractionService,
+    private readonly embeddingStorage: EmbeddingStorageService,
   ) {}
 
   async detectSimilarDocuments(
@@ -212,9 +214,8 @@ export class SimilarityDetectionService {
         .filter((hash: string | null): hash is string => Boolean(hash)),
     );
 
-    const sourceEmbedding = await this.prisma.documentEmbedding.findUnique({
-      where: { documentId },
-    });
+    const sourceEmbedding =
+      await this.embeddingStorage.getEmbedding(documentId);
 
     for (let i = 0; i < otherDocumentIds.length; i += BATCH_SIZE) {
       const batch = otherDocumentIds.slice(i, i + BATCH_SIZE);
@@ -345,9 +346,9 @@ export class SimilarityDetectionService {
     // Embedding similarity - use shared cosineSimilarity function
     let embeddingSimilarity = 0;
     if (sourceEmbedding) {
-      const targetEmbedding = await this.prisma.documentEmbedding.findUnique({
-        where: { documentId: targetDocument.id },
-      });
+      const targetEmbedding = await this.embeddingStorage.getEmbedding(
+        targetDocument.id,
+      );
       if (targetEmbedding) {
         embeddingSimilarity = cosineSimilarity(
           sourceEmbedding.embedding,

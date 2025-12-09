@@ -3,6 +3,7 @@ import {
   HybridSearchResult,
   VectorSearchService,
 } from '@/ai/vector-search.service';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { FilesService } from '@/files/files.service';
@@ -72,6 +73,7 @@ export class DocumentSearchService {
     private readonly systemSettings: SystemSettingsService,
     private readonly filesService: FilesService,
     private readonly embeddingTextBuilder: EmbeddingTextBuilderService,
+    private readonly embeddingStorage: EmbeddingStorageService,
   ) {}
 
   async searchDocuments(
@@ -187,17 +189,8 @@ export class DocumentSearchService {
         textContent.trim(),
       );
 
-      await this.prisma.documentEmbedding.upsert({
-        where: { documentId },
-        update: {
-          embedding,
-          updatedAt: new Date(),
-        },
-        create: {
-          documentId,
-          embedding,
-        },
-      });
+      // Save embedding using shared service with proper vector formatting
+      await this.embeddingStorage.saveEmbedding(documentId, embedding);
 
       this.logger.log(
         `Embedding generated for document ${documentId} (dim: ${embedding.length})`,
