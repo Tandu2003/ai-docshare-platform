@@ -12,6 +12,7 @@ import { EmbeddingStorageService } from '../common/services/embedding-storage.se
 import { EmbeddingTextBuilderService } from '../common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
+import { PreviewQueueService } from '../preview/preview-queue.service';
 import { PreviewService } from '../preview/preview.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -64,6 +65,8 @@ export class DocumentsService {
     private categoriesService: CategoriesService,
     @Inject(forwardRef(() => PreviewService))
     private previewService: PreviewService,
+    @Inject(forwardRef(() => PreviewQueueService))
+    private previewQueueService: PreviewQueueService,
     // Domain services
     private commentService: DocumentCommentService,
     private crudService: DocumentCrudService,
@@ -396,14 +399,8 @@ export class DocumentsService {
         }
       }
 
-      // Generate document previews (first 3 pages as images)
-      try {
-        await this.previewService.generatePreviews(document.id);
-      } catch (error) {
-        this.logger.warn(
-          `Failed to generate previews for document ${document.id}: ${error.message}`,
-        );
-      }
+      // Queue preview generation (non-blocking)
+      this.previewQueueService.enqueue(document.id);
 
       this.logger.log(`Background tasks completed for document ${document.id}`);
     } catch (error) {

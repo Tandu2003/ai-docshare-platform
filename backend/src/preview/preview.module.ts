@@ -3,6 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { PreviewController } from './controllers/preview.controller';
 import { SecureDocumentController } from './controllers/secure-document.controller';
 import { PreviewInitializationService } from './preview-initialization.service';
+import { PreviewQueueService } from './preview-queue.service';
 import { PreviewService } from './preview.service';
 import { SecureDocumentService } from './secure-document.service';
 import {
@@ -21,6 +22,7 @@ import { ConfigModule } from '@nestjs/config';
   providers: [
     // Core services
     PreviewService,
+    PreviewQueueService,
     SecureDocumentService,
     CloudflareR2Service,
     PreviewInitializationService,
@@ -33,6 +35,7 @@ import { ConfigModule } from '@nestjs/config';
   ],
   exports: [
     PreviewService,
+    PreviewQueueService,
     SecureDocumentService,
     PreviewInitializationService,
     // Export domain services for use in other modules

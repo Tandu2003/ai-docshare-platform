@@ -6,7 +6,7 @@ import { CategoriesService } from '@/categories/categories.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PointsService } from '@/points/points.service';
-import { PreviewService } from '@/preview/preview.service';
+import { PreviewQueueService } from '@/preview/preview-queue.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { SimilarityJobService } from '@/similarity/similarity-job.service';
 import {
@@ -91,8 +91,8 @@ export class DocumentCrudService {
     private readonly pointsService: PointsService,
     private readonly categoriesService: CategoriesService,
     private readonly similarityJobService: SimilarityJobService,
-    @Inject(forwardRef(() => PreviewService))
-    private readonly previewService: PreviewService,
+    @Inject(forwardRef(() => PreviewQueueService))
+    private readonly previewQueueService: PreviewQueueService,
     @Inject(forwardRef(() => DocumentSearchService))
     private readonly searchService: DocumentSearchService,
   ) {}
@@ -439,12 +439,8 @@ export class DocumentCrudService {
           );
       }
 
-      // Generate previews
-      await this.previewService
-        .generatePreviews(document.id)
-        .catch(err =>
-          this.logger.warn(`Failed to generate previews: ${err.message}`),
-        );
+      // Queue preview generation (non-blocking)
+      this.previewQueueService.enqueue(document.id);
 
       this.logger.log(`Background tasks completed for document ${document.id}`);
     } catch (error) {
@@ -581,7 +577,7 @@ export class DocumentCrudService {
     confidence: number,
   ): Promise<void> {
     try {
-      await this.similarityJobService.runSimilarityDetectionSync(documentId);
+      this.similarityJobService.runSimilarityDetectionSync(documentId);
       this.logger.log(
         `Similarity detection completed for document ${documentId}`,
       );

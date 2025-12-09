@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '@/auth/guards/optional-jwt-auth.guard';
 import { ResponseHelper } from '@/common/helpers/response.helper';
 import { PreviewInitializationService } from '@/preview/preview-initialization.service';
+import { PreviewQueueService } from '@/preview/preview-queue.service';
 import { PreviewService } from '@/preview/preview.service';
 import { SecureDocumentService } from '@/preview/secure-document.service';
 import {
@@ -44,6 +45,7 @@ export class PreviewController {
 
   constructor(
     private readonly previewService: PreviewService,
+    private readonly previewQueueService: PreviewQueueService,
     private readonly secureDocumentService: SecureDocumentService,
     private readonly previewInitializationService: PreviewInitializationService,
   ) {}
@@ -534,5 +536,18 @@ export class PreviewController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Get('admin/queue-status')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get preview queue status (Admin only)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Queue status returned',
+  })
+  getQueueStatus(@Res() res: FastifyReply) {
+    const status = this.previewQueueService.getStatus();
+    return ResponseHelper.success(res, status);
   }
 }

@@ -1,4 +1,5 @@
 export { PreviewService } from './preview.service';
+export { PreviewQueueService } from './preview-queue.service';
 export { PreviewInitializationService } from './preview-initialization.service';
 export { SecureDocumentService } from './secure-document.service';
 // Domain-specific preview services
