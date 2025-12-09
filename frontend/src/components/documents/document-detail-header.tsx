@@ -1,45 +1,33 @@
 import type { ReactElement } from 'react';
 
 import {
+  AlertTriangle,
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
-  Bot,
   Check,
   Download,
-  Eye,
   RefreshCw,
   Share2,
-  Star,
-  User,
-  UserCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { DocumentPermissionGate } from '@/components/common/permission-gate';
-import { RatingStars } from '@/components/documents/rating-stars';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import type { DocumentView } from '@/services/document.service';
-import { formatDate } from '@/utils/date';
 
 interface DocumentDetailHeaderProps {
   document: DocumentView;
   onDownload: () => void;
   onBookmark: () => void;
   onShare: () => void;
-  onRate: (rating: number) => void;
-  onPreview?: () => void;
-  userRating?: number;
   isBookmarked?: boolean;
   isBookmarking?: boolean;
-  isRatingLoading?: boolean;
-  hasDownloaded?: boolean; // Whether user has already downloaded this document successfully
+  hasDownloaded?: boolean;
   isCheckingDownloadStatus?: boolean;
-  isOwner?: boolean; // Whether current user is the document owner
+  isOwner?: boolean;
 }
 
 export function DocumentDetailHeader({
@@ -47,17 +35,13 @@ export function DocumentDetailHeader({
   onDownload,
   onBookmark,
   onShare,
-  onRate,
-  onPreview,
-  userRating = 0,
   isBookmarked = false,
   isBookmarking = false,
-  isRatingLoading = false,
   hasDownloaded = false,
   isCheckingDownloadStatus = false,
   isOwner = false,
 }: DocumentDetailHeaderProps) {
-  function renderStatusBadge(): ReactElement {
+  function renderModerationBadge(): ReactElement | null {
     if (document.moderationStatus === 'REJECTED') {
       return <Badge variant="destructive">Đã từ chối</Badge>;
     }
@@ -67,261 +51,140 @@ export function DocumentDetailHeader({
     return <Badge variant="secondary">Chờ duyệt</Badge>;
   }
 
+  function renderNeedsModerationWarning(): ReactElement | null {
+    if (!document.needsReModeration) return null;
+    return (
+      <Badge variant="outline" className="flex items-center gap-1">
+        <AlertTriangle className="h-3 w-3" />
+        Chờ kiểm duyệt lại
+      </Badge>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Button variant="ghost" asChild>
-        <Link to="/documents" className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại tài liệu
-        </Link>
-      </Button>
+    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 border-b backdrop-blur">
+      <div className="flex items-center justify-between gap-4 px-4 py-3">
+        {/* Left: Back button + Title + Author */}
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="shrink-0">
+            <Link to="/documents" aria-label="Quay lại tài liệu">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
 
-      {/* Document Header */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {/* Title and Status */}
-            <div className="flex items-start justify-between">
-              <div className="flex-1 space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">
-                  {document.title}
-                </h1>
-                {document.description && (
-                  <p className="text-muted-foreground text-lg">
-                    {document.description}
-                  </p>
-                )}
-              </div>
-              <div className="ml-4 flex items-center gap-2">
-                {document.isPremium && (
-                  <Badge variant="default" className="bg-yellow-500">
-                    Premium
-                  </Badge>
-                )}
-                {renderStatusBadge()}
-                {document.needsReModeration && (
-                  <Badge variant="outline">Chờ kiểm duyệt lại</Badge>
-                )}
-                {document.isDraft && <Badge variant="outline">Draft</Badge>}
-              </div>
-            </div>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {/* Author Avatar */}
+            <Avatar className="h-8 w-8 shrink-0">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                {document.uploader.firstName.charAt(0)}
+                {document.uploader.lastName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
 
-            {/* Author Info */}
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {document.uploader.firstName.charAt(0)}
-                  {document.uploader.lastName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">
-                  {document.uploader.firstName} {document.uploader.lastName}
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  @{document.uploader.username}
-                </p>
-              </div>
-            </div>
-
-            {/* Moderation Info */}
-            {(document.moderatedAt ||
-              document.moderationNotes ||
-              document.rejectionReason) && (
-              <div className="bg-muted/50 rounded-lg border p-4">
-                <div className="mb-2 flex items-center space-x-2">
-                  {document.moderatedById ? (
-                    <UserCheck className="h-4 w-4 text-blue-600" />
-                  ) : (
-                    <Bot className="h-4 w-4 text-green-600" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {document.moderatedById
-                      ? 'Admin duyệt'
-                      : document.moderationStatus === 'REJECTED'
-                        ? 'Đã từ chối'
-                        : 'AI tự động duyệt'}
-                  </span>
-                  {document.moderatedAt && (
-                    <span className="text-muted-foreground text-sm">
-                      {new Date(document.moderatedAt).toLocaleString('vi-VN')}
-                    </span>
-                  )}
-                </div>
-                {document.moderationNotes && (
-                  <div className="mb-2">
-                    <p className="text-muted-foreground text-xs font-medium">
-                      Ghi chú kiểm duyệt:
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      {document.moderationNotes}
-                    </p>
-                  </div>
-                )}
-                {document.rejectionReason && (
-                  <div className="border-destructive/50 bg-destructive/10 rounded-md border p-2">
-                    <p className="text-destructive text-xs font-medium">
-                      Lý do từ chối:
-                    </p>
-                    <p className="text-destructive text-sm">
-                      {document.rejectionReason}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <Separator />
-
-            {/* Stats and Actions */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              {/* Stats */}
-              <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
-                <div className="flex items-center space-x-1">
-                  <Download className="h-4 w-4" />
-                  <span>{document.downloadCount} lượt tải</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{document.viewCount} lượt xem</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Star className="h-4 w-4" />
-                  <span>
-                    {document.averageRating.toFixed(1)} ({document.totalRatings}{' '}
-                    đánh giá)
-                  </span>
-                </div>
-                {document.stats?.commentsCount !== undefined && (
-                  <div className="flex items-center space-x-1">
-                    <span>{document.stats.commentsCount} bình luận</span>
-                  </div>
-                )}
-                {document.files && document.files.length > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <span>{document.files.length} file</span>
-                  </div>
-                )}
-                <div className="flex items-center space-x-1">
-                  <User className="h-4 w-4" />
-                  <span>{formatDate(document.createdAt)}</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center space-x-2">
-                {onPreview && (
-                  <Button variant="outline" onClick={onPreview}>
-                    <Eye className="h-4 w-4" />
-                    Xem trước
-                  </Button>
-                )}
-
-                <DocumentPermissionGate document={document} action="download">
-                  <Button
-                    onClick={onDownload}
-                    className="flex items-center gap-2"
-                    disabled={isCheckingDownloadStatus}
-                  >
-                    {isCheckingDownloadStatus ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : hasDownloaded && !isOwner ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Download className="h-4 w-4" />
-                    )}
-                    {isOwner ? (
-                      // Owner: just show "Tải xuống" without price
-                      'Tải xuống'
-                    ) : hasDownloaded ? (
-                      <>
-                        Tải lại
-                        <span className="ml-1 text-xs text-green-300">
-                          (Miễn phí)
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        Tải xuống
-                        {document.downloadCost !== undefined &&
-                          document.downloadCost > 0 && (
-                            <span className="ml-1 text-xs">
-                              ({document.downloadCost} điểm)
-                            </span>
-                          )}
-                      </>
-                    )}
-                  </Button>
-                </DocumentPermissionGate>
-
-                <Button
-                  variant={isBookmarked ? 'default' : 'outline'}
-                  onClick={onBookmark}
-                  disabled={isBookmarking}
-                  className={
-                    isBookmarked ? 'bg-primary text-primary-foreground' : ''
-                  }
-                  aria-busy={isBookmarking}
-                  aria-pressed={isBookmarked}
-                >
-                  {isBookmarked ? (
-                    <BookmarkCheck className="h-4 w-4" />
-                  ) : (
-                    <Bookmark className="h-4 w-4" />
-                  )}
-                  <span className="sr-only">
-                    {isBookmarked ? 'Xóa khỏi đánh dấu' : 'Thêm vào đánh dấu'}
-                  </span>
-                </Button>
-
-                <DocumentPermissionGate document={document} action="share">
-                  <Button variant="outline" onClick={onShare}>
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </DocumentPermissionGate>
-              </div>
-            </div>
-
-            {/* Rating Section */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Đánh giá tài liệu này:</p>
-              <RatingStars
-                rating={userRating}
-                averageRating={document.averageRating || 0}
-                totalRatings={document.totalRatings || 0}
-                onRatingChange={onRate}
-                showAverage={false}
-                size="lg"
-                loading={isRatingLoading}
-              />
-            </div>
-
-            {/* Tags and Category */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">Danh mục:</span>
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <span>{document.category.icon}</span>
-                  {document.category.name}
-                </Badge>
-              </div>
-              {document.tags.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">Thẻ:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {document.tags.map(tag => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Title and Author Info */}
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-sm font-semibold sm:text-base">
+                {document.title}
+              </h1>
+              <p className="text-muted-foreground truncate text-xs">
+                {document.uploader.firstName} {document.uploader.lastName}
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Status Badges */}
+          <div className="hidden items-center gap-2 sm:flex">
+            {document.isPremium && (
+              <Badge variant="default" className="bg-yellow-500">
+                Premium
+              </Badge>
+            )}
+            {renderModerationBadge()}
+            {renderNeedsModerationWarning()}
+            {document.isDraft && <Badge variant="outline">Draft</Badge>}
+          </div>
+        </div>
+
+        {/* Right: Action Buttons */}
+        <div className="flex shrink-0 items-center gap-2">
+          <DocumentPermissionGate document={document} action="download">
+            <Button
+              onClick={onDownload}
+              size="sm"
+              className="flex items-center gap-1"
+              disabled={isCheckingDownloadStatus}
+            >
+              {isCheckingDownloadStatus ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : hasDownloaded && !isOwner ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isOwner ? (
+                  'Tải xuống'
+                ) : hasDownloaded ? (
+                  <>
+                    Tải lại
+                    <span className="ml-1 text-xs text-green-300">
+                      (Miễn phí)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Tải xuống
+                    {document.downloadCost !== undefined &&
+                      document.downloadCost > 0 && (
+                        <span className="ml-1 text-xs">
+                          ({document.downloadCost} điểm)
+                        </span>
+                      )}
+                  </>
+                )}
+              </span>
+            </Button>
+          </DocumentPermissionGate>
+
+          <Button
+            variant={isBookmarked ? 'default' : 'outline'}
+            size="sm"
+            onClick={onBookmark}
+            disabled={isBookmarking}
+            className={isBookmarked ? 'bg-primary text-primary-foreground' : ''}
+            aria-busy={isBookmarking}
+            aria-pressed={isBookmarked}
+          >
+            {isBookmarked ? (
+              <BookmarkCheck className="h-4 w-4" />
+            ) : (
+              <Bookmark className="h-4 w-4" />
+            )}
+            <span className="sr-only">
+              {isBookmarked ? 'Xóa khỏi đánh dấu' : 'Thêm vào đánh dấu'}
+            </span>
+          </Button>
+
+          <DocumentPermissionGate document={document} action="share">
+            <Button variant="outline" size="sm" onClick={onShare}>
+              <Share2 className="h-4 w-4" />
+              <span className="sr-only">Chia sẻ</span>
+            </Button>
+          </DocumentPermissionGate>
+        </div>
+      </div>
+
+      {/* Mobile Status Badges - shown below on small screens */}
+      <div className="flex flex-wrap items-center gap-2 border-t px-4 py-2 sm:hidden">
+        {document.isPremium && (
+          <Badge variant="default" className="bg-yellow-500">
+            Premium
+          </Badge>
+        )}
+        {renderModerationBadge()}
+        {renderNeedsModerationWarning()}
+        {document.isDraft && <Badge variant="outline">Draft</Badge>}
+      </div>
     </div>
   );
 }

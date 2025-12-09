@@ -7,10 +7,9 @@ import { DocumentAIAnalysis } from '@/components/documents/document-ai-analysis'
 import { DocumentComments } from '@/components/documents/document-comments';
 import { DocumentDetailHeader } from '@/components/documents/document-detail-header';
 import { DocumentEditSheet } from '@/components/documents/document-edit-sheet';
-import { DocumentPreviewModal } from '@/components/documents/document-preview-modal';
+import { DocumentPreviewPanel } from '@/components/documents/document-preview-panel';
 import { DocumentShareDialog } from '@/components/documents/document-share-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DocumentSidebar } from '@/components/documents/document-sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks';
 import { getSocket } from '@/lib/socket';
@@ -29,10 +28,11 @@ import {
   type DocumentView,
   type ShareDocumentResponse,
 } from '@/services/document.service';
+import { PreviewService } from '@/services/preview.service';
 import { RatingService } from '@/services/rating.service';
-import { UploadService } from '@/services/upload.service';
 import type { AIAnalysis, Comment } from '@/types';
-import { getLanguageName } from '@/utils/language';
+
+const AUTO_REFRESH_INTERVAL = 25000; // 25 seconds
 
 export function DocumentDetailPage(): ReactElement {
   const { documentId } = useParams<{ documentId: string }>();
@@ -50,10 +50,15 @@ export function DocumentDetailPage(): ReactElement {
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isCheckingDownloadStatus, setIsCheckingDownloadStatus] =
     useState(false);
+
+  // Preview state - moved from modal to page level
+  const [previews, setPreviews] = useState(document?.previews || []);
+  const [previewStatus, setPreviewStatus] = useState(
+    document?.previewStatus || 'PENDING',
+  );
 
   const apiKey = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -83,39 +88,75 @@ export function DocumentDetailPage(): ReactElement {
     return window.location.href;
   }, [activeShareLink?.token, apiKey, document?.id, location.pathname]);
 
+  // Fetch document data
   useEffect(() => {
     const fetchDocumentData = async () => {
       if (!documentId) return;
 
       setLoading(true);
       try {
-        // Use real API to fetch document
         const foundDocument = await getDocumentById(documentId, apiKey);
         setDocument(foundDocument);
+        setPreviews(foundDocument.previews || []);
+        setPreviewStatus(foundDocument.previewStatus || 'PENDING');
 
-        // Load comments for this document
         const documentComments = await CommentsService.getComments(documentId);
         setComments(documentComments);
 
-        // Load AI analysis from document (already included by API)
         setAiAnalysis(foundDocument.aiAnalysis ?? null);
 
-        // Load user's rating
         try {
           const rating = await RatingService.getUserRating(documentId);
           setUserRating(rating);
-        } catch (ratingError) {
+        } catch {
           // Could not load user rating
         }
-      } catch (error: any) {
-        toast.error(error.message || 'Không thể tải thông tin tài liệu.');
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Không thể tải thông tin tài liệu.';
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDocumentData();
+    void fetchDocumentData();
   }, [apiKey, documentId]);
+
+  // Auto-refresh preview URLs
+  useEffect(() => {
+    if (!documentId || previewStatus !== 'COMPLETED' || previews.length === 0)
+      return;
+
+    const refreshPreviews = async () => {
+      try {
+        const result = await PreviewService.getDocumentPreviews(
+          documentId,
+          apiKey,
+        );
+        setPreviews(result.previews);
+      } catch {
+        // Failed to refresh previews - silent fail
+      }
+    };
+
+    const intervalId = setInterval(refreshPreviews, AUTO_REFRESH_INTERVAL);
+    return () => clearInterval(intervalId);
+  }, [documentId, apiKey, previewStatus, previews.length]);
+
+  // Handle preview regeneration complete
+  const handlePreviewRegenerateComplete = () => {
+    // Refresh document to get updated preview data
+    if (documentId) {
+      void getDocumentById(documentId, apiKey).then(doc => {
+        setDocument(doc);
+        setPreviews(doc.previews || []);
+        setPreviewStatus(doc.previewStatus || 'COMPLETED');
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchBookmarkStatus = async () => {
@@ -129,7 +170,7 @@ export function DocumentDetailPage(): ReactElement {
         const [bookmark] = await getUserBookmarks({ documentId });
         setBookmarkRecord(bookmark ?? null);
         setIsBookmarked(Boolean(bookmark));
-      } catch (error) {
+      } catch {
         // Failed to load bookmark status
       }
     };
@@ -150,7 +191,7 @@ export function DocumentDetailPage(): ReactElement {
         const { hasDownloaded: downloaded } =
           await checkDownloadStatus(documentId);
         setHasDownloaded(downloaded);
-      } catch (error) {
+      } catch {
         setHasDownloaded(false);
       } finally {
         setIsCheckingDownloadStatus(false);
@@ -167,25 +208,21 @@ export function DocumentDetailPage(): ReactElement {
     let isMounted = true;
     const socket = getSocket();
 
-    // Function to join document room
     const joinDocumentRoomSafe = () => {
       if (!isMounted) return;
       socket.emit('document:join', { documentId });
     };
 
-    // If already connected, join immediately
     if (socket.connected) {
       joinDocumentRoomSafe();
     }
 
-    // Always listen for connect event (for initial connect and reconnects)
     const handleConnect = () => {
       joinDocumentRoomSafe();
     };
 
     socket.on('connect', handleConnect);
 
-    // Define document update event types
     interface DocumentUpdateEvent {
       type: 'new_comment' | 'comment_updated' | 'comment_deleted';
       documentId: string;
@@ -202,9 +239,7 @@ export function DocumentDetailPage(): ReactElement {
       switch (event.type) {
         case 'new_comment':
           if (event.comment) {
-            // Check if this is a reply (has parentId)
             if (event.comment.parentId) {
-              // Add reply to parent comment
               setComments(prev =>
                 prev.map(comment =>
                   comment.id === event.comment!.parentId
@@ -216,7 +251,6 @@ export function DocumentDetailPage(): ReactElement {
                 ),
               );
             } else {
-              // Add new top-level comment
               setComments(prev => [...prev, event.comment!]);
             }
           }
@@ -224,15 +258,12 @@ export function DocumentDetailPage(): ReactElement {
 
         case 'comment_updated':
           if (event.commentId && event.likesCount !== undefined) {
-            // Update like count for the comment
-            // Need to handle nested replies too
             const updateLikeCount = (comments: Comment[]): Comment[] => {
               return comments.map(comment => {
                 if (comment.id === event.commentId) {
                   return {
                     ...comment,
                     likesCount: event.likesCount!,
-                    // Only update isLiked if the current user is the one who liked/unliked
                     isLiked:
                       event.likerId === user?.id
                         ? event.isLiked
@@ -265,7 +296,6 @@ export function DocumentDetailPage(): ReactElement {
 
     socket.on('document:update', handleDocumentUpdate);
 
-    // Cleanup
     return () => {
       isMounted = false;
       socket.off('connect', handleConnect);
@@ -279,19 +309,14 @@ export function DocumentDetailPage(): ReactElement {
   const handleDownload = async () => {
     if (!documentId) return;
 
-    // Track if this is a first-time download (for updating count)
     const isFirstDownload = !hasDownloaded && !isOwner;
 
     try {
       const result = await triggerFileDownload(documentId, document?.title);
 
-      // Silently update UI state if download was confirmed
-      // No toast shown - file has been fetched to browser, user decides to save or not
       if (result.confirmed) {
         setHasDownloaded(true);
 
-        // Update download count in UI if this was a first-time download by non-owner
-        // Backend has already incremented the count in database
         if (isFirstDownload && document) {
           setDocument(prev =>
             prev
@@ -303,11 +328,14 @@ export function DocumentDetailPage(): ReactElement {
           );
         }
       }
-      // Don't show any toast - download is triggered, user will see Save dialog
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
         'Không thể tải xuống tài liệu';
       toast.error(errorMessage);
     }
@@ -327,7 +355,6 @@ export function DocumentDetailPage(): ReactElement {
       return;
     }
 
-    // Kiểm tra nếu document là private và đang truy cập qua API key
     if (apiKey && !document.isPublic) {
       toast.error(
         'Tài liệu riêng tư không thể đánh dấu khi chia sẻ qua API key',
@@ -407,12 +434,11 @@ export function DocumentDetailPage(): ReactElement {
       await RatingService.setUserRating(documentId, rating);
       setUserRating(rating);
 
-      // Refresh document to get updated average rating
       const updatedDocument = await getDocumentById(documentId, apiKey);
       setDocument(updatedDocument);
 
       toast.success('Đã cập nhật đánh giá');
-    } catch (err) {
+    } catch {
       toast.error('Không thể cập nhật đánh giá');
     } finally {
       setIsRatingLoading(false);
@@ -429,7 +455,6 @@ export function DocumentDetailPage(): ReactElement {
 
     CommentsService.addComment(documentId, { content, parentId })
       .then(() => {
-        // Comment will be added via realtime event (document:update)
         toast.success('Đã thêm bình luận');
       })
       .catch(() => {
@@ -445,7 +470,6 @@ export function DocumentDetailPage(): ReactElement {
 
     if (!documentId) return;
 
-    // Helper function to update comment in nested structure
     const updateCommentLike = (
       comments: Comment[],
       targetId: string,
@@ -471,7 +495,6 @@ export function DocumentDetailPage(): ReactElement {
       });
     };
 
-    // Optimistic update
     const findComment = (
       comments: Comment[],
       targetId: string,
@@ -498,13 +521,11 @@ export function DocumentDetailPage(): ReactElement {
 
     try {
       const result = await CommentsService.likeComment(documentId, commentId);
-      // Update with actual server response
       setComments(prev =>
         updateCommentLike(prev, commentId, result.likesCount, result.isLiked),
       );
-    } catch (err) {
+    } catch {
       toast.error('Không thể thực hiện hành động');
-      // Revert optimistic update
       setComments(prev =>
         updateCommentLike(
           prev,
@@ -561,206 +582,18 @@ export function DocumentDetailPage(): ReactElement {
     setDocument(prev => (prev ? { ...prev, shareLink: undefined } : prev));
   };
 
-  // Handler for document update from edit sheet
   const handleDocumentUpdated = (updatedDocument: DocumentView) => {
     setDocument(updatedDocument);
     setEditSheetOpen(false);
     toast.success('Đã cập nhật tài liệu thành công');
   };
 
+  const handleEditDocument = () => {
+    setEditSheetOpen(true);
+  };
+
   if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-32" />
-          <Card>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {/* Title and badges */}
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-8 w-3/4" />
-                    <Skeleton className="h-5 w-1/2" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-6 w-16" />
-                    <Skeleton className="h-6 w-20" />
-                  </div>
-                </div>
-
-                {/* Author info */}
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                </div>
-
-                {/* Stats and actions */}
-                <div className="flex flex-wrap items-center gap-4">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-9 w-24" />
-                  <Skeleton className="h-9 w-9" />
-                  <Skeleton className="h-9 w-9" />
-                  <Skeleton className="h-9 w-9" />
-                </div>
-
-                {/* Rating */}
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-8 w-40" />
-                </div>
-
-                {/* Category and tags */}
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-6 w-16" />
-                    <Skeleton className="h-6 w-16" />
-                    <Skeleton className="h-6 w-16" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Skeleton - Vertical Layout */}
-        <div className="space-y-6">
-          {/* Document Info Card */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Description */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-
-              {/* Info grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="space-y-2">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                ))}
-              </div>
-
-              {/* Tags */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-6 w-18" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* File Details Card */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-md border p-3"
-                >
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Owner Management Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-8 w-24" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Comments Section */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Comment input */}
-              <div className="space-y-2">
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="ml-auto h-9 w-24" />
-              </div>
-
-              {/* Comment items */}
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="space-y-3 border-t pt-4">
-                  <div className="flex items-start gap-3">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                      <div className="flex items-center gap-4">
-                        <Skeleton className="h-4 w-12" />
-                        <Skeleton className="h-4 w-12" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* AI Analysis Card */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <div className="space-y-2 pt-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return <DocumentDetailPageSkeleton />;
   }
 
   if (!document) {
@@ -789,19 +622,7 @@ export function DocumentDetailPage(): ReactElement {
         onShareLinkRevoked={handleShareLinkRevoked}
       />
 
-      {/* Preview Modal */}
-      <DocumentPreviewModal
-        open={previewModalOpen}
-        onOpenChange={setPreviewModalOpen}
-        documentId={document.id}
-        previews={document.previews}
-        previewStatus={document.previewStatus}
-        previewCount={document.previewCount}
-        isOwner={isOwner}
-        hasAccess={true}
-        apiKey={apiKey}
-      />
-      {/* Document Header */}
+      {/* Document Header - Sticky Action Bar */}
       <DocumentDetailHeader
         document={document}
         onDownload={handleDownload}
@@ -809,168 +630,45 @@ export function DocumentDetailPage(): ReactElement {
           void handleBookmark();
         }}
         onShare={handleShare}
-        onRate={handleRate}
-        onPreview={() => setPreviewModalOpen(true)}
-        userRating={userRating}
         isBookmarked={isBookmarked}
         isBookmarking={isBookmarkActionLoading}
-        isRatingLoading={isRatingLoading}
         hasDownloaded={hasDownloaded}
         isCheckingDownloadStatus={isCheckingDownloadStatus}
         isOwner={isOwner}
       />
 
-      {/* Main Content - Vertical Layout */}
+      {/* Main Content - Two Column Layout */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
+        {/* Left Column - Preview Panel (70%) */}
+        <div className="min-w-0">
+          <DocumentPreviewPanel
+            documentId={document.id}
+            previews={previews}
+            previewStatus={previewStatus}
+            previewCount={document.previewCount}
+            isOwner={isOwner}
+            hasAccess={true}
+            apiKey={apiKey}
+            onRegenerateComplete={handlePreviewRegenerateComplete}
+            className="min-h-[600px]"
+          />
+        </div>
+
+        {/* Right Column - Sidebar (30%) */}
+        <div className="min-w-0">
+          <DocumentSidebar
+            document={document}
+            userRating={userRating}
+            onRate={handleRate}
+            isRatingLoading={isRatingLoading}
+            isOwner={isOwner}
+            onEdit={handleEditDocument}
+          />
+        </div>
+      </div>
+
+      {/* Full Width Sections Below */}
       <div className="space-y-6">
-        {/* Document Info - Visible to everyone */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Thông tin tài liệu</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {/* Language */}
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">Ngôn ngữ</p>
-                <span className="font-medium">
-                  {document.language
-                    ? getLanguageName(document.language)
-                    : 'N/A'}
-                </span>
-              </div>
-
-              {/* Updated date */}
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">
-                  Cập nhật lần cuối
-                </p>
-                <span>
-                  {new Date(document.updatedAt).toLocaleDateString('vi-VN', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
-              </div>
-
-              {/* Total file size */}
-              {document.files && document.files.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">
-                    Tổng dung lượng
-                  </p>
-                  <span className="font-medium">
-                    {UploadService.formatFileSize(
-                      document.files.reduce((total, file) => {
-                        const size =
-                          typeof file.fileSize === 'string'
-                            ? parseInt(file.fileSize, 10)
-                            : file.fileSize || 0;
-                        return total + size;
-                      }, 0),
-                    )}
-                  </span>
-                </div>
-              )}
-
-              {/* Preview status */}
-              {document.previewStatus && (
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-xs">
-                    Trạng thái preview
-                  </p>
-                  <Badge
-                    variant={
-                      document.previewStatus === 'COMPLETED'
-                        ? 'default'
-                        : document.previewStatus === 'FAILED'
-                          ? 'destructive'
-                          : 'secondary'
-                    }
-                    className="text-xs"
-                  >
-                    {document.previewStatus === 'COMPLETED'
-                      ? 'Hoàn thành'
-                      : document.previewStatus === 'PROCESSING'
-                        ? 'Đang xử lý'
-                        : document.previewStatus === 'FAILED'
-                          ? 'Thất bại'
-                          : 'Chờ xử lý'}
-                  </Badge>
-                </div>
-              )}
-
-              {/* Preview count */}
-              {document.previewCount !== undefined &&
-                document.previewCount > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs">
-                      Số trang preview
-                    </p>
-                    <span className="font-medium">
-                      {document.previewCount} trang
-                    </span>
-                  </div>
-                )}
-            </div>
-
-            {/* ZIP file info */}
-            {document.zipFileUrl && (
-              <div className="bg-muted/50 space-y-1 rounded-md border p-3">
-                <p className="text-muted-foreground text-xs font-medium">
-                  File ZIP đã tạo
-                </p>
-                <p className="text-sm">
-                  {document.zipFileCreatedAt
-                    ? `Tạo lúc: ${new Date(document.zipFileCreatedAt).toLocaleString('vi-VN')}`
-                    : 'Đã có sẵn'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* File Details - Show all files */}
-        {document.files && document.files.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Danh sách file</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {document.files
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                .map((file, index) => (
-                  <div
-                    key={file.id}
-                    className="flex items-start justify-between rounded-md border p-3"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-xs">
-                          #{index + 1}
-                        </span>
-                        <p className="text-sm font-medium">
-                          {file.originalName || file.fileName}
-                        </p>
-                      </div>
-                      <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                        <span>
-                          {UploadService.formatFileSize(
-                            typeof file.fileSize === 'string'
-                              ? parseInt(file.fileSize, 10)
-                              : file.fileSize || 0,
-                          )}
-                        </span>
-                        <span className="text-muted-foreground">•</span>
-                        <span>{file.mimeType}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Document Edit Sheet */}
         {isOwner && document && (
           <DocumentEditSheet
@@ -981,7 +679,7 @@ export function DocumentDetailPage(): ReactElement {
           />
         )}
 
-        {/* Comments */}
+        {/* Comments Section */}
         <DocumentComments
           comments={comments}
           onAddComment={handleAddComment}
@@ -991,8 +689,136 @@ export function DocumentDetailPage(): ReactElement {
           currentUserId={user?.id}
         />
 
-        {/* AI Analysis */}
+        {/* AI Analysis Section */}
         {aiAnalysis && <DocumentAIAnalysis analysis={aiAnalysis} />}
+      </div>
+    </div>
+  );
+}
+
+// Skeleton component for loading state
+function DocumentDetailPageSkeleton(): ReactElement {
+  return (
+    <div className="space-y-6">
+      {/* Header Skeleton */}
+      <div className="bg-background/95 sticky top-0 z-40 border-b p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </div>
+
+      {/* Two Column Layout Skeleton */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
+        {/* Preview Panel Skeleton */}
+        <div className="min-h-[600px] rounded-lg border">
+          <div className="bg-muted/50 flex items-center justify-between border-b p-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+          </div>
+          <div className="bg-muted flex min-h-[500px] items-center justify-center">
+            <Skeleton className="h-[400px] w-[300px]" />
+          </div>
+        </div>
+
+        {/* Sidebar Skeleton */}
+        <div className="space-y-4 rounded-lg border p-4">
+          {/* Rating Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-6 w-32" />
+          </div>
+
+          <Skeleton className="h-px w-full" />
+
+          {/* Document Info Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+
+          <Skeleton className="h-px w-full" />
+
+          {/* Statistics Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-lg" />
+              ))}
+            </div>
+          </div>
+
+          <Skeleton className="h-px w-full" />
+
+          {/* Tags Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-14" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Comments Section Skeleton */}
+      <div className="space-y-4 rounded-lg border p-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-20 w-full" />
+        <div className="space-y-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

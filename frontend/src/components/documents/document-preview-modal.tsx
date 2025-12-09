@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is deprecated as of the Document Detail Page Redesign.
+ * The preview is now displayed inline using DocumentPreviewPanel instead of in a modal.
+ * This file is kept for potential future use but should not be used in new code.
+ * @see DocumentPreviewPanel for the current inline preview implementation
+ */
 import { useEffect, useState, type ReactElement } from 'react';
 
 import { DocumentPreviewViewer } from '@/components/documents/document-preview-viewer';
@@ -13,6 +19,9 @@ import type {
 } from '@/services/document.service';
 import { PreviewService } from '@/services/preview.service';
 
+/**
+ * @deprecated Use DocumentPreviewPanel for inline preview display instead.
+ */
 interface DocumentPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +34,10 @@ interface DocumentPreviewModalProps {
   apiKey?: string;
 }
 
+/**
+ * @deprecated This component is deprecated. Use DocumentPreviewPanel for inline preview display.
+ * The Document Detail Page Redesign moved preview display from modal to inline panel.
+ */
 export function DocumentPreviewModal({
   open,
   onOpenChange,
