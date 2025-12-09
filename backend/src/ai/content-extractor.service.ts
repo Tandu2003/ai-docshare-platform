@@ -22,8 +22,24 @@ export class ContentExtractorService {
     try {
       switch (mimeType) {
         case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        case 'application/msword':
           return await this.extractWordContent(buffer);
+
+        case 'application/msword':
+          // Old .doc format - mammoth only supports .docx
+          // Check if it might actually be a .docx with wrong mime type
+          if (this.isDocxFile(buffer)) {
+            return await this.extractWordContent(buffer);
+          }
+          this.logger.warn(
+            `Legacy .doc format detected for ${fileName}. Only .docx is fully supported.`,
+          );
+          return {
+            text: '',
+            metadata: {
+              words: 0,
+              characters: 0,
+            },
+          };
 
         case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         case 'application/vnd.ms-excel':
@@ -124,6 +140,23 @@ export class ContentExtractorService {
         },
       };
     } catch (error) {
+      // Common PDF parsing errors - return empty content instead of throwing
+      const errorMsg = error.message?.toLowerCase() || '';
+      if (
+        errorMsg.includes('invalid') ||
+        errorMsg.includes('corrupted') ||
+        errorMsg.includes('pages dictionary')
+      ) {
+        this.logger.warn(`PDF appears corrupted or invalid: ${error.message}`);
+        return {
+          text: '',
+          metadata: {
+            pages: 0,
+            words: 0,
+            characters: 0,
+          },
+        };
+      }
       throw new Error(`Failed to extract PDF content: ${error.message}`);
     }
   }
@@ -155,6 +188,19 @@ export class ContentExtractorService {
         characters: 0,
       },
     };
+  }
+
+  private isDocxFile(buffer: Buffer): boolean {
+    // DOCX files are ZIP archives starting with PK signature
+    // and contain specific XML files
+    if (buffer.length < 4) return false;
+    // Check for ZIP signature (PK\x03\x04)
+    return (
+      buffer[0] === 0x50 &&
+      buffer[1] === 0x4b &&
+      buffer[2] === 0x03 &&
+      buffer[3] === 0x04
+    );
   }
 
   isSupportedFileType(mimeType: string): boolean {
