@@ -326,7 +326,17 @@ export class DocumentQueryService {
         throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
-      if (!document.isPublic && document.uploaderId !== userId) {
+      // Check admin access
+      let isAdmin = false;
+      if (userId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { role: true },
+        });
+        isAdmin = user?.role?.name === 'admin';
+      }
+
+      if (!document.isPublic && document.uploaderId !== userId && !isAdmin) {
         throw new BadRequestException('Tài liệu không công khai');
       }
 
@@ -531,6 +541,16 @@ export class DocumentQueryService {
     let shareAccessGranted = false;
     let activeShareLink: ValidatedShareLink | null = null;
     let isApiKeyAccess = false;
+    let isAdmin = false;
+
+    // Check admin access
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { role: true },
+      });
+      isAdmin = user?.role?.name === 'admin';
+    }
 
     if (shareToken) {
       activeShareLink = await this.sharingService.validateShareLink(
@@ -542,8 +562,8 @@ export class DocumentQueryService {
 
     // Check apiKey (share link token) - validate the share link
     if (apiKey) {
-      // If user is owner, allow access regardless of apiKey validation
-      if (isOwner) {
+      // If user is owner or admin, allow access regardless of apiKey validation
+      if (isOwner || isAdmin) {
         isApiKeyAccess = true;
       } else {
         // For non-owners, validate the share link token
@@ -564,10 +584,11 @@ export class DocumentQueryService {
       }
     }
 
-    // Check access permissions
+    // Check access permissions - admin has full access
     if (
       !document.isPublic &&
       !isOwner &&
+      !isAdmin &&
       !shareAccessGranted &&
       !isApiKeyAccess
     ) {
@@ -578,6 +599,7 @@ export class DocumentQueryService {
       document.isPublic &&
       !document.isApproved &&
       !isOwner &&
+      !isAdmin &&
       !shareAccessGranted &&
       !isApiKeyAccess
     ) {
@@ -586,7 +608,8 @@ export class DocumentQueryService {
 
     if (
       document.moderationStatus === DocumentModerationStatus.REJECTED &&
-      !isOwner
+      !isOwner &&
+      !isAdmin
     ) {
       throw new BadRequestException('Tài liệu đã bị từ chối');
     }

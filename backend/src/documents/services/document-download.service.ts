@@ -301,7 +301,7 @@ export class DocumentDownloadService {
         throw new BadRequestException('Không tìm thấy tài liệu');
       }
 
-      this.validateDocumentAccess(document, userId);
+      await this.validateDocumentAccess(document, userId);
 
       if (!document.files || document.files.length === 0) {
         throw new BadRequestException('Tài liệu không có tệp để tải xuống');
@@ -597,16 +597,30 @@ export class DocumentDownloadService {
     }
   }
 
-  private validateDocumentAccess(document: any, userId?: string): void {
+  private async validateDocumentAccess(
+    document: any,
+    userId?: string,
+  ): Promise<void> {
     const isOwner = document.uploaderId === userId;
+    let isAdmin = false;
+
+    // Check admin access
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { role: true },
+      });
+      isAdmin = user?.role?.name === 'admin';
+    }
 
     if (document.isPublic) {
-      if (!document.isApproved && !isOwner) {
+      if (!document.isApproved && !isOwner && !isAdmin) {
         throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
       }
       if (
         document.moderationStatus === DocumentModerationStatus.REJECTED &&
-        !isOwner
+        !isOwner &&
+        !isAdmin
       ) {
         throw new BadRequestException('Tài liệu đã bị từ chối');
       }
@@ -616,7 +630,7 @@ export class DocumentDownloadService {
           'Cần xác thực để tải xuống tài liệu riêng tư',
         );
       }
-      if (!isOwner) {
+      if (!isOwner && !isAdmin) {
         throw new BadRequestException(
           'Bạn không có quyền tải xuống tài liệu này',
         );

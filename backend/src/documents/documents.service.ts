@@ -712,6 +712,17 @@ export class DocumentsService {
 
       const isOwner = document.uploaderId === userId;
       let shareAccessGranted = false;
+      let isAdmin = false;
+
+      // Check admin access
+      if (userId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { role: true },
+        });
+        isAdmin = user?.role?.name === 'admin';
+      }
+
       if (apiKey) {
         try {
           const link = await this.validateShareLink(documentId, apiKey);
@@ -728,12 +739,13 @@ export class DocumentsService {
       }
 
       if (document.isPublic) {
-        if (!document.isApproved && !isOwner) {
+        if (!document.isApproved && !isOwner && !isAdmin) {
           throw new BadRequestException('Tài liệu đang chờ kiểm duyệt');
         }
         if (
           document.moderationStatus === DocumentModerationStatus.REJECTED &&
-          !isOwner
+          !isOwner &&
+          !isAdmin
         ) {
           throw new BadRequestException('Tài liệu đã bị từ chối');
         }
@@ -743,7 +755,7 @@ export class DocumentsService {
             'Cần xác thực để tải xuống tài liệu riêng tư',
           );
         }
-        if (!isOwner) {
+        if (!isOwner && !isAdmin) {
           throw new BadRequestException(
             'Bạn không có quyền tải xuống tài liệu này',
           );
