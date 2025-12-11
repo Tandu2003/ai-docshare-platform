@@ -8,7 +8,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
@@ -76,7 +75,17 @@ interface ModerationQueueDocument {
     email: string;
     isVerified: boolean;
   };
-  readonly aiAnalysis: any | null;
+  readonly aiAnalysis: {
+    readonly summary: string | null;
+    readonly keyPoints: string[];
+    readonly difficulty: string;
+    readonly confidence: number;
+    readonly reliabilityScore: number;
+    readonly moderationScore: number;
+    readonly safetyFlags: string[];
+    readonly isSafe: boolean;
+    readonly recommendedAction: string;
+  } | null;
   readonly files: Array<{
     id: string;
     originalName: string;
@@ -107,8 +116,6 @@ interface ModerationQueueResponse {
 
 @Injectable()
 export class DocumentModerationService {
-  private readonly logger = new Logger(DocumentModerationService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
@@ -226,8 +233,7 @@ export class DocumentModerationService {
           hasPrev: page > 1,
         },
       };
-    } catch (error) {
-      this.logger.error('Error getting moderation queue:', error);
+    } catch {
       throw new InternalServerErrorException(
         'Không thể lấy danh sách tài liệu chờ duyệt',
       );
@@ -299,12 +305,7 @@ export class DocumentModerationService {
         aiAnalysis: document.aiAnalysis ?? null,
         files: filesWithSecureUrls,
       };
-    } catch (error) {
-      this.logger.error(
-        `Error getting moderation detail for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
+    } catch {
       throw new InternalServerErrorException(
         'Không thể lấy chi tiết tài liệu chờ duyệt',
       );
@@ -351,11 +352,9 @@ export class DocumentModerationService {
 
       void this.embeddingMaintenance
         .ensureEmbeddingsForDocuments(updatedDocument.id)
-        .catch(err =>
-          this.logger.warn(
-            `Failed to ensure embedding after approval for ${documentId}: ${err.message}`,
-          ),
-        );
+        .catch(() => {
+          // Silent error handling
+        });
 
       void this.notifications.emitToUploaderOfDocument(
         updatedDocument.uploaderId,
@@ -368,9 +367,7 @@ export class DocumentModerationService {
       );
 
       return updatedDocument;
-    } catch (error) {
-      this.logger.error(`Error approving document ${documentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+    } catch {
       throw new InternalServerErrorException('Không thể duyệt tài liệu này');
     }
   }
@@ -433,9 +430,7 @@ export class DocumentModerationService {
       );
 
       return updatedDocument;
-    } catch (error) {
-      this.logger.error(`Error rejecting document ${documentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+    } catch {
       throw new InternalServerErrorException('Không thể từ chối tài liệu này');
     }
   }
@@ -487,11 +482,7 @@ export class DocumentModerationService {
       }
 
       return this.evaluateAIAnalysis(analysis, aiSettings);
-    } catch (error) {
-      this.logger.error(
-        `Error checking auto moderation for document ${documentId}:`,
-        error,
-      );
+    } catch {
       return {
         shouldAutoApprove: false,
         shouldAutoReject: false,
@@ -557,12 +548,7 @@ export class DocumentModerationService {
         processingTime: analysisResult.processingTime,
         autoModeration: autoModerationResult,
       };
-    } catch (error) {
-      this.logger.error(
-        `Error generating AI moderation analysis for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
+    } catch {
       throw new InternalServerErrorException(
         'Không thể phân tích AI cho tài liệu này',
       );
@@ -683,11 +669,7 @@ export class DocumentModerationService {
         reason: `Độ tương đồng ${similarityPercent}% nằm trong giới hạn cho phép`,
         highestSimilarity: similarityPercent,
       };
-    } catch (error) {
-      this.logger.error(
-        `Error checking similarity for document ${documentId}:`,
-        error,
-      );
+    } catch {
       return {
         shouldAutoReject: false,
         requiresManualReview: false,
@@ -751,8 +733,6 @@ export class DocumentModerationService {
     documentId: string,
     reason?: string,
   ): Promise<{ action: string; reason: string }> {
-    this.logger.log(`Auto-approving document ${documentId}: ${reason}`);
-
     try {
       await this.approveDocument(documentId, 'system', {
         notes: `Tự động duyệt bởi AI: ${reason}`,
@@ -763,11 +743,7 @@ export class DocumentModerationService {
         action: 'approved',
         reason: reason || 'Auto-approved by AI',
       };
-    } catch (error) {
-      this.logger.error(
-        `Failed to auto-approve document ${documentId}:`,
-        error,
-      );
+    } catch {
       return {
         action: 'error',
         reason: 'Failed to auto-approve',
@@ -779,8 +755,6 @@ export class DocumentModerationService {
     documentId: string,
     reason?: string,
   ): Promise<{ action: string; reason: string }> {
-    this.logger.log(`Auto-rejecting document ${documentId}: ${reason}`);
-
     try {
       await this.rejectDocument(documentId, 'system', {
         reason: `Tự động từ chối bởi AI: ${reason}`,
@@ -791,8 +765,7 @@ export class DocumentModerationService {
         action: 'rejected',
         reason: reason || 'Auto-rejected by AI',
       };
-    } catch (error) {
-      this.logger.error(`Failed to auto-reject document ${documentId}:`, error);
+    } catch {
       return {
         action: 'error',
         reason: 'Failed to auto-reject',

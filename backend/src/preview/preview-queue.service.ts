@@ -1,5 +1,5 @@
 import { PreviewService } from './preview.service';
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 interface QueueItem {
   documentId: string;
@@ -9,7 +9,6 @@ interface QueueItem {
 
 @Injectable()
 export class PreviewQueueService implements OnModuleDestroy {
-  private readonly logger = new Logger(PreviewQueueService.name);
   private readonly queue: QueueItem[] = [];
   private readonly processing = new Set<string>();
   private readonly maxConcurrent = 2; // Limit concurrent preview generations
@@ -31,14 +30,12 @@ export class PreviewQueueService implements OnModuleDestroy {
   enqueue(documentId: string, priority = 0): void {
     // Skip if already in queue or processing
     if (this.processing.has(documentId)) {
-      this.logger.debug(`Document ${documentId} already processing, skipping`);
       return;
     }
     const existingIndex = this.queue.findIndex(
       item => item.documentId === documentId,
     );
     if (existingIndex >= 0) {
-      this.logger.debug(`Document ${documentId} already in queue, skipping`);
       return;
     }
 
@@ -53,10 +50,6 @@ export class PreviewQueueService implements OnModuleDestroy {
       if (a.priority !== b.priority) return b.priority - a.priority;
       return a.addedAt - b.addedAt;
     });
-
-    this.logger.log(
-      `Queued preview generation for document ${documentId}, queue size: ${this.queue.length}`,
-    );
 
     // Start processing if not already running
     this.startProcessing();
@@ -102,10 +95,8 @@ export class PreviewQueueService implements OnModuleDestroy {
 
     // Process in background (fire-and-forget)
     this.processItem(item)
-      .catch(err => {
-        this.logger.error(
-          `Preview generation failed for ${item.documentId}: ${err.message}`,
-        );
+      .catch(() => {
+        // Preview generation failed
       })
       .finally(() => {
         this.processing.delete(item.documentId);
@@ -120,24 +111,7 @@ export class PreviewQueueService implements OnModuleDestroy {
   }
 
   private async processItem(item: QueueItem): Promise<void> {
-    const startTime = Date.now();
-    this.logger.log(
-      `Starting preview generation for document ${item.documentId}`,
-    );
-
-    try {
-      await this.previewService.generatePreviews(item.documentId);
-      const duration = Date.now() - startTime;
-      this.logger.log(
-        `Preview generation completed for ${item.documentId} in ${duration}ms`,
-      );
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      this.logger.error(
-        `Preview generation failed for ${item.documentId} after ${duration}ms: ${(error as Error).message}`,
-      );
-      throw error;
-    }
+    await this.previewService.generatePreviews(item.documentId);
   }
 
   private scheduleNextCheck(): void {

@@ -5,7 +5,7 @@ import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { DocumentAnalysisResult, GeminiService } from './gemini.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 export interface AIAnalysisRequest {
   fileIds: string[];
@@ -24,8 +24,6 @@ export interface AIAnalysisResponse {
 
 @Injectable()
 export class AIService {
-  private readonly logger = new Logger(AIService.name);
-
   constructor(
     private prisma: PrismaService,
     private filesService: FilesService,
@@ -42,22 +40,12 @@ export class AIService {
     const startTime = Date.now();
 
     try {
-      this.logger.log(
-        `Starting AI analysis for ${request.fileIds.length} files`,
-      );
-      this.logger.log(`File IDs: ${JSON.stringify(request.fileIds)}`);
-      this.logger.log(`User ID: ${request.userId}`);
-
       // First, check if any files exist at all
       const allFiles = await this.prisma.file.findMany({
         where: {
           id: { in: request.fileIds },
         },
       });
-
-      this.logger.log(
-        `Found ${allFiles.length} files in database with provided IDs`,
-      );
 
       // Then check which ones belong to the user
       const files = await this.prisma.file.findMany({
@@ -66,10 +54,6 @@ export class AIService {
           uploaderId: request.userId,
         },
       });
-
-      this.logger.log(
-        `Found ${files.length} files belonging to user ${request.userId}`,
-      );
 
       if (files.length === 0) {
         // Provide more detailed error information
@@ -85,50 +69,24 @@ export class AIService {
           errorMessage = `You don't have permission to analyze these files. The files exist but belong to other users: ${fileOwners}. You can only analyze files that you have uploaded. If you have uploaded the same document, please use your own file ID.`;
         }
 
-        this.logger.error(errorMessage);
         throw new Error(errorMessage);
-      }
-
-      if (files.length !== request.fileIds.length) {
-        this.logger.warn(
-          `Some files not found or don't belong to user. Expected: ${request.fileIds.length}, Found: ${files.length}`,
-        );
       }
 
       // Get storage URLs directly from files (no need for signed URLs since we use R2 service internally)
-      this.logger.log(`Getting storage URLs for ${files.length} files`);
       const validUrls = files
         .filter(file => file.storageUrl)
-        .map(file => {
-          this.logger.log(
-            `File ${file.id} (${file.originalName}): ${file.storageUrl}`,
-          );
-          return file.storageUrl;
-        });
-
-      this.logger.log(
-        `Found ${validUrls.length} valid storage URLs out of ${files.length} files`,
-      );
+        .map(file => file.storageUrl);
 
       if (validUrls.length === 0) {
         const errorMessage = `No accessible file URLs found. Tried ${files.length} files but all failed to generate secure URLs.`;
-        this.logger.error(errorMessage);
         throw new Error(errorMessage);
       }
-
-      this.logger.log(`Analyzing ${validUrls.length} files with Gemini AI`);
-      const geminiStartTime = Date.now();
 
       // Analyze with Gemini
       const analysisResult =
         await this.geminiService.analyzeDocumentFromFiles(validUrls);
 
-      this.logger.log(
-        `Gemini analysis completed in ${Date.now() - geminiStartTime}ms`,
-      );
-
       // Suggest best category based on analysis content
-      this.logger.log('Suggesting best category based on analysis result...');
       const categorySuggestion =
         await this.categoriesService.suggestBestCategoryFromContent({
           title: analysisResult.title,
@@ -138,13 +96,7 @@ export class AIService {
           keyPoints: analysisResult.keyPoints,
         });
 
-      this.logger.log(
-        `Category suggestion: ${categorySuggestion.categoryName} (${categorySuggestion.categoryId}) with confidence ${categorySuggestion.confidence}`,
-      );
-
       const processingTime = Date.now() - startTime;
-
-      this.logger.log(`AI analysis completed in ${processingTime}ms`);
 
       return {
         success: true,
@@ -157,9 +109,8 @@ export class AIService {
         processedFiles: validUrls.length,
         processingTime,
       };
-    } catch (error) {
+    } catch {
       const processingTime = Date.now() - startTime;
-      this.logger.error('Error in AI analysis:', error);
 
       // Return error with fallback data (Vietnamese)
       return {
@@ -223,20 +174,15 @@ export class AIService {
         },
       });
 
-      this.logger.log(`AI analysis saved for document: ${documentId}`);
-
       // Generate and save embedding for the document
       await this.generateAndSaveEmbedding(documentId);
-    } catch (error) {
-      this.logger.error('Error saving AI analysis:', error);
-      throw error;
+    } catch {
+      // Silent error handling
     }
   }
 
   async generateAndSaveEmbedding(documentId: string): Promise<void> {
     try {
-      this.logger.log(`Generating embedding for document: ${documentId}`);
-
       // Get document with AI analysis
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -282,9 +228,6 @@ export class AIService {
       const embeddingText = embeddingParts.join('\n\n');
 
       if (!embeddingText.trim()) {
-        this.logger.warn(
-          `Document ${documentId} has no content for embedding. Skipping...`,
-        );
         return;
       }
 
@@ -302,32 +245,21 @@ export class AIService {
         currentModel,
         '1.0',
       );
-
-      this.logger.log(
-        `Embedding generated and saved for document: ${documentId}`,
-      );
-    } catch (error) {
-      this.logger.error('Error generating embedding:', error);
+    } catch {
       // Don't throw - embedding generation is not critical for document creation
     }
   }
 
   async regenerateEmbedding(documentId: string): Promise<void> {
-    this.logger.log(`Regenerating embedding for document: ${documentId}`);
     await this.generateAndSaveEmbedding(documentId);
   }
 
   async getAnalysis(documentId: string) {
-    try {
-      const analysis = await this.prisma.aIAnalysis.findUnique({
-        where: { documentId },
-      });
+    const analysis = await this.prisma.aIAnalysis.findUnique({
+      where: { documentId },
+    });
 
-      return analysis;
-    } catch (error) {
-      this.logger.error('Error getting AI analysis:', error);
-      throw error;
-    }
+    return analysis;
   }
 
   async applyModerationSettings(
@@ -356,10 +288,6 @@ export class AIService {
           where: { id: documentId },
           data: { moderationStatus: 'REJECTED' },
         });
-
-        this.logger.log(
-          `Document ${documentId} auto-rejected due to similarity: ${similarityCheck.reason}`,
-        );
 
         return {
           status: 'rejected',
@@ -399,10 +327,6 @@ export class AIService {
           data: { moderationStatus: 'APPROVED' },
         });
 
-        this.logger.log(
-          `Document ${documentId} auto-approved with score ${moderationScore}%`,
-        );
-
         return {
           status: 'approved',
           action: 'auto_approved',
@@ -420,10 +344,6 @@ export class AIService {
           data: { moderationStatus: 'REJECTED' },
         });
 
-        this.logger.log(
-          `Document ${documentId} auto-rejected with score ${moderationScore}%`,
-        );
-
         return {
           status: 'rejected',
           action: 'auto_rejected',
@@ -437,8 +357,7 @@ export class AIService {
         action: 'manual_review',
         reason: 'Requires manual review',
       };
-    } catch (error) {
-      this.logger.error('Error applying moderation settings:', error);
+    } catch {
       return {
         status: 'pending',
         action: 'manual_review',
@@ -508,11 +427,7 @@ export class AIService {
         shouldReject: false,
         requiresManualReview: false,
       };
-    } catch (error) {
-      this.logger.error(
-        `Error checking similarity for document ${documentId}:`,
-        error,
-      );
+    } catch {
       return {
         shouldReject: false,
         requiresManualReview: false,
@@ -527,8 +442,7 @@ export class AIService {
       return {
         gemini: geminiStatus,
       };
-    } catch (error) {
-      this.logger.error('Error testing AI connections:', error);
+    } catch {
       return {
         gemini: false,
       };
@@ -561,8 +475,7 @@ export class AIService {
         count: files.length,
         message: `Found ${files.length} files that you can analyze`,
       };
-    } catch (error) {
-      this.logger.error('Error getting user files for analysis:', error);
+    } catch {
       return {
         success: false,
         files: [],
@@ -600,8 +513,7 @@ export class AIService {
         count: files.length,
         message: `Found ${files.length} files matching "${fileName}" that you can analyze`,
       };
-    } catch (error) {
-      this.logger.error('Error finding user files by name:', error);
+    } catch {
       return {
         success: false,
         files: [],

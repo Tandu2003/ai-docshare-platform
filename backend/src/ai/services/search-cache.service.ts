@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 export interface CacheEntry<T> {
   data: T;
@@ -13,7 +13,6 @@ export interface SearchCacheOptions {
 
 @Injectable()
 export class SearchCacheService {
-  private readonly logger = new Logger(SearchCacheService.name);
   private readonly cache = new Map<string, CacheEntry<any>>();
   private readonly maxSize = 500;
   private readonly ttl = 5 * 60 * 1000; // 5 minutes
@@ -51,7 +50,6 @@ export class SearchCacheService {
 
   clear(): void {
     this.cache.clear();
-    this.logger.log('Search cache cleared');
   }
 
   getStats(): { size: number; maxSize: number; ttlMs: number } {

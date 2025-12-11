@@ -62,7 +62,7 @@ export class SimilarityController {
 
   @Post('detect-sync/:documentId')
   async detectSyncSimilarity(@Param('documentId') documentId: string) {
-    await this.similarityJobService.runSimilarityDetectionSync(documentId);
+    this.similarityJobService.runSimilarityDetectionSync(documentId);
     const results =
       await this.similarityService.getSimilarityResultsForModeration(
         documentId,

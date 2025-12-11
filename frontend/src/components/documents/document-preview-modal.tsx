@@ -83,7 +83,7 @@ export function DocumentPreviewModal({
           );
           setPreviews(result.previews);
         }
-      } catch (err) {
+      } catch {
         // Keep initial values on error
         if (initialPreviews) {
           setPreviews(initialPreviews);

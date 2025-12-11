@@ -164,7 +164,7 @@ export class NotificationsGateway
         this.logger.warn(`Socket ${socket.id} token has no user ID`);
         socket.emit('auth:failed', { message: 'Invalid token payload' });
       }
-    } catch (error: any) {
+    } catch (error) {
       this.logger.warn(
         `Socket ${socket.id} token verification failed:`,
         error.message,

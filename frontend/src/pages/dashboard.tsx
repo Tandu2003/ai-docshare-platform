@@ -26,7 +26,7 @@ export const DashboardPage: React.FC = () => {
   try {
     const permissions = usePermissions();
     isAdmin = permissions.isAdmin();
-  } catch (error) {
+  } catch {
     // Failed to get permissions
   }
 

@@ -9,7 +9,6 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Query,
@@ -32,8 +31,6 @@ interface AuthenticatedRequest extends FastifyRequest {
 @Controller('bookmarks')
 @UseGuards(JwtAuthGuard)
 export class BookmarksController {
-  private readonly logger = new Logger(BookmarksController.name);
-
   constructor(private readonly bookmarksService: BookmarksService) {}
 
   @Get('stats')
@@ -47,9 +44,6 @@ export class BookmarksController {
     const userId = req.user?.id;
 
     if (!userId) {
-      this.logger.warn(
-        'Attempt to access bookmark stats without authenticated user',
-      );
       return ResponseHelper.error(
         res,
         'Không được ủy quyền',
@@ -64,11 +58,7 @@ export class BookmarksController {
         stats,
         'Thống kê đánh dấu đã được truy xuất thành công',
       );
-    } catch (error) {
-      this.logger.error(
-        `Failed to load bookmark stats for user ${userId}`,
-        error as Error,
-      );
+    } catch {
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất thống kê đánh dấu',
@@ -87,7 +77,6 @@ export class BookmarksController {
     const userId = req.user?.id;
 
     if (!userId) {
-      this.logger.warn('Attempt to create bookmark without authenticated user');
       return ResponseHelper.error(
         res,
         'Không được ủy quyền',
@@ -113,10 +102,6 @@ export class BookmarksController {
         HttpStatus.CREATED,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to create bookmark for user ${userId}`,
-        error as Error,
-      );
       if (error instanceof HttpException) {
         return ResponseHelper.error(res, error.message, error.getStatus());
       }
@@ -139,7 +124,6 @@ export class BookmarksController {
     const userId = req.user?.id;
 
     if (!userId) {
-      this.logger.warn('Attempt to delete bookmark without authenticated user');
       return ResponseHelper.error(
         res,
         'Không được ủy quyền',
@@ -151,10 +135,6 @@ export class BookmarksController {
       await this.bookmarksService.removeBookmark(userId, bookmarkId);
       return ResponseHelper.deleted(res, 'Đánh dấu đã được xóa thành công');
     } catch (error) {
-      this.logger.error(
-        `Failed to delete bookmark ${bookmarkId} for user ${userId}`,
-        error as Error,
-      );
       if (error instanceof HttpException) {
         return ResponseHelper.error(res, error.message, error.getStatus());
       }
@@ -179,9 +159,6 @@ export class BookmarksController {
     const userId = req.user?.id;
 
     if (!userId) {
-      this.logger.warn(
-        'Attempt to access bookmarks without authenticated user',
-      );
       return ResponseHelper.error(
         res,
         'Không được ủy quyền',
@@ -201,11 +178,7 @@ export class BookmarksController {
         bookmarks,
         'Đánh dấu đã được truy xuất thành công',
       );
-    } catch (error) {
-      this.logger.error(
-        `Failed to fetch bookmarks for user ${userId}`,
-        error as Error,
-      );
+    } catch {
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất đánh dấu',

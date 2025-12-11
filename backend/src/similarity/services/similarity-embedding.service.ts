@@ -44,8 +44,8 @@ export class SimilarityEmbeddingService {
         const existing = await this.prisma.$queryRaw<
           Array<{ embedding: string; updated_at: Date }>
         >`
-          SELECT embedding::text, "updatedAt" as updated_at 
-          FROM document_embeddings 
+          SELECT embedding::text, "updatedAt" as updated_at
+          FROM document_embeddings
           WHERE "documentId" = ${documentId}
         `;
 
@@ -55,7 +55,7 @@ export class SimilarityEmbeddingService {
           const parsed = JSON.parse(embeddingStr) as number[];
           if (Array.isArray(parsed) && parsed.length > 0) {
             this.logger.log(
-              `Using existing embedding for document ${documentId} (updated: ${existing[0].updated_at})`,
+              `Using existing embedding for document ${documentId} (updated: ${existing[0].updated_at.toISOString()})`,
             );
             return parsed;
           }
@@ -147,7 +147,7 @@ export class SimilarityEmbeddingService {
         `Error generating embedding for document ${documentId}:`,
         error,
       );
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 
@@ -204,14 +204,14 @@ export class SimilarityEmbeddingService {
             completedAt: new Date(),
           },
         });
-        throw error;
+        throw new Error('Unexpected error');
       }
     } catch (error) {
       this.logger.error(
         `Error in background similarity processing for ${documentId}:`,
         error,
       );
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 }

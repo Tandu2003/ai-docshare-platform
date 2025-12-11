@@ -1,6 +1,6 @@
 import { DocumentSearchService } from './document-search.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 
@@ -12,10 +12,6 @@ interface EmbeddingCheckResult {
 
 @Injectable()
 export class DocumentEmbeddingMaintenanceService implements OnModuleInit {
-  private readonly logger = new Logger(
-    DocumentEmbeddingMaintenanceService.name,
-  );
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly documentSearchService: DocumentSearchService,
@@ -27,18 +23,11 @@ export class DocumentEmbeddingMaintenanceService implements OnModuleInit {
       this.configService.get<string>('EMBEDDING_AUTO_INIT') !== 'false';
 
     if (!autoInit) {
-      this.logger.log(
-        'Embedding auto-init disabled (EMBEDDING_AUTO_INIT=false), skipping check',
-      );
       return;
     }
 
-    // Run in background to avoid blocking startup
-    void this.ensureEmbeddingsForDocuments().catch(error => {
-      this.logger.error(
-        'Failed to ensure embeddings for documents on startup:',
-        error,
-      );
+    void this.ensureEmbeddingsForDocuments().catch(() => {
+      // Silent error handling
     });
   }
 
@@ -63,17 +52,8 @@ export class DocumentEmbeddingMaintenanceService implements OnModuleInit {
     });
 
     if (missingEmbeddings.length === 0) {
-      this.logger.log(
-        documentId
-          ? `Document ${documentId} already has embedding`
-          : 'All documents already have embeddings',
-      );
       return { checked: 0, generated: 0, failed: 0 };
     }
-
-    this.logger.log(
-      `Found ${missingEmbeddings.length} documents missing embeddings. Generating...`,
-    );
 
     let generated = 0;
     let failed = 0;
@@ -82,17 +62,10 @@ export class DocumentEmbeddingMaintenanceService implements OnModuleInit {
       try {
         await this.documentSearchService.generateDocumentEmbedding(doc.id);
         generated++;
-      } catch (error: any) {
+      } catch {
         failed++;
-        this.logger.warn(
-          `Failed to generate embedding for document ${doc.id}: ${error.message}`,
-        );
       }
     }
-
-    this.logger.log(
-      `Embedding check completed: ${generated} generated, ${failed} failed (checked ${missingEmbeddings.length})`,
-    );
 
     return {
       checked: missingEmbeddings.length,

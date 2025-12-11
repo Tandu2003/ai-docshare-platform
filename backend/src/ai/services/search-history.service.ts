@@ -1,5 +1,5 @@
 import { PrismaService } from '../../prisma/prisma.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 export interface SaveSearchHistoryOptions {
   userId: string;
@@ -12,8 +12,6 @@ export interface SaveSearchHistoryOptions {
 }
 @Injectable()
 export class SearchHistoryService {
-  private readonly logger = new Logger(SearchHistoryService.name);
-
   constructor(private readonly prisma: PrismaService) {}
 
   async saveSearchHistory(options: SaveSearchHistoryOptions): Promise<void> {
@@ -31,10 +29,7 @@ export class SearchHistoryService {
           filters: options.filters || {},
         },
       });
-
-      this.logger.log(`Saved search history for user ${options.userId}`);
-    } catch (error) {
-      this.logger.error('Error saving search history:', error);
+    } catch {
       // Don't throw - search history is not critical
     }
   }

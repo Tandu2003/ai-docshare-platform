@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as mammoth from 'mammoth';
 import * as pdfParse from 'pdf-parse';
 import * as XLSX from 'xlsx';
@@ -13,11 +13,10 @@ export interface ExtractedContent {
 }
 @Injectable()
 export class ContentExtractorService {
-  private readonly logger = new Logger(ContentExtractorService.name);
   async extractContent(
     buffer: Buffer,
     mimeType: string,
-    fileName: string,
+    _fileName: string, // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<ExtractedContent> {
     try {
       switch (mimeType) {
@@ -30,9 +29,6 @@ export class ContentExtractorService {
           if (this.isDocxFile(buffer)) {
             return await this.extractWordContent(buffer);
           }
-          this.logger.warn(
-            `Legacy .doc format detected for ${fileName}. Only .docx is fully supported.`,
-          );
           return {
             text: '',
             metadata: {
@@ -57,16 +53,12 @@ export class ContentExtractorService {
 
         default:
           // For unsupported file types, try to extract as text
-          this.logger.warn(
-            `Unsupported file type: ${mimeType}. Attempting text extraction.`,
-          );
           return this.extractTextContent(buffer);
       }
     } catch (error) {
-      this.logger.error(
-        `Failed to extract content from ${fileName}: ${error.message}`,
+      throw new Error(
+        `Failed to extract content from file: ${(error as Error).message}`,
       );
-      throw new Error(`Failed to extract content from file: ${error.message}`);
     }
   }
 
@@ -82,8 +74,10 @@ export class ContentExtractorService {
           characters: text.length,
         },
       };
-    } catch (error) {
-      throw new Error(`Failed to extract Word content: ${error.message}`);
+    } catch (_error) {
+      throw new Error(
+        `Failed to extract Word content: ${(_error as Error).message}`,
+      );
     }
   }
 
@@ -123,7 +117,9 @@ export class ContentExtractorService {
         },
       };
     } catch (error) {
-      throw new Error(`Failed to extract Excel content: ${error.message}`);
+      throw new Error(
+        `Failed to extract Excel content: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -141,13 +137,12 @@ export class ContentExtractorService {
       };
     } catch (error) {
       // Common PDF parsing errors - return empty content instead of throwing
-      const errorMsg = error.message?.toLowerCase() || '';
+      const errorMsg = (error as Error).message?.toLowerCase() || '';
       if (
         errorMsg.includes('invalid') ||
         errorMsg.includes('corrupted') ||
         errorMsg.includes('pages dictionary')
       ) {
-        this.logger.warn(`PDF appears corrupted or invalid: ${error.message}`);
         return {
           text: '',
           metadata: {
@@ -157,7 +152,9 @@ export class ContentExtractorService {
           },
         };
       }
-      throw new Error(`Failed to extract PDF content: ${error.message}`);
+      throw new Error(
+        `Failed to extract PDF content: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -177,9 +174,6 @@ export class ContentExtractorService {
     void buffer;
     // For now, we'll return a placeholder since PowerPoint extraction is complex
     // You can enhance this later with libraries like node-pptx or officegen
-    this.logger.warn(
-      'PowerPoint extraction not fully implemented. Returning placeholder.',
-    );
 
     return {
       text: 'PowerPoint file detected. Content extraction for PowerPoint files is not fully supported yet.',

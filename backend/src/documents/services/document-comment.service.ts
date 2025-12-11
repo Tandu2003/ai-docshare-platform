@@ -4,7 +4,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 
 interface AddCommentDto {
@@ -43,8 +42,6 @@ interface RatingResponse {
 
 @Injectable()
 export class DocumentCommentService {
-  private readonly logger = new Logger(DocumentCommentService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -105,11 +102,7 @@ export class DocumentCommentService {
       });
 
       return comments.map(transformComment);
-    } catch (error) {
-      this.logger.error(
-        `Error getting comments for document ${documentId}:`,
-        error,
-      );
+    } catch {
       throw new InternalServerErrorException('Không thể lấy bình luận');
     }
   }
@@ -172,10 +165,6 @@ export class DocumentCommentService {
           replierId: userId,
           content: truncatedContent,
         });
-
-        this.logger.log(
-          `Reply notification sent to comment owner ${parentComment.userId}`,
-        );
       }
 
       // Notify document owner
@@ -195,10 +184,6 @@ export class DocumentCommentService {
           content: truncatedContent,
           isReply: !!dto.parentId,
         });
-
-        this.logger.log(
-          `Comment notification sent to document owner ${document.uploaderId}`,
-        );
       }
 
       // Broadcast to all document viewers
@@ -211,11 +196,8 @@ export class DocumentCommentService {
 
       return commentWithIsLiked as unknown as CommentWithUser;
     } catch (error) {
-      this.logger.error(
-        `Error adding comment for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Không thể thêm bình luận');
     }
   }
@@ -248,8 +230,8 @@ export class DocumentCommentService {
 
       return this.createLike(documentId, commentId, userId, comment);
     } catch (error) {
-      this.logger.error(`Error liking comment ${commentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Không thể thích bình luận');
     }
   }
@@ -284,8 +266,8 @@ export class DocumentCommentService {
         isEdited: updated.isEdited,
       };
     } catch (error) {
-      this.logger.error(`Error editing comment ${commentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Không thể sửa bình luận');
     }
   }
@@ -313,8 +295,8 @@ export class DocumentCommentService {
         data: { isDeleted: true },
       });
     } catch (error) {
-      this.logger.error(`Error deleting comment ${commentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Không thể xóa bình luận');
     }
   }
@@ -330,11 +312,7 @@ export class DocumentCommentService {
       });
 
       return { rating: rating?.rating || 0 };
-    } catch (error) {
-      this.logger.error(
-        `Error getting user rating for document ${documentId}:`,
-        error,
-      );
+    } catch {
       throw new InternalServerErrorException('Không thể lấy đánh giá');
     }
   }
@@ -376,11 +354,7 @@ export class DocumentCommentService {
       });
 
       return { rating: ratingValue };
-    } catch (error) {
-      this.logger.error(
-        `Error setting rating for document ${documentId}:`,
-        error,
-      );
+    } catch {
       throw new InternalServerErrorException('Không thể cập nhật đánh giá');
     }
   }
@@ -472,10 +446,6 @@ export class DocumentCommentService {
         likerName,
         likerId: userId,
       });
-
-      this.logger.log(
-        `Like notification sent to comment owner ${comment.userId}`,
-      );
     }
 
     return { likesCount: updated.likesCount, isLiked: true };

@@ -78,7 +78,7 @@ export class EmbeddingService {
           cacheHits: 0,
         },
       };
-    } catch (error) {
+    } catch {
       return {
         embedding: {
           totalRequests: 0,

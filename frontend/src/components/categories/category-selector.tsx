@@ -75,7 +75,7 @@ export function CategorySelector({
       setError(null);
       const response = await fetchCategorySuggestions(documentId);
       setSuggestions(response.suggestions);
-    } catch (err) {
+    } catch {
       // Don't show error for suggestions - it's a nice-to-have feature
     } finally {
       setLoadingSuggestions(false);

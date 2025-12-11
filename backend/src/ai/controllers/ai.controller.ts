@@ -17,7 +17,6 @@ import {
   Controller,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Query,
@@ -44,8 +43,6 @@ interface AuthenticatedRequest extends FastifyRequest {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AIController {
-  private readonly logger = new Logger(AIController.name);
-
   constructor(
     private readonly aiService: AIService,
     private readonly embeddingService: EmbeddingService,
@@ -65,10 +62,6 @@ export class AIController {
     @Body() dto: AnalyzeDocumentDto,
     @Req() req: AuthenticatedRequest,
   ): Promise<AIAnalysisResponse> {
-    this.logger.log(
-      `AI analysis requested by user ${req.user.id} for files: ${dto.fileIds.join(', ')}`,
-    );
-
     const request: AIAnalysisRequest = {
       fileIds: dto.fileIds,
       userId: req.user.id,
@@ -84,8 +77,6 @@ export class AIController {
     description: 'AI analysis retrieved successfully',
   })
   async getAnalysis(@Param('documentId') documentId: string) {
-    this.logger.log(`Getting AI analysis for document: ${documentId}`);
-
     return await this.aiService.getAnalysis(documentId);
   }
 
@@ -99,10 +90,6 @@ export class AIController {
     @Param('documentId') documentId: string,
     @Body() body: { moderationScore: number },
   ) {
-    this.logger.log(
-      `Applying moderation settings for document: ${documentId} with score: ${body.moderationScore}`,
-    );
-
     return await this.aiService.applyModerationSettings(
       documentId,
       body.moderationScore,
@@ -116,8 +103,6 @@ export class AIController {
     description: 'AI service connection test results',
   })
   async testConnection() {
-    this.logger.log('Testing AI service connections');
-
     return await this.aiService.testConnection();
   }
 
@@ -130,8 +115,6 @@ export class AIController {
     description: 'User files retrieved successfully',
   })
   async getMyFiles(@Req() req: AuthenticatedRequest) {
-    this.logger.log(`Getting files for user ${req.user.id}`);
-
     return await this.aiService.getUserFilesForAnalysis(req.user.id);
   }
 
@@ -147,10 +130,6 @@ export class AIController {
     @Req() req: AuthenticatedRequest,
     @Query('fileName') fileName: string,
   ) {
-    this.logger.log(
-      `Searching files for user ${req.user.id} with name: ${fileName}`,
-    );
-
     if (!fileName || fileName.trim().length === 0) {
       return {
         success: false,
@@ -176,12 +155,8 @@ export class AIController {
   })
   async regenerateEmbedding(
     @Param('documentId') documentId: string,
-    @Req() req: AuthenticatedRequest,
+    @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
   ) {
-    this.logger.log(
-      `Regenerating embedding for document ${documentId} by user ${req.user.id}`,
-    );
-
     try {
       await this.aiService.regenerateEmbedding(documentId);
 
@@ -191,12 +166,11 @@ export class AIController {
         embeddingDimension: this.embeddingService.getEmbeddingDimension(),
         message: 'Embedding regenerated successfully',
       };
-    } catch (error: any) {
-      this.logger.error('Error regenerating embedding:', error);
+    } catch (error) {
       return {
         success: false,
         documentId,
-        message: `Failed to regenerate embedding: ${error.message}`,
+        message: `Failed to regenerate embedding: ${(error as Error).message}`,
       };
     }
   }
@@ -213,8 +187,6 @@ export class AIController {
     embedding: EmbeddingMetrics;
     search: SearchMetrics;
   } {
-    this.logger.log('Getting embedding and search metrics');
-
     return {
       embedding: this.embeddingService.getMetrics(),
       search: this.vectorSearchService.getMetrics(),
@@ -230,8 +202,6 @@ export class AIController {
     description: 'Caches cleared successfully',
   })
   clearCaches() {
-    this.logger.log('Clearing embedding and search caches');
-
     this.embeddingService.clearCache();
     this.vectorSearchService.clearCache();
 
@@ -250,7 +220,6 @@ export class AIController {
     description: 'Embedding model status retrieved successfully',
   })
   async getEmbeddingModelStatus(): Promise<EmbeddingMigrationStatus> {
-    this.logger.log('Getting embedding model status');
     return await this.embeddingMigrationService.getEmbeddingModelStatus();
   }
 
@@ -266,7 +235,6 @@ export class AIController {
     isRunning: boolean;
     progress: RegenerationProgress;
   } {
-    this.logger.log('Getting embedding regeneration progress');
     return this.embeddingMigrationService.getRegenerationProgress();
   }
 
@@ -279,7 +247,6 @@ export class AIController {
     description: 'Regeneration started successfully',
   })
   regenerateOutdatedEmbeddings() {
-    this.logger.log('Starting regeneration of outdated embeddings');
     return this.embeddingMigrationService.regenerateAllEmbeddings();
   }
 
@@ -292,7 +259,6 @@ export class AIController {
     description: 'Force regeneration started successfully',
   })
   async forceRegenerateAllEmbeddings() {
-    this.logger.log('Starting force regeneration of all embeddings');
     return await this.embeddingMigrationService.forceRegenerateAllEmbeddings();
   }
 }

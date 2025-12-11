@@ -11,7 +11,7 @@ import {
   PreviewUtilService,
   TextPreviewService,
 } from './services';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PreviewStatus } from '@prisma/client';
 
@@ -51,7 +51,6 @@ export interface PreviewGenerationResult {
 
 @Injectable()
 export class PreviewService {
-  private readonly logger = new Logger(PreviewService.name);
   private readonly maxPreviewPages = 3; // Generate previews for first 3 pages
   private readonly previewSizes: Record<PreviewSize, number> = {
     small: 200,
@@ -74,7 +73,6 @@ export class PreviewService {
   ) {}
 
   async generatePreviews(documentId: string): Promise<PreviewGenerationResult> {
-    this.logger.log(`Starting preview generation for document: ${documentId}`);
     const processingStart = Date.now();
 
     try {
@@ -176,9 +174,6 @@ export class PreviewService {
 
       // Validate that previews were actually generated
       if (!previews || previews.length === 0) {
-        this.logger.warn(
-          `No previews generated for document ${documentId}, marking as failed`,
-        );
         await this.prisma.document.update({
           where: { id: documentId },
           data: {
@@ -202,10 +197,6 @@ export class PreviewService {
         data: { previewStatus: PreviewStatus.COMPLETED },
       });
 
-      this.logger.log(
-        `Preview generation completed for document ${documentId}: ${previews.length} previews`,
-      );
-
       return {
         success: true,
         documentId,
@@ -213,11 +204,6 @@ export class PreviewService {
         totalPages: previews.length,
       };
     } catch (error) {
-      this.logger.error(
-        `Preview generation failed for document ${documentId}:`,
-        error,
-      );
-
       await this.prisma.document.update({
         where: { id: documentId },
         data: {
@@ -268,10 +254,8 @@ export class PreviewService {
                 metadata.textPreviewPath,
                 this.shortSignedUrlExpiry,
               );
-          } catch (err) {
-            this.logger.warn(
-              `Could not sign text preview URL: ${(err as Error).message}`,
-            );
+          } catch {
+            // Could not sign text preview URL
           }
         }
         const previewSizes =
@@ -454,10 +438,8 @@ export class PreviewService {
           metadata.textPreviewPath,
           this.shortSignedUrlExpiry,
         );
-      } catch (err) {
-        this.logger.warn(
-          `Could not sign text preview URL: ${(err as Error).message}`,
-        );
+      } catch {
+        // Could not sign text preview URL
       }
     }
 
@@ -570,17 +552,12 @@ export class PreviewService {
   ): Promise<boolean> {
     const basePath = outputPath.replace('.jpg', '');
     const pdftoppmCmd = `pdftoppm -f ${pageNumber} -l ${pageNumber} -jpeg -jpegopt quality=${this.previewQuality} -scale-to ${targetWidth} "${pdfPath}" "${basePath}"`;
-    this.logger.log(`Running pdftoppm: ${pdftoppmCmd}`);
 
     try {
       // Try pdftoppm first (from poppler-utils)
-      const { stderr } = await this.runCommandWithTimeout(pdftoppmCmd, {
+      await this.runCommandWithTimeout(pdftoppmCmd, {
         logLabel: 'pdftoppm',
       });
-
-      if (stderr) {
-        this.logger.log(`pdftoppm stderr: ${stderr}`);
-      }
 
       // pdftoppm uses different naming conventions based on total pages:
       // - Single digit pages: preview-1.jpg, preview-2.jpg
@@ -607,10 +584,6 @@ export class PreviewService {
         }
       }
 
-      this.logger.log(
-        `pdftoppm output check: searching for patterns near ${basePath}, found=${foundPath || 'none'}`,
-      );
-
       // Also check if outputPath already exists (direct match)
       const outputExists = await fs.promises
         .access(outputPath)
@@ -619,7 +592,6 @@ export class PreviewService {
 
       if (foundPath && foundPath !== outputPath) {
         await fs.promises.rename(foundPath, outputPath);
-        this.logger.log(`Renamed ${foundPath} -> ${outputPath}`);
         return true;
       } else if (outputExists) {
         return true;
@@ -631,29 +603,20 @@ export class PreviewService {
         const files = await fs.promises.readdir(dir);
         const basename = path.basename(basePath);
         const relatedFiles = files.filter(f => f.startsWith(basename));
-        this.logger.log(
-          `Files in ${dir} starting with ${basename}: ${relatedFiles.join(', ') || 'none'}`,
-        );
 
         // Try to rename the first matching jpg file
         const jpgFile = relatedFiles.find(f => f.endsWith('.jpg'));
         if (jpgFile) {
           const jpgPath = path.join(dir, jpgFile);
           await fs.promises.rename(jpgPath, outputPath);
-          this.logger.log(`Found and renamed ${jpgPath} -> ${outputPath}`);
           return true;
         }
       } catch {
         // Ignore readdir errors
       }
 
-      this.logger.warn(
-        `pdftoppm succeeded but output file not found at: ${outputPath}`,
-      );
       return false;
-    } catch (pdftoppmError) {
-      this.logger.warn(`pdftoppm failed: ${pdftoppmError.message}`);
-
+    } catch {
       // Fallback to ImageMagick (webp first as requested)
       const fallbackWebp = outputPath.replace(/\\.jpg$/i, '.webp');
       try {
@@ -671,10 +634,8 @@ export class PreviewService {
             return true;
           }
         }
-      } catch (convertWebpError) {
-        this.logger.warn(
-          `ImageMagick webp fallback failed: ${convertWebpError.message}`,
-        );
+      } catch {
+        // ImageMagick webp fallback failed
       }
 
       // Last fallback: direct convert to JPEG
@@ -685,10 +646,7 @@ export class PreviewService {
         );
 
         return await this.fileExists(outputPath);
-      } catch (convertError) {
-        this.logger.error(
-          `ImageMagick conversion also failed: ${convertError.message}`,
-        );
+      } catch {
         return false;
       }
     }
@@ -820,8 +778,7 @@ export class PreviewService {
       });
 
       return key;
-    } catch (error) {
-      this.logger.warn(`pdftotext snippet failed: ${(error as Error).message}`);
+    } catch {
       return undefined;
     }
   }
@@ -856,8 +813,6 @@ export class PreviewService {
 
     while (attempt <= retries) {
       attempt++;
-      const label = options?.logLabel || 'Command';
-      const startedAt = Date.now();
 
       try {
         const result = await new Promise<{ stdout: string; stderr: string }>(
@@ -904,15 +859,9 @@ export class PreviewService {
           },
         );
 
-        this.logger.log(
-          `${label} succeeded in ${Date.now() - startedAt}ms (attempt ${attempt}/${retries + 1})`,
-        );
         return result;
       } catch (error) {
         lastError = error as Error;
-        this.logger.warn(
-          `${label} failed (attempt ${attempt}/${retries + 1}): ${lastError.message}`,
-        );
       }
     }
 
@@ -989,10 +938,7 @@ export class PreviewService {
         { logLabel: `resize-${width}` },
       );
       return await this.fileExists(outputPath);
-    } catch (error) {
-      this.logger.warn(
-        `Resize failed (${width}px): ${(error as Error).message}`,
-      );
+    } catch {
       return false;
     }
   }
@@ -1007,10 +953,8 @@ export class PreviewService {
       if (match?.[1]) {
         return parseInt(match[1], 10);
       }
-    } catch (error) {
-      this.logger.warn(
-        `pdfinfo failed for ${pdfPath}: ${(error as Error).message}`,
-      );
+    } catch {
+      // pdfinfo failed
     }
     return this.maxPreviewPages;
   }
@@ -1135,7 +1079,7 @@ export class PreviewService {
           try {
             await this.r2Service.deleteFile(key);
           } catch {
-            this.logger.warn(`Failed to delete preview file: ${key}`);
+            // Failed to delete preview file
           }
         }
       }

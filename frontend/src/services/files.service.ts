@@ -131,7 +131,7 @@ export class FilesService {
       }
 
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Không thể tải lên tệp');
     }
   }
@@ -159,7 +159,8 @@ export class FilesService {
       }
 
       return response.data;
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { message?: string };
       throw new Error(error.message || 'Không thể tải lên ảnh đại diện');
     }
   }
@@ -170,7 +171,7 @@ export class DocumentsService {
     try {
       const response = await apiClient.post('/documents/create', documentData);
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Không thể tạo tài liệu');
     }
   }
@@ -189,7 +190,7 @@ export class DocumentsService {
       }
 
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Không thể lấy tài liệu của người dùng');
     }
   }
@@ -230,7 +231,7 @@ export class DocumentsService {
       }
 
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Không thể lấy tài liệu công khai');
     }
   }
@@ -283,7 +284,7 @@ export class DocumentsService {
       }
 
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Không thể tìm kiếm tài liệu');
     }
   }
@@ -298,7 +299,7 @@ export class DocumentsService {
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Không thể xóa tài liệu');
       }
-    } catch (error) {
+    } catch {
       throw new Error('Không thể xóa tài liệu');
     }
   }
@@ -313,7 +314,8 @@ export class DocumentsService {
         updateData,
       );
       return response.data;
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
       throw new Error(
         error.response?.data?.message || 'Không thể cập nhật tài liệu',
       );
@@ -349,10 +351,10 @@ export class DocumentsService {
             referrer: window.location.href,
           },
         );
-      } catch (trackError) {
+      } catch {
         // Don't throw error to avoid breaking the download flow
       }
-    } catch (error) {
+    } catch {
       throw new Error('Không thể tải xuống tài liệu.');
     }
   }
@@ -385,7 +387,7 @@ export class DocumentsService {
 
       // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
+    } catch {
       throw new Error('Không thể tải xuống tệp.');
     }
   }
@@ -395,7 +397,7 @@ export class DocumentsService {
     referrer?: string,
   ): Promise<void> {
     try {
-      const response = await apiClient.post<{
+      await apiClient.post<{
         success: boolean;
         data: any;
         message?: string;
@@ -403,10 +405,8 @@ export class DocumentsService {
         referrer: referrer || window.location.href,
       });
 
-      if (response?.success) {
-      } else {
-      }
-    } catch (error: any) {
+      // Track view silently
+    } catch {
       // Don't throw error to avoid breaking the user experience
     }
   }

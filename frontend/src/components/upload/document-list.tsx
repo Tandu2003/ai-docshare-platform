@@ -93,7 +93,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       setDocuments(filteredDocuments);
       setTotal(response.total);
       setPage(pageNum);
-    } catch (err) {
+    } catch {
       setError('Không thể tải danh sách tài liệu');
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     try {
       // Use real API to download document
       await DocumentsService.downloadDocument(document.id);
-    } catch (err) {
+    } catch {
       setError('Không thể tải tài liệu');
     }
   };
@@ -137,7 +137,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
       // Notify parent component
       onDocumentDeleted?.(documentId);
-    } catch (err) {
+    } catch {
       setError('Không thể xóa tài liệu');
     } finally {
       setDeletingId(null);
@@ -148,10 +148,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     // Track view before navigating
     const document = documents.find(doc => doc.id === documentId);
     if (document?.isPublic && document?.isApproved) {
-      await DocumentsService.trackDocumentView(
-        documentId,
-        window.location.href,
-      );
+      try {
+        await DocumentsService.trackDocumentView(
+          documentId,
+          window.location.href,
+        );
+      } catch {
+        // Silently handle tracking errors
+      }
     }
     navigate(`/documents/${documentId}`);
   };
@@ -407,7 +411,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                               const doc = await getDocumentById(document.id);
                               setSelectedDocument(doc);
                               setEditSheetOpen(true);
-                            } catch (error) {
+                            } catch {
                               // Failed to load document
                             }
                           }}

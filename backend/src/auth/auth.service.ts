@@ -515,7 +515,7 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new AuthenticationError('Xử lý yêu cầu đặt lại mật khẩu thất bại');
     }
@@ -567,7 +567,7 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new AuthenticationError('Đặt lại mật khẩu thất bại');
     }
@@ -662,7 +662,7 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof ConflictException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new BadRequestException('Cập nhật hồ sơ thất bại');
     }
@@ -717,7 +717,7 @@ export class AuthService {
         error instanceof UnauthorizedException ||
         error instanceof NotFoundException
       ) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new BadRequestException('Đổi mật khẩu thất bại');
     }

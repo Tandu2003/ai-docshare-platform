@@ -1,7 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface EmbeddingMigrationStatus {
@@ -19,7 +19,6 @@ export interface RegenerationProgress {
 }
 @Injectable()
 export class EmbeddingMigrationService implements OnModuleInit {
-  private readonly logger = new Logger(EmbeddingMigrationService.name);
   private isRegenerating = false;
   private regenerationProgress: RegenerationProgress = {
     total: 0,
@@ -36,47 +35,25 @@ export class EmbeddingMigrationService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Check if auto migration is enabled (default: true)
     const autoMigrate =
       this.configService.get<string>('EMBEDDING_AUTO_MIGRATE') !== 'false';
 
     if (!autoMigrate) {
-      this.logger.log(
-        '⏭️ Bỏ qua kiểm tra migration embedding tự động (EMBEDDING_AUTO_MIGRATE=false)',
-      );
       return;
     }
 
-    // Check if embedding service is properly configured
     if (!this.embeddingService.isConfigured()) {
-      this.logger.warn(
-        '⚠️ Embedding service chưa được cấu hình đúng (thiếu GEMINI_API_KEY). Bỏ qua migration.',
-      );
       return;
     }
-
-    this.logger.log('🔍 Kiểm tra tính nhất quán của model embedding...');
 
     try {
       const status = await this.checkEmbeddingModelConsistency();
 
       if (status.isRegenerationRequired) {
-        this.logger.warn(
-          `⚠️ Phát hiện ${status.outdatedEmbeddings}/${status.totalEmbeddings} embedding cần được regenerate`,
-        );
-        this.logger.log(
-          `📊 Model hiện tại: ${status.currentModel}, Models tìm thấy trong DB: ${status.modelsFound.join(', ')}`,
-        );
-
-        // Start regeneration in background
         void this.startBackgroundRegeneration();
-      } else {
-        this.logger.log(
-          `✅ Tất cả ${status.totalEmbeddings} embeddings đều đang sử dụng model ${status.currentModel}`,
-        );
       }
-    } catch (error) {
-      this.logger.error('❌ Lỗi khi kiểm tra tính nhất quán embedding:', error);
+    } catch {
+      // Silent error handling
     }
   }
 
@@ -117,19 +94,13 @@ export class EmbeddingMigrationService implements OnModuleInit {
 
   private async startBackgroundRegeneration() {
     if (this.isRegenerating) {
-      this.logger.warn('⚠️ Regeneration đang chạy, bỏ qua yêu cầu mới');
       return;
     }
 
     this.isRegenerating = true;
     const currentModel = this.embeddingService.getModelName();
 
-    this.logger.log(
-      `🔄 Bắt đầu regenerate embeddings sang model ${currentModel}...`,
-    );
-
     try {
-      // Get all outdated embeddings
       const outdatedEmbeddings = await this.prisma.documentEmbedding.findMany({
         where: {
           model: {
@@ -149,11 +120,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
         percentage: 0,
       };
 
-      this.logger.log(
-        `📦 Cần regenerate ${outdatedEmbeddings.length} embeddings`,
-      );
-
-      // Process in batches to avoid overloading
       const batchSize = 5;
       for (let i = 0; i < outdatedEmbeddings.length; i += batchSize) {
         const batch = outdatedEmbeddings.slice(i, i + batchSize);
@@ -163,12 +129,8 @@ export class EmbeddingMigrationService implements OnModuleInit {
             try {
               await this.regenerateEmbeddingForDocument(embedding.documentId);
               this.regenerationProgress.completed++;
-            } catch (error) {
+            } catch {
               this.regenerationProgress.failed++;
-              this.logger.error(
-                `❌ Lỗi regenerate embedding cho document ${embedding.documentId}:`,
-                error.message,
-              );
             }
           }),
         );
@@ -180,21 +142,12 @@ export class EmbeddingMigrationService implements OnModuleInit {
             100,
         );
 
-        this.logger.log(
-          `📈 Tiến độ: ${this.regenerationProgress.percentage}% (${this.regenerationProgress.completed} thành công, ${this.regenerationProgress.failed} thất bại)`,
-        );
-
-        // Small delay between batches to avoid rate limiting
         if (i + batchSize < outdatedEmbeddings.length) {
           await this.sleep(1000);
         }
       }
-
-      this.logger.log(
-        `✅ Hoàn thành regenerate embeddings: ${this.regenerationProgress.completed} thành công, ${this.regenerationProgress.failed} thất bại`,
-      );
-    } catch (error) {
-      this.logger.error('❌ Lỗi trong quá trình regenerate embeddings:', error);
+    } catch {
+      // Silent error handling
     } finally {
       this.isRegenerating = false;
     }
@@ -250,34 +203,22 @@ export class EmbeddingMigrationService implements OnModuleInit {
     const embeddingText = embeddingParts.join('\n\n');
 
     if (!embeddingText.trim()) {
-      this.logger.warn(
-        `Document ${documentId} không có nội dung để tạo embedding. Bỏ qua...`,
-      );
       return;
     }
 
-    // Generate new embedding; fall back to non-strict (placeholder) if strict fails
     let embedding: number[];
     try {
       embedding =
         await this.embeddingService.generateEmbeddingStrict(embeddingText);
-    } catch (error: any) {
-      this.logger.warn(
-        `Strict embedding generation failed for document ${documentId}, falling back to non-strict: ${error.message}`,
-      );
+    } catch {
       embedding = await this.embeddingService.generateEmbedding(embeddingText);
     }
 
-    // Update embedding in database via shared storage service to ensure vector formatting
     await this.embeddingStorage.saveEmbedding(
       documentId,
       embedding,
       currentModel,
       '1.0',
-    );
-
-    this.logger.log(
-      `✅ Đã regenerate embedding cho document ${documentId} với model ${currentModel}`,
     );
   }
 
@@ -318,14 +259,8 @@ export class EmbeddingMigrationService implements OnModuleInit {
     }
 
     this.isRegenerating = true;
-    const currentModel = this.embeddingService.getModelName();
-
-    this.logger.log(
-      `🔄 Bắt đầu force regenerate TẤT CẢ embeddings sang model ${currentModel}...`,
-    );
 
     try {
-      // Get all embeddings
       const allEmbeddings = await this.prisma.documentEmbedding.findMany({
         select: {
           documentId: true,
@@ -340,9 +275,6 @@ export class EmbeddingMigrationService implements OnModuleInit {
         percentage: 0,
       };
 
-      this.logger.log(`📦 Cần regenerate ${allEmbeddings.length} embeddings`);
-
-      // Process in batches
       const batchSize = 5;
       for (let i = 0; i < allEmbeddings.length; i += batchSize) {
         const batch = allEmbeddings.slice(i, i + batchSize);
@@ -352,12 +284,8 @@ export class EmbeddingMigrationService implements OnModuleInit {
             try {
               await this.regenerateEmbeddingForDocument(embedding.documentId);
               this.regenerationProgress.completed++;
-            } catch (error) {
+            } catch {
               this.regenerationProgress.failed++;
-              this.logger.error(
-                `❌ Lỗi regenerate embedding cho document ${embedding.documentId}:`,
-                error.message,
-              );
             }
           }),
         );
@@ -369,19 +297,10 @@ export class EmbeddingMigrationService implements OnModuleInit {
             100,
         );
 
-        this.logger.log(
-          `📈 Tiến độ: ${this.regenerationProgress.percentage}% (${this.regenerationProgress.completed} thành công, ${this.regenerationProgress.failed} thất bại)`,
-        );
-
-        // Small delay between batches
         if (i + batchSize < allEmbeddings.length) {
           await this.sleep(1000);
         }
       }
-
-      this.logger.log(
-        `✅ Hoàn thành force regenerate embeddings: ${this.regenerationProgress.completed} thành công, ${this.regenerationProgress.failed} thất bại`,
-      );
 
       return {
         success: true,
@@ -389,13 +308,9 @@ export class EmbeddingMigrationService implements OnModuleInit {
         progress: this.regenerationProgress,
       };
     } catch (error) {
-      this.logger.error(
-        '❌ Lỗi trong quá trình force regenerate embeddings:',
-        error,
-      );
       return {
         success: false,
-        message: `Lỗi: ${error.message}`,
+        message: `Lỗi: ${(error as Error).message}`,
         progress: this.regenerationProgress,
       };
     } finally {

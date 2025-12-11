@@ -11,7 +11,6 @@ import {
   Controller,
   Get,
   HttpStatus,
-  Logger,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -41,8 +40,6 @@ interface AuthenticatedRequest extends FastifyRequest {
 @ApiTags('Preview')
 @Controller('preview')
 export class PreviewController {
-  private readonly logger = new Logger(PreviewController.name);
-
   constructor(
     private readonly previewService: PreviewService,
     private readonly previewQueueService: PreviewQueueService,
@@ -99,11 +96,6 @@ export class PreviewController {
         expiresIn: 30, // seconds
       });
     } catch (error) {
-      this.logger.error(
-        `Error getting previews for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof NotFoundException) {
         return ResponseHelper.error(res, error.message, HttpStatus.NOT_FOUND);
       }
@@ -164,11 +156,6 @@ export class PreviewController {
 
       return ResponseHelper.success(res, preview);
     } catch (error) {
-      this.logger.error(
-        `Error getting preview page ${pageNumber} for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof NotFoundException) {
         return ResponseHelper.error(res, error.message, HttpStatus.NOT_FOUND);
       }
@@ -232,11 +219,6 @@ export class PreviewController {
       // Send stream to response
       return res.send(stream);
     } catch (error) {
-      this.logger.error(
-        `Error streaming preview for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof NotFoundException) {
         res.status(HttpStatus.NOT_FOUND).send('Preview not found');
         return;
@@ -265,11 +247,6 @@ export class PreviewController {
       const status = await this.previewService.getPreviewStatus(documentId);
       return ResponseHelper.success(res, status);
     } catch (error) {
-      this.logger.error(
-        `Error getting preview status for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof NotFoundException) {
         return ResponseHelper.error(res, error.message, HttpStatus.NOT_FOUND);
       }
@@ -324,12 +301,7 @@ export class PreviewController {
       const result = await this.previewService.generatePreviews(documentId);
 
       return ResponseHelper.success(res, result);
-    } catch (error) {
-      this.logger.error(
-        `Error generating previews for document ${documentId}:`,
-        error,
-      );
-
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể tạo preview',
@@ -380,12 +352,7 @@ export class PreviewController {
       const result = await this.previewService.regeneratePreviews(documentId);
 
       return ResponseHelper.success(res, result);
-    } catch (error) {
-      this.logger.error(
-        `Error regenerating previews for document ${documentId}:`,
-        error,
-      );
-
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể tạo lại preview',
@@ -408,8 +375,7 @@ export class PreviewController {
         await this.previewInitializationService.getInitializationStatus();
 
       return ResponseHelper.success(res, status);
-    } catch (error) {
-      this.logger.error('Error getting preview status:', error);
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể lấy trạng thái preview',
@@ -434,15 +400,14 @@ export class PreviewController {
       // Start initialization in background
       void this.previewInitializationService
         .initializeMissingPreviews()
-        .catch(error => {
-          this.logger.error('Background preview initialization failed:', error);
+        .catch(() => {
+          // Background preview initialization failed
         });
 
       return ResponseHelper.success(res, {
         message: 'Preview initialization started in background',
       });
-    } catch (error) {
-      this.logger.error('Error starting preview initialization:', error);
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể bắt đầu khởi tạo preview',
@@ -468,8 +433,7 @@ export class PreviewController {
         message: 'Regeneration completed',
         ...result,
       });
-    } catch (error) {
-      this.logger.error('Error regenerating failed previews:', error);
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể tạo lại preview thất bại',
@@ -494,16 +458,15 @@ export class PreviewController {
       // Start regeneration in background
       void this.previewInitializationService
         .regenerateAllPreviews()
-        .catch(error => {
-          this.logger.error('Background preview regeneration failed:', error);
+        .catch(() => {
+          // Background preview regeneration failed
         });
 
       return ResponseHelper.success(res, {
         message:
           'Preview regeneration started in background. Check logs for progress.',
       });
-    } catch (error) {
-      this.logger.error('Error starting preview regeneration:', error);
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể bắt đầu tạo lại preview',
@@ -517,19 +480,17 @@ export class PreviewController {
   @ApiOperation({ summary: 'TEST: Trigger regenerate all previews (no auth)' })
   testRegenerateAll(@Res() res: FastifyReply) {
     try {
-      this.logger.log('TEST: Starting regenerate all previews');
       void this.previewInitializationService
         .regenerateAllPreviews()
-        .catch(error => {
-          this.logger.error('Background preview regeneration failed:', error);
+        .catch(() => {
+          // Background preview regeneration failed
         });
 
       return ResponseHelper.success(res, {
         message:
           'TEST: Preview regeneration started in background. Check logs for progress.',
       });
-    } catch (error) {
-      this.logger.error('Error starting preview regeneration:', error);
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể bắt đầu tạo lại preview',

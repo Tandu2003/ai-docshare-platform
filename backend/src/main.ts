@@ -1,5 +1,4 @@
 import { AppModule } from '@/app.module';
-import { LoggerUtils } from '@/common/utils';
 import fastifyCookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -80,9 +79,6 @@ async function bootstrap() {
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        LoggerUtils.consoleWarn(
-          `CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`,
-        );
         callback(new Error('Not allowed by CORS'), false);
       }
     },
@@ -122,7 +118,6 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 }
 
-bootstrap().catch(error => {
-  LoggerUtils.consoleError('Error starting application:', error);
+bootstrap().catch(() => {
   process.exit(1);
 });

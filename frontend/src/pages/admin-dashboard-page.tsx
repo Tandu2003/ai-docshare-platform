@@ -179,10 +179,10 @@ export function AdminDashboardPage(): ReactElement {
         });
         setQueueData(data);
         setCurrentPage(data.pagination.page);
-      } catch (error) {
+      } catch (err) {
         const message =
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : 'Không thể tải hàng đợi kiểm duyệt';
         toast.error(message);
       } finally {
@@ -329,7 +329,7 @@ export function AdminDashboardPage(): ReactElement {
     try {
       const warnings = await getSimilarityResults(documentId);
       setSimilarityWarnings(warnings);
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải cảnh báo tương đồng');
     } finally {
       setSimilarityLoading(false);

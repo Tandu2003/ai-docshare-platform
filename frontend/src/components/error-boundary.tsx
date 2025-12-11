@@ -95,6 +95,7 @@ export class ErrorBoundary extends Component<
 
     // Log error to console in development
     if (import.meta.env.DEV) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
     // Call optional error handler

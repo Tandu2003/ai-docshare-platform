@@ -31,7 +31,8 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({
 
         // Initialize auth state on app startup
         await dispatch(initializeAuth());
-      } catch (error) {
+      } catch {
+        // Silently handle initialization errors
       } finally {
         setIsInitializing(false);
       }

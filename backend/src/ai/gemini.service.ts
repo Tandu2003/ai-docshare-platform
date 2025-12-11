@@ -2,7 +2,7 @@ import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { FilesService } from '../files/files.service';
 import { ContentExtractorService } from './content-extractor.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface DocumentAnalysisResult {
@@ -25,7 +25,6 @@ export interface DocumentAnalysisResult {
 
 @Injectable()
 export class GeminiService {
-  private readonly logger = new Logger(GeminiService.name);
   private genAI: GoogleGenerativeAI;
 
   constructor(
@@ -36,7 +35,6 @@ export class GeminiService {
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      this.logger.error('GEMINI_API_KEY not found in environment variables');
       throw new Error('Gemini API key is required');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -45,13 +43,9 @@ export class GeminiService {
   async analyzeDocumentFromFiles(
     fileUrls: string[],
   ): Promise<DocumentAnalysisResult> {
-    const startTime = Date.now();
     try {
-      this.logger.log(`Analyzing ${fileUrls.length} files with Gemini`);
-
       const modelName =
         this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
-      this.logger.log(`Using Gemini model: ${modelName}`);
       const model = this.genAI.getGenerativeModel({ model: modelName });
 
       // Timeout config (default 60s for content extraction, 30s for Gemini)
@@ -65,11 +59,6 @@ export class GeminiService {
       );
 
       // Extract content from files with timeout
-      this.logger.log(
-        `Starting content extraction (timeout: ${extractionTimeout}ms)`,
-      );
-      const extractionStartTime = Date.now();
-
       const extractedContents = await Promise.all(
         fileUrls.map(async url => {
           const maxRetries = 2; // Giảm retry để nhanh hơn
@@ -77,12 +66,7 @@ export class GeminiService {
 
           for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-              const fileStartTime = Date.now();
-
               // Get file stream with timeout (url is already storageUrl from database)
-              this.logger.log(
-                `[${fileName}] Getting file stream from: ${url.substring(0, 100)}...`,
-              );
               const fileStreamPromise = this.r2Service.getFileStream(url);
               const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(
@@ -104,17 +88,11 @@ export class GeminiService {
               for await (const chunk of fileStream) {
                 totalSize += chunk.length;
                 if (totalSize > maxSize) {
-                  this.logger.warn(
-                    `[${fileName}] File too large (${totalSize} bytes), truncating...`,
-                  );
                   break;
                 }
                 chunks.push(chunk);
               }
               const buffer = Buffer.concat(chunks);
-              this.logger.log(
-                `[${fileName}] Downloaded ${buffer.length} bytes in ${Date.now() - fileStartTime}ms`,
-              );
 
               // Get mimeType from extension
               const fileExtension =
@@ -134,11 +112,6 @@ export class GeminiService {
                 mimeTypeMap[fileExtension] || 'application/octet-stream';
 
               // Extract text content with timeout
-              this.logger.log(
-                `[${fileName}] Extracting content (${mimeType})...`,
-              );
-              const extractStartTime = Date.now();
-
               const extractPromise = this.contentExtractor.extractContent(
                 buffer,
                 mimeType,
@@ -156,10 +129,6 @@ export class GeminiService {
                 extractTimeoutPromise,
               ]);
 
-              this.logger.log(
-                `[${fileName}] Extracted ${extractedContent.metadata?.words || 0} words in ${Date.now() - extractStartTime}ms`,
-              );
-
               return {
                 fileName,
                 content: extractedContent.text,
@@ -167,33 +136,23 @@ export class GeminiService {
               };
             } catch (error) {
               const isRetryable =
-                error.message?.includes('network') ||
-                error.message?.includes('ECONNRESET') ||
-                error.message?.includes('ETIMEDOUT') ||
-                error.message?.includes('timeout');
+                (error as Error).message?.includes('network') ||
+                (error as Error).message?.includes('ECONNRESET') ||
+                (error as Error).message?.includes('ETIMEDOUT') ||
+                (error as Error).message?.includes('timeout');
 
               if (attempt < maxRetries && isRetryable) {
                 const retryDelay = 2000;
-                this.logger.warn(
-                  `[${fileName}] Retry ${attempt}/${maxRetries} after ${retryDelay}ms: ${error.message}`,
-                );
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
                 continue;
               }
 
-              this.logger.error(
-                `[${fileName}] Failed after ${attempt} attempts: ${error.message}`,
-              );
               break;
             }
           }
 
           return null;
         }),
-      );
-
-      this.logger.log(
-        `Content extraction completed in ${Date.now() - extractionStartTime}ms`,
       );
 
       // Filter out failed file processing
@@ -221,9 +180,6 @@ export class GeminiService {
       );
 
       // Generate content with timeout
-      this.logger.log(`Calling Gemini API (timeout: ${geminiTimeout}ms)...`);
-      const geminiStartTime = Date.now();
-
       const generatePromise = model.generateContent(prompt);
       const geminiTimeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
@@ -240,16 +196,10 @@ export class GeminiService {
       const response = result.response;
       const text = response.text();
 
-      this.logger.log(
-        `Gemini API completed in ${Date.now() - geminiStartTime}ms`,
-      );
-      this.logger.log(`Total analysis time: ${Date.now() - startTime}ms`);
-
       return this.parseAnalysisResult(text);
     } catch (error) {
-      this.logger.error('Error analyzing document with Gemini:', error);
       throw new BadRequestException(
-        `Failed to analyze document: ${error.message}`,
+        `Failed to analyze document: ${(error as Error).message}`,
       );
     }
   }
@@ -493,10 +443,7 @@ ${content.content}
         isSafe,
         recommendedAction,
       };
-    } catch (error) {
-      this.logger.error('Error parsing Gemini response:', error);
-      this.logger.debug('Raw response:', text);
-
+    } catch {
       // Return fallback result in Vietnamese
       return {
         title: 'Phân tích tài liệu',
@@ -526,7 +473,6 @@ ${content.content}
     try {
       const modelName =
         this.configService.get<string>('GEMINI_MODEL_NAME') || 'gemini-pro';
-      this.logger.log(`Testing connection with Gemini model: ${modelName}`);
       const model = this.genAI.getGenerativeModel({ model: modelName });
       const result = await model.generateContent(
         'Say "Hello" if you can read this.',
@@ -534,10 +480,8 @@ ${content.content}
       const response = result.response;
       const text = response.text();
 
-      this.logger.log('Gemini connection test successful');
       return text.toLowerCase().includes('hello');
-    } catch (error) {
-      this.logger.error('Gemini connection test failed:', error);
+    } catch {
       return false;
     }
   }

@@ -14,12 +14,10 @@ import {
   SourceType,
   TEXT_FORMATS,
 } from '../interfaces';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class PreviewUtilService {
-  private readonly logger = new Logger(PreviewUtilService.name);
-
   // ============================================================================
   // File Operations
   // ============================================================================
@@ -59,8 +57,6 @@ export class PreviewUtilService {
 
     while (attempt <= retries) {
       attempt++;
-      const label = options?.logLabel || 'Command';
-      const startedAt = Date.now();
 
       try {
         const result = await new Promise<CommandResult>((resolve, reject) => {
@@ -105,32 +101,9 @@ export class PreviewUtilService {
           });
         });
 
-        this.logger.debug(
-          `${label} succeeded in ${Date.now() - startedAt}ms (attempt ${attempt}/${retries + 1})`,
-        );
         return result;
       } catch (error) {
         lastError = error as Error;
-        const errorMessage = lastError.message;
-        const isDistutilsError = errorMessage.includes('distutils');
-        const isUnoconvCommand = label.includes('unoconv');
-
-        // Suppress warnings for unoconv/distutils errors - they're expected and handled by fallback
-        if (isUnoconvCommand && isDistutilsError) {
-          this.logger.debug(
-            `${label} failed (attempt ${attempt}/${retries + 1}): distutils error (expected, using LibreOffice fallback)`,
-          );
-        } else if (isUnoconvCommand) {
-          // Other unoconv errors at debug level
-          this.logger.debug(
-            `${label} failed (attempt ${attempt}/${retries + 1}): ${errorMessage}`,
-          );
-        } else {
-          // Non-unoconv errors keep warning level
-          this.logger.warn(
-            `${label} failed (attempt ${attempt}/${retries + 1}): ${errorMessage}`,
-          );
-        }
       }
     }
 
@@ -167,10 +140,7 @@ export class PreviewUtilService {
         },
       );
       return child;
-    } catch (error) {
-      this.logger.warn(
-        `Failed to start soffice daemon: ${(error as Error).message}`,
-      );
+    } catch {
       return null;
     }
   }
@@ -190,10 +160,7 @@ export class PreviewUtilService {
         { logLabel: `resize-${width}` },
       );
       return await this.fileExists(outputPath);
-    } catch (error) {
-      this.logger.warn(
-        `Resize failed (${width}px): ${(error as Error).message}`,
-      );
+    } catch {
       return false;
     }
   }

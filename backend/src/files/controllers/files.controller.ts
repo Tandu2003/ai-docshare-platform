@@ -12,7 +12,6 @@ import {
   Controller,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Req,
@@ -42,8 +41,6 @@ interface AuthenticatedRequest extends FastifyRequest {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class FilesController {
-  private readonly logger = new Logger(FilesController.name);
-
   constructor(
     private readonly filesService: FilesService,
     private readonly r2Service: CloudflareR2Service,
@@ -69,23 +66,11 @@ export class FilesController {
     const userId = req.user.id;
     const files = req.uploadedFiles || [];
 
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-
-    this.logger.log(
-      `Uploading ${files.length} files for user ${user?.username}`,
-    );
-
     if (!files || files.length === 0) {
       throw new BadRequestException('Không có tệp nào được cung cấp');
     }
 
     try {
-      this.logger.log(`Uploading ${files.length} files for user ${userId}`);
-
       const uploadResults = await this.filesService.uploadFiles(files, userId);
 
       return ResponseHelper.success(
@@ -95,8 +80,6 @@ export class FilesController {
         HttpStatus.CREATED,
       );
     } catch (error) {
-      this.logger.error('Error uploading files:', error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -143,8 +126,6 @@ export class FilesController {
         HttpStatus.CREATED,
       );
     } catch (error) {
-      this.logger.error('Error uploading avatar:', error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -183,11 +164,6 @@ export class FilesController {
         'URL tệp bảo mật đã được tạo',
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to generate secure URL for file ${fileId}`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }

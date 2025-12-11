@@ -36,7 +36,7 @@ export const formatDate = (
 
   try {
     return format(date, dateFormat);
-  } catch (error) {
+  } catch {
     return '—';
   }
 };

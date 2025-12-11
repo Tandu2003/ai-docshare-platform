@@ -80,7 +80,7 @@ export function DocumentPreviewViewer({
         apiKey,
       );
       setPreviews(result.previews);
-    } catch (err) {
+    } catch {
       // Failed to refresh previews
     }
   }, [documentId, apiKey, hasAccess, previewStatus]);
@@ -111,7 +111,7 @@ export function DocumentPreviewViewer({
           );
           setPreviews(result.previews);
         }
-      } catch (err) {
+      } catch {
         // Failed to poll preview status
       }
     };

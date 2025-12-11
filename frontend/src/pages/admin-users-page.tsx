@@ -74,7 +74,7 @@ export function AdminUsersPage(): ReactElement {
       const response = await userService.getUsers(queryFilters);
       setUsers(response.users);
       setPagination(response.pagination);
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải danh sách người dùng');
     } finally {
       setIsLoading(false);
@@ -87,7 +87,7 @@ export function AdminUsersPage(): ReactElement {
     try {
       const response = await userService.getRoles();
       setRoles(response);
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải vai trò người dùng');
     }
   }, [isUserAdmin]);
@@ -179,7 +179,7 @@ export function AdminUsersPage(): ReactElement {
       setIsFormOpen(false);
       setSelectedUser(null);
       await loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Không thể lưu người dùng');
     }
   };
@@ -194,7 +194,7 @@ export function AdminUsersPage(): ReactElement {
       setIsDeleteDialogOpen(false);
       setSelectedUser(null);
       await loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Không thể xóa người dùng');
     }
   };
@@ -205,7 +205,7 @@ export function AdminUsersPage(): ReactElement {
       await userService.unDeleteUser(user.id);
       toast.success('Khôi phục người dùng thành công');
       await loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Không thể khôi phục người dùng');
     }
   };

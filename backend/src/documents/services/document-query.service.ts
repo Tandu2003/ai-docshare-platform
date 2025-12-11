@@ -9,7 +9,6 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { DocumentModerationStatus } from '@prisma/client';
 
@@ -97,8 +96,6 @@ interface ViewTrackingResponse {
 
 @Injectable()
 export class DocumentQueryService {
-  private readonly logger = new Logger(DocumentQueryService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
@@ -115,10 +112,6 @@ export class DocumentQueryService {
   ): Promise<PaginatedDocumentsResponse> {
     try {
       const skip = (page - 1) * limit;
-
-      this.logger.log(
-        `Getting documents for user ${userId}, page ${page}, limit ${limit}`,
-      );
 
       const [documents, total] = await Promise.all([
         this.prisma.document.findMany({
@@ -148,8 +141,7 @@ export class DocumentQueryService {
         page,
         limit,
       };
-    } catch (error) {
-      this.logger.error('Error getting user documents:', error);
+    } catch {
       throw new InternalServerErrorException(
         'Không thể lấy tài liệu người dùng',
       );
@@ -165,10 +157,6 @@ export class DocumentQueryService {
   ): Promise<PaginatedDocumentsResponse> {
     try {
       const skip = (page - 1) * limit;
-
-      this.logger.log(
-        `Getting public documents, page ${page}, limit ${limit}, filters: ${JSON.stringify(filters)}`,
-      );
 
       const whereCondition = await this.buildPublicDocumentsWhere(filters);
       const orderBy = this.buildOrderBy(filters);
@@ -209,8 +197,7 @@ export class DocumentQueryService {
         page,
         limit,
       };
-    } catch (error) {
-      this.logger.error('Error getting public documents:', error);
+    } catch {
       throw new InternalServerErrorException(
         'Không thể lấy tài liệu công khai',
       );
@@ -239,9 +226,8 @@ export class DocumentQueryService {
 
       return this.buildDocumentDetailResponse(document, userId, accessInfo);
     } catch (error) {
-      this.logger.error(`Error getting document ${documentId}:`, error);
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new InternalServerErrorException('Không thể lấy tài liệu');
     }
@@ -255,10 +241,6 @@ export class DocumentQueryService {
     referrer?: string,
   ): Promise<ViewTrackingResponse> {
     try {
-      this.logger.log(
-        `Tracking view for document ${documentId} by user ${userId || 'anonymous'}`,
-      );
-
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
         select: {
@@ -286,19 +268,13 @@ export class DocumentQueryService {
       );
       await this.incrementViewCount(documentId);
 
-      this.logger.log(`View tracked successfully for document ${documentId}`);
-
       return {
         success: true,
         message: 'View tracked successfully',
       };
     } catch (error) {
-      this.logger.error(
-        `Error tracking view for document ${documentId}:`,
-        error,
-      );
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new InternalServerErrorException(
         'Không thể theo dõi lượt xem tài liệu',
@@ -653,10 +629,7 @@ export class DocumentQueryService {
       response.previews = previews;
       response.previewStatus = previewStatus.status;
       response.previewCount = previewStatus.previewCount;
-    } catch (previewError) {
-      this.logger.warn(
-        `Could not get previews for document ${documentId}: ${(previewError as Error).message}`,
-      );
+    } catch {
       response.previews = [];
       response.previewStatus = 'PENDING';
       response.previewCount = 0;

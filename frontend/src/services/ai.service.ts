@@ -61,7 +61,7 @@ export class AIService {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -77,7 +77,7 @@ export class AIService {
       }
 
       return { gemini: false };
-    } catch (error) {
+    } catch {
       return { gemini: false };
     }
   }
@@ -108,7 +108,7 @@ export class AIService {
         count: number;
         message: string;
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         files: [],
@@ -146,7 +146,7 @@ export class AIService {
         count: number;
         message: string;
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         files: [],

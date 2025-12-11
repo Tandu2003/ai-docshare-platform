@@ -1,19 +1,16 @@
 import { AppError, ValidationError } from '../errors';
 import { ApiResponse } from '../interfaces/api-response.interface';
-import { ErrorUtils } from '../utils/error.utils';
 import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { FastifyReply } from 'fastify';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<FastifyReply>();
@@ -28,27 +25,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = exception.message;
       error =
         exception instanceof ValidationError ? exception.errors : undefined;
-
-      // Log server errors only
-      if (ErrorUtils.shouldLog(exception)) {
-        this.logger.error(`AppError: ${message}`, exception.stack);
-      }
     } else if (exception instanceof HttpException) {
       // Handle NestJS HttpException
       statusCode = exception.getStatus();
       message = exception.message;
       error = exception.getResponse();
-
-      if (statusCode >= 500) {
-        this.logger.error(`HttpException: ${message}`, exception.stack);
-      }
     } else {
       // Handle unknown errors
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Lỗi máy chủ nội bộ';
       error = exception;
-
-      this.logger.error('Unexpected error:', exception);
     }
 
     const errorResponse: ApiResponse = {

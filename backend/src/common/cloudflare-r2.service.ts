@@ -54,7 +54,7 @@ export class CloudflareR2Service {
       this.logger.log('CloudflareR2Service initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize CloudflareR2Service:', error);
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 
@@ -75,10 +75,6 @@ export class CloudflareR2Service {
     fileHash: string;
   }> {
     try {
-      this.logger.log(
-        `Starting upload for file: ${file.originalname}, size: ${file.size}`,
-      );
-
       // Validate inputs
       if (!file || !file.buffer) {
         throw new Error('Invalid file: missing buffer');
@@ -93,13 +89,11 @@ export class CloudflareR2Service {
         .createHash('sha256')
         .update(file.buffer)
         .digest('hex');
-      this.logger.log(`Generated file hash: ${fileHash}`);
 
       // Generate unique filename
       const fileExtension = file.originalname.split('.').pop();
       const fileName = `${uuidv4()}.${fileExtension}`;
       const key = `${folder}/${userId}/${fileName}`;
-      this.logger.log(`Generated key: ${key}`);
 
       // Upload to R2
       // Encode metadata values to handle non-ASCII characters (Vietnamese, etc.)
@@ -119,11 +113,7 @@ export class CloudflareR2Service {
         },
       });
 
-      this.logger.log(
-        `Sending upload command to R2 bucket: ${this.bucketName}...`,
-      );
-      const result = await this.s3Client.send(command);
-      this.logger.log(`Upload to R2 completed successfully:`, result);
+      await this.s3Client.send(command);
 
       const publicUrl = this.configService.get<string>(
         'CLOUDFLARE_R2_PUBLIC_URL',
@@ -131,10 +121,6 @@ export class CloudflareR2Service {
       const storageUrl = publicUrl
         ? `${publicUrl}/${key}`
         : `${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${this.bucketName}/${key}`;
-
-      this.logger.log(
-        `File uploaded successfully: ${fileName}, URL: ${storageUrl}`,
-      );
 
       return {
         fileName,
@@ -144,13 +130,6 @@ export class CloudflareR2Service {
         fileHash,
       };
     } catch (error) {
-      this.logger.error('Error uploading file to R2:', error);
-      this.logger.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        code: error.Code || error.code,
-      });
       throw new BadRequestException(`Failed to upload file: ${error.message}`);
     }
   }
@@ -160,13 +139,8 @@ export class CloudflareR2Service {
     expiresIn: number = 3600,
   ): Promise<string> {
     try {
-      this.logger.log(
-        `Generating signed URL for: ${storageUrl} (expires in ${expiresIn}s)`,
-      );
-
       // Extract key from storage URL
       const key = this.extractKeyFromUrl(storageUrl);
-      this.logger.log(`Extracted key: ${key}`);
 
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
@@ -176,13 +150,9 @@ export class CloudflareR2Service {
       const signedUrl = await getSignedUrl(this.s3Client, command, {
         expiresIn,
       });
-      this.logger.log(
-        `Generated signed URL: ${signedUrl.substring(0, 100)}...`,
-      );
 
       return signedUrl;
-    } catch (error) {
-      this.logger.error('Error generating signed URL:', error);
+    } catch {
       throw new BadRequestException('Không thể tạo URL tải xuống');
     }
   }
@@ -197,9 +167,7 @@ export class CloudflareR2Service {
       });
 
       await this.s3Client.send(command);
-      this.logger.log(`File deleted successfully: ${key}`);
-    } catch (error) {
-      this.logger.error('Error deleting file from R2:', error);
+    } catch {
       throw new BadRequestException('Không thể xóa tệp');
     }
   }
@@ -210,10 +178,6 @@ export class CloudflareR2Service {
     contentType: string,
   ): Promise<string> {
     try {
-      this.logger.log(
-        `Uploading buffer to R2: ${key} (${buffer.length} bytes)`,
-      );
-
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
@@ -224,11 +188,9 @@ export class CloudflareR2Service {
       await this.s3Client.send(command);
 
       const storageUrl = `https://${this.bucketName}.${this.configService.get('CLOUDFLARE_R2_ENDPOINT')}/${key}`;
-      this.logger.log(`Buffer uploaded successfully: ${storageUrl}`);
 
       return storageUrl;
-    } catch (error) {
-      this.logger.error('Error uploading buffer to R2:', error);
+    } catch {
       throw new BadRequestException('Không thể tải lên bộ đệm lên lưu trữ');
     }
   }
@@ -236,7 +198,6 @@ export class CloudflareR2Service {
   async getFileStream(storageUrl: string): Promise<Readable> {
     try {
       const key = this.extractKeyFromUrl(storageUrl);
-      this.logger.log(`Getting file stream for: ${key}`);
 
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
@@ -250,8 +211,7 @@ export class CloudflareR2Service {
       }
 
       return response.Body as Readable;
-    } catch (error) {
-      this.logger.error('Error getting file stream:', error);
+    } catch {
       throw new BadRequestException('Không thể lấy luồng tệp');
     }
   }
@@ -266,12 +226,8 @@ export class CloudflareR2Service {
       // Extract key from full URL
       const url = new URL(storageUrl);
 
-      this.logger.log(
-        `Extracted key from URL: ${storageUrl} -> ${url.pathname.substring(1)}`,
-      );
       return url.pathname.substring(1);
-    } catch (error) {
-      this.logger.error('Error extracting key from URL:', error);
+    } catch {
       throw new BadRequestException('Định dạng URL lưu trữ không hợp lệ');
     }
   }

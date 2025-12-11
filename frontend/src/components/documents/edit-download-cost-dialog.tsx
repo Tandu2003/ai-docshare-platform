@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import { Save, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,13 +38,7 @@ export function EditDownloadCostDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (open && documentId) {
-      loadDocument();
-    }
-  }, [open, documentId]);
-
-  const loadDocument = async () => {
+  const loadDocument = useCallback(async () => {
     try {
       setLoading(true);
       const doc = await getDocumentById(documentId);
@@ -55,7 +49,13 @@ export function EditDownloadCostDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [documentId]);
+
+  useEffect(() => {
+    if (open && documentId) {
+      loadDocument();
+    }
+  }, [open, documentId, loadDocument]);
 
   const handleSave = async () => {
     if (!documentId) return;

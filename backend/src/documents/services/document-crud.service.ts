@@ -15,7 +15,6 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { DocumentModerationStatus } from '@prisma/client';
 
@@ -81,8 +80,6 @@ interface UpdateDocumentResponse {
 
 @Injectable()
 export class DocumentCrudService {
-  private readonly logger = new Logger(DocumentCrudService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
@@ -114,10 +111,6 @@ export class DocumentCrudService {
         useAI = false,
         aiAnalysis,
       } = createDocumentDto;
-
-      this.logger.log(
-        `Creating document for user ${userId} with files: ${fileIds.join(', ')}`,
-      );
 
       // Validate files
       const files = await this.validateFiles(fileIds, userId);
@@ -169,8 +162,6 @@ export class DocumentCrudService {
         },
       });
 
-      this.logger.log(`Document created successfully: ${document.id}`);
-
       // Create document-file relationships (required synchronously for response)
       const documentFiles = await this.createDocumentFiles(document.id, files);
 
@@ -189,16 +180,14 @@ export class DocumentCrudService {
         tags,
       );
 
-      this.logger.log(`Document creation completed: ${document.id}`);
-
       return {
         ...document,
         files: documentFiles.map(df => df.file),
         aiSuggestedCategory: suggestedCategory,
       };
     } catch (error) {
-      this.logger.error('Error creating document:', error);
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Đã xảy ra lỗi khi tạo tài liệu');
     }
   }
@@ -258,8 +247,6 @@ export class DocumentCrudService {
         },
       });
 
-      this.logger.log(`Document ${documentId} updated by user ${userId}`);
-
       const settings = await this.systemSettings.getPointsSettings();
 
       return {
@@ -289,8 +276,8 @@ export class DocumentCrudService {
         needsReModeration,
       };
     } catch (error) {
-      this.logger.error(`Error updating document ${documentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Không thể cập nhật tài liệu');
     }
   }
@@ -300,8 +287,6 @@ export class DocumentCrudService {
     userId: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      this.logger.log(`Deleting document ${documentId} by user ${userId}`);
-
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
         include: {
@@ -327,11 +312,10 @@ export class DocumentCrudService {
         await prisma.document.delete({ where: { id: documentId } });
       });
 
-      this.logger.log(`Document ${documentId} deleted successfully`);
       return { success: true, message: 'Document deleted successfully' };
     } catch (error) {
-      this.logger.error(`Error deleting document ${documentId}:`, error);
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException('Không thể xóa tài liệu');
     }
   }
@@ -375,17 +359,11 @@ export class DocumentCrudService {
     });
 
     if (files.length !== fileIds.length) {
-      this.logger.error(
-        `Files validation failed. Found ${files.length}, expected ${fileIds.length}`,
-      );
       throw new BadRequestException(
         'Một số tệp không tìm thấy hoặc không thuộc về người dùng',
       );
     }
 
-    this.logger.log(
-      `Files validated: ${files.map(f => f.originalName).join(', ')}`,
-    );
     return files;
   }
 
@@ -434,19 +412,15 @@ export class DocumentCrudService {
       if (document.isApproved && wantsPublic) {
         await this.searchService
           .generateDocumentEmbedding(document.id)
-          .catch(err =>
-            this.logger.warn(`Failed to generate embedding: ${err.message}`),
-          );
+          .catch(() => {
+            // Failed to generate embedding
+          });
       }
 
       // Queue preview generation (non-blocking)
       this.previewQueueService.enqueue(document.id);
-
-      this.logger.log(`Background tasks completed for document ${document.id}`);
-    } catch (error) {
-      this.logger.error(
-        `Error in background tasks for document ${document.id}: ${error.message}`,
-      );
+    } catch {
+      // Error in background tasks
     }
   }
 
@@ -465,8 +439,6 @@ export class DocumentCrudService {
     let suggestedCategory: CategorySuggestion | null = null;
 
     if (!categoryId && (useAI || aiAnalysis)) {
-      this.logger.log('No category provided, using AI to suggest...');
-
       try {
         suggestedCategory =
           await this.categoriesService.suggestBestCategoryFromContent({
@@ -479,14 +451,9 @@ export class DocumentCrudService {
 
         if (suggestedCategory?.categoryId) {
           finalCategoryId = suggestedCategory.categoryId;
-          this.logger.log(
-            `AI suggested category: ${suggestedCategory.categoryName} (${suggestedCategory.confidence}%)`,
-          );
         }
-      } catch (error) {
-        this.logger.warn(
-          `Failed to get AI category suggestion: ${error.message}`,
-        );
+      } catch {
+        // Failed to get AI category suggestion
       }
     }
 
@@ -502,11 +469,9 @@ export class DocumentCrudService {
       });
 
       if (!category) {
-        this.logger.error(`Category not found: ${categoryId}`);
         throw new BadRequestException('Không tìm thấy danh mục');
       }
 
-      this.logger.log(`Using category: ${category.name} (${category.id})`);
       return category;
     }
 
@@ -519,10 +484,8 @@ export class DocumentCrudService {
   ): Promise<void> {
     try {
       await this.pointsService.awardOnUpload(userId, documentId);
-    } catch (e) {
-      this.logger.warn(
-        `Failed to award points for upload of document ${documentId}: ${e?.message}`,
-      );
+    } catch {
+      // Failed to award points for upload
     }
   }
 
@@ -543,9 +506,6 @@ export class DocumentCrudService {
       ),
     );
 
-    this.logger.log(
-      `Document-file relationships created: ${documentFiles.length} files`,
-    );
     return documentFiles;
   }
 
@@ -565,9 +525,8 @@ export class DocumentCrudService {
           confidence: aiAnalysis.confidence,
         },
       });
-      this.logger.log(`AI analysis saved for document ${documentId}`);
-    } catch (error) {
-      this.logger.warn(`Failed to save AI analysis: ${error.message}`);
+    } catch {
+      // Failed to save AI analysis
     }
   }
 
@@ -578,11 +537,8 @@ export class DocumentCrudService {
   ): Promise<void> {
     try {
       this.similarityJobService.runSimilarityDetectionSync(documentId);
-      this.logger.log(
-        `Similarity detection completed for document ${documentId}`,
-      );
-    } catch (simError) {
-      this.logger.warn(`Similarity detection failed: ${simError.message}`);
+    } catch {
+      // Similarity detection failed
     }
 
     try {
@@ -590,10 +546,6 @@ export class DocumentCrudService {
       const moderationResult = await this.aiService.applyModerationSettings(
         documentId,
         moderationScore,
-      );
-
-      this.logger.log(
-        `AI moderation applied for document ${documentId}: ${moderationResult.status}`,
       );
 
       if (
@@ -607,10 +559,8 @@ export class DocumentCrudService {
           moderationScore,
         );
       }
-    } catch (moderationError) {
-      this.logger.warn(
-        `Failed to apply AI moderation: ${moderationError.message}`,
-      );
+    } catch {
+      // Failed to apply AI moderation
     }
   }
 
@@ -644,10 +594,8 @@ export class DocumentCrudService {
         notes: moderationNotes,
         reason: moderationResult.reason,
       });
-    } catch (notificationError) {
-      this.logger.warn(
-        `Failed to send moderation notification: ${notificationError.message}`,
-      );
+    } catch {
+      // Failed to send moderation notification
     }
   }
 
@@ -669,9 +617,6 @@ export class DocumentCrudService {
 
       if (aiResult.success && aiResult.data) {
         await this.aiService.saveAnalysis(document.id, aiResult.data);
-        this.logger.log(
-          `AI moderation analysis generated for document ${document.id}`,
-        );
 
         // Update category if not specified
         if (!originalCategoryId && !existingSuggestion) {
@@ -692,9 +637,6 @@ export class DocumentCrudService {
               where: { id: document.id },
               data: { categoryId: aiSuggestion.categoryId },
             });
-            this.logger.log(
-              `Document category updated to AI suggested: ${aiSuggestion.categoryName}`,
-            );
             return aiSuggestion;
           }
         }
@@ -706,10 +648,8 @@ export class DocumentCrudService {
           aiResult.data.moderationScore || 50,
         );
       }
-    } catch (error) {
-      this.logger.warn(
-        `Unable to generate AI analysis for document ${document.id}: ${error.message}`,
-      );
+    } catch {
+      // Unable to generate AI analysis
     }
 
     return existingSuggestion;

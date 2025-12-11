@@ -57,7 +57,7 @@ export function SystemSettingsPage(): ReactElement {
       // Load points settings from database
       const pointsResponse = await SystemSettingsService.getPointsSettings();
       setPointsSettings(pointsResponse);
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải cài đặt hệ thống');
     } finally {
       setLoading(false);
@@ -70,7 +70,7 @@ export function SystemSettingsPage(): ReactElement {
       await SystemSettingsService.updateAISettings(aiSettings);
       await SystemSettingsService.updatePointsSettings(pointsSettings);
       toast.success('Cài đặt hệ thống đã được lưu thành công');
-    } catch (error) {
+    } catch {
       toast.error('Không thể lưu cài đặt hệ thống');
     } finally {
       setSaving(false);
@@ -83,7 +83,7 @@ export function SystemSettingsPage(): ReactElement {
       await SystemSettingsService.initializeDefaults();
       await loadSettings();
       toast.success('Đã khởi tạo cài đặt hệ thống mặc định');
-    } catch (error) {
+    } catch {
       toast.error('Không thể khởi tạo cài đặt hệ thống mặc định');
     } finally {
       setSaving(false);

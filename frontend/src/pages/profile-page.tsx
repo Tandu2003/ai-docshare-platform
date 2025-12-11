@@ -123,7 +123,8 @@ export function ProfilePage(): ReactElement {
         setPointTxns(txnsRes.items || []);
         setPointTxnsTotal(txnsRes.total || 0);
         setPointTxnsPage(1);
-      } catch (error) {
+      } catch {
+        // Silently handle user data loading errors
       } finally {
         setLoading(false);
         setPointTxnsLoading(false);
@@ -145,7 +146,8 @@ export function ProfilePage(): ReactElement {
       setPointTxns(res.items);
       setPointTxnsTotal(res.total);
       setPointTxnsPage(page);
-    } catch (error) {
+    } catch {
+      // Silently handle point transactions loading errors
     } finally {
       setPointTxnsLoading(false);
     }

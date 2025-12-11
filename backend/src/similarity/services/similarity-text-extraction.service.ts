@@ -1,10 +1,9 @@
 import { ContentExtractorService } from '../../ai/content-extractor.service';
 import { CloudflareR2Service } from '../../common/cloudflare-r2.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class SimilarityTextExtractionService {
-  private readonly logger = new Logger(SimilarityTextExtractionService.name);
   constructor(
     private readonly contentExtractor: ContentExtractorService,
     private readonly r2Service: CloudflareR2Service,
@@ -31,9 +30,6 @@ export class SimilarityTextExtractionService {
         for await (const chunk of fileStream) {
           totalSize += chunk.length;
           if (totalSize > MAX_FILE_SIZE) {
-            this.logger.warn(
-              `File ${file.fileName} too large, skipping full extraction`,
-            );
             break;
           }
           chunks.push(chunk);
@@ -52,10 +48,8 @@ export class SimilarityTextExtractionService {
           ? extracted.text.substring(0, MAX_TEXT_LENGTH)
           : extracted.text;
         textContents.push(text);
-      } catch (error) {
-        this.logger.warn(
-          `Failed to extract text from file ${file.id || file.fileName}: ${error.message}`,
-        );
+      } catch {
+        // Failed to extract text from file
       }
     }
 
@@ -82,10 +76,8 @@ export class SimilarityTextExtractionService {
           parts.push(fileText.substring(0, 5000));
         }
       }
-    } catch (error) {
-      this.logger.warn(
-        `Failed to extract file content for embedding: ${error.message}`,
-      );
+    } catch {
+      // Failed to extract file content for embedding
     }
 
     if (document.aiAnalysis?.summary) {

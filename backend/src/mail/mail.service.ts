@@ -1,5 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface VerificationEmailData {
@@ -19,7 +19,6 @@ export interface WelcomeEmailData {
 
 @Injectable()
 export class MailService {
-  private readonly logger = new Logger(MailService.name);
   private readonly frontendUrl: string;
 
   constructor(
@@ -45,13 +44,7 @@ export class MailService {
           frontendUrl: this.frontendUrl,
         },
       });
-
-      this.logger.log(`Verification email sent to ${data.email}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to send verification email to ${data.email}`,
-        error,
-      );
+    } catch {
       throw new Error('Không thể gửi email xác thực');
     }
   }
@@ -71,13 +64,7 @@ export class MailService {
           frontendUrl: this.frontendUrl,
         },
       });
-
-      this.logger.log(`Password reset email sent to ${data.email}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to send password reset email to ${data.email}`,
-        error,
-      );
+    } catch {
       throw new Error('Không thể gửi email đặt lại mật khẩu');
     }
   }
@@ -95,10 +82,7 @@ export class MailService {
           frontendUrl: this.frontendUrl,
         },
       });
-
-      this.logger.log(`Welcome email sent to ${data.email}`);
-    } catch (error) {
-      this.logger.error(`Failed to send welcome email to ${data.email}`, error);
+    } catch {
       // Don't throw error for welcome email as it's not critical
     }
   }
@@ -118,15 +102,7 @@ export class MailService {
           frontendUrl: this.frontendUrl,
         },
       });
-
-      this.logger.log(
-        `Password reset confirmation email sent to ${data.email}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send password reset confirmation email to ${data.email}`,
-        error,
-      );
+    } catch {
       // Don't throw error as it's not critical
     }
   }

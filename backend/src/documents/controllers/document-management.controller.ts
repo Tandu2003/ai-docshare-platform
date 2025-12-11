@@ -12,7 +12,6 @@ import {
   Delete,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Post,
@@ -34,8 +33,6 @@ import { FastifyReply } from 'fastify';
 @UseGuards(JwtAuthGuard)
 @Controller('documents')
 export class DocumentManagementController {
-  private readonly logger = new Logger(DocumentManagementController.name);
-
   constructor(
     private readonly documentsService: DocumentsService,
     private readonly filesService: FilesService,
@@ -78,8 +75,6 @@ export class DocumentManagementController {
         HttpStatus.CREATED,
       );
     } catch (error) {
-      this.logger.error('Error creating document:', error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -129,7 +124,6 @@ export class DocumentManagementController {
         'Tài liệu đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error('Error getting user documents:', error);
       return ResponseHelper.error(
         res,
         'Không thể lấy tài liệu người dùng',
@@ -167,8 +161,6 @@ export class DocumentManagementController {
         'Tài liệu đã được xóa thành công',
       );
     } catch (error) {
-      this.logger.error(`Error deleting document ${documentId}:`, error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -218,8 +210,6 @@ export class DocumentManagementController {
 
       return ResponseHelper.success(res, updatedDocument, message);
     } catch (error) {
-      this.logger.error(`Error updating document ${documentId}:`, error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -264,8 +254,6 @@ export class DocumentManagementController {
         'URL tệp bảo mật đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error(`Error getting secure URL for file ${fileId}:`, error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }

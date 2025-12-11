@@ -7,7 +7,6 @@ import {
   Controller,
   Get,
   HttpStatus,
-  Logger,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -37,8 +36,6 @@ interface AuthenticatedRequest extends FastifyRequest {
 @ApiTags('Secure Document Access')
 @Controller('secure')
 export class SecureDocumentController {
-  private readonly logger = new Logger(SecureDocumentController.name);
-
   constructor(private readonly secureDocumentService: SecureDocumentService) {}
 
   @Post('download/:documentId')
@@ -88,11 +85,6 @@ export class SecureDocumentController {
           'URL hết hạn sau 30 giây. Vui lòng bắt đầu tải xuống ngay lập tức.',
       });
     } catch (error) {
-      this.logger.error(
-        `Error getting secure download URL for ${documentId}:`,
-        error,
-      );
-
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException
@@ -169,11 +161,6 @@ export class SecureDocumentController {
           'Token hết hạn sau 30 giây. Sử dụng token này để tải xuống tài liệu.',
       });
     } catch (error) {
-      this.logger.error(
-        `Error generating download token for ${documentId}:`,
-        error,
-      );
-
       return ResponseHelper.error(
         res,
         'Không thể tạo token tải xuống',
@@ -237,8 +224,6 @@ export class SecureDocumentController {
       // Stream to response
       return res.send(stream);
     } catch (error) {
-      this.logger.error(`Error streaming with token:`, error);
-
       if (error instanceof NotFoundException) {
         res.status(HttpStatus.NOT_FOUND).send('File not found');
         return;
@@ -311,8 +296,6 @@ export class SecureDocumentController {
       // Stream to response
       return res.send(stream);
     } catch (error) {
-      this.logger.error(`Error streaming document ${documentId}:`, error);
-
       if (error instanceof NotFoundException) {
         res.status(HttpStatus.NOT_FOUND).send('File not found');
         return;
@@ -373,8 +356,6 @@ export class SecureDocumentController {
         level: accessLevel,
       });
     } catch (error) {
-      this.logger.error(`Error checking access for ${documentId}:`, error);
-
       return ResponseHelper.error(
         res,
         'Không thể kiểm tra quyền truy cập',

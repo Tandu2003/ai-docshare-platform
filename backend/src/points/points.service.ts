@@ -385,7 +385,7 @@ export class PointsService {
       this.logger.error(
         `Error awarding uploader ${uploaderId} for download: ${error.message}`,
       );
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 

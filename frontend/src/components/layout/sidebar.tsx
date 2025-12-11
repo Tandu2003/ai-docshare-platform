@@ -85,7 +85,9 @@ export function Sidebar({ className }: SidebarProps) {
     try {
       const stats = await getBookmarkStats();
       setBookmarkStats(stats);
-    } catch (error) {}
+    } catch {
+      // Silently handle bookmark stats loading errors
+    }
   }, [user]);
 
   useEffect(() => {
@@ -297,7 +299,7 @@ export function Sidebar({ className }: SidebarProps) {
           <Separator />
           {renderNavSection('Cá nhân', userNavItems)}
           <Separator />
-          {renderNavSection('Phân tích', analyticsNavItems)}
+          {renderNavSection('Khám phá', analyticsNavItems)}
           <AdminOnly>
             <Separator />
             {renderNavSection('Quản trị', adminNavItems)}

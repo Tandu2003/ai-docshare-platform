@@ -82,7 +82,8 @@ export function NotificationsPage(): ReactElement {
         }
 
         setNotifications(notificationsData);
-      } catch (error) {
+      } catch {
+        // Silently handle notification loading errors
       } finally {
         setLoading(false);
       }
@@ -207,7 +208,9 @@ export function NotificationsPage(): ReactElement {
             : notif,
         ),
       );
-    } catch (error) {}
+    } catch {
+      // Silently handle mark as read errors
+    }
   };
 
   const handleMarkAllAsRead = async () => {
@@ -220,7 +223,9 @@ export function NotificationsPage(): ReactElement {
             : notif,
         ),
       );
-    } catch (error) {}
+    } catch {
+      // Silently handle mark all as read errors
+    }
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
@@ -229,7 +234,9 @@ export function NotificationsPage(): ReactElement {
       setNotifications(prev =>
         prev.filter(notif => notif.id !== notificationId),
       );
-    } catch (error) {}
+    } catch {
+      // Silently handle delete notification errors
+    }
   };
 
   const handleDeleteSelected = async () => {
@@ -240,7 +247,9 @@ export function NotificationsPage(): ReactElement {
         prev.filter(notif => !selectedNotifications.includes(notif.id)),
       );
       setSelectedNotifications([]);
-    } catch (error) {}
+    } catch {
+      // Silently handle delete selected notifications errors
+    }
   };
 
   const handleSelectNotification = (
@@ -330,7 +339,7 @@ export function NotificationsPage(): ReactElement {
       if (diffInSeconds < 2592000)
         return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
       return dateObj.toLocaleDateString();
-    } catch (error) {
+    } catch {
       return 'Không xác định';
     }
   };

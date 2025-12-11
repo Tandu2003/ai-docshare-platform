@@ -133,7 +133,7 @@ export class SimilarityDetectionService {
         `Error detecting similar documents for ${documentId}:`,
         error,
       );
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 

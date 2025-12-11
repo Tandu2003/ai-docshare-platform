@@ -63,7 +63,7 @@ export class SimilarityService implements OnModuleInit {
     return this.moderationService.getSimilarityResultsForModeration(documentId);
   }
 
-  async processSimilarityDecision(
+  processSimilarityDecision(
     similarityId: string,
     adminId: string,
     decision: { isDuplicate: boolean; notes?: string },

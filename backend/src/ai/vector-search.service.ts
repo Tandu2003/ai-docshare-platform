@@ -8,7 +8,7 @@ import {
   SEARCH_THRESHOLDS,
 } from '@/common';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
 export interface VectorSearchOptions {
@@ -52,7 +52,6 @@ export interface SearchMetrics {
 
 @Injectable()
 export class VectorSearchService {
-  private readonly logger = new Logger(VectorSearchService.name);
   private readonly searchCache = new Map<string, any>();
   private readonly maxCacheSize = SEARCH_CACHE_CONFIG.MAX_SIZE;
   private readonly cacheTTL = SEARCH_CACHE_CONFIG.TTL_MS;
@@ -168,100 +167,93 @@ export class VectorSearchService {
     }
     this.metrics.vectorSearches++;
 
-    try {
-      const {
-        query,
-        limit = 10,
-        threshold = SEARCH_THRESHOLDS.VECTOR_SEARCH,
-        filters = {},
-      } = options;
+    const {
+      query,
+      limit = 10,
+      threshold = SEARCH_THRESHOLDS.VECTOR_SEARCH,
+      filters = {},
+    } = options;
 
-      // Check cache first
-      const cacheKey = this.getSearchCacheKey('vector', options);
-      const cached = this.getFromCache(cacheKey);
-      if (cached) {
-        this.metrics.cacheHits++;
-        this.logger.debug(`Cache hit for vector search: ${query}`);
-        return cached;
-      }
+    // Check cache first
+    const cacheKey = this.getSearchCacheKey('vector', options);
+    const cached = this.getFromCache(cacheKey);
+    if (cached) {
+      this.metrics.cacheHits++;
+      return cached;
+    }
 
-      const variants = this.prepareQueryVariants(query);
-      const embeddingInput = variants.embeddingText || query;
+    const variants = this.prepareQueryVariants(query);
+    const embeddingInput = variants.embeddingText || query;
 
-      this.logger.log(
-        `Performing vector search for query: "${variants.trimmed.substring(0, 50)}..."`,
-      );
+    // Generate query embedding
+    const queryEmbedding =
+      await this.embeddingService.generateEmbedding(embeddingInput);
 
-      // Generate query embedding
-      const queryEmbedding =
-        await this.embeddingService.generateEmbedding(embeddingInput);
+    // Build base WHERE clause for document filters
+    const documentFilters: any = {
+      isApproved: filters.isApproved ?? true,
+      moderationStatus: DocumentModerationStatus.APPROVED,
+    };
 
-      // Build base WHERE clause for document filters
-      const documentFilters: any = {
-        isApproved: filters.isApproved ?? true,
-        moderationStatus: DocumentModerationStatus.APPROVED,
-      };
+    if (filters.isPublic !== undefined) {
+      documentFilters.isPublic = filters.isPublic;
+    }
 
-      if (filters.isPublic !== undefined) {
-        documentFilters.isPublic = filters.isPublic;
-      }
-
-      if (filters.categoryId) {
-        // Get child categories to include documents from sub-categories
-        const childCategories = await this.prisma.category.findMany({
-          where: { parentId: filters.categoryId, isActive: true },
-          select: { id: true },
-        });
-
-        const categoryIds = [
-          filters.categoryId,
-          ...childCategories.map(c => c.id),
-        ];
-
-        documentFilters.categoryId = { in: categoryIds };
-      }
-
-      if (filters.tags && filters.tags.length > 0) {
-        documentFilters.tags = {
-          hasSome: filters.tags,
-        };
-      }
-
-      if (filters.language) {
-        documentFilters.language = filters.language;
-      }
-
-      // Get documents with embeddings that match filters
-      // We need to use raw SQL for pgvector operators
-      const documentsWithFilters = await this.prisma.document.findMany({
-        where: documentFilters,
-        select: {
-          id: true,
-        },
+    if (filters.categoryId) {
+      // Get child categories to include documents from sub-categories
+      const childCategories = await this.prisma.category.findMany({
+        where: { parentId: filters.categoryId, isActive: true },
+        select: { id: true },
       });
 
-      if (documentsWithFilters.length === 0) {
-        this.logger.log('No documents match filters');
-        return [];
-      }
+      const categoryIds = [
+        filters.categoryId,
+        ...childCategories.map(c => c.id),
+      ];
 
-      const documentIds = documentsWithFilters.map(d => d.id);
+      documentFilters.categoryId = { in: categoryIds };
+    }
 
-      // Perform vector similarity search using raw SQL
-      // pgvector uses <=> operator for cosine distance
-      // We convert distance to similarity: similarity = 1 - distance
-      // Convert queryEmbedding array to PostgreSQL vector format
-      const embeddingString = `[${queryEmbedding.join(',')}]`;
+    if (filters.tags && filters.tags.length > 0) {
+      documentFilters.tags = {
+        hasSome: filters.tags,
+      };
+    }
 
-      let searchResults: VectorSearchResult[] = [];
+    if (filters.language) {
+      documentFilters.language = filters.language;
+    }
 
-      try {
-        const results = await this.prisma.$queryRaw<
-          Array<{
-            documentId: string;
-            similarityScore: number;
-          }>
-        >`
+    // Get documents with embeddings that match filters
+    // We need to use raw SQL for pgvector operators
+    const documentsWithFilters = await this.prisma.document.findMany({
+      where: documentFilters,
+      select: {
+        id: true,
+      },
+    });
+
+    if (documentsWithFilters.length === 0) {
+      return [];
+    }
+
+    const documentIds = documentsWithFilters.map(d => d.id);
+
+    // Perform vector similarity search using raw SQL
+    // pgvector uses <=> operator for cosine distance
+    // We convert distance to similarity: similarity = 1 - distance
+    // Convert queryEmbedding array to PostgreSQL vector format
+    const embeddingString = `[${queryEmbedding.join(',')}]`;
+
+    let searchResults: VectorSearchResult[] = [];
+
+    try {
+      const results = await this.prisma.$queryRaw<
+        Array<{
+          documentId: string;
+          similarityScore: number;
+        }>
+      >`
 					SELECT
 						de."documentId" AS "documentId",
 						1 - (de.embedding <=> ${embeddingString}::vector) AS "similarityScore"
@@ -273,50 +265,40 @@ export class VectorSearchService {
 					LIMIT ${limit}
 				`;
 
-        searchResults = results.map(result => ({
-          documentId: result.documentId,
-          similarityScore: Number(result.similarityScore),
-        }));
-      } catch (error) {
-        // Fallback if pgvector extension (vector type) is not available
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.meta?.code === '42704'
-        ) {
-          this.logger.warn(
-            'pgvector extension not available. Falling back to in-memory similarity computation.',
-          );
-          searchResults = await this.computeSimilarityFallback(
-            queryEmbedding,
-            documentIds,
-            threshold,
-            limit,
-          );
-        } else {
-          throw error;
-        }
-      }
-
-      this.logger.log(`Vector search found ${searchResults.length} results`);
-
-      // Cache the results
-      this.cacheResults(cacheKey, searchResults);
-
-      // Save search history
-      if (options.userId && options.recordHistory !== false) {
-        await this.saveSearchHistory(options, queryEmbedding, searchResults);
-      }
-
-      // Update metrics
-      const latency = Date.now() - startTime;
-      this.updateMetrics(latency);
-      this.logger.log(`Vector search completed in ${latency}ms`);
-
-      return searchResults;
+      searchResults = results.map(result => ({
+        documentId: result.documentId,
+        similarityScore: Number(result.similarityScore),
+      }));
     } catch (error) {
-      this.logger.error('Error performing vector search:', error);
-      throw error;
+      // Fallback if pgvector extension (vector type) is not available
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.meta?.code === '42704'
+      ) {
+        searchResults = await this.computeSimilarityFallback(
+          queryEmbedding,
+          documentIds,
+          threshold,
+          limit,
+        );
+      } else {
+        throw error;
+      }
     }
+
+    // Cache the results
+    this.cacheResults(cacheKey, searchResults);
+
+    // Save search history
+    if (options.userId && options.recordHistory !== false) {
+      await this.saveSearchHistory(options, queryEmbedding, searchResults);
+    }
+
+    // Update metrics
+    const latency = Date.now() - startTime;
+    this.updateMetrics(latency);
+
+    return searchResults;
   }
 
   private async computeSimilarityFallback(
@@ -365,15 +347,10 @@ export class VectorSearchService {
       const cached = this.getFromCache(cacheKey);
       if (cached) {
         this.metrics.cacheHits++;
-        this.logger.debug(`Cache hit for hybrid search: ${query}`);
         return cached;
       }
 
       const variants = this.prepareQueryVariants(query);
-
-      this.logger.log(
-        `Performing hybrid search for: "${variants.trimmed.substring(0, 50)}..."`,
-      );
 
       // Perform both searches in parallel
       // Mark as internal calls to prevent double counting metrics
@@ -388,21 +365,18 @@ export class VectorSearchService {
             limit: limit * 2, // Get more results for better combination
             recordHistory: false,
             isInternalCall: true,
-          }).catch(error => {
-            this.logger.warn('Vector search failed in hybrid search:', error);
+          }).catch(() => {
             return [];
           }),
           this.keywordSearch({
             ...options,
             query: variants.trimmed,
             isInternalCall: true,
-          }).catch(error => {
-            this.logger.warn('Keyword search failed in hybrid search:', error);
+          }).catch(() => {
             return [];
           }),
         ]);
-      } catch (error) {
-        this.logger.error('Error performing parallel searches:', error);
+      } catch {
         // Continue with empty results - will return empty array
       }
 
@@ -467,21 +441,18 @@ export class VectorSearchService {
             'hybrid',
             highestScore,
           );
-        } catch (historyError) {
+        } catch {
           // Don't fail the search if history saving fails
-          this.logger.warn('Failed to save search history:', historyError);
         }
       }
 
       // Update metrics
       const latency = Date.now() - startTime;
       this.updateMetrics(latency);
-      this.logger.log(`Hybrid search completed in ${latency}ms`);
 
       return combinedResults;
-    } catch (error) {
-      this.logger.error('Error performing hybrid search:', error);
-      throw error;
+    } catch {
+      throw new Error('Unexpected error');
     }
   }
 
@@ -788,7 +759,6 @@ export class VectorSearchService {
     if (!options.isInternalCall) {
       this.updateMetrics(latency);
     }
-    this.logger.log(`Keyword search completed in ${latency}ms`);
 
     return filteredResults;
   }
@@ -824,10 +794,7 @@ export class VectorSearchService {
           NOW()
         )
       `;
-
-      this.logger.log(`Saved search history for user ${options.userId}`);
-    } catch (error) {
-      this.logger.error('Error saving search history:', error);
+    } catch {
       // Don't throw - search history is not critical
     }
   }
@@ -879,7 +846,6 @@ export class VectorSearchService {
 
   clearCache(): void {
     this.searchCache.clear();
-    this.logger.log('Search cache cleared');
   }
 
   async getDocumentsByIds(documentIds: string[]): Promise<any[]> {

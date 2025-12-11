@@ -72,7 +72,7 @@ export class SystemSettingsService {
       this.logger.log(`Setting ${setting.key} updated to: ${setting.value}`);
     } catch (error) {
       this.logger.error(`Error setting ${setting.key}:`, error);
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 
@@ -205,7 +205,7 @@ export class SystemSettingsService {
       this.logger.log(`Setting ${key} deleted`);
     } catch (error) {
       this.logger.error(`Error deleting setting ${key}:`, error);
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 
@@ -218,7 +218,7 @@ export class SystemSettingsService {
       this.logger.log(`Updated ${settings.length} settings`);
     } catch (error) {
       this.logger.error('Error updating settings:', error);
-      throw error;
+      throw new Error('Unexpected error');
     }
   }
 

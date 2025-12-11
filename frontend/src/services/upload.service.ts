@@ -107,24 +107,16 @@ export class UploadService {
     file: File,
     data: UploadFileData = {},
   ): Promise<FileUploadResponse> {
-    try {
-      const result = await this.uploadFiles([file], data);
-      return Array.isArray(result) ? result[0] : result;
-    } catch (error) {
-      throw error;
-    }
+    const result = await this.uploadFiles([file], data);
+    return Array.isArray(result) ? result[0] : result;
   }
 
   static async uploadMultipleFiles(
     files: File[],
     data: UploadFileData = {},
   ): Promise<FileUploadResponse[]> {
-    try {
-      const result = await this.uploadFiles(files, data);
-      return Array.isArray(result) ? result : [result];
-    } catch (error) {
-      throw error;
-    }
+    const result = await this.uploadFiles(files, data);
+    return Array.isArray(result) ? result : [result];
   }
 
   static async getUserFiles(
@@ -215,7 +207,7 @@ export class UploadService {
       }
 
       return response.data.types;
-    } catch (error) {
+    } catch {
       // Return empty array as fallback to allow all file types
       return [];
     }

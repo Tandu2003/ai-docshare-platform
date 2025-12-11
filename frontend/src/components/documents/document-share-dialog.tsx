@@ -85,7 +85,7 @@ export function DocumentShareDialog({
       return formatDistanceToNow(parseISO(shareLink.expiresAt), {
         addSuffix: true,
       });
-    } catch (error) {
+    } catch {
       return null;
     }
   }, [shareLink?.expiresAt]);
@@ -99,7 +99,7 @@ export function DocumentShareDialog({
     try {
       await navigator.clipboard.writeText(shareUrl);
       toast.success('Đã sao chép đường dẫn chia sẻ vào clipboard.');
-    } catch (error) {
+    } catch {
       toast.error('Không thể sao chép đường dẫn. Vui lòng thử lại.');
     }
   };

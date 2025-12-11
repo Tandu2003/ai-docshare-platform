@@ -131,7 +131,7 @@ export function DocumentsPage(): ReactElement {
           const totalPages = Math.ceil(response.total / 12);
           setHasMore(pageNum < totalPages);
         }
-      } catch (error) {
+      } catch {
         // Fallback to empty array on error
         if (reset) {
           setDocuments([]);

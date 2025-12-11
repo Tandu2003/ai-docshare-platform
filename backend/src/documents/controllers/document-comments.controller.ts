@@ -12,7 +12,6 @@ import {
   Delete,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Req,
@@ -31,8 +30,6 @@ import { FastifyReply } from 'fastify';
 @Controller('documents')
 @ApiBearerAuth()
 export class DocumentCommentsController {
-  private readonly logger = new Logger(DocumentCommentsController.name);
-
   constructor(private readonly commentService: DocumentCommentService) {}
 
   @Public()
@@ -53,10 +50,6 @@ export class DocumentCommentsController {
       );
       return ResponseHelper.success(res, comments, 'Lấy bình luận thành công');
     } catch (error) {
-      this.logger.error(
-        `Error getting comments for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể lấy bình luận',
@@ -90,10 +83,6 @@ export class DocumentCommentsController {
       );
       return ResponseHelper.success(res, comment, 'Đã thêm bình luận');
     } catch (error) {
-      this.logger.error(
-        `Error adding comment for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể thêm bình luận',
@@ -127,10 +116,6 @@ export class DocumentCommentsController {
       );
       return ResponseHelper.success(res, updated, 'Đã thích bình luận');
     } catch (error) {
-      this.logger.error(
-        `Error liking comment ${commentId} for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể thích bình luận',
@@ -166,10 +151,6 @@ export class DocumentCommentsController {
       );
       return ResponseHelper.success(res, updated, 'Đã sửa bình luận');
     } catch (error) {
-      this.logger.error(
-        `Error editing comment ${commentId} for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể sửa bình luận',
@@ -199,10 +180,6 @@ export class DocumentCommentsController {
       await this.commentService.deleteComment(documentId, commentId, userId);
       return ResponseHelper.success(res, null, 'Đã xóa bình luận');
     } catch (error) {
-      this.logger.error(
-        `Error deleting comment ${commentId} for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể xóa bình luận',

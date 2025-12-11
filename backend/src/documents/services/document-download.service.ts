@@ -9,7 +9,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentModerationStatus } from '@prisma/client';
@@ -73,8 +72,6 @@ interface DocumentDownloadInfo {
 
 @Injectable()
 export class DocumentDownloadService {
-  private readonly logger = new Logger(DocumentDownloadService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly r2Service: CloudflareR2Service,
@@ -144,10 +141,6 @@ export class DocumentDownloadService {
     referrer?: string,
   ): Promise<InitDownloadResponse> {
     try {
-      this.logger.log(
-        `Initializing download for document ${documentId} by user ${userId || 'guest'}`,
-      );
-
       const document = await this.validateDownloadAccess(documentId, userId);
       const hasExistingDownload = await this.checkExistingDownload(
         documentId,
@@ -171,17 +164,12 @@ export class DocumentDownloadService {
         },
       });
 
-      this.logger.log(
-        `Created pending download record ${download.id} for document ${documentId}`,
-      );
-
       return {
         downloadId: download.id,
         alreadyDownloaded: hasExistingDownload,
       };
-    } catch (error) {
-      this.logger.error('Error initializing download:', error);
-      throw error;
+    } catch {
+      throw new Error('Unexpected error');
     }
   }
 
@@ -190,10 +178,6 @@ export class DocumentDownloadService {
     userId?: string,
   ): Promise<ConfirmDownloadResponse> {
     try {
-      this.logger.log(
-        `Confirming download ${downloadId} for user ${userId || 'guest'}`,
-      );
-
       const download = await this.prisma.download.findUnique({
         where: { id: downloadId },
         include: {
@@ -218,7 +202,6 @@ export class DocumentDownloadService {
       }
 
       if (download.success) {
-        this.logger.log(`Download ${downloadId} already confirmed, skipping`);
         return {
           success: true,
           message: 'Tải xuống đã được xác nhận trước đó',
@@ -256,19 +239,14 @@ export class DocumentDownloadService {
         );
       }
 
-      this.logger.log(
-        `Successfully confirmed download ${downloadId}${isOwner ? ' (owner)' : hasOtherDownload ? ' (re-download)' : ''}`,
-      );
-
       return {
         success: true,
         message: hasOtherDownload
           ? 'Tải xuống đã được xác nhận (tải lại)'
           : 'Tải xuống đã được xác nhận thành công',
       };
-    } catch (error) {
-      this.logger.error('Error confirming download:', error);
-      throw error;
+    } catch {
+      throw new Error('Unexpected error');
     }
   }
 
@@ -277,10 +255,6 @@ export class DocumentDownloadService {
     userId?: string,
   ): Promise<{ success: boolean }> {
     try {
-      this.logger.log(
-        `Cancelling download ${downloadId} for user ${userId || 'guest'}`,
-      );
-
       const download = await this.prisma.download.findUnique({
         where: { id: downloadId },
       });
@@ -294,9 +268,6 @@ export class DocumentDownloadService {
       }
 
       if (download.success) {
-        this.logger.log(
-          `Download ${downloadId} already successful, cannot cancel`,
-        );
         return { success: false };
       }
 
@@ -305,11 +276,9 @@ export class DocumentDownloadService {
         data: { success: false },
       });
 
-      this.logger.log(`Download ${downloadId} cancelled`);
       return { success: true };
-    } catch (error) {
-      this.logger.error('Error cancelling download:', error);
-      throw error;
+    } catch {
+      throw new Error('Unexpected error');
     }
   }
 
@@ -318,10 +287,6 @@ export class DocumentDownloadService {
     userId?: string,
   ): Promise<DownloadUrlResponse> {
     try {
-      this.logger.log(
-        `Getting download URL for document ${documentId} by user ${userId || 'guest'}`,
-      );
-
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
         include: {
@@ -347,9 +312,8 @@ export class DocumentDownloadService {
       }
 
       return this.getZipDownload(document);
-    } catch (error) {
-      this.logger.error('Error getting download URL:', error);
-      throw error;
+    } catch {
+      throw new Error('Unexpected error');
     }
   }
 
@@ -362,10 +326,6 @@ export class DocumentDownloadService {
     apiKey?: string,
   ): Promise<StreamingDownloadResponse> {
     try {
-      this.logger.log(
-        `Preparing streaming download for document ${documentId} by user ${userId}`,
-      );
-
       const document = await this.getDocumentForStreaming(documentId);
       const shareAccessGranted = await this.sharingService.checkShareAccess(
         documentId,
@@ -421,11 +381,8 @@ export class DocumentDownloadService {
         onStreamError: this.createStreamErrorHandler(download.id),
       };
     } catch (error) {
-      this.logger.error(
-        `Error preparing streaming download for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException(
         'Không thể chuẩn bị tải xuống tài liệu',
       );
@@ -635,11 +592,8 @@ export class DocumentDownloadService {
         userId: downloaderId,
         count: 1,
       });
-    } catch (error) {
-      this.logger.error(
-        `Failed to reward uploader for download ${downloadId}:`,
-        error,
-      );
+    } catch {
+      // Failed to reward uploader
     }
   }
 
@@ -672,10 +626,8 @@ export class DocumentDownloadService {
 
   private async getSingleFileDownload(
     file: any,
-    document: any,
+    _document: any, // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<DownloadUrlResponse> {
-    this.logger.log(`Preparing single file download: ${file.originalName}`);
-
     const downloadUrl = await this.r2Service.getSignedDownloadUrl(
       file.storageUrl,
       300,
@@ -689,13 +641,7 @@ export class DocumentDownloadService {
   }
 
   private async getZipDownload(document: any): Promise<DownloadUrlResponse> {
-    this.logger.log(
-      `Preparing ZIP download for ${document.files.length} files`,
-    );
-
     if (document.zipFileUrl) {
-      this.logger.log(`Using cached ZIP file for document ${document.id}`);
-
       const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(
         document.zipFileUrl,
         1800,
@@ -722,10 +668,6 @@ export class DocumentDownloadService {
     documentId: string,
   ): Promise<string> {
     try {
-      this.logger.log(
-        `Creating new ZIP file for document ${documentId} with ${files.length} files`,
-      );
-
       if (files.length === 0) {
         throw new Error('No files to zip');
       }
@@ -738,14 +680,10 @@ export class DocumentDownloadService {
       const zipPromise = new Promise<Buffer>((resolve, reject) => {
         archive.on('end', () => {
           const zipBuffer = Buffer.concat(chunks);
-          this.logger.log(
-            `ZIP created successfully, size: ${zipBuffer.length} bytes`,
-          );
           resolve(zipBuffer);
         });
 
         archive.on('error', error => {
-          this.logger.error('ZIP creation error:', error);
           reject(error);
         });
       });
@@ -753,14 +691,13 @@ export class DocumentDownloadService {
       for (const fileData of files) {
         try {
           const file = fileData.file || fileData;
-          this.logger.log(`Adding file to ZIP: ${file.originalName}`);
 
           const fileStream = await this.r2Service.getFileStream(
             file.storageUrl,
           );
           archive.append(fileStream, { name: file.originalName });
-        } catch (fileError) {
-          this.logger.error(`Error adding file to ZIP:`, fileError);
+        } catch {
+          // Error adding file to ZIP
         }
       }
 
@@ -790,11 +727,8 @@ export class DocumentDownloadService {
         1800,
       );
 
-      this.logger.log(`ZIP uploaded and cached for document ${documentId}`);
-
       return zipUrl;
-    } catch (error) {
-      this.logger.error('Error creating ZIP download:', error);
+    } catch {
       throw new InternalServerErrorException('Không thể tạo tải xuống ZIP');
     }
   }
@@ -888,8 +822,6 @@ export class DocumentDownloadService {
   ): () => Promise<void> {
     return async () => {
       try {
-        this.logger.log(`Stream completed for download ${downloadId}`);
-
         await this.prisma.document.update({
           where: { id: documentId },
           data: { downloadCount: { increment: 1 } },
@@ -918,13 +850,8 @@ export class DocumentDownloadService {
           userId,
           count: 1,
         });
-
-        this.logger.log(`Download ${downloadId} completed successfully`);
-      } catch (error) {
-        this.logger.error(
-          `Error in onStreamComplete for download ${downloadId}:`,
-          error,
-        );
+      } catch {
+        // Error in onStreamComplete
       }
     };
   }
@@ -932,17 +859,12 @@ export class DocumentDownloadService {
   private createStreamErrorHandler(downloadId: string): () => Promise<void> {
     return async () => {
       try {
-        this.logger.log(`Stream failed for download ${downloadId}`);
-
         await this.prisma.download.update({
           where: { id: downloadId },
           data: { success: false },
         });
-      } catch (error) {
-        this.logger.error(
-          `Error in onStreamError for download ${downloadId}:`,
-          error,
-        );
+      } catch {
+        // Error in onStreamError
       }
     };
   }

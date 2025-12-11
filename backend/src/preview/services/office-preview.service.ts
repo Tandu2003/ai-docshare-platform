@@ -9,12 +9,10 @@ import {
 } from '../interfaces';
 import { PdfPreviewService } from './pdf-preview.service';
 import { PreviewUtilService } from './preview-util.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class OfficePreviewService {
-  private readonly logger = new Logger(OfficePreviewService.name);
-
   constructor(
     private readonly r2Service: CloudflareR2Service,
     private readonly utilService: PreviewUtilService,
@@ -26,10 +24,6 @@ export class OfficePreviewService {
     file: FileInfo & { mimeType: string },
     options?: PreviewGenerationOptions,
   ): Promise<PreviewImage[]> {
-    this.logger.log(
-      `Generating Office previews for file: ${file.originalName} (${file.mimeType})`,
-    );
-
     const tmpDir = await fs.promises.mkdtemp(
       path.join(os.tmpdir(), 'office-preview-'),
     );
@@ -43,9 +37,6 @@ export class OfficePreviewService {
         const fileStream = await this.r2Service.getFileStream(file.storageUrl);
         await this.utilService.streamToFile(fileStream, inputPath);
       } catch (downloadError) {
-        this.logger.error(
-          `Failed to download file from R2: ${(downloadError as Error).message}`,
-        );
         throw new Error(
           `Cannot download file: ${(downloadError as Error).message}`,
         );
@@ -117,25 +108,19 @@ export class OfficePreviewService {
     const unoconvAvailable =
       await this.utilService.isCommandAvailable('unoconv');
     if (unoconvAvailable) {
-      this.logger.debug('Attempting unoconv conversion...');
       pdfPath = await this.tryUnoconvConversion(inputPath, tmpDir);
       if (pdfPath) {
         return pdfPath;
       }
-      this.logger.debug('unoconv failed, falling back to LibreOffice');
-    } else {
-      this.logger.debug('unoconv not available, using LibreOffice directly');
     }
 
     // Approach 2: Standard LibreOffice conversion (primary fallback)
-    this.logger.debug('Attempting LibreOffice conversion...');
     pdfPath = await this.tryLibreOfficeConversion(inputPath, tmpDir);
     if (pdfPath) {
       return pdfPath;
     }
 
     // Approach 3: Alternative LibreOffice options
-    this.logger.debug('Attempting alternative LibreOffice conversion...');
     pdfPath = await this.tryAlternativeLibreOffice(inputPath, tmpDir);
     if (pdfPath) {
       return pdfPath;
@@ -143,14 +128,7 @@ export class OfficePreviewService {
 
     // Approach 4: Last resort unoconv without daemon (only if not tried yet)
     if (unoconvAvailable) {
-      this.logger.debug('Attempting unoconv without daemon as last resort...');
       pdfPath = await this.tryUnoconvNoDaemon(inputPath, tmpDir);
-    }
-
-    if (!pdfPath) {
-      this.logger.error(
-        'All conversion methods failed. Cannot convert Office document to PDF.',
-      );
     }
 
     return pdfPath;
@@ -169,7 +147,6 @@ export class OfficePreviewService {
       );
 
       if (await this.utilService.fileExists(unoconvOutput)) {
-        this.logger.log(`unoconv created PDF at: ${unoconvOutput}`);
         return unoconvOutput;
       }
     } catch (unoError) {
@@ -180,9 +157,6 @@ export class OfficePreviewService {
         // Silently skip unoconv if distutils is missing - will use LibreOffice
         return null;
       }
-
-      // Only log non-distutils errors at debug level
-      this.logger.debug(`unoconv conversion failed: ${errorMessage}`);
 
       // Try starting soffice daemon only if not a distutils error
       const daemon = this.utilService.startSofficeDaemon(tmpDir);
@@ -195,18 +169,10 @@ export class OfficePreviewService {
           );
 
           if (await this.utilService.fileExists(unoconvOutput)) {
-            this.logger.log(
-              `unoconv (daemon) created PDF at: ${unoconvOutput}`,
-            );
             return unoconvOutput;
           }
-        } catch (unoRetryError) {
-          const retryErrorMessage = (unoRetryError as Error).message;
-          if (!retryErrorMessage.includes('distutils')) {
-            this.logger.debug(
-              `unoconv with daemon failed: ${retryErrorMessage}`,
-            );
-          }
+        } catch {
+          // Ignore retry errors
         } finally {
           try {
             daemon.kill('SIGKILL');
@@ -225,7 +191,7 @@ export class OfficePreviewService {
     tmpDir: string,
   ): Promise<string | null> {
     try {
-      const { stdout, stderr } = await this.utilService.runCommandWithTimeout(
+      await this.utilService.runCommandWithTimeout(
         `soffice --headless --nofirststartwizard --norestore --nologo --convert-to pdf --outdir "${tmpDir}" "${inputPath}"`,
         {
           logLabel: 'soffice-convert',
@@ -237,14 +203,8 @@ export class OfficePreviewService {
         },
       );
 
-      this.logger.log(`LibreOffice stdout: ${stdout}`);
-      if (stderr) this.logger.warn(`LibreOffice stderr: ${stderr}`);
-
       return await this.findPdfInDir(tmpDir);
-    } catch (loError) {
-      this.logger.warn(
-        `LibreOffice conversion failed: ${(loError as Error).message}`,
-      );
+    } catch {
       return null;
     }
   }
@@ -254,8 +214,7 @@ export class OfficePreviewService {
     tmpDir: string,
   ): Promise<string | null> {
     try {
-      this.logger.log('Trying alternative LibreOffice conversion...');
-      const { stdout, stderr } = await this.utilService.runCommandWithTimeout(
+      await this.utilService.runCommandWithTimeout(
         `libreoffice --headless --invisible --convert-to pdf:writer_pdf_Export --outdir "${tmpDir}" "${inputPath}"`,
         {
           logLabel: 'libreoffice-alt',
@@ -268,14 +227,8 @@ export class OfficePreviewService {
         },
       );
 
-      this.logger.log(`LibreOffice (alt) stdout: ${stdout}`);
-      if (stderr) this.logger.warn(`LibreOffice (alt) stderr: ${stderr}`);
-
       return await this.findPdfInDir(tmpDir);
-    } catch (loError) {
-      this.logger.warn(
-        `Alternative LibreOffice conversion failed: ${(loError as Error).message}`,
-      );
+    } catch {
       return null;
     }
   }
@@ -287,22 +240,16 @@ export class OfficePreviewService {
     const unoconvOutput = path.join(tmpDir, 'output.pdf');
 
     try {
-      this.logger.debug('Trying unoconv conversion (no daemon)...');
       await this.utilService.runCommandWithTimeout(
         `unoconv -f pdf -o "${unoconvOutput}" "${inputPath}"`,
         { logLabel: 'unoconv-last' },
       );
 
       if (await this.utilService.fileExists(unoconvOutput)) {
-        this.logger.log(`unoconv created PDF at: ${unoconvOutput}`);
         return unoconvOutput;
       }
-    } catch (unoError) {
-      const errorMessage = (unoError as Error).message;
-      // Only log non-distutils errors at debug level
-      if (!errorMessage.includes('distutils')) {
-        this.logger.debug(`unoconv conversion failed: ${errorMessage}`);
-      }
+    } catch {
+      // Ignore errors
     }
 
     return null;
@@ -311,7 +258,6 @@ export class OfficePreviewService {
   private async findPdfInDir(tmpDir: string): Promise<string | null> {
     const expectedPdf = path.join(tmpDir, 'input.pdf');
     if (await this.utilService.fileExists(expectedPdf)) {
-      this.logger.log(`PDF created at: ${expectedPdf}`);
       return expectedPdf;
     }
 
@@ -319,7 +265,6 @@ export class OfficePreviewService {
     const pdfFile = files.find(f => f.endsWith('.pdf'));
     if (pdfFile) {
       const pdfPath = path.join(tmpDir, pdfFile);
-      this.logger.log(`Found PDF at: ${pdfPath}`);
       return pdfPath;
     }
 

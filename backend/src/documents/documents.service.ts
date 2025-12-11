@@ -36,7 +36,6 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -48,8 +47,6 @@ import archiver from 'archiver';
 
 @Injectable()
 export class DocumentsService {
-  private readonly logger = new Logger(DocumentsService.name);
-
   constructor(
     private prisma: PrismaService,
     private filesService: FilesService,
@@ -151,28 +148,16 @@ export class DocumentsService {
         aiAnalysis,
       } = createDocumentDto;
 
-      this.logger.log(
-        `Creating document for user ${userId} with files: ${fileIds.join(', ')}`,
-      );
-
       // Validate that all files exist and belong to the user
       const files = await this.prisma.file.findMany({
         where: { id: { in: fileIds }, uploaderId: userId },
       });
 
       if (files.length !== fileIds.length) {
-        this.logger.error(
-          `Files validation failed. Found ${files.length} files, expected ${fileIds.length}`,
-        );
-
         throw new BadRequestException(
           'Một số tệp không tìm thấy hoặc không thuộc về người dùng',
         );
       }
-
-      this.logger.log(
-        `Files validated successfully: ${files.map(f => f.originalName).join(', ')}`,
-      );
 
       // Determine category - use AI suggestion if not provided
       let finalCategoryId = categoryId;
@@ -193,10 +178,6 @@ export class DocumentsService {
 
       if (!categoryId && (useAI || aiAnalysis)) {
         // Nếu không có categoryId và sử dụng AI, gợi ý category dựa trên nội dung
-        this.logger.log(
-          'No category provided, using AI to suggest category...',
-        );
-
         const contentForSuggestion = {
           title: aiAnalysis?.title || title,
           description: aiAnalysis?.description || description,
@@ -213,14 +194,9 @@ export class DocumentsService {
 
           if (suggestedCategory?.categoryId) {
             finalCategoryId = suggestedCategory.categoryId;
-            this.logger.log(
-              `AI suggested category: ${suggestedCategory.categoryName} (confidence: ${suggestedCategory.confidence}%)`,
-            );
           }
-        } catch (error) {
-          this.logger.warn(
-            `Failed to get AI category suggestion: ${error.message}`,
-          );
+        } catch {
+          // Failed to get AI category suggestion
         }
       }
 
@@ -232,11 +208,8 @@ export class DocumentsService {
         : await this.getOrCreateDefaultCategory();
 
       if (!category) {
-        this.logger.error(`Category not found: ${finalCategoryId}`);
         throw new BadRequestException('Không tìm thấy danh mục');
       }
-
-      this.logger.log(`Using category: ${category.name} (${category.id})`);
 
       const wantsPublic = Boolean(isPublic);
       const moderationStatus = wantsPublic
@@ -270,8 +243,6 @@ export class DocumentsService {
         },
       });
 
-      this.logger.log(`Document created successfully: ${document.id}`);
-
       // Create DocumentFile relationships (required synchronously for response)
       const documentFiles = await Promise.all(
         files.map((file, index) =>
@@ -286,10 +257,6 @@ export class DocumentsService {
             },
           }),
         ),
-      );
-
-      this.logger.log(
-        `Document-file relationships created: ${documentFiles.length} files`,
       );
 
       // Run background tasks asynchronously - don't make user wait
@@ -324,12 +291,10 @@ export class DocumentsService {
           : null,
       };
 
-      this.logger.log(`Document creation response ready: ${document.id}`);
       return result;
     } catch (error) {
-      this.logger.error('Error creating document:', error);
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new InternalServerErrorException('Đã xảy ra lỗi khi tạo tài liệu');
     }
@@ -351,15 +316,11 @@ export class DocumentsService {
     tags: string[] = [],
   ): Promise<void> {
     try {
-      this.logger.log(`Starting background tasks for document ${document.id}`);
-
       // Award points for uploading a document
       try {
         await this.pointsService.awardOnUpload(userId, document.id);
-      } catch (e) {
-        this.logger.warn(
-          `Failed to award points for upload of document ${document.id}: ${e?.message}`,
-        );
+      } catch {
+        // Failed to award points for upload
       }
 
       // Save AI analysis if provided
@@ -392,21 +353,15 @@ export class DocumentsService {
       if (document.isApproved && wantsPublic) {
         try {
           await this.generateDocumentEmbedding(document.id);
-        } catch (error) {
-          this.logger.warn(
-            `Failed to generate embedding for document ${document.id}: ${error.message}`,
-          );
+        } catch {
+          // Failed to generate embedding
         }
       }
 
       // Queue preview generation (non-blocking)
       this.previewQueueService.enqueue(document.id);
-
-      this.logger.log(`Background tasks completed for document ${document.id}`);
-    } catch (error) {
-      this.logger.error(
-        `Error in background tasks for document ${document.id}: ${error.message}`,
-      );
+    } catch {
+      // Error in background tasks
     }
   }
 
@@ -427,26 +382,20 @@ export class DocumentsService {
           confidence: aiAnalysis.confidence,
         },
       });
-      this.logger.log(`AI analysis saved for document ${document.id}`);
 
       // When AI analysis is provided, run similarity detection and apply moderation
       if (wantsPublic) {
         try {
           this.similarityJobService.runSimilarityDetectionSync(document.id);
-          this.logger.log(
-            `Similarity detection completed for document ${document.id}`,
-          );
-        } catch (simError) {
-          this.logger.warn(
-            `Similarity detection failed for document ${document.id}: ${simError.message}`,
-          );
+        } catch {
+          // Similarity detection failed
         }
 
         // Apply AI moderation
         await this.applyAIModeration(document, aiAnalysis.confidence || 50);
       }
-    } catch (error) {
-      this.logger.warn(`Failed to save AI analysis: ${error.message}`);
+    } catch {
+      // Failed to save AI analysis
     }
   }
 
@@ -469,9 +418,6 @@ export class DocumentsService {
 
       if (aiResult.success && aiResult.data) {
         await this.aiService.saveAnalysis(document.id, aiResult.data);
-        this.logger.log(
-          `AI moderation analysis generated for document ${document.id}`,
-        );
 
         // If category was not specified, try to suggest based on AI analysis
         if (!categoryId && !suggestedCategory) {
@@ -494,41 +440,25 @@ export class DocumentsService {
                 where: { id: document.id },
                 data: { categoryId: aiSuggestion.categoryId },
               });
-              this.logger.log(
-                `Document ${document.id} category updated to AI suggested: ${aiSuggestion.categoryName} (confidence: ${aiSuggestion.confidence}%)`,
-              );
             }
-          } catch (catError) {
-            this.logger.warn(
-              `Failed to suggest category for document ${document.id}: ${catError.message}`,
-            );
+          } catch {
+            // Failed to suggest category
           }
         }
 
         // Run similarity detection
         try {
           this.similarityJobService.runSimilarityDetectionSync(document.id);
-          this.logger.log(
-            `Similarity detection completed for document ${document.id}`,
-          );
-        } catch (simError) {
-          this.logger.warn(
-            `Similarity detection failed for document ${document.id}: ${simError.message}`,
-          );
+        } catch {
+          // Similarity detection failed
         }
 
         // Apply AI moderation
         const moderationScore = aiResult.data.moderationScore || 50;
         await this.applyAIModeration(document, moderationScore);
-      } else {
-        this.logger.warn(
-          `AI analysis skipped or failed for document ${document.id}`,
-        );
       }
-    } catch (error) {
-      this.logger.warn(
-        `Unable to generate AI analysis automatically for document ${document.id}: ${error.message}`,
-      );
+    } catch {
+      // Unable to generate AI analysis automatically
     }
   }
 
@@ -540,10 +470,6 @@ export class DocumentsService {
       const moderationResult = await this.aiService.applyModerationSettings(
         document.id,
         moderationScore,
-      );
-
-      this.logger.log(
-        `AI moderation applied for document ${document.id}: ${moderationResult.status} (${moderationResult.action})`,
       );
 
       // Update document status if auto-approved or auto-rejected
@@ -565,9 +491,6 @@ export class DocumentsService {
             moderationNotes,
           },
         });
-        this.logger.log(
-          `Document ${document.id} status updated to ${moderationResult.status}`,
-        );
 
         // Send notification to document uploader
         try {
@@ -584,16 +507,12 @@ export class DocumentsService {
               reason: moderationResult.reason,
             },
           );
-        } catch (notificationError) {
-          this.logger.warn(
-            `Failed to send moderation notification for document ${document.id}: ${notificationError.message}`,
-          );
+        } catch {
+          // Failed to send moderation notification
         }
       }
-    } catch (moderationError) {
-      this.logger.warn(
-        `Failed to apply AI moderation for document ${document.id}: ${moderationError.message}`,
-      );
+    } catch {
+      // Failed to apply AI moderation
     }
   }
 
@@ -761,10 +680,6 @@ export class DocumentsService {
     fileCount: number;
   }> {
     try {
-      this.logger.log(
-        `Preparing download for document ${documentId} by user ${userId || 'guest'}`,
-      );
-
       // Get document with files
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -857,15 +772,10 @@ export class DocumentsService {
       // If single file, return direct download URL
       if (document.files.length === 1) {
         const file = document.files[0].file;
-        this.logger.log(`Preparing single file download: ${file.originalName}`);
         const downloadUrl = await this.r2Service.getSignedDownloadUrl(
           file.storageUrl,
           300,
         ); // 5 minutes
-
-        this.logger.log(
-          `Generated download URL: ${downloadUrl.substring(0, 100)}...`,
-        );
 
         return {
           downloadUrl,
@@ -875,14 +785,8 @@ export class DocumentsService {
       }
 
       // For multiple files, create or use cached ZIP
-      this.logger.log(
-        `Preparing ZIP download for ${document.files.length} files`,
-      );
-
       // Check if ZIP file already exists and is still valid
       if (document.zipFileUrl) {
-        this.logger.log(`Using cached ZIP file for document ${documentId}`);
-
         // Generate new signed URL for the existing ZIP file
         const zipDownloadUrl = await this.r2Service.getSignedDownloadUrl(
           document.zipFileUrl,
@@ -910,12 +814,8 @@ export class DocumentsService {
         fileCount: document.files.length,
       };
     } catch (error) {
-      this.logger.error(
-        `Error preparing download for document ${documentId}:`,
-        error,
-      );
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new InternalServerErrorException(
         'Không thể chuẩn bị tải xuống tài liệu',
@@ -962,7 +862,17 @@ export class DocumentsService {
         email: string;
         isVerified: boolean;
       };
-      aiAnalysis: null;
+      aiAnalysis: {
+        summary: string | null;
+        keyPoints: string[];
+        difficulty: string;
+        confidence: number;
+        reliabilityScore: number;
+        moderationScore: number;
+        safetyFlags: string[];
+        isSafe: boolean;
+        recommendedAction: string;
+      } | null;
       files: Array<{
         id: string;
         originalName: string;
@@ -1074,8 +984,6 @@ export class DocumentsService {
     userId: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      this.logger.log(`Deleting document ${documentId} by user ${userId}`);
-
       // Check if document exists and belongs to user
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -1134,12 +1042,10 @@ export class DocumentsService {
         });
       });
 
-      this.logger.log(`Document ${documentId} deleted successfully`);
       return { success: true, message: 'Document deleted successfully' };
     } catch (error) {
-      this.logger.error(`Error deleting document ${documentId}:`, error);
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new InternalServerErrorException('Không thể xóa tài liệu');
     }
@@ -1150,10 +1056,6 @@ export class DocumentsService {
     documentId: string,
   ): Promise<string> {
     try {
-      this.logger.log(
-        `Creating new ZIP file for document ${documentId} with ${files.length} files`,
-      );
-
       if (files.length === 0) {
         throw new Error('No files to zip');
       }
@@ -1171,14 +1073,10 @@ export class DocumentsService {
       const zipPromise = new Promise<Buffer>((resolve, reject) => {
         archive.on('end', () => {
           const zipBuffer = Buffer.concat(chunks);
-          this.logger.log(
-            `ZIP created successfully, size: ${zipBuffer.length} bytes`,
-          );
           resolve(zipBuffer);
         });
 
         archive.on('error', error => {
-          this.logger.error('ZIP creation error:', error);
           reject(error);
         });
       });
@@ -1186,8 +1084,6 @@ export class DocumentsService {
       // Add files to ZIP
       for (const file of files) {
         try {
-          this.logger.log(`Adding file to ZIP: ${file.originalName}`);
-
           // Get file stream from R2
           const fileStream = await this.r2Service.getFileStream(
             file.storageUrl,
@@ -1195,11 +1091,7 @@ export class DocumentsService {
 
           // Add file to archive
           archive.append(fileStream, { name: file.originalName });
-        } catch (fileError) {
-          this.logger.error(
-            `Error adding file ${file.originalName} to ZIP:`,
-            fileError,
-          );
+        } catch {
           // Continue with other files instead of failing completely
         }
       }
@@ -1236,13 +1128,8 @@ export class DocumentsService {
         1800,
       );
 
-      this.logger.log(
-        `ZIP uploaded, cached, and signed URL generated: ${zipUrl.substring(0, 100)}...`,
-      );
-
       return zipUrl;
-    } catch (error) {
-      this.logger.error('Error creating ZIP download:', error);
+    } catch {
       throw new InternalServerErrorException('Không thể tạo tải xuống ZIP');
     }
   }
@@ -1379,10 +1266,6 @@ export class DocumentsService {
       const skip = (page - 1) * limit;
       const searchStrategy = 'hybrid' as const;
 
-      this.logger.log(
-        `Searching documents: "${normalizedQuery.substring(0, 50)}..." (method: ${searchStrategy})`,
-      );
-
       const fetchLimit = Math.max(limit, Math.min(limit * (page + 1), 100));
 
       const vectorFilters: {
@@ -1413,20 +1296,12 @@ export class DocumentsService {
           threshold: 0.4,
           filters: vectorFilters,
         });
-      } catch (hybridError) {
-        this.logger.error(
-          'Hybrid search failed, falling back to keyword search:',
-          hybridError,
-        );
+      } catch {
         // Fallback to keyword search on error
         searchResults = [];
       }
 
       if (searchResults.length === 0) {
-        this.logger.warn(
-          'Hybrid search returned no results; falling back to keyword search.',
-        );
-
         try {
           const fallbackResults = await this.vectorSearchService.keywordSearch({
             query: normalizedQuery,
@@ -1439,8 +1314,7 @@ export class DocumentsService {
             textScore: result.textScore,
             combinedScore: result.textScore,
           }));
-        } catch (keywordError) {
-          this.logger.error('Keyword search also failed:', keywordError);
+        } catch {
           // Return empty results if both searches fail
           searchResults = [];
         }
@@ -1571,8 +1445,7 @@ export class DocumentsService {
         limit,
         searchMethod: searchStrategy,
       };
-    } catch (error) {
-      this.logger.error('Error searching documents:', error);
+    } catch {
       throw new InternalServerErrorException('Không thể tìm kiếm tài liệu');
     }
   }
@@ -1583,8 +1456,6 @@ export class DocumentsService {
    */
   private async generateDocumentEmbedding(documentId: string): Promise<void> {
     try {
-      this.logger.log(`Generating embedding for document ${documentId}`);
-
       // Get document with AI analysis (no need for files for search embedding)
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
@@ -1594,9 +1465,6 @@ export class DocumentsService {
       });
 
       if (!document) {
-        this.logger.warn(
-          `Document ${documentId} not found for embedding generation`,
-        );
         return;
       }
 
@@ -1614,9 +1482,6 @@ export class DocumentsService {
       });
 
       if (!textContent || textContent.trim().length === 0) {
-        this.logger.warn(
-          `No text content available for embedding document ${documentId}`,
-        );
         return;
       }
 
@@ -1633,15 +1498,7 @@ export class DocumentsService {
         model,
         '1.0',
       );
-
-      this.logger.log(
-        `Embedding generated and saved for document ${documentId} (dimension: ${embedding.length})`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Error generating embedding for document ${documentId}:`,
-        error.message,
-      );
+    } catch {
       // Don't throw - embedding generation is not critical for document creation
     }
   }
@@ -1796,8 +1653,6 @@ export class DocumentsService {
         },
       });
 
-      this.logger.log(`Document ${documentId} updated by user ${userId}`);
-
       // Get system default for reference
       const settings = await this.systemSettings.getPointsSettings();
 
@@ -1828,9 +1683,8 @@ export class DocumentsService {
         needsReModeration: needsReModeration,
       };
     } catch (error) {
-      this.logger.error(`Error updating document ${documentId}:`, error);
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new Error('Unexpected error');
       }
       throw new InternalServerErrorException('Không thể cập nhật tài liệu');
     }

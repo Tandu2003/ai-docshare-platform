@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface EmbeddingMetrics {
@@ -11,7 +11,6 @@ export interface EmbeddingMetrics {
 }
 @Injectable()
 export class EmbeddingService {
-  private readonly logger = new Logger(EmbeddingService.name);
   private readonly apiKey: string | null;
   private readonly model: string;
   private genAI: GoogleGenerativeAI | null = null;
@@ -35,16 +34,9 @@ export class EmbeddingService {
     if (this.apiKey) {
       try {
         this.genAI = new GoogleGenerativeAI(this.apiKey);
-        this.logger.log(
-          `Gemini API initialized for embeddings with model: ${this.model}`,
-        );
-      } catch (error: any) {
-        this.logger.error('Failed to initialize Gemini API:', error.message);
+      } catch {
+        // Failed to initialize Gemini API
       }
-    } else {
-      this.logger.warn(
-        'GEMINI_API_KEY not found. Embedding generation will use placeholder.',
-      );
     }
   }
 
@@ -62,7 +54,6 @@ export class EmbeddingService {
       const cached = this.embeddingCache.get(cacheKey);
       if (cached) {
         this.metrics.cacheHits++;
-        this.logger.debug(`Cache hit for text: ${text.substring(0, 50)}...`);
         return cached;
       }
 
@@ -73,7 +64,6 @@ export class EmbeddingService {
 
       // If no API key, return placeholder (for development)
       if (!this.apiKey || !this.genAI) {
-        this.logger.warn('Using placeholder embedding (no API key configured)');
         return this.generatePlaceholderEmbedding(truncatedText);
       }
 
@@ -91,17 +81,11 @@ export class EmbeddingService {
       const latency = Date.now() - startTime;
       this.updateMetrics(latency, true);
 
-      this.logger.log(
-        `Generated embedding of dimension ${embedding.length} for text (${truncatedText.length} chars) in ${latency}ms`,
-      );
-
       return embedding;
-    } catch (error: any) {
+    } catch {
       this.metrics.failedRequests++;
-      this.logger.error('Error generating embedding:', error.message);
 
       // Fallback to placeholder on error
-      this.logger.warn('Falling back to placeholder embedding');
       return this.generatePlaceholderEmbedding(text);
     }
   }
@@ -115,27 +99,24 @@ export class EmbeddingService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await this.generateRealEmbedding(text);
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
 
         // Check if it's a rate limit error
         const isRateLimitError =
-          error.message?.includes('429') ||
-          error.message?.includes('rate limit') ||
-          error.message?.includes('quota');
+          (error as Error).message?.includes('429') ||
+          (error as Error).message?.includes('rate limit') ||
+          (error as Error).message?.includes('quota');
 
         // Check if it's a network error
         const isNetworkError =
-          error.message?.includes('network') ||
-          error.message?.includes('ECONNRESET') ||
-          error.message?.includes('ETIMEDOUT');
+          (error as Error).message?.includes('network') ||
+          (error as Error).message?.includes('ECONNRESET') ||
+          (error as Error).message?.includes('ETIMEDOUT');
 
         if (attempt < maxRetries && (isRateLimitError || isNetworkError)) {
           // Exponential backoff: 1s, 2s, 4s
           const delayMs = Math.pow(2, attempt - 1) * 1000;
-          this.logger.warn(
-            `Embedding API error (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying in ${delayMs}ms...`,
-          );
           await this.sleep(delayMs);
           continue;
         }
@@ -166,12 +147,8 @@ export class EmbeddingService {
       }
 
       throw new Error('Invalid embedding response structure');
-    } catch (error: any) {
-      this.logger.error(
-        `Error generating real embedding with ${this.model}:`,
-        error.message,
-      );
-      throw error;
+    } catch {
+      throw new Error('Failed to generate embedding');
     }
   }
 
@@ -185,15 +162,8 @@ export class EmbeddingService {
   ): Promise<number[][]> {
     try {
       if (!this.apiKey || !this.genAI) {
-        this.logger.warn(
-          'Using placeholder embeddings (no API key configured)',
-        );
         return texts.map(text => this.generatePlaceholderEmbedding(text));
       }
-
-      this.logger.log(
-        `Generating embeddings for ${texts.length} texts with concurrency ${concurrency}`,
-      );
 
       // Process in batches with concurrency limit
       const results: number[][] = [];
@@ -204,21 +174,14 @@ export class EmbeddingService {
         );
         results.push(...batchResults);
 
-        this.logger.log(
-          `Processed batch ${Math.floor(i / concurrency) + 1}/${Math.ceil(texts.length / concurrency)} (${results.length}/${texts.length} embeddings)`,
-        );
-
         // Small delay between batches to avoid rate limiting
         if (i + concurrency < texts.length) {
           await this.sleep(500);
         }
       }
 
-      this.logger.log(`Generated ${results.length} embeddings in batch`);
-
       return results;
-    } catch (error: any) {
-      this.logger.error('Error generating batch embeddings:', error.message);
+    } catch {
       // Fallback to individual placeholders
       return texts.map(text => this.generatePlaceholderEmbedding(text));
     }
@@ -257,7 +220,6 @@ export class EmbeddingService {
 
   clearCache(): void {
     this.embeddingCache.clear();
-    this.logger.log('Embedding cache cleared');
   }
 
   private generatePlaceholderEmbedding(text: string): number[] {
@@ -311,7 +273,6 @@ export class EmbeddingService {
     const cached = this.embeddingCache.get(cacheKey);
     if (cached) {
       this.metrics.cacheHits++;
-      this.logger.debug(`Cache hit for text: ${text.substring(0, 50)}...`);
       return cached;
     }
 
@@ -340,10 +301,6 @@ export class EmbeddingService {
     // Update metrics
     const latency = Date.now() - startTime;
     this.updateMetrics(latency, true);
-
-    this.logger.log(
-      `Generated strict embedding of dimension ${embedding.length} for text (${truncatedText.length} chars) in ${latency}ms`,
-    );
 
     return embedding;
   }

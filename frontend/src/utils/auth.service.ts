@@ -74,7 +74,7 @@ class AuthService {
     try {
       const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
       return { message: response.message };
-    } catch (error) {
+    } catch {
       // Continue with logout even if server request fails
       return { message: 'Đăng xuất thành công!' }; // Fallback message
     } finally {
@@ -112,9 +112,9 @@ class AuthService {
       }
 
       throw new Error('Token refresh failed');
-    } catch (error: any) {
+    } catch (err: unknown) {
       this.clearAuthData();
-      throw this.handleAuthError(error);
+      throw this.handleAuthError(err);
     }
   }
 
@@ -135,7 +135,7 @@ class AuthService {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       // Refresh failed, clear any stale data
       this.clearAuthData();
       return null;

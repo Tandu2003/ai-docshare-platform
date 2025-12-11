@@ -4,7 +4,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentShareLink } from '@prisma/client';
@@ -35,7 +34,6 @@ interface ValidatedShareLink {
 
 @Injectable()
 export class DocumentSharingService {
-  private readonly logger = new Logger(DocumentSharingService.name);
   private readonly SHARE_TOKEN_BYTES = 32;
   private readonly DEFAULT_EXPIRY_MINUTES = 60 * 24; // 24 hours
 
@@ -98,11 +96,8 @@ export class DocumentSharingService {
         shareUrl,
       };
     } catch (error) {
-      this.logger.error(
-        `Error creating/updating share link for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException(
         'Không thể tạo liên kết chia sẻ tài liệu',
       );
@@ -143,15 +138,10 @@ export class DocumentSharingService {
         data: { isRevoked: true },
       });
 
-      this.logger.log(`Share link revoked for document ${documentId}`);
-
       return { success: true };
     } catch (error) {
-      this.logger.error(
-        `Error revoking share link for document ${documentId}:`,
-        error,
-      );
-      if (error instanceof BadRequestException) throw error;
+      if (error instanceof BadRequestException)
+        throw new Error('Unexpected error');
       throw new InternalServerErrorException(
         'Không thể thu hồi liên kết chia sẻ',
       );
@@ -191,11 +181,7 @@ export class DocumentSharingService {
         isRevoked: shareLink.isRevoked,
         createdById: shareLink.createdById,
       };
-    } catch (error) {
-      this.logger.error(
-        `Error validating share link for document ${documentId}:`,
-        error,
-      );
+    } catch {
       return null;
     }
   }
@@ -230,11 +216,7 @@ export class DocumentSharingService {
         isRevoked: shareLink.isRevoked,
         shareUrl,
       };
-    } catch (error) {
-      this.logger.error(
-        `Error getting share link info for document ${documentId}:`,
-        error,
-      );
+    } catch {
       return null;
     }
   }

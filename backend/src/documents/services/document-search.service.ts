@@ -8,11 +8,7 @@ import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-bu
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { FilesService } from '@/files/files.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
 /** Search filters */
@@ -64,8 +60,6 @@ interface SearchResponse {
 
 @Injectable()
 export class DocumentSearchService {
-  private readonly logger = new Logger(DocumentSearchService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly embeddingService: EmbeddingService,
@@ -89,10 +83,6 @@ export class DocumentSearchService {
       const skip = (page - 1) * limit;
       const searchStrategy = 'hybrid' as const;
 
-      this.logger.log(
-        `Searching documents: "${normalizedQuery.substring(0, 50)}..."`,
-      );
-
       const fetchLimit = Math.max(limit, Math.min(limit * (page + 1), 100));
 
       const vectorFilters = this.buildVectorFilters(filters, userRole);
@@ -104,9 +94,7 @@ export class DocumentSearchService {
         vectorFilters,
       );
 
-      // Fallback to keyword search if no results
       if (searchResults.length === 0) {
-        this.logger.warn('Hybrid search returned no results; falling back');
         searchResults = await this.performKeywordSearch(
           normalizedQuery,
           fetchLimit,
@@ -148,16 +136,13 @@ export class DocumentSearchService {
         limit,
         searchMethod: searchStrategy,
       };
-    } catch (error) {
-      this.logger.error('Error searching documents:', error);
+    } catch {
       throw new InternalServerErrorException('Không thể tìm kiếm tài liệu');
     }
   }
 
   async generateDocumentEmbedding(documentId: string): Promise<void> {
     try {
-      this.logger.log(`Generating embedding for document ${documentId}`);
-
       const document = await this.prisma.document.findUnique({
         where: { id: documentId },
         include: {
@@ -170,18 +155,12 @@ export class DocumentSearchService {
       });
 
       if (!document) {
-        this.logger.warn(
-          `Document ${documentId} not found for embedding generation`,
-        );
         return;
       }
 
       const textContent = this.buildEmbeddingText(document);
 
       if (!textContent || textContent.trim().length === 0) {
-        this.logger.warn(
-          `No text content available for embedding document ${documentId}`,
-        );
         return;
       }
 
@@ -190,23 +169,14 @@ export class DocumentSearchService {
       );
       const model = this.embeddingService.getModelName();
 
-      // Save embedding using shared service with proper vector formatting
       await this.embeddingStorage.saveEmbedding(
         documentId,
         embedding,
         model,
         '1.0',
       );
-
-      this.logger.log(
-        `Embedding generated for document ${documentId} (dim: ${embedding.length})`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Error generating embedding for document ${documentId}:`,
-        error,
-      );
-      // Don't throw - embedding generation is not critical
+    } catch {
+      // Silent error handling
     }
   }
 
@@ -214,8 +184,6 @@ export class DocumentSearchService {
     processed: number;
     failed: number;
   }> {
-    this.logger.log('Starting bulk embedding regeneration');
-
     const documents = await this.prisma.document.findMany({
       where: {
         isApproved: true,
@@ -231,18 +199,10 @@ export class DocumentSearchService {
       try {
         await this.generateDocumentEmbedding(doc.id);
         processed++;
-      } catch (error) {
-        this.logger.error(
-          `Failed to generate embedding for document ${doc.id}:`,
-          error,
-        );
+      } catch {
         failed++;
       }
     }
-
-    this.logger.log(
-      `Bulk embedding regeneration completed: ${processed} processed, ${failed} failed`,
-    );
 
     return { processed, failed };
   }
@@ -279,7 +239,7 @@ export class DocumentSearchService {
     return vectorFilters;
   }
 
-  private async performHybridSearch(
+  private performHybridSearch(
     query: string,
     userId?: string,
     userRole?: string,

@@ -10,7 +10,6 @@ import {
   Controller,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Query,
@@ -30,8 +29,6 @@ import { FastifyReply } from 'fastify';
 @Controller('documents')
 @ApiBearerAuth()
 export class DocumentDownloadController {
-  private readonly logger = new Logger(DocumentDownloadController.name);
-
   constructor(
     private readonly downloadService: DocumentDownloadService,
     private readonly documentsService: DocumentsService,
@@ -68,10 +65,6 @@ export class DocumentDownloadController {
       const referrer =
         downloadDto.referrer || req.headers['referer'] || 'unknown';
 
-      this.logger.log(
-        `Download request for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
-      );
-
       const downloadResult = await this.documentsService.downloadDocument(
         documentId,
         userId,
@@ -87,11 +80,6 @@ export class DocumentDownloadController {
         'Tải xuống tài liệu đã được chuẩn bị thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error preparing download for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -119,10 +107,6 @@ export class DocumentDownloadController {
     try {
       const userId = req.user?.id;
 
-      this.logger.log(
-        `Getting download URL for document ${documentId} from user ${userId}`,
-      );
-
       const downloadResult = await this.downloadService.getDownloadUrl(
         documentId,
         userId,
@@ -134,11 +118,6 @@ export class DocumentDownloadController {
         'URL tải xuống đã được tạo thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error getting download URL for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -186,10 +165,6 @@ export class DocumentDownloadController {
       const referrer =
         downloadDto.referrer || req.headers['referer'] || 'unknown';
 
-      this.logger.log(
-        `Init download for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
-      );
-
       const result = await this.downloadService.initDownload(
         documentId,
         userId,
@@ -200,11 +175,6 @@ export class DocumentDownloadController {
 
       return ResponseHelper.success(res, result, 'Download đã được khởi tạo');
     } catch (error) {
-      this.logger.error(
-        `Error initializing download for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -236,8 +206,6 @@ export class DocumentDownloadController {
     try {
       const userId = req.user?.id;
 
-      this.logger.log(`Confirming download ${downloadId} from user ${userId}`);
-
       const result = await this.downloadService.confirmDownload(
         downloadId,
         userId,
@@ -245,8 +213,6 @@ export class DocumentDownloadController {
 
       return ResponseHelper.success(res, result, result.message);
     } catch (error) {
-      this.logger.error(`Error confirming download ${downloadId}:`, error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -278,8 +244,6 @@ export class DocumentDownloadController {
     try {
       const userId = req.user?.id;
 
-      this.logger.log(`Cancelling download ${downloadId} from user ${userId}`);
-
       const result = await this.downloadService.cancelDownload(
         downloadId,
         userId,
@@ -287,8 +251,6 @@ export class DocumentDownloadController {
 
       return ResponseHelper.success(res, result, 'Download đã được hủy');
     } catch (error) {
-      this.logger.error(`Error cancelling download ${downloadId}:`, error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -336,10 +298,6 @@ export class DocumentDownloadController {
       const referrer =
         downloadDto.referrer || req.headers['referer'] || 'unknown';
 
-      this.logger.log(
-        `Legacy track download for document ${documentId} from user ${userId}, IP: ${ipAddress}`,
-      );
-
       const initResult = await this.downloadService.initDownload(
         documentId,
         userId,
@@ -356,11 +314,6 @@ export class DocumentDownloadController {
         'Download đã được track thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error tracking download for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -407,10 +360,6 @@ export class DocumentDownloadController {
       const userAgent = req.headers['user-agent'] || 'unknown';
       const referrer = req.headers['referer'] || 'unknown';
 
-      this.logger.log(
-        `Streaming download request for document ${documentId} from user ${userId}`,
-      );
-
       const streamData = await this.downloadService.prepareStreamingDownload(
         documentId,
         userId,
@@ -429,25 +378,16 @@ export class DocumentDownloadController {
       res.header('X-Download-Id', streamData.downloadId);
 
       res.raw.on('finish', () => {
-        this.logger.log(
-          `res.finish triggered for download ${streamData.downloadId}`,
-        );
         void streamData.onStreamComplete();
       });
 
       res.raw.on('close', () => {
         if (!res.raw.writableEnded) {
-          this.logger.log(
-            `res.close (aborted) triggered for download ${streamData.downloadId}`,
-          );
           void streamData.onStreamError();
         }
       });
 
-      streamData.fileStream.on('error', error => {
-        this.logger.error(
-          `Stream error for download ${streamData.downloadId}: ${error.message}`,
-        );
+      streamData.fileStream.on('error', () => {
         void streamData.onStreamError();
         if (!res.sent) {
           void ResponseHelper.error(
@@ -460,11 +400,6 @@ export class DocumentDownloadController {
 
       return res.send(streamData.fileStream);
     } catch (error) {
-      this.logger.error(
-        `Error streaming download for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }

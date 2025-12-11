@@ -11,7 +11,6 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Post,
@@ -32,8 +31,6 @@ import { FastifyReply } from 'fastify';
 @ApiBearerAuth()
 @Controller('categories')
 export class CategoriesController {
-  private readonly logger = new Logger(CategoriesController.name);
-
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
@@ -59,7 +56,6 @@ export class CategoriesController {
         'Danh mục đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error('Error retrieving categories', error);
       return ResponseHelper.error(
         res,
         'Không thể truy xuất danh mục',
@@ -80,7 +76,6 @@ export class CategoriesController {
         'Danh mục công khai đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error('Error retrieving public categories', error);
       return ResponseHelper.error(
         res,
         'Không thể truy xuất danh mục công khai',
@@ -137,7 +132,6 @@ export class CategoriesController {
         'Chi tiết danh mục và danh sách tài liệu',
       );
     } catch (error) {
-      this.logger.error(`Error retrieving category ${id} detail`, error);
       const status =
         error instanceof HttpException
           ? error.getStatus()
@@ -170,10 +164,6 @@ export class CategoriesController {
         'Gợi ý danh mục cho tài liệu',
       );
     } catch (error) {
-      this.logger.error(
-        `Error suggesting categories for document ${documentId}`,
-        error,
-      );
       const status =
         error instanceof HttpException
           ? error.getStatus()
@@ -207,7 +197,6 @@ export class CategoriesController {
         HttpStatus.CREATED,
       );
     } catch (error) {
-      this.logger.error('Error creating category', error);
       const status =
         error instanceof HttpException
           ? error.getStatus()
@@ -242,7 +231,6 @@ export class CategoriesController {
         'Danh mục đã được cập nhật thành công',
       );
     } catch (error) {
-      this.logger.error(`Error updating category ${id}`, error);
       const status =
         error instanceof HttpException
           ? error.getStatus()
@@ -272,7 +260,6 @@ export class CategoriesController {
         'Danh mục đã được xóa thành công',
       );
     } catch (error) {
-      this.logger.error(`Error deleting category ${id}`, error);
       const status =
         error instanceof HttpException
           ? error.getStatus()

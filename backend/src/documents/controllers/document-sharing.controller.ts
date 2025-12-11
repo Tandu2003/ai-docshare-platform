@@ -14,7 +14,6 @@ import {
   Delete,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Req,
@@ -33,8 +32,6 @@ import { FastifyReply } from 'fastify';
 @Controller('documents')
 @ApiBearerAuth()
 export class DocumentSharingController {
-  private readonly logger = new Logger(DocumentSharingController.name);
-
   constructor(
     private readonly sharingService: DocumentSharingService,
     private readonly commentService: DocumentCommentService,
@@ -59,10 +56,6 @@ export class DocumentSharingController {
       );
       return ResponseHelper.success(res, rating, 'Lấy đánh giá thành công');
     } catch (error) {
-      this.logger.error(
-        `Error getting rating for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể lấy đánh giá',
@@ -96,10 +89,6 @@ export class DocumentSharingController {
       );
       return ResponseHelper.success(res, rating, 'Đã cập nhật đánh giá');
     } catch (error) {
-      this.logger.error(
-        `Error setting rating for document ${documentId}:`,
-        error,
-      );
       return ResponseHelper.error(
         res,
         'Không thể cập nhật đánh giá',
@@ -142,10 +131,6 @@ export class DocumentSharingController {
         'Liên kết chia sẻ đã được cấu hình thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error configuring share link for document ${documentId}:`,
-        error,
-      );
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -186,10 +171,6 @@ export class DocumentSharingController {
         'Liên kết chia sẻ đã được thu hồi thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error revoking share link for document ${documentId}:`,
-        error,
-      );
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -234,10 +215,6 @@ export class DocumentSharingController {
       const userAgent = req.headers['user-agent'] || 'unknown';
       const { referrer } = viewDocumentDto;
 
-      this.logger.log(
-        `Tracking view for document ${documentId}: userId=${userId}, ip=${ipAddress}`,
-      );
-
       const result = await this.documentsService.viewDocument(
         documentId,
         userId,
@@ -252,11 +229,6 @@ export class DocumentSharingController {
         'Lượt xem tài liệu đã được theo dõi thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error tracking view for document ${documentId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }

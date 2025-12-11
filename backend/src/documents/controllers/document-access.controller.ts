@@ -9,7 +9,6 @@ import {
   Controller,
   Get,
   HttpStatus,
-  Logger,
   Param,
   Post,
   Query,
@@ -23,8 +22,6 @@ import { FastifyReply } from 'fastify';
 @ApiTags('Documents')
 @Controller('documents')
 export class DocumentAccessController {
-  private readonly logger = new Logger(DocumentAccessController.name);
-
   constructor(
     private readonly documentsService: DocumentsService,
     private readonly filesService: FilesService,
@@ -44,7 +41,7 @@ export class DocumentAccessController {
     @Query('q') query: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
-    @Query('method') method: string = 'hybrid',
+    @Query('method') _method: string = 'hybrid', // eslint-disable-line @typescript-eslint/no-unused-vars
     @Query('categoryId') categoryId: string | undefined,
     @Query('tags') tags: string | undefined,
     @Query('language') language: string | undefined,
@@ -64,13 +61,6 @@ export class DocumentAccessController {
 
       const pageNum = Math.max(1, Number(page) || 1);
       const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
-      const normalizedMethod = method?.toLowerCase();
-
-      if (normalizedMethod && normalizedMethod !== 'hybrid') {
-        this.logger.warn(
-          `Search method "${method}" is deprecated. Falling back to hybrid search.`,
-        );
-      }
 
       const userId = req.user?.id;
       const userRole = req.user?.role?.name;
@@ -111,7 +101,6 @@ export class DocumentAccessController {
         'Tìm kiếm tài liệu thành công',
       );
     } catch (error) {
-      this.logger.error('Error searching documents:', error);
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi tìm kiếm tài liệu',
@@ -172,7 +161,6 @@ export class DocumentAccessController {
         'Tài liệu công khai đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error('Error getting public documents:', error);
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất tài liệu công khai',
@@ -211,8 +199,6 @@ export class DocumentAccessController {
         'Tài liệu đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error(`Error getting document ${documentId}:`, error);
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }
@@ -241,7 +227,6 @@ export class DocumentAccessController {
         'Các loại tệp được phép đã được truy xuất thành công',
       );
     } catch (error) {
-      this.logger.error('Error getting allowed file types:', error);
       return ResponseHelper.error(
         res,
         'Không thể lấy các loại tệp được phép',
@@ -282,10 +267,6 @@ export class DocumentAccessController {
 
       const userAgent = req.headers['user-agent'] || 'unknown';
 
-      this.logger.log(
-        `Tracking view for file ${fileId}: userId=${userId}, ip=${ipAddress}`,
-      );
-
       await this.filesService.incrementViewCount(
         fileId,
         userId,
@@ -299,11 +280,6 @@ export class DocumentAccessController {
         'Lượt xem đã được tăng thành công',
       );
     } catch (error) {
-      this.logger.error(
-        `Error incrementing view count for file ${fileId}:`,
-        error,
-      );
-
       if (error instanceof BadRequestException) {
         return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
       }

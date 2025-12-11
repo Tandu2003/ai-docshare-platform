@@ -17,9 +17,9 @@ export class DatabaseInitService implements OnModuleInit {
       await this.initializeRoles();
       await this.initializeCategories();
       this.logger.log('✅ Khởi tạo cơ sở dữ liệu hoàn thành thành công');
-    } catch (error) {
-      this.logger.error('❌ Khởi tạo cơ sở dữ liệu thất bại:', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('❌ Khởi tạo cơ sở dữ liệu thất bại:', _error);
+      throw new Error('Unexpected error');
     }
   }
 

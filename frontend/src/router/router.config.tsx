@@ -1,34 +1,149 @@
+import { lazy, Suspense } from 'react';
+
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { MainLayout, ProtectedRoute } from '@/components/layout';
-import {
-  AdminDashboardPage,
-  AdminPointsPage,
-  AdminUsersPage,
-  AnalyticsPage,
-  BookmarksPage,
-  CategoriesPage,
-  CategoryDetailPage,
-  DashboardPage,
-  DocumentDetailPage,
-  DocumentsPage,
-  ForgotPasswordPage,
-  LoginPage,
-  MyDocumentsPage,
-  NotFoundPage,
-  NotificationsPage,
-  ProfilePage,
-  RegisterPage,
-  ResendVerificationPage,
-  ResetPasswordPage,
-  SettingsPage,
-  SystemSettingsPage,
-  TopRatedPage,
-  TrendingPage,
-  UnauthorizedPage,
-  UploadPage,
-  VerifyEmailPage,
-} from '@/pages';
+import { LoadingPage } from '@/components/ui/loading-skeleton';
+// Critical routes - loaded immediately
+import { DashboardPage, LoginPage, RegisterPage } from '@/pages';
+
+// Lazy load other routes for better code splitting
+const ForgotPasswordPage = lazy(() =>
+  import('@/pages/forgot-password').then(m => ({
+    default: m.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/reset-password').then(m => ({
+    default: m.ResetPasswordPage,
+  })),
+);
+const VerifyEmailPage = lazy(() =>
+  import('@/pages/verify-email').then(m => ({
+    default: m.VerifyEmailPage,
+  })),
+);
+const ResendVerificationPage = lazy(() =>
+  import('@/pages/resend-verification').then(m => ({
+    default: m.ResendVerificationPage,
+  })),
+);
+const DocumentsPage = lazy(() =>
+  import('@/pages/documents-page').then(m => ({
+    default: m.DocumentsPage,
+  })),
+);
+const DocumentDetailPage = lazy(() =>
+  import('@/pages/document-detail-page').then(m => ({
+    default: m.DocumentDetailPage,
+  })),
+);
+const UploadPage = lazy(() =>
+  import('@/pages/upload-page').then(m => ({
+    default: m.UploadPage,
+  })),
+);
+const CategoriesPage = lazy(() =>
+  import('@/pages/categories-page').then(m => ({
+    default: m.CategoriesPage,
+  })),
+);
+const CategoryDetailPage = lazy(() =>
+  import('@/pages/category-detail-page').then(m => ({
+    default: m.CategoryDetailPage,
+  })),
+);
+const BookmarksPage = lazy(() =>
+  import('@/pages/bookmarks-page').then(m => ({
+    default: m.BookmarksPage,
+  })),
+);
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications-page').then(m => ({
+    default: m.NotificationsPage,
+  })),
+);
+const MyDocumentsPage = lazy(() =>
+  import('@/pages/my-documents-page').then(m => ({
+    default: m.MyDocumentsPage,
+  })),
+);
+const ProfilePage = lazy(() =>
+  import('@/pages/profile-page').then(m => ({
+    default: m.ProfilePage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import('@/pages/settings-page').then(m => ({
+    default: m.SettingsPage,
+  })),
+);
+const AnalyticsPage = lazy(() =>
+  import('@/pages/analytics-page').then(m => ({
+    default: m.AnalyticsPage,
+  })),
+);
+const TrendingPage = lazy(() =>
+  import('@/pages/trending-page').then(m => ({
+    default: m.TrendingPage,
+  })),
+);
+const TopRatedPage = lazy(() =>
+  import('@/pages/top-rated-page').then(m => ({
+    default: m.TopRatedPage,
+  })),
+);
+const AdminDashboardPage = lazy(() =>
+  import('@/pages/admin-dashboard-page').then(m => ({
+    default: m.AdminDashboardPage,
+  })),
+);
+const AdminUsersPage = lazy(() =>
+  import('@/pages/admin-users-page').then(m => ({
+    default: m.AdminUsersPage,
+  })),
+);
+const AdminPointsPage = lazy(() =>
+  import('@/pages/admin-points-page').then(m => ({
+    default: m.AdminPointsPage,
+  })),
+);
+const SystemSettingsPage = lazy(() =>
+  import('@/pages/system-settings-page').then(m => ({
+    default: m.SystemSettingsPage,
+  })),
+);
+const NotFoundPage = lazy(() =>
+  import('@/pages/not-found').then(m => ({
+    default: m.NotFoundPage,
+  })),
+);
+const UnauthorizedPage = lazy(() =>
+  import('@/pages/unauthorized').then(m => ({
+    default: m.UnauthorizedPage,
+  })),
+);
+
+// Wrapper component for lazy-loaded routes
+const LazyRoute = ({
+  component: Component,
+}: {
+  component: React.ComponentType;
+}) => (
+  <Suspense
+    fallback={
+      <LoadingPage
+        title="Đang tải..."
+        description="Vui lòng đợi trong giây lát"
+        showStats={false}
+        showTable={false}
+        showList={false}
+      />
+    }
+  >
+    <Component />
+  </Suspense>
+);
 
 export const router = createBrowserRouter([
   // Redirect root to dashboard
@@ -62,7 +177,7 @@ export const router = createBrowserRouter([
     path: '/auth/forgot-password',
     element: (
       <ProtectedRoute requireAuth={false}>
-        <ForgotPasswordPage />
+        <LazyRoute component={ForgotPasswordPage} />
       </ProtectedRoute>
     ),
   },
@@ -70,7 +185,7 @@ export const router = createBrowserRouter([
     path: '/auth/reset-password',
     element: (
       <ProtectedRoute requireAuth={false}>
-        <ResetPasswordPage />
+        <LazyRoute component={ResetPasswordPage} />
       </ProtectedRoute>
     ),
   },
@@ -78,7 +193,7 @@ export const router = createBrowserRouter([
     path: '/auth/verify-email',
     element: (
       <ProtectedRoute requireAuth={false}>
-        <VerifyEmailPage />
+        <LazyRoute component={VerifyEmailPage} />
       </ProtectedRoute>
     ),
   },
@@ -86,7 +201,7 @@ export const router = createBrowserRouter([
     path: '/auth/resend-verification',
     element: (
       <ProtectedRoute requireAuth={false}>
-        <ResendVerificationPage />
+        <LazyRoute component={ResendVerificationPage} />
       </ProtectedRoute>
     ),
   },
@@ -132,65 +247,65 @@ export const router = createBrowserRouter([
       },
       {
         path: 'documents',
-        element: <DocumentsPage />,
+        element: <LazyRoute component={DocumentsPage} />,
       },
       {
         path: 'documents/:documentId',
-        element: <DocumentDetailPage />,
+        element: <LazyRoute component={DocumentDetailPage} />,
       },
       {
         path: 'upload',
-        element: <UploadPage />,
+        element: <LazyRoute component={UploadPage} />,
       },
       {
         path: 'categories',
-        element: <CategoriesPage />,
+        element: <LazyRoute component={CategoriesPage} />,
       },
       {
         path: 'categories/:id',
-        element: <CategoryDetailPage />,
+        element: <LazyRoute component={CategoryDetailPage} />,
       },
       {
         path: 'bookmarks',
-        element: <BookmarksPage />,
+        element: <LazyRoute component={BookmarksPage} />,
       },
       {
         path: 'notifications',
-        element: <NotificationsPage />,
+        element: <LazyRoute component={NotificationsPage} />,
       },
       {
         path: 'my-documents',
-        element: <MyDocumentsPage />,
+        element: <LazyRoute component={MyDocumentsPage} />,
       },
       {
         path: 'profile',
-        element: <ProfilePage />,
+        element: <LazyRoute component={ProfilePage} />,
       },
       {
         path: 'settings',
-        element: <SettingsPage />,
+        element: <LazyRoute component={SettingsPage} />,
       },
       {
         path: 'analytics',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <AnalyticsPage />
+            <LazyRoute component={AnalyticsPage} />
           </ProtectedRoute>
         ),
       },
       {
         path: 'trending',
-        element: <TrendingPage />,
+        element: <LazyRoute component={TrendingPage} />,
       },
       {
         path: 'top-rated',
-        element: <TopRatedPage />,
+        element: <LazyRoute component={TopRatedPage} />,
       },
       {
         path: 'moderation',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <AdminDashboardPage />
+            <LazyRoute component={AdminDashboardPage} />
           </ProtectedRoute>
         ),
       },
@@ -198,7 +313,7 @@ export const router = createBrowserRouter([
         path: 'admin/users',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <AdminUsersPage />
+            <LazyRoute component={AdminUsersPage} />
           </ProtectedRoute>
         ),
       },
@@ -206,7 +321,7 @@ export const router = createBrowserRouter([
         path: 'admin/settings',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <SystemSettingsPage />
+            <LazyRoute component={SystemSettingsPage} />
           </ProtectedRoute>
         ),
       },
@@ -214,7 +329,7 @@ export const router = createBrowserRouter([
         path: 'admin/points',
         element: (
           <ProtectedRoute requiredRole="admin">
-            <AdminPointsPage />
+            <LazyRoute component={AdminPointsPage} />
           </ProtectedRoute>
         ),
       },
@@ -224,10 +339,10 @@ export const router = createBrowserRouter([
   // Error pages
   {
     path: '/unauthorized',
-    element: <UnauthorizedPage />,
+    element: <LazyRoute component={UnauthorizedPage} />,
   },
   {
     path: '*',
-    element: <NotFoundPage />,
+    element: <LazyRoute component={NotFoundPage} />,
   },
 ]);
