@@ -123,7 +123,7 @@ export class DocumentManagementController {
         documents,
         'Tài liệu đã được truy xuất thành công',
       );
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể lấy tài liệu người dùng',

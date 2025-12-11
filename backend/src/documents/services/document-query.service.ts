@@ -204,6 +204,77 @@ export class DocumentQueryService {
     }
   }
 
+  async getPrivateDocuments(
+    page: number = 1,
+    limit: number = 10,
+    filters?: DocumentListFilters,
+  ): Promise<PaginatedDocumentsResponse> {
+    try {
+      const skip = (page - 1) * limit;
+
+      const whereCondition: any = {
+        isPublic: false,
+        isApproved: true,
+        moderationStatus: DocumentModerationStatus.APPROVED,
+      };
+
+      if (filters?.categoryId) {
+        const childCategories = await this.prisma.category.findMany({
+          where: { parentId: filters.categoryId, isActive: true },
+          select: { id: true },
+        });
+
+        const categoryIds = [
+          filters.categoryId,
+          ...childCategories.map(c => c.id),
+        ];
+
+        whereCondition.categoryId = { in: categoryIds };
+      }
+
+      const orderBy = this.buildOrderBy(filters);
+
+      const [documents, total] = await Promise.all([
+        this.prisma.document.findMany({
+          where: whereCondition,
+          include: {
+            files: {
+              include: { file: true },
+              orderBy: { order: 'asc' },
+            },
+            category: true,
+            uploader: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        this.prisma.document.count({ where: whereCondition }),
+      ]);
+
+      const transformedDocuments = await this.transformPublicDocuments(
+        documents,
+        undefined,
+      );
+
+      return {
+        documents: transformedDocuments,
+        total,
+        page,
+        limit,
+      };
+    } catch {
+      throw new InternalServerErrorException('Không thể lấy tài liệu riêng tư');
+    }
+  }
+
   async getDocumentById(
     documentId: string,
     userId?: string,

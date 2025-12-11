@@ -49,7 +49,7 @@ export class DocumentCommentsController {
         userId,
       );
       return ResponseHelper.success(res, comments, 'Lấy bình luận thành công');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể lấy bình luận',
@@ -82,7 +82,7 @@ export class DocumentCommentsController {
         dto,
       );
       return ResponseHelper.success(res, comment, 'Đã thêm bình luận');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể thêm bình luận',
@@ -115,7 +115,7 @@ export class DocumentCommentsController {
         userId,
       );
       return ResponseHelper.success(res, updated, 'Đã thích bình luận');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể thích bình luận',
@@ -150,7 +150,7 @@ export class DocumentCommentsController {
         dto,
       );
       return ResponseHelper.success(res, updated, 'Đã sửa bình luận');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể sửa bình luận',
@@ -179,7 +179,7 @@ export class DocumentCommentsController {
       }
       await this.commentService.deleteComment(documentId, commentId, userId);
       return ResponseHelper.success(res, null, 'Đã xóa bình luận');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể xóa bình luận',

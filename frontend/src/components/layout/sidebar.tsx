@@ -211,7 +211,7 @@ export function Sidebar({ className }: SidebarProps) {
       icon: BarChart3,
     },
     {
-      title: 'Kiểm duyệt tài liệu',
+      title: 'Quản lý tài liệu',
       href: '/moderation',
       icon: Shield,
     },

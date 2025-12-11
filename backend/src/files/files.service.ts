@@ -52,7 +52,7 @@ export class FilesService {
         data: results,
         message: `Successfully uploaded ${results.length} files`,
       };
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Không thể tải lên tệp');
     }
   }
@@ -149,7 +149,7 @@ export class FilesService {
       }
 
       return await this.r2Service.getSignedDownloadUrl(file.storageUrl);
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Không thể lấy URL tải xuống');
     }
   }
@@ -227,14 +227,14 @@ export class FilesService {
               secureUrl,
               expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(), // 1 hour from now
             };
-          } catch (error) {
+          } catch {
             // If can't get secure URL, return file without it
             return file;
           }
         }),
       );
       return filesWithUrls;
-    } catch (error) {
+    } catch {
       return files; // Return original files if something goes wrong
     }
   }
@@ -348,7 +348,7 @@ export class FilesService {
           r2Key,
           31536000, // 1 year
         );
-      } catch (error) {
+      } catch {
         // If getting signed URL fails, use the storage URL directly
         avatarUrl = uploadResult.storageUrl;
       }
@@ -369,7 +369,7 @@ export class FilesService {
         fileSize: Number(fileRecord.fileSize),
         mimeType: fileRecord.mimeType,
       };
-    } catch (error) {
+    } catch {
       throw new Error('Unexpected error');
     }
   }

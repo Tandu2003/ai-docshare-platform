@@ -85,7 +85,7 @@ export class DocumentSearchService {
 
       const fetchLimit = Math.max(limit, Math.min(limit * (page + 1), 100));
 
-      const vectorFilters = this.buildVectorFilters(filters, userRole);
+      const vectorFilters = this.buildVectorFilters(filters);
       let searchResults = await this.performHybridSearch(
         normalizedQuery,
         userId,
@@ -116,11 +116,7 @@ export class DocumentSearchService {
         };
       }
 
-      const documents = await this.fetchDocuments(
-        documentIds,
-        filters,
-        userRole,
-      );
+      const documents = await this.fetchDocuments(documentIds, filters);
 
       const transformedDocuments = await this.transformDocuments(
         documents,
@@ -209,34 +205,20 @@ export class DocumentSearchService {
 
   // ============ Private Helper Methods ============
 
-  private buildVectorFilters(
-    filters?: SearchFilters,
-    userRole?: string,
-  ): {
+  private buildVectorFilters(filters?: SearchFilters): {
     categoryId?: string;
     tags?: string[];
     language?: string;
     isPublic?: boolean;
     isApproved?: boolean;
   } {
-    const vectorFilters: {
-      categoryId?: string;
-      tags?: string[];
-      language?: string;
-      isPublic?: boolean;
-      isApproved?: boolean;
-    } = {
+    return {
       categoryId: filters?.categoryId,
       tags: filters?.tags,
       language: filters?.language,
       isApproved: true,
+      isPublic: true, // Search always returns public documents only
     };
-
-    if (userRole !== 'admin') {
-      vectorFilters.isPublic = true;
-    }
-
-    return vectorFilters;
   }
 
   private performHybridSearch(
@@ -277,17 +259,13 @@ export class DocumentSearchService {
   private async fetchDocuments(
     documentIds: string[],
     filters?: SearchFilters,
-    userRole?: string,
   ): Promise<any[]> {
     const where: Prisma.DocumentWhereInput = {
       id: { in: documentIds },
       isApproved: true,
       moderationStatus: DocumentModerationStatus.APPROVED,
+      isPublic: true, // Search always returns public documents only
     };
-
-    if (userRole !== 'admin') {
-      where.isPublic = true;
-    }
 
     if (filters?.categoryId) {
       // Get child categories to include documents from sub-categories

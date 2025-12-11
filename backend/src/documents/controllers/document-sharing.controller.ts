@@ -55,7 +55,7 @@ export class DocumentSharingController {
         userId,
       );
       return ResponseHelper.success(res, rating, 'Lấy đánh giá thành công');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể lấy đánh giá',
@@ -88,7 +88,7 @@ export class DocumentSharingController {
         dto.rating,
       );
       return ResponseHelper.success(res, rating, 'Đã cập nhật đánh giá');
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể cập nhật đánh giá',

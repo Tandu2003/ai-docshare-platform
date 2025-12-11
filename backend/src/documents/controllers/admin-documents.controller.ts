@@ -215,4 +215,57 @@ export class AdminDocumentsController {
       );
     }
   }
+
+  @Get('private')
+  @ApiOperation({ summary: 'Danh sách tài liệu riêng tư (chỉ dành cho admin)' })
+  async getPrivateDocuments(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('categoryId') categoryId: string | undefined,
+    @Query('sortBy') sortBy: string | undefined,
+    @Query('sortOrder') sortOrder: string | undefined,
+    @Res() res: FastifyReply,
+  ): Promise<FastifyReply> {
+    try {
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
+      const allowedSortBy = [
+        'createdAt',
+        'downloadCount',
+        'viewCount',
+        'averageRating',
+        'title',
+      ];
+      const validSortBy = allowedSortBy.includes(sortBy || '')
+        ? sortBy
+        : 'createdAt';
+      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
+      const result = await this.documentsService.getPrivateDocuments(
+        pageNum,
+        limitNum,
+        {
+          categoryId,
+          sortBy: validSortBy,
+          sortOrder: validSortOrder,
+        },
+      );
+
+      return ResponseHelper.success(
+        res,
+        result,
+        'Lấy danh sách tài liệu riêng tư thành công',
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy danh sách tài liệu riêng tư',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

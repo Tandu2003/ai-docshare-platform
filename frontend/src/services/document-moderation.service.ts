@@ -91,3 +91,66 @@ export const generateModerationAnalysis = async (
 
   return response.data;
 };
+
+export interface PrivateDocumentsParams {
+  page?: number;
+  limit?: number;
+  categoryId?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface PrivateDocumentsResponse {
+  documents: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    isPublic: boolean;
+    isApproved: boolean;
+    moderationStatus: string;
+    tags: string[];
+    language: string;
+    createdAt: string;
+    updatedAt: string;
+    uploaderId: string;
+    categoryId: string | null;
+    category: any;
+    uploader: {
+      id: string;
+      username: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+    downloadCount: number;
+    viewCount: number;
+    averageRating: number | null;
+    files: any[];
+  }>;
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export const getPrivateDocuments = async (
+  params: PrivateDocumentsParams = {},
+): Promise<PrivateDocumentsResponse> => {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.limit) searchParams.set('limit', String(params.limit));
+  if (params.categoryId) searchParams.set('categoryId', params.categoryId);
+  if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+
+  const queryString = searchParams.toString();
+  const endpoint = `/admin/documents/private${queryString ? `?${queryString}` : ''}`;
+
+  const response = await apiClient.get<PrivateDocumentsResponse>(endpoint);
+
+  if (!response.success || !response.data) {
+    throw new Error(
+      response.message || 'Không thể lấy danh sách tài liệu riêng tư',
+    );
+  }
+
+  return response.data;
+};

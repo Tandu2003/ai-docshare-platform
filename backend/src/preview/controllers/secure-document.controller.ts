@@ -160,7 +160,7 @@ export class SecureDocumentController {
         message:
           'Token hết hạn sau 30 giây. Sử dụng token này để tải xuống tài liệu.',
       });
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể tạo token tải xuống',
@@ -355,7 +355,7 @@ export class SecureDocumentController {
         reason: access.reason,
         level: accessLevel,
       });
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể kiểm tra quyền truy cập',

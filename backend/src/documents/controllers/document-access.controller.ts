@@ -100,7 +100,7 @@ export class DocumentAccessController {
         result,
         'Tìm kiếm tài liệu thành công',
       );
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi tìm kiếm tài liệu',
@@ -160,7 +160,7 @@ export class DocumentAccessController {
         result,
         'Tài liệu công khai đã được truy xuất thành công',
       );
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Đã xảy ra lỗi khi truy xuất tài liệu công khai',
@@ -226,7 +226,7 @@ export class DocumentAccessController {
         allowedTypes,
         'Các loại tệp được phép đã được truy xuất thành công',
       );
-    } catch (error) {
+    } catch {
       return ResponseHelper.error(
         res,
         'Không thể lấy các loại tệp được phép',

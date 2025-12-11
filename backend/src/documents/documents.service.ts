@@ -604,6 +604,18 @@ export class DocumentsService {
     );
   }
 
+  async getPrivateDocuments(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      categoryId?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    },
+  ): Promise<any> {
+    return this.queryService.getPrivateDocuments(page, limit, filters);
+  }
+
   async viewDocument(
     documentId: string,
     userId?: string,
@@ -1279,11 +1291,8 @@ export class DocumentsService {
         tags: filters?.tags,
         language: filters?.language,
         isApproved: true,
+        isPublic: true, // Search always returns public documents only
       };
-
-      if (userRole !== 'admin') {
-        vectorFilters.isPublic = true;
-      }
 
       let searchResults: HybridSearchResult[] = [];
 
@@ -1340,11 +1349,8 @@ export class DocumentsService {
         },
         isApproved: true,
         moderationStatus: DocumentModerationStatus.APPROVED,
+        isPublic: true, // Search always returns public documents only
       };
-
-      if (userRole !== 'admin') {
-        documentWhere.isPublic = true;
-      }
 
       if (filters?.categoryId) {
         documentWhere.categoryId = filters.categoryId;
