@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -30,6 +31,7 @@ export class EmbeddingMigrationService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly embeddingService: EmbeddingService,
+    private readonly embeddingStorage: EmbeddingStorageService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -62,7 +64,7 @@ export class EmbeddingMigrationService implements OnModuleInit {
         this.logger.warn(
           `⚠️ Phát hiện ${status.outdatedEmbeddings}/${status.totalEmbeddings} embedding cần được regenerate`,
         );
-        this.logger.warn(
+        this.logger.log(
           `📊 Model hiện tại: ${status.currentModel}, Models tìm thấy trong DB: ${status.modelsFound.join(', ')}`,
         );
 
@@ -254,22 +256,27 @@ export class EmbeddingMigrationService implements OnModuleInit {
       return;
     }
 
-    // Generate new embedding with current model (strict mode - no fallback to placeholder)
-    const embedding =
-      await this.embeddingService.generateEmbeddingStrict(embeddingText);
+    // Generate new embedding; fall back to non-strict (placeholder) if strict fails
+    let embedding: number[];
+    try {
+      embedding =
+        await this.embeddingService.generateEmbeddingStrict(embeddingText);
+    } catch (error: any) {
+      this.logger.warn(
+        `Strict embedding generation failed for document ${documentId}, falling back to non-strict: ${error.message}`,
+      );
+      embedding = await this.embeddingService.generateEmbedding(embeddingText);
+    }
 
-    // Update embedding in database
-    await this.prisma.documentEmbedding.update({
-      where: { documentId },
-      data: {
-        embedding,
-        model: currentModel,
-        version: '1.0',
-        updatedAt: new Date(),
-      },
-    });
+    // Update embedding in database via shared storage service to ensure vector formatting
+    await this.embeddingStorage.saveEmbedding(
+      documentId,
+      embedding,
+      currentModel,
+      '1.0',
+    );
 
-    this.logger.debug(
+    this.logger.log(
       `✅ Đã regenerate embedding cho document ${documentId} với model ${currentModel}`,
     );
   }

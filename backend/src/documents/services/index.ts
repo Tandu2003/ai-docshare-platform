@@ -9,6 +9,8 @@ export { DocumentModerationService } from './document-moderation.service';
 export { DocumentQueryService } from './document-query.service';
 // Search Service
 export { DocumentSearchService } from './document-search.service';
+// Embedding Maintenance Service
+export { DocumentEmbeddingMaintenanceService } from './document-embedding-maintenance.service';
 
 // Sharing Service
 export { DocumentSharingService } from './document-sharing.service';

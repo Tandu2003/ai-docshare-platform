@@ -1,6 +1,5 @@
-import { ChildProcess, exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { Readable } from 'stream';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
@@ -571,7 +570,7 @@ export class PreviewService {
   ): Promise<boolean> {
     const basePath = outputPath.replace('.jpg', '');
     const pdftoppmCmd = `pdftoppm -f ${pageNumber} -l ${pageNumber} -jpeg -jpegopt quality=${this.previewQuality} -scale-to ${targetWidth} "${pdfPath}" "${basePath}"`;
-    this.logger.debug(`Running pdftoppm: ${pdftoppmCmd}`);
+    this.logger.log(`Running pdftoppm: ${pdftoppmCmd}`);
 
     try {
       // Try pdftoppm first (from poppler-utils)
@@ -580,7 +579,7 @@ export class PreviewService {
       });
 
       if (stderr) {
-        this.logger.debug(`pdftoppm stderr: ${stderr}`);
+        this.logger.log(`pdftoppm stderr: ${stderr}`);
       }
 
       // pdftoppm uses different naming conventions based on total pages:
@@ -608,7 +607,7 @@ export class PreviewService {
         }
       }
 
-      this.logger.debug(
+      this.logger.log(
         `pdftoppm output check: searching for patterns near ${basePath}, found=${foundPath || 'none'}`,
       );
 
@@ -620,7 +619,7 @@ export class PreviewService {
 
       if (foundPath && foundPath !== outputPath) {
         await fs.promises.rename(foundPath, outputPath);
-        this.logger.debug(`Renamed ${foundPath} -> ${outputPath}`);
+        this.logger.log(`Renamed ${foundPath} -> ${outputPath}`);
         return true;
       } else if (outputExists) {
         return true;
@@ -632,7 +631,7 @@ export class PreviewService {
         const files = await fs.promises.readdir(dir);
         const basename = path.basename(basePath);
         const relatedFiles = files.filter(f => f.startsWith(basename));
-        this.logger.debug(
+        this.logger.log(
           `Files in ${dir} starting with ${basename}: ${relatedFiles.join(', ') || 'none'}`,
         );
 
@@ -641,7 +640,7 @@ export class PreviewService {
         if (jpgFile) {
           const jpgPath = path.join(dir, jpgFile);
           await fs.promises.rename(jpgPath, outputPath);
-          this.logger.debug(`Found and renamed ${jpgPath} -> ${outputPath}`);
+          this.logger.log(`Found and renamed ${jpgPath} -> ${outputPath}`);
           return true;
         }
       } catch {
@@ -905,7 +904,7 @@ export class PreviewService {
           },
         );
 
-        this.logger.debug(
+        this.logger.log(
           `${label} succeeded in ${Date.now() - startedAt}ms (attempt ${attempt}/${retries + 1})`,
         );
         return result;
@@ -976,34 +975,6 @@ export class PreviewService {
       return true;
     } catch {
       return false;
-    }
-  }
-
-  private async startSofficeDaemon(
-    tmpDir: string,
-  ): Promise<ChildProcess | null> {
-    try {
-      const child = spawn(
-        'soffice',
-        [
-          '--headless',
-          '--nologo',
-          '--nofirststartwizard',
-          '--norestore',
-          '--nodefault',
-          '--accept=socket,host=127.0.0.1,port=8100;urp;',
-          `-env:UserInstallation=file://${tmpDir}/lo-profile`,
-        ],
-        {
-          stdio: 'ignore',
-        },
-      );
-      return child;
-    } catch (error) {
-      this.logger.warn(
-        `Failed to start soffice daemon: ${(error as Error).message}`,
-      );
-      return null;
     }
   }
 

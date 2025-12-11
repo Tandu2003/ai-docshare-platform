@@ -1624,9 +1624,15 @@ export class DocumentsService {
       const embedding = await this.embeddingService.generateEmbedding(
         textContent.trim(),
       );
+      const model = this.embeddingService.getModelName();
 
       // Save embedding to database using shared service with proper vector formatting
-      await this.embeddingStorage.saveEmbedding(documentId, embedding);
+      await this.embeddingStorage.saveEmbedding(
+        documentId,
+        embedding,
+        model,
+        '1.0',
+      );
 
       this.logger.log(
         `Embedding generated and saved for document ${documentId} (dimension: ${embedding.length})`,

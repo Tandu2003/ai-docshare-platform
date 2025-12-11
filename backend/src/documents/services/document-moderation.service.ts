@@ -1,3 +1,4 @@
+import { DocumentEmbeddingMaintenanceService } from './document-embedding-maintenance.service';
 import { AIService } from '@/ai/ai.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { FilesService } from '@/files/files.service';
@@ -114,6 +115,7 @@ export class DocumentModerationService {
     private readonly systemSettings: SystemSettingsService,
     private readonly filesService: FilesService,
     private readonly notifications: NotificationsService,
+    private readonly embeddingMaintenance: DocumentEmbeddingMaintenanceService,
   ) {}
 
   async getModerationQueue(
@@ -346,6 +348,14 @@ export class DocumentModerationService {
         where: { id: { in: document.files.map(f => f.fileId) } },
         data: { isPublic: publish },
       });
+
+      void this.embeddingMaintenance
+        .ensureEmbeddingsForDocuments(updatedDocument.id)
+        .catch(err =>
+          this.logger.warn(
+            `Failed to ensure embedding after approval for ${documentId}: ${err.message}`,
+          ),
+        );
 
       void this.notifications.emitToUploaderOfDocument(
         updatedDocument.uploaderId,
