@@ -17,9 +17,9 @@
  */
 export const HYBRID_SEARCH_WEIGHTS = {
   /** Weight for vector/embedding similarity in hybrid search */
-  VECTOR_WEIGHT: 0.7,
+  VECTOR_WEIGHT: 0.8,
   /** Weight for text/keyword matching in hybrid search */
-  TEXT_WEIGHT: 0.3,
+  TEXT_WEIGHT: 0.2,
 } as const;
 
 /**
@@ -30,7 +30,7 @@ export const SEARCH_THRESHOLDS = {
   /** Minimum similarity score for vector search results (0-1) */
   VECTOR_SEARCH: 0.5,
   /** Minimum similarity score for hybrid search results (0-1) */
-  HYBRID_SEARCH: 0.4,
+  HYBRID_SEARCH: 0.35,
   /** Minimum text score for keyword search results (0-1) */
   KEYWORD_SEARCH: 0.1,
 } as const;

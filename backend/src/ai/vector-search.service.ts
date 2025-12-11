@@ -383,12 +383,24 @@ export class VectorSearchService {
       // Combine results
       const combinedMap = new Map<string, HybridSearchResult>();
 
-      // Add vector results
+      // Helper function to calculate boost for high-quality vector matches
+      const calculateVectorBoost = (vectorScore: number): number => {
+        // Apply exponential boost for high-quality embeddings
+        // Scores > 0.7 get progressively higher boost
+        if (vectorScore >= 0.9) return 1.15; // 15% boost for excellent matches
+        if (vectorScore >= 0.8) return 1.1; // 10% boost for very good matches
+        if (vectorScore >= 0.7) return 1.05; // 5% boost for good matches
+        return 1.0; // No boost for lower scores
+      };
+
+      // Add vector results with boost applied
       vectorResults.forEach(result => {
+        const boost = calculateVectorBoost(result.similarityScore);
+        // For pure vector results, use boosted score to favor embedding matches
         combinedMap.set(result.documentId, {
           documentId: result.documentId,
           vectorScore: result.similarityScore,
-          combinedScore: result.similarityScore * vectorWeight,
+          combinedScore: result.similarityScore * vectorWeight * boost,
         });
       });
 
@@ -397,8 +409,10 @@ export class VectorSearchService {
         const existing = combinedMap.get(result.documentId);
         if (existing) {
           existing.textScore = result.textScore;
+          // Apply boost to vector component in combined score
+          const boost = calculateVectorBoost(existing.vectorScore!);
           existing.combinedScore =
-            existing.vectorScore! * vectorWeight +
+            existing.vectorScore! * vectorWeight * boost +
             result.textScore * (1 - vectorWeight);
         } else {
           combinedMap.set(result.documentId, {

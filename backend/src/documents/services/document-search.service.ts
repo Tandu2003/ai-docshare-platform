@@ -3,6 +3,7 @@ import {
   HybridSearchResult,
   VectorSearchService,
 } from '@/ai/vector-search.service';
+import { SEARCH_THRESHOLDS } from '@/common';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
@@ -233,7 +234,7 @@ export class DocumentSearchService {
       userId,
       userRole,
       limit,
-      threshold: 0.4,
+      threshold: SEARCH_THRESHOLDS.HYBRID_SEARCH,
       filters,
     });
   }

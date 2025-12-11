@@ -7,6 +7,7 @@ import {
   VectorSearchService,
 } from '../ai/vector-search.service';
 import { CategoriesService } from '../categories/categories.service';
+import { SEARCH_THRESHOLDS } from '../common';
 import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { EmbeddingStorageService } from '../common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '../common/services/embedding-text-builder.service';
@@ -1302,7 +1303,7 @@ export class DocumentsService {
           userId,
           userRole,
           limit: fetchLimit,
-          threshold: 0.4,
+          threshold: SEARCH_THRESHOLDS.HYBRID_SEARCH,
           filters: vectorFilters,
         });
       } catch {
