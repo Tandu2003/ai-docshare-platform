@@ -5,45 +5,45 @@ export const registerSchema = z
   .object({
     email: z
       .string()
-      .min(1, 'Email is required')
-      .email('Please enter a valid email address')
+      .min(1, 'Email là bắt buộc')
+      .email('Vui lòng nhập địa chỉ email hợp lệ')
       .toLowerCase()
       .trim(),
     username: z
       .string()
-      .min(3, 'Username must be at least 3 characters long')
-      .max(30, 'Username must not exceed 30 characters')
+      .min(3, 'Tên người dùng phải có ít nhất 3 ký tự')
+      .max(30, 'Tên người dùng không được vượt quá 30 ký tự')
       .regex(
         /^[a-zA-Z0-9_]+$/,
-        'Username can only contain letters, numbers, and underscores',
+        'Tên người dùng chỉ có thể chứa chữ cái, số và dấu gạch dưới',
       )
       .toLowerCase()
       .trim(),
 
     password: z
       .string()
-      .min(8, 'Password must be at least 8 characters long')
+      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'Mật khẩu phải chứa ít nhất một chữ cái viết hoa, một chữ cái viết thường, một số và một ký tự đặc biệt',
       ),
 
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu của bạn'),
 
     firstName: z
       .string()
-      .min(2, 'First name must be at least 2 characters long')
-      .max(50, 'First name must not exceed 50 characters')
+      .min(2, 'Tên phải có ít nhất 2 ký tự')
+      .max(50, 'Tên không được vượt quá 50 ký tự')
       .trim(),
 
     lastName: z
       .string()
-      .min(2, 'Last name must be at least 2 characters long')
-      .max(50, 'Last name must not exceed 50 characters')
+      .min(2, 'Họ phải có ít nhất 2 ký tự')
+      .max(50, 'Họ không được vượt quá 50 ký tự')
       .trim(),
   })
   .refine(data => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'Mật khẩu không khớp',
     path: ['confirmPassword'],
   });
 
@@ -51,47 +51,49 @@ export const registerSchema = z
 export const loginSchema = z.object({
   emailOrUsername: z
     .string()
-    .min(1, 'Email or username is required')
+    .min(1, 'Email hoặc tên người dùng là bắt buộc')
     .toLowerCase()
     .trim(),
 
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(1, 'Mật khẩu là bắt buộc'),
 });
 
 // Profile update schema
 export const updateProfileSchema = z.object({
   firstName: z
     .string()
-    .min(2, 'First name must be at least 2 characters long')
-    .max(50, 'First name must not exceed 50 characters')
+    .min(2, 'Tên phải có ít nhất 2 ký tự')
+    .max(50, 'Tên không được vượt quá 50 ký tự')
     .trim(),
 
   lastName: z
     .string()
-    .min(2, 'Last name must be at least 2 characters long')
-    .max(50, 'Last name must not exceed 50 characters')
+    .min(2, 'Họ phải có ít nhất 2 ký tự')
+    .max(50, 'Họ không được vượt quá 50 ký tự')
     .trim(),
 
-  bio: z.string().max(500, 'Bio must not exceed 500 characters').optional(),
+  bio: z.string().max(500, 'Tiểu sử không được vượt quá 500 ký tự').optional(),
 });
 
 // Change password schema
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
+    currentPassword: z.string().min(1, 'Mật khẩu hiện tại là bắt buộc'),
 
     newPassword: z
       .string()
-      .min(8, 'Password must be at least 8 characters long')
+      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'Mật khẩu phải chứa ít nhất một chữ cái viết hoa, một chữ cái viết thường, một số và một ký tự đặc biệt',
       ),
 
-    confirmNewPassword: z.string().min(1, 'Please confirm your new password'),
+    confirmNewPassword: z
+      .string()
+      .min(1, 'Vui lòng xác nhận mật khẩu mới của bạn'),
   })
   .refine(data => data.newPassword === data.confirmNewPassword, {
-    message: 'Passwords do not match',
+    message: 'Mật khẩu không khớp',
     path: ['confirmNewPassword'],
   });
 
@@ -99,8 +101,8 @@ export const changePasswordSchema = z
 export const forgotPasswordSchema = z.object({
   email: z
     .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address')
+    .min(1, 'Email là bắt buộc')
+    .email('Vui lòng nhập địa chỉ email hợp lệ')
     .toLowerCase()
     .trim(),
 });
@@ -110,30 +112,30 @@ export const resetPasswordSchema = z
   .object({
     password: z
       .string()
-      .min(8, 'Password must be at least 8 characters long')
+      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'Mật khẩu phải chứa ít nhất một chữ cái viết hoa, một chữ cái viết thường, một số và một ký tự đặc biệt',
       ),
 
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu của bạn'),
   })
   .refine(data => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'Mật khẩu không khớp',
     path: ['confirmPassword'],
   });
 
 // Verify email schema
 export const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Verification token is required'),
+  token: z.string().min(1, 'Mã xác minh là bắt buộc'),
 });
 
 // Resend verification schema
 export const resendVerificationSchema = z.object({
   email: z
     .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address')
+    .min(1, 'Email là bắt buộc')
+    .email('Vui lòng nhập địa chỉ email hợp lệ')
     .toLowerCase()
     .trim(),
 });
