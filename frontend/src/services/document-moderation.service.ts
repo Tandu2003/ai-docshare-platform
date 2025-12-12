@@ -1,10 +1,10 @@
 import type {
+  DocumentModerationStatus,
   ModerationAnalysisResponse,
   ModerationDocument,
   ModerationQueueParams,
   ModerationQueueResponse,
 } from '@/types';
-import type { DocumentModerationStatus } from '@/types/database.types';
 import { apiClient } from '@/utils/api-client';
 
 export const getModerationQueue = async (
