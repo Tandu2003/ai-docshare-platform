@@ -327,7 +327,7 @@ export function AnalyticsPage(): ReactElement {
           <div>
             <h1 className="flex items-center gap-2 text-3xl font-bold">
               <BarChart3 className="text-primary h-8 w-8" />
-              Analytics Dashboard
+              Phân tích số liệu
             </h1>
             <p className="text-muted-foreground">
               Thông tin chi tiết và số liệu hiệu suất nền tảng
@@ -367,7 +367,7 @@ export function AnalyticsPage(): ReactElement {
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
             <BarChart3 className="text-primary h-8 w-8" />
-            Analytics Dashboard
+            Phân tích số liệu
           </h1>
           <p className="text-muted-foreground">
             Thông tin chi tiết và số liệu hiệu suất nền tảng
