@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as mammoth from 'mammoth';
 import * as pdfParse from 'pdf-parse';
 import * as XLSX from 'xlsx';
@@ -56,8 +60,8 @@ export class ContentExtractorService {
           return this.extractTextContent(buffer);
       }
     } catch (error) {
-      throw new Error(
-        `Failed to extract content from file: ${(error as Error).message}`,
+      throw new InternalServerErrorException(
+        `Failed to extract content from file: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -74,9 +78,9 @@ export class ContentExtractorService {
           characters: text.length,
         },
       };
-    } catch (_error) {
-      throw new Error(
-        `Failed to extract Word content: ${(_error as Error).message}`,
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to extract Word content: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -117,8 +121,8 @@ export class ContentExtractorService {
         },
       };
     } catch (error) {
-      throw new Error(
-        `Failed to extract Excel content: ${(error as Error).message}`,
+      throw new InternalServerErrorException(
+        `Failed to extract Excel content: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -152,8 +156,8 @@ export class ContentExtractorService {
           },
         };
       }
-      throw new Error(
-        `Failed to extract PDF content: ${(error as Error).message}`,
+      throw new InternalServerErrorException(
+        `Failed to extract PDF content: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

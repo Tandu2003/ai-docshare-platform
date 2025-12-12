@@ -8,7 +8,11 @@ import {
   SEARCH_THRESHOLDS,
 } from '@/common';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { DocumentModerationStatus, Prisma } from '@prisma/client';
 
 export interface VectorSearchOptions {
@@ -52,6 +56,7 @@ export interface SearchMetrics {
 
 @Injectable()
 export class VectorSearchService {
+  private readonly logger = new Logger(VectorSearchService.name);
   private readonly searchCache = new Map<string, any>();
   private readonly maxCacheSize = SEARCH_CACHE_CONFIG.MAX_SIZE;
   private readonly cacheTTL = SEARCH_CACHE_CONFIG.TTL_MS;
@@ -465,8 +470,12 @@ export class VectorSearchService {
       this.updateMetrics(latency);
 
       return combinedResults;
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to perform hybrid search: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể thực hiện tìm kiếm');
     }
   }
 

@@ -9,7 +9,11 @@ import {
 } from '../interfaces';
 import { PdfPreviewService } from './pdf-preview.service';
 import { PreviewUtilService } from './preview-util.service';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 @Injectable()
 export class OfficePreviewService {
@@ -37,14 +41,14 @@ export class OfficePreviewService {
         const fileStream = await this.r2Service.getFileStream(file.storageUrl);
         await this.utilService.streamToFile(fileStream, inputPath);
       } catch (downloadError) {
-        throw new Error(
-          `Cannot download file: ${(downloadError as Error).message}`,
+        throw new InternalServerErrorException(
+          `Cannot download file: ${downloadError instanceof Error ? downloadError.message : String(downloadError)}`,
         );
       }
 
       const fileStats = await fs.promises.stat(inputPath);
       if (fileStats.size === 0) {
-        throw new Error('Downloaded file is empty');
+        throw new BadRequestException('Downloaded file is empty');
       }
 
       // Convert to PDF

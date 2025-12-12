@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
+import { NotFoundError } from '@/common';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -167,7 +168,7 @@ export class EmbeddingMigrationService implements OnModuleInit {
     });
 
     if (!document) {
-      throw new Error(`Document ${documentId} không tồn tại`);
+      throw new NotFoundError(`Document ${documentId} không tồn tại`);
     }
 
     // Create embedding text from document content

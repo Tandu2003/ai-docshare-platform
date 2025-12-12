@@ -1,5 +1,8 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface VerificationEmailData {
@@ -44,8 +47,10 @@ export class MailService {
           frontendUrl: this.frontendUrl,
         },
       });
-    } catch {
-      throw new Error('Không thể gửi email xác thực');
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Không thể gửi email xác thực: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -64,8 +69,10 @@ export class MailService {
           frontendUrl: this.frontendUrl,
         },
       });
-    } catch {
-      throw new Error('Không thể gửi email đặt lại mật khẩu');
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Không thể gửi email đặt lại mật khẩu: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 

@@ -394,7 +394,7 @@ export class DocumentQueryService {
       return this.buildDocumentDetailResponse(document, userId, accessInfo);
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
       throw new InternalServerErrorException('Không thể lấy tài liệu');
     }
@@ -451,7 +451,7 @@ export class DocumentQueryService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
       throw new InternalServerErrorException(
         'Không thể theo dõi lượt xem tài liệu',

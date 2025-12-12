@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { NotFoundError } from '../../common';
 import { CloudflareR2Service } from '../../common/cloudflare-r2.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -65,7 +66,7 @@ export class PdfPreviewService {
 
       const pdfExists = await this.utilService.fileExists(pdfPath);
       if (!pdfExists) {
-        throw new Error(`PDF file not found at: ${pdfPath}`);
+        throw new NotFoundError(`PDF file not found at: ${pdfPath}`);
       }
 
       const pageCount = await this.getPdfPageCount(pdfPath);

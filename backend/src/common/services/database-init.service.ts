@@ -1,7 +1,12 @@
 import { RoleService } from '@/auth/role.service';
 import { CategoriesService } from '@/categories/categories.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 
 @Injectable()
 export class DatabaseInitService implements OnModuleInit {
@@ -17,9 +22,14 @@ export class DatabaseInitService implements OnModuleInit {
       await this.initializeRoles();
       await this.initializeCategories();
       this.logger.log('✅ Khởi tạo cơ sở dữ liệu hoàn thành thành công');
-    } catch (_error) {
-      this.logger.error('❌ Khởi tạo cơ sở dữ liệu thất bại:', _error);
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `❌ Khởi tạo cơ sở dữ liệu thất bại: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'Không thể khởi tạo cơ sở dữ liệu',
+      );
     }
   }
 

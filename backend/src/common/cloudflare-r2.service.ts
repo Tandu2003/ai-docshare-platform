@@ -7,7 +7,12 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,7 +44,9 @@ export class CloudflareR2Service {
           accessKeyId: !!accessKeyId,
           secretAccessKey: !!secretAccessKey,
         });
-        throw new Error('Cloudflare R2 credentials not configured');
+        throw new BadRequestException(
+          'Cloudflare R2 credentials not configured',
+        );
       }
 
       this.s3Client = new S3Client({
@@ -53,8 +60,13 @@ export class CloudflareR2Service {
 
       this.logger.log('CloudflareR2Service initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize CloudflareR2Service:', error);
-      throw new Error('Unexpected error');
+      this.logger.error(
+        `Failed to initialize CloudflareR2Service: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'Không thể khởi tạo CloudflareR2Service',
+      );
     }
   }
 
@@ -77,11 +89,11 @@ export class CloudflareR2Service {
     try {
       // Validate inputs
       if (!file || !file.buffer) {
-        throw new Error('Invalid file: missing buffer');
+        throw new BadRequestException('Invalid file: missing buffer');
       }
 
       if (!userId) {
-        throw new Error('Invalid userId');
+        throw new BadRequestException('Invalid userId');
       }
 
       // Generate file hash
@@ -207,7 +219,7 @@ export class CloudflareR2Service {
       const response = await this.s3Client.send(command);
 
       if (!response.Body) {
-        throw new Error('No file body received');
+        throw new BadRequestException('No file body received');
       }
 
       return response.Body as Readable;

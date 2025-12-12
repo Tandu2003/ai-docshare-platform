@@ -298,7 +298,7 @@ export class DocumentsService {
       return result;
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
       throw new InternalServerErrorException('Đã xảy ra lỗi khi tạo tài liệu');
     }
@@ -857,7 +857,7 @@ export class DocumentsService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
       throw new InternalServerErrorException(
         'Không thể chuẩn bị tải xuống tài liệu',
@@ -1087,7 +1087,7 @@ export class DocumentsService {
       return { success: true, message: 'Document deleted successfully' };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
       throw new InternalServerErrorException('Không thể xóa tài liệu');
     }
@@ -1197,7 +1197,7 @@ export class DocumentsService {
   ): Promise<string> {
     try {
       if (files.length === 0) {
-        throw new Error('No files to zip');
+        throw new BadRequestException('Không có file nào để nén');
       }
 
       // Create ZIP archive
@@ -1818,7 +1818,7 @@ export class DocumentsService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
       throw new InternalServerErrorException('Không thể cập nhật tài liệu');
     }

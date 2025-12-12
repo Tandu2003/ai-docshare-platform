@@ -1,11 +1,12 @@
 import { CategoriesService } from '../categories/categories.service';
+import { NotFoundError } from '../common';
 import { EmbeddingStorageService } from '../common/services/embedding-storage.service';
 import { SystemSettingsService } from '../common/system-settings.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { DocumentAnalysisResult, GeminiService } from './gemini.service';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 export interface AIAnalysisRequest {
   fileIds: string[];
@@ -69,7 +70,7 @@ export class AIService {
           errorMessage = `You don't have permission to analyze these files. The files exist but belong to other users: ${fileOwners}. You can only analyze files that you have uploaded. If you have uploaded the same document, please use your own file ID.`;
         }
 
-        throw new Error(errorMessage);
+        throw new BadRequestException(errorMessage);
       }
 
       // Get storage URLs directly from files (no need for signed URLs since we use R2 service internally)
@@ -79,7 +80,7 @@ export class AIService {
 
       if (validUrls.length === 0) {
         const errorMessage = `No accessible file URLs found. Tried ${files.length} files but all failed to generate secure URLs.`;
-        throw new Error(errorMessage);
+        throw new BadRequestException(errorMessage);
       }
 
       // Analyze with Gemini
@@ -192,7 +193,7 @@ export class AIService {
       });
 
       if (!document) {
-        throw new Error(`Document ${documentId} not found`);
+        throw new NotFoundError(`Document ${documentId} not found`);
       }
 
       // Create embedding text from document content

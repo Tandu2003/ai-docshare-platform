@@ -9,6 +9,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentModerationStatus } from '@prisma/client';
@@ -72,6 +73,8 @@ interface DocumentDownloadInfo {
 
 @Injectable()
 export class DocumentDownloadService {
+  private readonly logger = new Logger(DocumentDownloadService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly r2Service: CloudflareR2Service,
@@ -168,8 +171,12 @@ export class DocumentDownloadService {
         downloadId: download.id,
         alreadyDownloaded: hasExistingDownload,
       };
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to initialize download: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể khởi tạo tải xuống');
     }
   }
 
@@ -245,8 +252,12 @@ export class DocumentDownloadService {
           ? 'Tải xuống đã được xác nhận (tải lại)'
           : 'Tải xuống đã được xác nhận thành công',
       };
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to confirm download ${downloadId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể xác nhận tải xuống');
     }
   }
 
@@ -277,8 +288,12 @@ export class DocumentDownloadService {
       });
 
       return { success: true };
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to cancel download ${downloadId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể hủy tải xuống');
     }
   }
 
@@ -312,8 +327,12 @@ export class DocumentDownloadService {
       }
 
       return this.getZipDownload(document);
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to get download URL for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể lấy URL tải xuống');
     }
   }
 
@@ -381,8 +400,13 @@ export class DocumentDownloadService {
         onStreamError: this.createStreamErrorHandler(download.id),
       };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to prepare download for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException(
         'Không thể chuẩn bị tải xuống tài liệu',
       );
@@ -683,7 +707,7 @@ export class DocumentDownloadService {
   ): Promise<string> {
     try {
       if (files.length === 0) {
-        throw new Error('No files to zip');
+        throw new BadRequestException('Không có file nào để nén');
       }
 
       const archive = archiver('zip', { zlib: { level: 9 } });

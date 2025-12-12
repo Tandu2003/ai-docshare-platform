@@ -3,12 +3,17 @@ import { SimilarityAlgorithmService } from './similarity-algorithm.service';
 import { SimilarityTextExtractionService } from './similarity-text-extraction.service';
 import {
   cosineSimilarity,
+  NotFoundError,
   SEARCH_LIMITS,
   SIMILARITY_SCORE_WEIGHTS,
   SIMILARITY_THRESHOLDS,
 } from '@/common';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
 export interface SimilarityResult {
   documentId: string;
@@ -64,7 +69,7 @@ export class SimilarityDetectionService {
       });
 
       if (!sourceDocument) {
-        throw new Error(`Document ${documentId} not found`);
+        throw new NotFoundError(`Document ${documentId} not found`);
       }
 
       const exactMatches = await this.findExactFileHashMatches(
@@ -130,10 +135,12 @@ export class SimilarityDetectionService {
       return result;
     } catch (error) {
       this.logger.error(
-        `Error detecting similar documents for ${documentId}:`,
-        error,
+        `Error detecting similar documents for ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
-      throw new Error('Unexpected error');
+      throw new InternalServerErrorException(
+        'Không thể phát hiện tài liệu tương tự',
+      );
     }
   }
 

@@ -6,6 +6,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -30,6 +31,7 @@ export interface FileUploadResult {
 
 @Injectable()
 export class FilesService {
+  private readonly logger = new Logger(FilesService.name);
   private readonly maxFileSize = 100 * 1024 * 1024; // 100MB
 
   constructor(
@@ -129,11 +131,15 @@ export class FilesService {
         error instanceof BadRequestException ||
         error instanceof InternalServerErrorException
       ) {
-        throw new Error('Unexpected error');
+        throw error;
       }
 
+      this.logger.error(
+        `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException(
-        `Failed to upload file: ${error.message}`,
+        `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -204,8 +210,12 @@ export class FilesService {
         error instanceof NotFoundException ||
         error instanceof BadRequestException
       ) {
-        throw new Error('Unexpected error');
+        throw error;
       }
+      this.logger.error(
+        `Failed to get secure URL for file ${fileId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Không thể lấy URL tệp bảo mật');
     }
   }
@@ -369,8 +379,12 @@ export class FilesService {
         fileSize: Number(fileRecord.fileSize),
         mimeType: fileRecord.mimeType,
       };
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to upload avatar: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể tải lên avatar');
     }
   }
 
@@ -535,8 +549,12 @@ export class FilesService {
         error instanceof NotFoundException ||
         error instanceof BadRequestException
       ) {
-        throw new Error('Unexpected error');
+        throw error;
       }
+      this.logger.error(
+        `Failed to increment view count for file ${fileId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Không thể tăng số lượt xem');
     }
   }

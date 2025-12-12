@@ -1,6 +1,10 @@
 import { AuthService } from '@/auth/auth.service';
 import { AuthUser, JwtPayload } from '@/auth/interfaces';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -13,7 +17,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
     if (!secret) {
-      throw new Error('JWT_ACCESS_SECRET is not configured');
+      throw new InternalServerErrorException(
+        'JWT_ACCESS_SECRET is not configured',
+      );
     }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

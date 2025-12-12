@@ -1,5 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface EmbeddingMetrics {
@@ -46,7 +50,7 @@ export class EmbeddingService {
 
     try {
       if (!text || text.trim().length === 0) {
-        throw new Error('Text cannot be empty');
+        throw new BadRequestException('Text cannot be empty');
       }
 
       // Check cache first
@@ -71,7 +75,9 @@ export class EmbeddingService {
       const embedding = await this.generateEmbeddingWithRetry(truncatedText, 3);
 
       if (!Array.isArray(embedding) || embedding.length === 0) {
-        throw new Error('Invalid embedding response format');
+        throw new InternalServerErrorException(
+          'Invalid embedding response format',
+        );
       }
 
       // Cache the result
@@ -131,7 +137,7 @@ export class EmbeddingService {
 
   private async generateRealEmbedding(text: string): Promise<number[]> {
     if (!this.genAI) {
-      throw new Error('Gemini API not initialized');
+      throw new InternalServerErrorException('Gemini API not initialized');
     }
 
     try {
@@ -146,9 +152,13 @@ export class EmbeddingService {
         return result.embedding.values;
       }
 
-      throw new Error('Invalid embedding response structure');
-    } catch {
-      throw new Error('Failed to generate embedding');
+      throw new InternalServerErrorException(
+        'Invalid embedding response structure',
+      );
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to generate embedding: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -265,7 +275,7 @@ export class EmbeddingService {
     this.metrics.totalRequests++;
 
     if (!text || text.trim().length === 0) {
-      throw new Error('Text cannot be empty');
+      throw new BadRequestException('Text cannot be empty');
     }
 
     // Check cache first
@@ -283,7 +293,7 @@ export class EmbeddingService {
 
     // If no API key, throw error instead of using placeholder
     if (!this.apiKey || !this.genAI) {
-      throw new Error(
+      throw new InternalServerErrorException(
         'Cannot generate real embedding: GEMINI_API_KEY not configured',
       );
     }
@@ -292,7 +302,9 @@ export class EmbeddingService {
     const embedding = await this.generateEmbeddingWithRetry(truncatedText, 3);
 
     if (!Array.isArray(embedding) || embedding.length === 0) {
-      throw new Error('Invalid embedding response format');
+      throw new InternalServerErrorException(
+        'Invalid embedding response format',
+      );
     }
 
     // Cache the result

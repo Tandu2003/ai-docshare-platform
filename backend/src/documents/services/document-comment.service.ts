@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 
 interface AddCommentDto {
@@ -42,6 +43,8 @@ interface RatingResponse {
 
 @Injectable()
 export class DocumentCommentService {
+  private readonly logger = new Logger(DocumentCommentService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -196,8 +199,13 @@ export class DocumentCommentService {
 
       return commentWithIsLiked as unknown as CommentWithUser;
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to add comment to document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Không thể thêm bình luận');
     }
   }
@@ -230,8 +238,13 @@ export class DocumentCommentService {
 
       return this.createLike(documentId, commentId, userId, comment);
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to like comment ${commentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Không thể thích bình luận');
     }
   }
@@ -266,8 +279,13 @@ export class DocumentCommentService {
         isEdited: updated.isEdited,
       };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to edit comment ${commentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Không thể sửa bình luận');
     }
   }
@@ -295,8 +313,13 @@ export class DocumentCommentService {
         data: { isDeleted: true },
       });
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to delete comment ${commentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Không thể xóa bình luận');
     }
   }

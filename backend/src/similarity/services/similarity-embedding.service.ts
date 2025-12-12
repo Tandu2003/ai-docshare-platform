@@ -2,9 +2,15 @@ import { EmbeddingService } from '../../ai/embedding.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SimilarityDetectionService } from './similarity-detection.service';
 import { SimilarityTextExtractionService } from './similarity-text-extraction.service';
+import { NotFoundError } from '@/common';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
 @Injectable()
 export class SimilarityEmbeddingService {
@@ -73,7 +79,7 @@ export class SimilarityEmbeddingService {
       });
 
       if (!document) {
-        throw new Error(`Document ${documentId} not found`);
+        throw new NotFoundError(`Document ${documentId} not found`);
       }
 
       // Extract file content for similarity detection (includes file content)
@@ -119,7 +125,7 @@ export class SimilarityEmbeddingService {
         });
 
         if (!metadataText.trim()) {
-          throw new Error('No content available to generate embedding');
+          throw new BadRequestException('Không có nội dung để tạo embedding');
         }
 
         this.logger.warn(
@@ -144,16 +150,20 @@ export class SimilarityEmbeddingService {
       return embedding;
     } catch (error) {
       this.logger.error(
-        `Error generating embedding for document ${documentId}:`,
-        error,
+        `Error generating embedding for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
-      throw new Error('Unexpected error');
+      throw new InternalServerErrorException(
+        'Không thể tạo embedding cho tài liệu',
+      );
     }
   }
 
   async processSimilarityDetection(documentId: string): Promise<void> {
     if (!this.detectionService) {
-      throw new Error('Detection service not initialized');
+      throw new InternalServerErrorException(
+        'Detection service not initialized',
+      );
     }
 
     try {
@@ -204,14 +214,18 @@ export class SimilarityEmbeddingService {
             completedAt: new Date(),
           },
         });
-        throw new Error('Unexpected error');
+        throw new InternalServerErrorException(
+          'Không thể xử lý similarity detection',
+        );
       }
     } catch (error) {
       this.logger.error(
-        `Error in background similarity processing for ${documentId}:`,
-        error,
+        `Error in background similarity processing for ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
-      throw new Error('Unexpected error');
+      throw new InternalServerErrorException(
+        'Không thể xử lý similarity detection',
+      );
     }
   }
 }

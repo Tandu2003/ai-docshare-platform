@@ -17,6 +17,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly saltRounds = 12;
   private readonly defaultRoleName = 'user';
 
@@ -515,8 +517,12 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
+      this.logger.error(
+        `Failed to process forgot password request: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new AuthenticationError('Xử lý yêu cầu đặt lại mật khẩu thất bại');
     }
   }
@@ -567,8 +573,12 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
+      this.logger.error(
+        `Failed to reset password: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new AuthenticationError('Đặt lại mật khẩu thất bại');
     }
   }
@@ -662,8 +672,12 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof ConflictException) {
-        throw new Error('Unexpected error');
+        throw error;
       }
+      this.logger.error(
+        `Failed to update profile for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new BadRequestException('Cập nhật hồ sơ thất bại');
     }
   }
@@ -717,8 +731,12 @@ export class AuthService {
         error instanceof UnauthorizedException ||
         error instanceof NotFoundException
       ) {
-        throw new Error('Unexpected error');
+        throw error;
       }
+      this.logger.error(
+        `Failed to change password for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new BadRequestException('Đổi mật khẩu thất bại');
     }
   }

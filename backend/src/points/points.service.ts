@@ -1,6 +1,11 @@
 import { SystemSettingsService } from '../common/system-settings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Document, PointTxnReason, PointTxnType, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -383,9 +388,12 @@ export class PointsService {
       });
     } catch (error) {
       this.logger.error(
-        `Error awarding uploader ${uploaderId} for download: ${error.message}`,
+        `Error awarding uploader ${uploaderId} for download: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
-      throw new Error('Unexpected error');
+      throw new InternalServerErrorException(
+        'Không thể trao điểm cho người tải lên',
+      );
     }
   }
 

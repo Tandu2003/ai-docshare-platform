@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentShareLink } from '@prisma/client';
@@ -34,6 +35,7 @@ interface ValidatedShareLink {
 
 @Injectable()
 export class DocumentSharingService {
+  private readonly logger = new Logger(DocumentSharingService.name);
   private readonly SHARE_TOKEN_BYTES = 32;
   private readonly DEFAULT_EXPIRY_MINUTES = 60 * 24; // 24 hours
 
@@ -96,8 +98,13 @@ export class DocumentSharingService {
         shareUrl,
       };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to create/update share link for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException(
         'Không thể tạo liên kết chia sẻ tài liệu',
       );
@@ -140,8 +147,13 @@ export class DocumentSharingService {
 
       return { success: true };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to revoke share link for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException(
         'Không thể thu hồi liên kết chia sẻ',
       );

@@ -186,8 +186,9 @@ export class DocumentCrudService {
         aiSuggestedCategory: suggestedCategory,
       };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Đã xảy ra lỗi khi tạo tài liệu');
     }
   }
@@ -276,8 +277,9 @@ export class DocumentCrudService {
         needsReModeration,
       };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Không thể cập nhật tài liệu');
     }
   }
@@ -314,8 +316,9 @@ export class DocumentCrudService {
 
       return { success: true, message: 'Document deleted successfully' };
     } catch (error) {
-      if (error instanceof BadRequestException)
-        throw new Error('Unexpected error');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Không thể xóa tài liệu');
     }
   }

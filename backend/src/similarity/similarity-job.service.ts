@@ -1,10 +1,16 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { SimilarityService } from './similarity.service';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SimilarityJobService {
+  private readonly logger = new Logger(SimilarityJobService.name);
+
   constructor(
     private prisma: PrismaService,
     private similarityService: SimilarityService,
@@ -79,8 +85,14 @@ export class SimilarityJobService {
       });
 
       return job;
-    } catch {
-      throw new Error('Unexpected error');
+    } catch (error) {
+      this.logger.error(
+        `Failed to create similarity job for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'Không thể tạo công việc similarity detection',
+      );
     }
   }
 

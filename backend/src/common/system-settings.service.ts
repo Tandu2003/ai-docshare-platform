@@ -1,5 +1,9 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
 export interface SystemSettingValue {
   key: string;
@@ -71,8 +75,11 @@ export class SystemSettingsService {
 
       this.logger.log(`Setting ${setting.key} updated to: ${setting.value}`);
     } catch (error) {
-      this.logger.error(`Error setting ${setting.key}:`, error);
-      throw new Error('Unexpected error');
+      this.logger.error(
+        `Error setting ${setting.key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể cập nhật cài đặt');
     }
   }
 
@@ -204,8 +211,11 @@ export class SystemSettingsService {
 
       this.logger.log(`Setting ${key} deleted`);
     } catch (error) {
-      this.logger.error(`Error deleting setting ${key}:`, error);
-      throw new Error('Unexpected error');
+      this.logger.error(
+        `Error deleting setting ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể xóa cài đặt');
     }
   }
 
@@ -217,8 +227,11 @@ export class SystemSettingsService {
 
       this.logger.log(`Updated ${settings.length} settings`);
     } catch (error) {
-      this.logger.error('Error updating settings:', error);
-      throw new Error('Unexpected error');
+      this.logger.error(
+        `Error updating settings: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException('Không thể cập nhật cài đặt');
     }
   }
 

@@ -2,7 +2,11 @@ import { CloudflareR2Service } from '../common/cloudflare-r2.service';
 import { FilesService } from '../files/files.service';
 import { ContentExtractorService } from './content-extractor.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface DocumentAnalysisResult {
@@ -35,7 +39,7 @@ export class GeminiService {
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('Gemini API key is required');
+      throw new InternalServerErrorException('Gemini API key is required');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
