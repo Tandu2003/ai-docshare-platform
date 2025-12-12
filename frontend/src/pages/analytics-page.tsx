@@ -1466,17 +1466,7 @@ export function AnalyticsPage(): ReactElement {
                   className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${
-                        index === 0
-                          ? 'bg-yellow-500/10 text-yellow-500'
-                          : index === 1
-                            ? 'bg-gray-400/10 text-gray-400'
-                            : index === 2
-                              ? 'bg-amber-600/10 text-amber-600'
-                              : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
+                    <span className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full font-bold">
                       #{index + 1}
                     </span>
                     <div className="flex-1">
