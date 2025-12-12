@@ -132,7 +132,6 @@ export function DocumentShareDialog({
       onShareLinkUpdated(response);
       toast.success('Đã tạo liên kết chia sẻ cho tài liệu.');
       setRegenerateToken(false);
-      onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || 'Không thể tạo liên kết chia sẻ.');
     } finally {
