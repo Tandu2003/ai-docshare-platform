@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { Coins, Edit, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
 
 import { AdminOnly } from '@/components/common/permission-gate';
@@ -42,8 +40,6 @@ export function UserTable({
   onAdjustPoints,
   isLoading = false,
 }: UserTableProps) {
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-
   const getRoleBadgeVariant = (roleName: string) => {
     switch (roleName) {
       case 'admin':
@@ -97,11 +93,7 @@ export function UserTable({
           {users.map(user => (
             <TableRow
               key={user.id}
-              className={`cursor-pointer transition-colors ${
-                hoveredRow === user.id ? 'bg-muted/50' : ''
-              }`}
-              onMouseEnter={() => setHoveredRow(user.id)}
-              onMouseLeave={() => setHoveredRow(null)}
+              className="hover:bg-muted/50 cursor-pointer transition-colors"
             >
               <TableCell>
                 <div className="flex items-center gap-3">

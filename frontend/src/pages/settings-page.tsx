@@ -186,7 +186,7 @@ export function SettingsPage(): ReactElement {
   };
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-6">
+    <div className="mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -159,7 +159,7 @@ export function TrendingPage(): ReactElement {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto space-y-6 px-4 py-6">
+      <div className="mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="flex items-center gap-2 text-3xl font-bold">
@@ -199,7 +199,7 @@ export function TrendingPage(): ReactElement {
   }
 
   return (
-    <div className="container mx-auto space-y-6 px-4 py-6">
+    <div className="mx-auto space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
