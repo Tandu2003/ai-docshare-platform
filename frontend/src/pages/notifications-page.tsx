@@ -379,12 +379,11 @@ export function NotificationsPage(): ReactElement {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Thông báo</h1>
           <p className="text-muted-foreground">
             {unreadCount > 0
               ? `${unreadCount} thông báo chưa đọc`
               : 'Đã cập nhật tất cả!'}
-            ;
           </p>
         </div>
         <div className="flex items-center space-x-2">
