@@ -335,31 +335,6 @@ export function SystemSettingsPage(): ReactElement {
 
             <Separator />
 
-            {/* Confidence Threshold */}
-            <div className="space-y-2">
-              <Label htmlFor="confidence-threshold">
-                Ngưỡng tin cậy ({aiSettings.confidenceThreshold}%)
-              </Label>
-              <Input
-                id="confidence-threshold"
-                type="range"
-                min="50"
-                max="100"
-                value={aiSettings.confidenceThreshold}
-                onChange={e =>
-                  handleAISettingChange(
-                    'confidenceThreshold',
-                    parseInt(e.target.value, 10),
-                  )
-                }
-                className="w-full"
-              />
-              <div className="text-muted-foreground flex justify-between text-xs">
-                <span>50%</span>
-                <span>100%</span>
-              </div>
-            </div>
-
             <Separator />
 
             {/* Similarity Check Settings - Separate toggles for each checkpoint */}
