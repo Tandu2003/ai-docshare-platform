@@ -177,18 +177,34 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // Real file upload using API
   const uploadFilesToAPI = async (filesToUpload: FileWithMetadata[]) => {
     try {
-      // Set uploading state
+      // Set initial uploading state
       setFiles(prev =>
         prev.map(f =>
-          filesToUpload.find(tf => tf.id === f.id) ? { ...f, progress: 10 } : f,
+          filesToUpload.find(tf => tf.id === f.id) ? { ...f, progress: 0 } : f,
         ),
       );
 
       // Extract File objects for upload
       const fileObjects = filesToUpload.map(f => f.file);
 
-      // Upload files using real API
-      const response = await FilesService.uploadFiles(fileObjects);
+      // Upload files using real API with progress tracking
+      const response = await FilesService.uploadFiles(
+        fileObjects,
+        (overallProgress: number) => {
+          // Update progress for all uploading files
+          // Cap at 95% until upload completes to ensure smooth transition to 100%
+          const progressValue = Math.min(95, overallProgress);
+
+          setFiles(prev =>
+            prev.map(f => {
+              const fileToUpload = filesToUpload.find(tf => tf.id === f.id);
+              if (!fileToUpload) return f;
+
+              return { ...f, progress: progressValue };
+            }),
+          );
+        },
+      );
 
       if (response.success && response.data) {
         toast.success(`Tải lên ${response.data.length} tệp thành công`);

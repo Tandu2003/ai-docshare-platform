@@ -107,6 +107,7 @@ export interface PaginatedDocuments {
 export class FilesService {
   static async uploadFiles(
     files: File[],
+    onProgress?: (progress: number) => void,
   ): Promise<ApiResponse<FileUploadResult[]>> {
     const formData = new FormData();
 
@@ -123,6 +124,17 @@ export class FilesService {
             'Content-Type': 'multipart/form-data',
           },
           timeout: 60000 * 2, // 2 minutes
+          onUploadProgress: (progressEvent: {
+            loaded: number;
+            total?: number;
+          }) => {
+            if (onProgress && progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total,
+              );
+              onProgress(percentCompleted);
+            }
+          },
         },
       );
 

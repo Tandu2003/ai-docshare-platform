@@ -286,7 +286,7 @@ export function TopRatedPage(): ReactElement {
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
             <Star className="text-primary h-8 w-8" />
-            Top Rated Documents
+            Tài liệu được đánh giá cao nhất
           </h1>
           <p className="text-muted-foreground mt-1">
             Các tài liệu được đánh giá cao nhất dựa trên đánh giá của người dùng

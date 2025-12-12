@@ -250,15 +250,29 @@ export function DocumentEditSheet({
       for (const fileWithMeta of filesToUpload) {
         if (!fileWithMeta.file) continue;
 
-        // Update progress
+        // Set initial progress
         setFiles(prev =>
           prev.map(f =>
-            f.id === fileWithMeta.id ? { ...f, progress: 10 } : f,
+            f.id === fileWithMeta.id ? { ...f, progress: 0 } : f,
           ),
         );
 
         try {
-          const result = await FilesService.uploadFiles([fileWithMeta.file!]);
+          const result = await FilesService.uploadFiles(
+            [fileWithMeta.file!],
+            (progress: number) => {
+              // Update progress for this specific file
+              // Cap at 95% until upload completes
+              const progressValue = Math.min(95, progress);
+              setFiles(prev =>
+                prev.map(f =>
+                  f.id === fileWithMeta.id
+                    ? { ...f, progress: progressValue }
+                    : f,
+                ),
+              );
+            },
+          );
 
           if (result.success && result.data && result.data.length > 0) {
             const uploadedFile = result.data[0];
@@ -281,7 +295,7 @@ export function DocumentEditSheet({
           setFiles(prev =>
             prev.map(f =>
               f.id === fileWithMeta.id
-                ? { ...f, error: error.message || 'Tải lên thất bại' }
+                ? { ...f, error: error.message || 'Tải lên thất bại', progress: undefined }
                 : f,
             ),
           );
