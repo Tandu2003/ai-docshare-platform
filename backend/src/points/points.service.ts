@@ -172,7 +172,7 @@ export class PointsService {
           type: PointTxnType.EARN,
           reason: PointTxnReason.UPLOAD_REWARD,
           balanceAfter: user.pointsBalance,
-          note: 'Award for uploading a document',
+          note: 'Thưởng cho việc tải lên tài liệu',
         },
       });
       return { balance: user.pointsBalance };
@@ -206,7 +206,7 @@ export class PointsService {
           ).pointsBalance,
           performedById: performedById || null,
           isBypass: true,
-          note: 'Download bypassed deduction',
+          note: 'Tải tài liệu bỏ qua phí',
         },
       });
       return;
@@ -237,7 +237,7 @@ export class PointsService {
           reason: PointTxnReason.DOWNLOAD_COST,
           balanceAfter: updated.pointsBalance,
           performedById: performedById || null,
-          note: 'Download document deduction',
+          note: 'Phí tải tài liệu',
         },
       });
       return { balance: updated.pointsBalance };
@@ -264,7 +264,7 @@ export class PointsService {
           reason: PointTxnReason.ADMIN_ADJUST,
           balanceAfter: updated.pointsBalance,
           performedById: adminId,
-          note: note || 'Admin adjustment',
+          note: note || 'Điều chỉnh bởi admin',
         },
       });
       return { balance: updated.pointsBalance };
@@ -299,7 +299,7 @@ export class PointsService {
           reason: PointTxnReason.ADMIN_ADJUST,
           balanceAfter: updated.pointsBalance,
           performedById: adminId,
-          note: note || 'Admin set balance',
+          note: note || 'Điều chỉnh bởi admin',
         },
       });
       return { balance: updated.pointsBalance };
@@ -317,7 +317,7 @@ export class PointsService {
       // Don't reward if uploader downloads their own document
       if (uploaderId === downloaderId) {
         this.logger.log(
-          `Skipping reward: uploader ${uploaderId} downloaded their own document`,
+          `Bỏ qua thưởng: người tải lên ${uploaderId} tải tài liệu của chính mình`,
         );
         return null;
       }
@@ -326,7 +326,7 @@ export class PointsService {
       const reward = downloadCost;
 
       if (reward <= 0) {
-        this.logger.log('Download cost is 0, skipping reward');
+        this.logger.log('Phí tải tài liệu là 0, bỏ qua thưởng');
         return null;
       }
 
@@ -344,7 +344,7 @@ export class PointsService {
 
         if (existingRewardedDownload) {
           this.logger.log(
-            `User ${downloaderId} has already generated a reward for document ${documentId}, skipping`,
+            `Người dùng ${downloaderId} đã được thưởng cho tài liệu ${documentId}, bỏ qua`,
           );
           // Still mark this download as successful but not rewarded (it was already rewarded before)
           await tx.download.update({
@@ -370,7 +370,7 @@ export class PointsService {
             type: PointTxnType.EARN,
             reason: PointTxnReason.DOWNLOAD_REWARD,
             balanceAfter: updatedUploader.pointsBalance,
-            note: `Download reward: +${reward} points from user ${downloaderId}`,
+            note: `Thưởng cho việc tải lên tài liệu: +${reward} điểm từ người dùng ${downloaderId}`,
           },
         });
 
@@ -381,18 +381,18 @@ export class PointsService {
         });
 
         this.logger.log(
-          `Awarded ${reward} points to uploader ${uploaderId} for download by ${downloaderId} on document ${documentId}`,
+          `Thưởng ${reward} điểm cho người tải lên ${uploaderId} cho việc tải lên tài liệu ${documentId} bởi ${downloaderId}`,
         );
 
         return { balance: updatedUploader.pointsBalance };
       });
     } catch (error) {
       this.logger.error(
-        `Error awarding uploader ${uploaderId} for download: ${error instanceof Error ? error.message : String(error)}`,
+        `Lỗi khi thưởng điểm cho người tải lên ${uploaderId} cho việc tải lên tài liệu: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw new InternalServerErrorException(
-        'Không thể trao điểm cho người tải lên',
+        'Không thể thưởng điểm cho người tải lên',
       );
     }
   }
