@@ -4,6 +4,7 @@ import type {
   ModerationQueueParams,
   ModerationQueueResponse,
 } from '@/types';
+import type { DocumentModerationStatus } from '@/types/database.types';
 import { apiClient } from '@/utils/api-client';
 
 export const getModerationQueue = async (
@@ -100,6 +101,16 @@ export interface PrivateDocumentsParams {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface AllDocumentsParams {
+  page?: number;
+  limit?: number;
+  categoryIds?: string[];
+  isPublic?: boolean | 'all';
+  moderationStatus?: DocumentModerationStatus | 'all';
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 export interface PrivateDocumentsResponse {
   documents: Array<{
     id: string;
@@ -150,6 +161,39 @@ export const getPrivateDocuments = async (
     throw new Error(
       response.message || 'Không thể lấy danh sách tài liệu riêng tư',
     );
+  }
+
+  return response.data;
+};
+
+export const getAllDocuments = async (
+  params: AllDocumentsParams = {},
+): Promise<PrivateDocumentsResponse> => {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.limit) searchParams.set('limit', String(params.limit));
+  if (params.categoryIds && params.categoryIds.length > 0) {
+    searchParams.set('categoryIds', params.categoryIds.join(','));
+  }
+  if (params.isPublic !== undefined && params.isPublic !== 'all') {
+    searchParams.set('isPublic', String(params.isPublic));
+  }
+  if (
+    params.moderationStatus !== undefined &&
+    params.moderationStatus !== 'all'
+  ) {
+    searchParams.set('moderationStatus', params.moderationStatus);
+  }
+  if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+
+  const queryString = searchParams.toString();
+  const endpoint = `/admin/documents/all${queryString ? `?${queryString}` : ''}`;
+
+  const response = await apiClient.get<PrivateDocumentsResponse>(endpoint);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.message || 'Không thể lấy danh sách tài liệu');
   }
 
   return response.data;

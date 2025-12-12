@@ -617,6 +617,20 @@ export class DocumentsService {
     return this.queryService.getPrivateDocuments(page, limit, filters);
   }
 
+  async getAllDocuments(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      categoryIds?: string[];
+      isPublic?: boolean | 'all';
+      moderationStatus?: DocumentModerationStatus | 'all';
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    },
+  ): Promise<any> {
+    return this.queryService.getAllDocuments(page, limit, filters);
+  }
+
   async viewDocument(
     documentId: string,
     userId?: string,

@@ -76,6 +76,138 @@ export class AdminDocumentsController {
     }
   }
 
+  @Get('all')
+  @ApiOperation({
+    summary:
+      'Danh sách toàn bộ tài liệu với bộ lọc đầy đủ (chỉ dành cho admin)',
+  })
+  async getAllDocuments(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('categoryIds') categoryIds: string | undefined,
+    @Query('isPublic') isPublic: string | undefined,
+    @Query('moderationStatus') moderationStatus: string | undefined,
+    @Query('sortBy') sortBy: string | undefined,
+    @Query('sortOrder') sortOrder: string | undefined,
+    @Res() res: FastifyReply,
+  ): Promise<FastifyReply> {
+    try {
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
+      const allowedSortBy = [
+        'createdAt',
+        'downloadCount',
+        'viewCount',
+        'averageRating',
+        'title',
+      ];
+      const validSortBy = allowedSortBy.includes(sortBy || '')
+        ? sortBy
+        : 'createdAt';
+      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
+      const categoryIdsArray = categoryIds
+        ? categoryIds.split(',').filter(id => id.trim())
+        : undefined;
+
+      let isPublicFilter: boolean | 'all' = 'all';
+      if (isPublic === 'true') {
+        isPublicFilter = true;
+      } else if (isPublic === 'false') {
+        isPublicFilter = false;
+      }
+
+      let moderationStatusFilter: DocumentModerationStatus | 'all' = 'all';
+      if (
+        moderationStatus &&
+        ['PENDING', 'APPROVED', 'REJECTED'].includes(moderationStatus)
+      ) {
+        moderationStatusFilter = moderationStatus as DocumentModerationStatus;
+      }
+
+      const result = await this.documentsService.getAllDocuments(
+        pageNum,
+        limitNum,
+        {
+          categoryIds: categoryIdsArray,
+          isPublic: isPublicFilter,
+          moderationStatus: moderationStatusFilter,
+          sortBy: validSortBy,
+          sortOrder: validSortOrder,
+        },
+      );
+
+      return ResponseHelper.success(
+        res,
+        result,
+        'Lấy danh sách tài liệu thành công',
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy danh sách tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('private')
+  @ApiOperation({ summary: 'Danh sách tài liệu riêng tư (chỉ dành cho admin)' })
+  async getPrivateDocuments(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('categoryId') categoryId: string | undefined,
+    @Query('sortBy') sortBy: string | undefined,
+    @Query('sortOrder') sortOrder: string | undefined,
+    @Res() res: FastifyReply,
+  ): Promise<FastifyReply> {
+    try {
+      const pageNum = Math.max(1, Number(page) || 1);
+      const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
+      const allowedSortBy = [
+        'createdAt',
+        'downloadCount',
+        'viewCount',
+        'averageRating',
+        'title',
+      ];
+      const validSortBy = allowedSortBy.includes(sortBy || '')
+        ? sortBy
+        : 'createdAt';
+      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
+      const result = await this.documentsService.getPrivateDocuments(
+        pageNum,
+        limitNum,
+        {
+          categoryId,
+          sortBy: validSortBy,
+          sortOrder: validSortOrder,
+        },
+      );
+
+      return ResponseHelper.success(
+        res,
+        result,
+        'Lấy danh sách tài liệu riêng tư thành công',
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy danh sách tài liệu riêng tư',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get(':documentId')
   @ApiOperation({ summary: 'Chi tiết tài liệu để kiểm duyệt' })
   async getDocumentForModeration(
@@ -211,59 +343,6 @@ export class AdminDocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể phân tích AI cho tài liệu',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Get('private')
-  @ApiOperation({ summary: 'Danh sách tài liệu riêng tư (chỉ dành cho admin)' })
-  async getPrivateDocuments(
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-    @Query('categoryId') categoryId: string | undefined,
-    @Query('sortBy') sortBy: string | undefined,
-    @Query('sortOrder') sortOrder: string | undefined,
-    @Res() res: FastifyReply,
-  ): Promise<FastifyReply> {
-    try {
-      const pageNum = Math.max(1, Number(page) || 1);
-      const limitNum = Math.min(50, Math.max(1, Number(limit) || 10));
-      const allowedSortBy = [
-        'createdAt',
-        'downloadCount',
-        'viewCount',
-        'averageRating',
-        'title',
-      ];
-      const validSortBy = allowedSortBy.includes(sortBy || '')
-        ? sortBy
-        : 'createdAt';
-      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
-
-      const result = await this.documentsService.getPrivateDocuments(
-        pageNum,
-        limitNum,
-        {
-          categoryId,
-          sortBy: validSortBy,
-          sortOrder: validSortOrder,
-        },
-      );
-
-      return ResponseHelper.success(
-        res,
-        result,
-        'Lấy danh sách tài liệu riêng tư thành công',
-      );
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
-      }
-
-      return ResponseHelper.error(
-        res,
-        'Không thể lấy danh sách tài liệu riêng tư',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

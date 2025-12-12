@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -59,7 +65,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
-  getPrivateDocuments,
+  getAllDocuments,
   type PrivateDocumentsResponse,
 } from '@/services/document-moderation.service';
 import {
@@ -76,6 +82,7 @@ import type {
   ModerationDocument,
   ModerationQueueResponse,
 } from '@/types';
+import { apiClient } from '@/utils/api-client';
 
 const statusOptions: { value: DocumentModerationStatus; label: string }[] = [
   { value: 'PENDING', label: 'Chờ duyệt' },
@@ -172,6 +179,17 @@ export function AdminDashboardPage(): ReactElement {
     SimilarityResult[]
   >([]);
   const [_similarityLoading, setSimilarityLoading] = useState(false);
+  const [documentModeFilter, setDocumentModeFilter] = useState<boolean | 'all'>(
+    'all',
+  );
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [moderationStatusFilter, setModerationStatusFilter] = useState<
+    DocumentModerationStatus | 'all'
+  >('all');
+  const [categories, setCategories] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   const summary = useMemo(
     () => queueData?.summary ?? emptySummary,
@@ -204,23 +222,59 @@ export function AdminDashboardPage(): ReactElement {
     [statusFilter],
   );
 
-  const loadPrivateDocuments = useCallback(async (page: number = 1) => {
-    setPrivateLoading(true);
+  const loadAllDocuments = useCallback(
+    async (page: number = 1) => {
+      setPrivateLoading(true);
+      try {
+        const data = await getAllDocuments({
+          page,
+          limit: 10,
+          categoryIds: categoryFilter.length > 0 ? categoryFilter : undefined,
+          isPublic: documentModeFilter,
+          moderationStatus: moderationStatusFilter,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+        setPrivateDocumentsData(data);
+        setPrivatePage(data.page);
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Không thể tải danh sách tài liệu';
+        toast.error(message);
+      } finally {
+        setPrivateLoading(false);
+      }
+    },
+    [categoryFilter, documentModeFilter, moderationStatusFilter],
+  );
+
+  const loadCategories = useCallback(async () => {
+    setCategoriesLoading(true);
     try {
-      const data = await getPrivateDocuments({
-        page,
-        limit: 10,
-      });
-      setPrivateDocumentsData(data);
-      setPrivatePage(data.page);
+      const response = await apiClient.get<{
+        success: boolean;
+        data: Array<{
+          id: string;
+          name: string;
+          description: string | null;
+          icon: string | null;
+          color: string | null;
+        }>;
+      }>('/categories');
+      if (response.success && response.data && Array.isArray(response.data)) {
+        const categoryList = response.data.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+        }));
+        setCategories(categoryList);
+      }
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Không thể tải danh sách tài liệu riêng tư';
-      toast.error(message);
+      console.error('Failed to load categories:', err);
+      toast.error('Không thể tải danh sách danh mục');
     } finally {
-      setPrivateLoading(false);
+      setCategoriesLoading(false);
     }
   }, []);
 
@@ -228,9 +282,27 @@ export function AdminDashboardPage(): ReactElement {
     if (activeTab === 'moderation') {
       loadQueue(1);
     } else if (activeTab === 'private') {
-      loadPrivateDocuments(1);
+      loadAllDocuments(1);
     }
-  }, [activeTab, loadQueue, loadPrivateDocuments]);
+  }, [activeTab, loadQueue, loadAllDocuments]);
+
+  useEffect(() => {
+    if (activeTab === 'private') {
+      loadCategories();
+    }
+  }, [activeTab, loadCategories]);
+
+  useEffect(() => {
+    if (activeTab === 'private') {
+      loadAllDocuments(1);
+    }
+  }, [
+    categoryFilter,
+    documentModeFilter,
+    moderationStatusFilter,
+    loadAllDocuments,
+    activeTab,
+  ]);
 
   useEffect(() => {
     if (selectedDocument) {
@@ -405,8 +477,22 @@ export function AdminDashboardPage(): ReactElement {
     if (activeTab === 'moderation') {
       loadQueue(currentPage);
     } else {
-      loadPrivateDocuments(privatePage);
+      loadAllDocuments(privatePage);
     }
+  };
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setCategoryFilter(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId],
+    );
+  };
+
+  const clearFilters = () => {
+    setDocumentModeFilter('all');
+    setCategoryFilter([]);
+    setModerationStatusFilter('all');
   };
 
   return (
@@ -435,7 +521,7 @@ export function AdminDashboardPage(): ReactElement {
       >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="moderation">Kiểm duyệt</TabsTrigger>
-          <TabsTrigger value="private">Tài liệu riêng tư</TabsTrigger>
+          <TabsTrigger value="private">Tài liệu</TabsTrigger>
         </TabsList>
 
         {/* Moderation Tab */}
@@ -1568,53 +1654,195 @@ export function AdminDashboardPage(): ReactElement {
           )}
         </TabsContent>
 
-        {/* Private Documents Tab */}
+        {/* All Documents Tab */}
         <TabsContent value="private" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <FileText className="h-5 w-5" />
-                    Tài liệu riêng tư
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm">
-                    {filteredPrivateDocuments.length} /{' '}
-                    {privateDocuments.length} tài liệu
-                  </p>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <FileText className="h-5 w-5" />
+                      Tài liệu
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm">
+                      {filteredPrivateDocuments.length} /{' '}
+                      {privateDocumentsData?.total ?? 0} tài liệu
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleRefresh}
+                            disabled={privateLoading}
+                          >
+                            {privateLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Làm mới</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
 
-                {/* Filters & Actions */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {/* Search & Filters */}
+                <div className="flex flex-col gap-3">
                   <div className="relative w-full sm:w-64">
                     <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
                     <Input
-                      placeholder="Tìm kiếm tài liệu riêng tư..."
+                      placeholder="Tìm kiếm tài liệu..."
                       className="pl-8"
                       value={privateSearchQuery}
                       onChange={e => setPrivateSearchQuery(e.target.value)}
                     />
                   </div>
 
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleRefresh}
-                          disabled={privateLoading}
-                        >
-                          {privateLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
+                  {/* Filter Row */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Document Mode Filter */}
+                    <Select
+                      value={
+                        documentModeFilter === 'all'
+                          ? 'all'
+                          : documentModeFilter
+                            ? 'public'
+                            : 'private'
+                      }
+                      onValueChange={value => {
+                        if (value === 'all') {
+                          setDocumentModeFilter('all');
+                        } else {
+                          setDocumentModeFilter(value === 'public');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Chế độ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="public">Công khai</SelectItem>
+                        <SelectItem value="private">Riêng tư</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Moderation Status Filter */}
+                    <Select
+                      value={
+                        moderationStatusFilter === 'all'
+                          ? 'all'
+                          : moderationStatusFilter
+                      }
+                      onValueChange={value =>
+                        setModerationStatusFilter(
+                          value === 'all'
+                            ? 'all'
+                            : (value as DocumentModerationStatus),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                        <SelectItem value="PENDING">Chờ duyệt</SelectItem>
+                        <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+                        <SelectItem value="REJECTED">Bị từ chối</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Category Multi-Select */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-[180px]">
+                          <Filter className="mr-2 h-4 w-4" />
+                          Danh mục
+                          {categoryFilter.length > 0 && (
+                            <Badge variant="secondary" className="ml-2">
+                              {categoryFilter.length}
+                            </Badge>
                           )}
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Làm mới</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0" align="start">
+                        <div className="border-b p-3">
+                          <Label className="text-sm font-semibold">
+                            Chọn danh mục
+                          </Label>
+                        </div>
+                        <ScrollArea className="h-[300px]">
+                          <div className="p-2">
+                            {categoriesLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              </div>
+                            ) : categories.length > 0 ? (
+                              <div className="space-y-2">
+                                {categories.map(category => (
+                                  <div
+                                    key={category.id}
+                                    className="hover:bg-accent flex items-center space-x-2 rounded-md p-2"
+                                  >
+                                    <Checkbox
+                                      id={`category-${category.id}`}
+                                      checked={categoryFilter.includes(
+                                        category.id,
+                                      )}
+                                      onCheckedChange={() =>
+                                        handleCategoryToggle(category.id)
+                                      }
+                                    />
+                                    <Label
+                                      htmlFor={`category-${category.id}`}
+                                      className="flex-1 cursor-pointer text-sm font-normal"
+                                    >
+                                      {category.name}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-muted-foreground py-4 text-center text-sm">
+                                Không có danh mục
+                              </p>
+                            )}
+                          </div>
+                        </ScrollArea>
+                        {categoryFilter.length > 0 && (
+                          <div className="border-t p-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => setCategoryFilter([])}
+                            >
+                              Xóa lọc
+                            </Button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Clear Filters */}
+                    {(documentModeFilter !== 'all' ||
+                      categoryFilter.length > 0 ||
+                      moderationStatusFilter !== 'all') && (
+                      <Button variant="ghost" size="sm" onClick={clearFilters}>
+                        Xóa bộ lọc
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -1662,7 +1890,22 @@ export function AdminDashboardPage(): ReactElement {
                                     <h3 className="text-lg font-semibold">
                                       {document.title}
                                     </h3>
-                                    <Badge variant="secondary">Riêng tư</Badge>
+                                    {document.isPublic ? (
+                                      <Badge variant="default">Công khai</Badge>
+                                    ) : (
+                                      <Badge variant="secondary">
+                                        Riêng tư
+                                      </Badge>
+                                    )}
+                                    <Badge
+                                      variant={statusBadgeVariant(
+                                        document.moderationStatus as DocumentModerationStatus,
+                                      )}
+                                    >
+                                      {statusLabel(
+                                        document.moderationStatus as DocumentModerationStatus,
+                                      )}
+                                    </Badge>
                                   </div>
                                   {document.description && (
                                     <p className="text-muted-foreground line-clamp-2 text-sm">
@@ -1731,14 +1974,20 @@ export function AdminDashboardPage(): ReactElement {
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                   <FileText className="text-muted-foreground mb-4 h-12 w-12" />
                   <h3 className="text-lg font-semibold">
-                    {privateSearchQuery.trim()
+                    {privateSearchQuery.trim() ||
+                    documentModeFilter !== 'all' ||
+                    categoryFilter.length > 0 ||
+                    moderationStatusFilter !== 'all'
                       ? 'Không tìm thấy tài liệu'
-                      : 'Chưa có tài liệu riêng tư'}
+                      : 'Chưa có tài liệu'}
                   </h3>
                   <p className="text-muted-foreground mt-2 text-sm">
-                    {privateSearchQuery.trim()
-                      ? 'Thử tìm kiếm với từ khóa khác'
-                      : 'Tất cả tài liệu đã được công khai'}
+                    {privateSearchQuery.trim() ||
+                    documentModeFilter !== 'all' ||
+                    categoryFilter.length > 0 ||
+                    moderationStatusFilter !== 'all'
+                      ? 'Thử điều chỉnh bộ lọc hoặc tìm kiếm với từ khóa khác'
+                      : 'Chưa có tài liệu nào trong hệ thống'}
                   </p>
                 </div>
               )}
@@ -1758,7 +2007,7 @@ export function AdminDashboardPage(): ReactElement {
                     onClick={() => {
                       const prevPage = Math.max(1, privatePage - 1);
                       setPrivatePage(prevPage);
-                      loadPrivateDocuments(prevPage);
+                      loadAllDocuments(prevPage);
                     }}
                     disabled={privatePage === 1 || privateLoading}
                   >
@@ -1770,7 +2019,7 @@ export function AdminDashboardPage(): ReactElement {
                     onClick={() => {
                       const nextPage = privatePage + 1;
                       setPrivatePage(nextPage);
-                      loadPrivateDocuments(nextPage);
+                      loadAllDocuments(nextPage);
                     }}
                     disabled={
                       privatePage >=

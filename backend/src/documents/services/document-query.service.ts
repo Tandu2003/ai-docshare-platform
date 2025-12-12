@@ -29,6 +29,15 @@ interface DocumentListFilters {
   readonly sortOrder?: 'asc' | 'desc';
 }
 
+/** Admin document list filters */
+interface AdminDocumentListFilters {
+  readonly categoryIds?: string[];
+  readonly isPublic?: boolean | 'all';
+  readonly moderationStatus?: DocumentModerationStatus | 'all';
+  readonly sortBy?: string;
+  readonly sortOrder?: 'asc' | 'desc';
+}
+
 /** Paginated document response */
 interface PaginatedDocumentsResponse {
   readonly documents: TransformedDocument[];
@@ -275,6 +284,93 @@ export class DocumentQueryService {
     }
   }
 
+  async getAllDocuments(
+    page: number = 1,
+    limit: number = 10,
+    filters?: AdminDocumentListFilters,
+  ): Promise<PaginatedDocumentsResponse> {
+    try {
+      const skip = (page - 1) * limit;
+
+      const whereCondition: any = {};
+
+      // Filter by document mode (public/private)
+      if (filters?.isPublic !== undefined && filters.isPublic !== 'all') {
+        whereCondition.isPublic = filters.isPublic === true;
+      }
+
+      // Filter by moderation status
+      if (
+        filters?.moderationStatus !== undefined &&
+        filters.moderationStatus !== 'all'
+      ) {
+        whereCondition.moderationStatus = filters.moderationStatus;
+      }
+
+      // Filter by categories (multi-select)
+      if (filters?.categoryIds && filters.categoryIds.length > 0) {
+        const allCategoryIds: string[] = [];
+
+        for (const categoryId of filters.categoryIds) {
+          const childCategories = await this.prisma.category.findMany({
+            where: { parentId: categoryId, isActive: true },
+            select: { id: true },
+          });
+
+          allCategoryIds.push(categoryId);
+          allCategoryIds.push(...childCategories.map(c => c.id));
+        }
+
+        whereCondition.categoryId = {
+          in: [...new Set(allCategoryIds)],
+        };
+      }
+
+      const orderBy = this.buildOrderBy(filters);
+
+      const [documents, total] = await Promise.all([
+        this.prisma.document.findMany({
+          where: whereCondition,
+          include: {
+            files: {
+              include: { file: true },
+              orderBy: { order: 'asc' },
+            },
+            category: true,
+            uploader: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        this.prisma.document.count({ where: whereCondition }),
+      ]);
+
+      const transformedDocuments = await this.transformPublicDocuments(
+        documents,
+        undefined,
+      );
+
+      return {
+        documents: transformedDocuments,
+        total,
+        page,
+        limit,
+      };
+    } catch {
+      throw new InternalServerErrorException(
+        'Không thể lấy danh sách tài liệu',
+      );
+    }
+  }
+
   async getDocumentById(
     documentId: string,
     userId?: string,
@@ -392,7 +488,9 @@ export class DocumentQueryService {
     return whereCondition;
   }
 
-  private buildOrderBy(filters?: DocumentListFilters): any {
+  private buildOrderBy(
+    filters?: DocumentListFilters | AdminDocumentListFilters,
+  ): any {
     const sortBy = filters?.sortBy || 'createdAt';
     const sortOrder = filters?.sortOrder || 'desc';
     return { [sortBy]: sortOrder };
