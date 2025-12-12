@@ -97,4 +97,7 @@ export interface DashboardOverview {
   viewsThisMonth?: number;
   unverifiedUsers?: number;
   pendingReports?: number;
+  approvedDocumentsCount?: number;
+  pendingDocumentsCount?: number;
+  draftDocumentsCount?: number;
 }

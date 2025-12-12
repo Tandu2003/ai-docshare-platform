@@ -7,7 +7,6 @@ import { RecentDocuments } from '@/components/dashboard/recent-documents';
 import { UserDashboard } from '@/components/dashboard/user-dashboard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingPage } from '@/components/ui/loading-skeleton';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
@@ -141,101 +140,6 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Additional stats - Only show for admin */}
-      <AdminOnly>
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trạng thái tài liệu hệ thống</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Đã xuất bản
-                  </span>
-                  <span className="text-sm font-medium">
-                    {
-                      stats.recentDocuments.filter(
-                        doc => doc.isApproved && !doc.isDraft,
-                      ).length
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Bản nháp
-                  </span>
-                  <span className="text-sm font-medium">
-                    {stats.recentDocuments.filter(doc => doc.isDraft).length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Đang chờ
-                  </span>
-                  <span className="text-sm font-medium">
-                    {
-                      stats.recentDocuments.filter(
-                        doc => !doc.isApproved && !doc.isDraft,
-                      ).length
-                    }
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Loại nội dung</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Công khai
-                  </span>
-                  <span className="text-sm font-medium">
-                    {stats.recentDocuments.filter(doc => doc.isPublic).length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Premium</span>
-                  <span className="text-sm font-medium">
-                    {stats.recentDocuments.filter(doc => doc.isPremium).length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    Riêng tư
-                  </span>
-                  <span className="text-sm font-medium">
-                    {stats.recentDocuments.filter(doc => !doc.isPublic).length}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Thông báo gần đây</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {stats.recentNotifications.slice(0, 3).map(notification => (
-                  <div key={notification.id} className="text-sm">
-                    <p className="font-medium">{notification.title}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {new Date(notification.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </AdminOnly>
     </div>
   );
 };

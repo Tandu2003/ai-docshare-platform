@@ -26,6 +26,9 @@ interface DashboardOverviewApiResponse {
   viewsThisMonth?: number;
   unverifiedUsers?: number;
   pendingReports?: number;
+  approvedDocumentsCount?: number;
+  pendingDocumentsCount?: number;
+  draftDocumentsCount?: number;
 }
 
 interface DashboardDocumentApiResponse {
@@ -230,6 +233,9 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
     viewsThisMonth: data.viewsThisMonth || 0,
     unverifiedUsers: data.unverifiedUsers || 0,
     pendingReports: data.pendingReports || 0,
+    approvedDocumentsCount: data.approvedDocumentsCount || 0,
+    pendingDocumentsCount: data.pendingDocumentsCount || 0,
+    draftDocumentsCount: data.draftDocumentsCount || 0,
   };
 };
 
@@ -265,5 +271,8 @@ export const getUserDashboardOverview =
       viewsThisMonth: 0,
       unverifiedUsers: 0,
       pendingReports: 0,
+      approvedDocumentsCount: 0,
+      pendingDocumentsCount: 0,
+      draftDocumentsCount: 0,
     };
   };

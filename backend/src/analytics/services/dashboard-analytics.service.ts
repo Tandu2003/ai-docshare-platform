@@ -27,6 +27,9 @@ export class DashboardAnalyticsService {
       viewsThisMonth,
       unverifiedUsers,
       pendingReports,
+      approvedDocumentsCount,
+      pendingDocumentsCount,
+      draftDocumentsCount,
     ] = await Promise.all([
       this.prisma.document.count(),
       this.prisma.user.count(),
@@ -114,6 +117,18 @@ export class DashboardAnalyticsService {
       }),
       this.prisma.user.count({ where: { isVerified: false } }),
       Promise.resolve(0),
+      this.prisma.document.count({
+        where: { isApproved: true, isDraft: false },
+      }),
+      this.prisma.document.count({
+        where: {
+          moderationStatus: 'PENDING',
+          isDraft: false,
+        },
+      }),
+      this.prisma.document.count({
+        where: { isDraft: true },
+      }),
     ]);
 
     const popularCategories = await this.buildCategoryStats(categoryAggregates);
@@ -135,6 +150,9 @@ export class DashboardAnalyticsService {
       viewsThisMonth: viewsThisMonth._count,
       unverifiedUsers,
       pendingReports,
+      approvedDocumentsCount,
+      pendingDocumentsCount,
+      draftDocumentsCount,
     };
   }
 

@@ -147,23 +147,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
               <div className="flex items-center justify-between">
                 <span className="text-sm">Tài liệu đã duyệt</span>
                 <Badge variant="default">
-                  {stats.recentDocuments.filter(doc => doc.isApproved).length}
+                  {stats.approvedDocumentsCount || 0}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Tài liệu chờ duyệt</span>
                 <Badge variant="secondary">
-                  {
-                    stats.recentDocuments.filter(
-                      doc => !doc.isApproved && !doc.isDraft,
-                    ).length
-                  }
+                  {stats.pendingDocumentsCount || 0}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Bản nháp</span>
                 <Badge variant="outline">
-                  {stats.recentDocuments.filter(doc => doc.isDraft).length}
+                  {stats.draftDocumentsCount || 0}
                 </Badge>
               </div>
             </div>
@@ -182,11 +178,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
               <div className="flex items-center justify-between">
                 <span className="text-sm">Tài liệu cần duyệt</span>
                 <Badge variant="destructive">
-                  {
-                    stats.recentDocuments.filter(
-                      doc => !doc.isApproved && !doc.isDraft,
-                    ).length
-                  }
+                  {stats.pendingDocumentsCount || 0}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
