@@ -198,3 +198,16 @@ export const getAllDocuments = async (
 
   return response.data;
 };
+
+export const deleteAdminDocument = async (
+  documentId: string,
+): Promise<void> => {
+  const response = await apiClient.delete<{
+    success: boolean;
+    message?: string;
+  }>(`/admin/documents/${documentId}`);
+
+  if (!response.success) {
+    throw new Error(response.message || 'Không thể xóa tài liệu');
+  }
+};

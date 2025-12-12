@@ -37,6 +37,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -48,6 +49,8 @@ import archiver from 'archiver';
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private filesService: FilesService,
@@ -1085,6 +1088,104 @@ export class DocumentsService {
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw new Error('Unexpected error');
+      }
+      throw new InternalServerErrorException('Không thể xóa tài liệu');
+    }
+  }
+
+  async adminDeleteDocument(
+    documentId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Check if document exists
+      const document = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          files: {
+            include: {
+              file: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new BadRequestException('Không tìm thấy tài liệu');
+      }
+
+      // Collect file storage URLs for deletion
+      const fileStorageUrls: string[] = [];
+      for (const docFile of document.files) {
+        if (docFile.file?.storageUrl) {
+          fileStorageUrls.push(docFile.file.storageUrl);
+        }
+      }
+
+      // Delete document and related records in a transaction
+      await this.prisma.$transaction(async prisma => {
+        // Delete document files relationships
+        await prisma.documentFile.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document views
+        await prisma.view.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document downloads
+        await prisma.download.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document ratings
+        await prisma.rating.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document comments
+        await prisma.comment.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete AI analysis if exists
+        await prisma.aIAnalysis.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document bookmarks
+        await prisma.bookmark.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete document share links
+        await prisma.documentShareLink.deleteMany({
+          where: { documentId },
+        });
+
+        // Delete the document itself
+        await prisma.document.delete({
+          where: { id: documentId },
+        });
+      });
+
+      // Delete files from R2 storage (outside transaction to avoid long-running transaction)
+      for (const storageUrl of fileStorageUrls) {
+        try {
+          await this.r2Service.deleteFile(storageUrl);
+        } catch (error) {
+          // Log error but don't fail the entire operation
+          this.logger.warn(
+            `Failed to delete file from R2: ${storageUrl}`,
+            error instanceof Error ? error.message : String(error),
+          );
+        }
+      }
+
+      return { success: true, message: 'Tài liệu đã được xóa thành công' };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
       }
       throw new InternalServerErrorException('Không thể xóa tài liệu');
     }

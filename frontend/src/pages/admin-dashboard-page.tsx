@@ -20,6 +20,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Trash2,
   User,
   XCircle,
 } from 'lucide-react';
@@ -65,6 +66,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
+  deleteAdminDocument,
   getAllDocuments,
   type PrivateDocumentsResponse,
 } from '@/services/document-moderation.service';
@@ -190,6 +192,12 @@ export function AdminDashboardPage(): ReactElement {
     Array<{ id: string; name: string }>
   >([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const summary = useMemo(
     () => queueData?.summary ?? emptySummary,
@@ -493,6 +501,32 @@ export function AdminDashboardPage(): ReactElement {
     setDocumentModeFilter('all');
     setCategoryFilter([]);
     setModerationStatusFilter('all');
+  };
+
+  const handleDeleteClick = (document: { id: string; title: string }) => {
+    setDocumentToDelete(document);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!documentToDelete) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await deleteAdminDocument(documentToDelete.id);
+      toast.success('Tài liệu đã được xóa thành công');
+      setDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+      await loadAllDocuments(privatePage);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Không thể xóa tài liệu';
+      toast.error(message);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -1962,6 +1996,32 @@ export function AdminDashboardPage(): ReactElement {
                                     Xem chi tiết tài liệu
                                   </TooltipContent>
                                 </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeleteClick({
+                                          id: document.id,
+                                          title: document.title,
+                                        })
+                                      }
+                                      disabled={deleting}
+                                    >
+                                      {deleting &&
+                                      documentToDelete?.id === document.id ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                      )}
+                                      Xóa
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Xóa tài liệu này
+                                  </TooltipContent>
+                                </Tooltip>
                               </TooltipProvider>
                             </div>
                           </div>
@@ -2101,6 +2161,75 @@ export function AdminDashboardPage(): ReactElement {
                 <XCircle className="mr-2 h-4 w-4" />
               )}
               Xác nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="text-destructive h-5 w-5" />
+              Xóa tài liệu
+            </DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa tài liệu này? Hành động này không thể
+              hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tài liệu sẽ bị xóa</Label>
+              <Card className="border-destructive/50">
+                <CardContent className="p-3">
+                  <p className="text-sm font-medium">
+                    {documentToDelete?.title || 'Không xác định'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="bg-destructive/10 border-destructive/20 rounded-lg border p-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="text-destructive mt-0.5 h-4 w-4 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-destructive text-sm font-medium">
+                    Cảnh báo
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Tất cả dữ liệu liên quan đến tài liệu này sẽ bị xóa vĩnh
+                    viễn, bao gồm: lượt xem, lượt tải, đánh giá, bình luận và
+                    các file đính kèm.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDocumentToDelete(null);
+              }}
+              disabled={deleting}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Xóa vĩnh viễn
             </Button>
           </DialogFooter>
         </DialogContent>

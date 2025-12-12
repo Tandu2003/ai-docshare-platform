@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -343,6 +344,38 @@ export class AdminDocumentsController {
       return ResponseHelper.error(
         res,
         'Không thể phân tích AI cho tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete(':documentId')
+  @ApiOperation({ summary: 'Xóa tài liệu (chỉ dành cho admin)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Tài liệu đã được xóa thành công',
+  })
+  async deleteDocument(
+    @Param('documentId') documentId: string,
+    @Res() res: FastifyReply,
+  ): Promise<FastifyReply> {
+    try {
+      const result =
+        await this.documentsService.adminDeleteDocument(documentId);
+
+      return ResponseHelper.success(
+        res,
+        result,
+        'Tài liệu đã được xóa thành công',
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể xóa tài liệu',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
