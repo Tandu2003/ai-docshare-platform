@@ -966,9 +966,7 @@ export function DocumentEditSheet({
                         {analysisResult.categoryConfidence && (
                           <span className="text-muted-foreground text-xs">
                             (Độ tin cậy:{' '}
-                            {Math.round(
-                              analysisResult.categoryConfidence * 100,
-                            )}
+                            {Math.min(100, Math.round(analysisResult.categoryConfidence))}
                             %)
                           </span>
                         )}
