@@ -703,7 +703,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     {aiAnalysis.analysisResult.categoryConfidence && (
                       <span className="text-muted-foreground ml-1">
                         (
-                        {Math.min(100, Math.round(aiAnalysis.analysisResult.categoryConfidence))}
+                        {Math.min(
+                          100,
+                          Math.round(
+                            aiAnalysis.analysisResult.categoryConfidence,
+                          ),
+                        )}
                         % chắc chắn)
                       </span>
                     )}

@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as mammoth from 'mammoth';
 import * as pdfParse from 'pdf-parse';
 import * as XLSX from 'xlsx';

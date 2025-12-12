@@ -1,8 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import {
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface VerificationEmailData {
