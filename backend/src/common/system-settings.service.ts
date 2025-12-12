@@ -166,6 +166,10 @@ export class SystemSettingsService {
       uploadReward: await this.getNumericSetting('points.upload_reward', 5),
       downloadCost: await this.getNumericSetting('points.download_cost', 1),
       downloadReward: await this.getNumericSetting('points.download_reward', 1), // Points awarded to uploader per successful download
+      dailyEarnLimit: await this.getNumericSetting(
+        'points.daily_earn_limit',
+        0,
+      ), // 0 = unlimited, >0 = max points per day
     };
   }
 
@@ -351,6 +355,14 @@ export class SystemSettingsService {
           'Points awarded to uploader when someone successfully downloads their document',
         category: 'points',
         isPublic: true,
+      },
+      {
+        key: 'points.daily_earn_limit',
+        value: '0',
+        description:
+          'Maximum points a user can earn per day (0 = unlimited). Helps prevent spam.',
+        category: 'points',
+        isPublic: false,
       },
     ];
 

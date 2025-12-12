@@ -252,9 +252,7 @@ export function DocumentEditSheet({
 
         // Set initial progress
         setFiles(prev =>
-          prev.map(f =>
-            f.id === fileWithMeta.id ? { ...f, progress: 0 } : f,
-          ),
+          prev.map(f => (f.id === fileWithMeta.id ? { ...f, progress: 0 } : f)),
         );
 
         try {
@@ -295,7 +293,11 @@ export function DocumentEditSheet({
           setFiles(prev =>
             prev.map(f =>
               f.id === fileWithMeta.id
-                ? { ...f, error: error.message || 'Tải lên thất bại', progress: undefined }
+                ? {
+                    ...f,
+                    error: error.message || 'Tải lên thất bại',
+                    progress: undefined,
+                  }
                 : f,
             ),
           );

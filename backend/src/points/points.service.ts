@@ -24,6 +24,32 @@ export class PointsService {
     return { balance: user.pointsBalance };
   }
 
+  /**
+   * Tính tổng điểm đã kiếm được trong ngày hôm nay (chỉ tính EARN transactions)
+   */
+  async getTodayEarnedPoints(userId: string): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const result = await this.prisma.pointTransaction.aggregate({
+      where: {
+        userId,
+        type: PointTxnType.EARN,
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return result._sum.amount || 0;
+  }
+
   async listTransactions(userId: string, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
@@ -158,6 +184,25 @@ export class PointsService {
   async awardOnUpload(userId: string, documentId: string, amount?: number) {
     const settings = await this.systemSettings.getPointsSettings();
     const reward = amount ?? settings.uploadReward;
+
+    // Kiểm tra giới hạn điểm kiếm được trong ngày
+    if (settings.dailyEarnLimit > 0) {
+      const todayEarned = await this.getTodayEarnedPoints(userId);
+      const remaining = settings.dailyEarnLimit - todayEarned;
+
+      if (remaining <= 0) {
+        throw new BadRequestException(
+          `Bạn đã đạt giới hạn điểm kiếm được trong ngày (${settings.dailyEarnLimit} điểm). Vui lòng thử lại vào ngày mai.`,
+        );
+      }
+
+      if (reward > remaining) {
+        throw new BadRequestException(
+          `Số điểm thưởng (${reward}) vượt quá số điểm còn lại trong ngày (${remaining}/${settings.dailyEarnLimit}).`,
+        );
+      }
+    }
+
     return this.prisma.$transaction(async tx => {
       const user = await tx.user.update({
         where: { id: userId },
@@ -330,6 +375,35 @@ export class PointsService {
         return null;
       }
 
+      // Kiểm tra giới hạn điểm kiếm được trong ngày
+      const settings = await this.systemSettings.getPointsSettings();
+      let actualReward = reward;
+
+      if (settings.dailyEarnLimit > 0) {
+        const todayEarned = await this.getTodayEarnedPoints(uploaderId);
+        const remaining = settings.dailyEarnLimit - todayEarned;
+
+        if (remaining <= 0) {
+          this.logger.log(
+            `Bỏ qua thưởng: người tải lên ${uploaderId} đã đạt giới hạn điểm trong ngày (${settings.dailyEarnLimit})`,
+          );
+          // Vẫn đánh dấu download thành công nhưng không trao điểm
+          await this.prisma.download.update({
+            where: { id: downloadId },
+            data: { success: true, uploaderRewarded: false },
+          });
+          return null;
+        }
+
+        // Nếu reward vượt quá số điểm còn lại, chỉ trao phần còn lại
+        actualReward = Math.min(reward, remaining);
+        if (actualReward < reward) {
+          this.logger.log(
+            `Giảm thưởng từ ${reward} xuống ${actualReward} do giới hạn điểm trong ngày (${remaining}/${settings.dailyEarnLimit})`,
+          );
+        }
+      }
+
       return this.prisma.$transaction(async tx => {
         // Check if this user has already generated a reward for this document
         // (prevents spam clicking from generating multiple rewards)
@@ -357,7 +431,7 @@ export class PointsService {
         // Award points to uploader
         const updatedUploader = await tx.user.update({
           where: { id: uploaderId },
-          data: { pointsBalance: { increment: reward } },
+          data: { pointsBalance: { increment: actualReward } },
           select: { pointsBalance: true },
         });
 
@@ -366,11 +440,11 @@ export class PointsService {
           data: {
             userId: uploaderId,
             documentId,
-            amount: reward,
+            amount: actualReward,
             type: PointTxnType.EARN,
             reason: PointTxnReason.DOWNLOAD_REWARD,
             balanceAfter: updatedUploader.pointsBalance,
-            note: `Thưởng cho việc tải lên tài liệu: +${reward} điểm từ người dùng ${downloaderId}`,
+            note: `Thưởng cho việc tải lên tài liệu: +${actualReward} điểm từ người dùng ${downloaderId}${actualReward < reward ? ` (giảm từ ${reward} do giới hạn ngày)` : ''}`,
           },
         });
 
@@ -381,7 +455,7 @@ export class PointsService {
         });
 
         this.logger.log(
-          `Thưởng ${reward} điểm cho người tải lên ${uploaderId} cho việc tải lên tài liệu ${documentId} bởi ${downloaderId}`,
+          `Thưởng ${actualReward} điểm cho người tải lên ${uploaderId} cho việc tải lên tài liệu ${documentId} bởi ${downloaderId}`,
         );
 
         return { balance: updatedUploader.pointsBalance };

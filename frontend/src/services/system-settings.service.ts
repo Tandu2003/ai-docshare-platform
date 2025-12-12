@@ -22,6 +22,7 @@ export interface CategoriesResponse {
 export interface PointsSettings {
   uploadReward: number;
   downloadCost: number;
+  dailyEarnLimit: number; // 0 = unlimited, >0 = max points per day
   // downloadReward đã bị xóa - uploader nhận bằng đúng downloadCost
 }
 
@@ -196,6 +197,14 @@ export class SystemSettingsService {
       systemSettings.push({
         key: 'points.download_cost',
         value: settings.downloadCost.toString(),
+        category: 'points',
+      });
+    }
+
+    if (settings.dailyEarnLimit !== undefined) {
+      systemSettings.push({
+        key: 'points.daily_earn_limit',
+        value: settings.dailyEarnLimit.toString(),
         category: 'points',
       });
     }

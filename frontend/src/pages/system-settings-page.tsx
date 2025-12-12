@@ -41,6 +41,7 @@ export function SystemSettingsPage(): ReactElement {
   const [pointsSettings, setPointsSettings] = useState<PointsSettings>({
     uploadReward: 5,
     downloadCost: 1,
+    dailyEarnLimit: 0,
   });
 
   const [loading, setLoading] = useState(false);
@@ -131,6 +132,10 @@ export function SystemSettingsPage(): ReactElement {
     }
     if (field === 'downloadCost' && (value < 0 || value > 50)) {
       toast.error('Chi phí tải xuống phải từ 0 đến 50');
+      return;
+    }
+    if (field === 'dailyEarnLimit' && value < 0) {
+      toast.error('Giới hạn điểm trong ngày phải >= 0 (0 = không giới hạn)');
       return;
     }
 
@@ -537,6 +542,44 @@ export function SystemSettingsPage(): ReactElement {
               </div>
             </div>
 
+            <Separator />
+
+            {/* Daily Earn Limit */}
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-base font-medium">
+                  Giới hạn điểm kiếm được trong ngày
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  Số điểm tối đa một người dùng có thể kiếm được trong 1 ngày (0
+                  = không giới hạn)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={pointsSettings.dailyEarnLimit}
+                    onChange={e =>
+                      handlePointsSettingChange(
+                        'dailyEarnLimit',
+                        parseInt(e.target.value, 10) || 0,
+                      )
+                    }
+                    className="w-32"
+                  />
+                  <span className="text-muted-foreground text-sm">
+                    điểm/ngày (0 = không giới hạn)
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Giúp ngăn chặn spam để kiếm điểm. Đặt 0 để tắt giới hạn.
+                </p>
+              </div>
+            </div>
+
             {/* Info Box */}
             <div className="bg-muted/50 rounded-lg p-4">
               <h4 className="mb-2 font-medium">ℹ️ Cách thức hoạt động</h4>
@@ -548,6 +591,11 @@ export function SystemSettingsPage(): ReactElement {
                 <li>
                   • <strong>Chi phí tải xuống = Điểm uploader nhận:</strong>{' '}
                   Người tải trả bao nhiêu điểm thì người upload nhận bấy nhiêu
+                </li>
+                <li>
+                  • <strong>Giới hạn điểm trong ngày:</strong> Ngăn chặn spam để
+                  kiếm điểm. Chỉ tính các giao dịch EARN (kiếm điểm), không tính
+                  SPEND (tiêu điểm)
                 </li>
                 <li>
                   • <strong>Tải lại miễn phí:</strong> Sau khi đã tải thành
