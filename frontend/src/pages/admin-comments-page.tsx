@@ -116,8 +116,7 @@ export function AdminCommentsPage(): ReactElement {
         page,
         limit,
         search: appliedSearch || undefined,
-        isDeleted:
-          viewMode === 'all' ? undefined : viewMode === 'deleted',
+        isDeleted: viewMode === 'all' ? undefined : viewMode === 'deleted',
         sortBy,
         sortOrder,
       };
@@ -135,14 +134,7 @@ export function AdminCommentsPage(): ReactElement {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    isUserAdmin,
-    page,
-    appliedSearch,
-    viewMode,
-    sortBy,
-    sortOrder,
-  ]);
+  }, [isUserAdmin, page, appliedSearch, viewMode, sortBy, sortOrder]);
 
   const loadStats = useCallback(async () => {
     if (!isUserAdmin) return;
@@ -202,9 +194,7 @@ export function AdminCommentsPage(): ReactElement {
     try {
       await adminCommentService.deleteComment(selectedComment.id, hardDelete);
       toast.success(
-        hardDelete
-          ? 'Đã xóa vĩnh viễn bình luận'
-          : 'Đã xóa bình luận',
+        hardDelete ? 'Đã xóa vĩnh viễn bình luận' : 'Đã xóa bình luận',
       );
       setDeleteDialogOpen(false);
       setSelectedComment(null);
@@ -212,9 +202,7 @@ export function AdminCommentsPage(): ReactElement {
       void loadStats();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Không thể xóa bình luận',
+        error instanceof Error ? error.message : 'Không thể xóa bình luận',
       );
     }
   };
@@ -258,7 +246,7 @@ export function AdminCommentsPage(): ReactElement {
   }, [selectedComment]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Quản lý Bình luận</h1>
@@ -283,7 +271,7 @@ export function AdminCommentsPage(): ReactElement {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng số</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <MessageSquare className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             {isStatsLoading ? (
@@ -298,7 +286,9 @@ export function AdminCommentsPage(): ReactElement {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đang hoạt động</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Đang hoạt động
+            </CardTitle>
             <MessageSquare className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -370,7 +360,7 @@ export function AdminCommentsPage(): ReactElement {
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
               <Label htmlFor="search">Tìm kiếm theo nội dung</Label>
-              <div className="flex gap-2 mt-1">
+              <div className="mt-1 flex gap-2">
                 <Input
                   id="search"
                   placeholder="Nhập từ khóa tìm kiếm..."
@@ -432,9 +422,7 @@ export function AdminCommentsPage(): ReactElement {
       {/* Comments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Danh sách Bình luận ({total.toLocaleString()})
-          </CardTitle>
+          <CardTitle>Danh sách Bình luận ({total.toLocaleString()})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -444,11 +432,9 @@ export function AdminCommentsPage(): ReactElement {
               ))}
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-12">
-              <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Không có bình luận nào
-              </p>
+            <div className="py-12 text-center">
+              <MessageSquare className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <p className="text-muted-foreground">Không có bình luận nào</p>
             </div>
           ) : (
             <ScrollArea className="h-[600px]">
@@ -456,14 +442,12 @@ export function AdminCommentsPage(): ReactElement {
                 {comments.map(comment => (
                   <div
                     key={comment.id}
-                    className="border rounded-lg p-4 space-y-3"
+                    className="space-y-3 rounded-lg border p-4"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3 flex-1">
+                      <div className="flex flex-1 items-start gap-3">
                         <Avatar>
-                          <AvatarImage
-                            src={comment.user.avatar || undefined}
-                          />
+                          <AvatarImage src={comment.user.avatar || undefined} />
                           <AvatarFallback>
                             {formatUserName(comment.user)
                               .charAt(0)
@@ -490,11 +474,11 @@ export function AdminCommentsPage(): ReactElement {
                             )}
                           </div>
 
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {comment.content}
                           </p>
 
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="text-muted-foreground flex items-center gap-4 text-xs">
                             <span>
                               Tài liệu:{' '}
                               <a
@@ -507,19 +491,15 @@ export function AdminCommentsPage(): ReactElement {
                               </a>
                             </span>
                             <Separator orientation="vertical" />
-                            <span>
-                              {comment.likesCount} lượt thích
-                            </span>
+                            <span>{comment.likesCount} lượt thích</span>
                             <Separator orientation="vertical" />
-                            <span>
-                              {comment._count.replies} phản hồi
-                            </span>
+                            <span>{comment._count.replies} phản hồi</span>
                             <Separator orientation="vertical" />
                             <span>{formatDate(comment.createdAt)}</span>
                           </div>
 
                           {comment.parent && (
-                            <div className="mt-2 p-2 bg-muted rounded text-sm">
+                            <div className="bg-muted mt-2 rounded p-2 text-sm">
                               <span className="text-muted-foreground">
                                 Phản hồi:{' '}
                               </span>
@@ -573,8 +553,8 @@ export function AdminCommentsPage(): ReactElement {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-muted-foreground text-sm">
                 Trang {page} / {totalPages} ({total} bình luận)
               </div>
               <div className="flex gap-2">
@@ -625,8 +605,8 @@ export function AdminCommentsPage(): ReactElement {
               </div>
             )}
             {selectedComment && selectedComment._count.replies > 0 && (
-              <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div className="flex items-start gap-2 rounded-md bg-yellow-50 p-3 dark:bg-yellow-900/20">
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-yellow-600" />
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
                   Bình luận này có {selectedComment._count.replies} phản hồi.
                   Không thể xóa vĩnh viễn.
@@ -647,10 +627,7 @@ export function AdminCommentsPage(): ReactElement {
       </AlertDialog>
 
       {/* Restore Dialog */}
-      <AlertDialog
-        open={restoreDialogOpen}
-        onOpenChange={setRestoreDialogOpen}
-      >
+      <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận khôi phục bình luận</AlertDialogTitle>
@@ -669,4 +646,3 @@ export function AdminCommentsPage(): ReactElement {
     </div>
   );
 }
-
