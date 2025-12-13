@@ -11,6 +11,7 @@ export { VerifyEmailPage } from './verify-email';
 export { AdminDashboardPage } from './admin-dashboard-page';
 export { AdminPointsPage } from './admin-points-page';
 export { AdminUsersPage } from './admin-users-page';
+export { AdminCommentsPage } from './admin-comments-page';
 export { BookmarksPage } from './bookmarks-page';
 export { CategoriesPage } from './categories-page';
 export { CategoryDetailPage } from './category-detail-page';

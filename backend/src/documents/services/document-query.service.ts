@@ -755,6 +755,14 @@ export class DocumentQueryService {
     const effectiveDownloadCost =
       document.downloadCost ?? settings.downloadCost;
 
+    // Count non-deleted comments
+    const commentsCount = await this.prisma.comment.count({
+      where: {
+        documentId: document.id,
+        isDeleted: false,
+      },
+    });
+
     const response: any = {
       id: document.id,
       title: document.title,
@@ -787,7 +795,7 @@ export class DocumentQueryService {
       files: filesWithSecureUrls,
       stats: {
         ratingsCount: document._count?.ratings ?? 0,
-        commentsCount: document._count?.comments ?? 0,
+        commentsCount,
         viewsCount: document._count?.views ?? 0,
         downloadsCount: document._count?.downloads ?? 0,
       },

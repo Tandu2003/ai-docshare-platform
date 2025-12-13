@@ -13,6 +13,7 @@
     "start:debug": "npx nest start --debug --watch",
     "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
+    "clean": "prettier --write \"src/**/*.ts\" && eslint \"{src,apps,libs}/**/*.ts\" --fix && tsc -b",
     "prepare": "corepack enable && prisma generate",
     "seed:check": "node scripts/check-seed-requirements.js",
     "seed:users": "node scripts/seed-users-and-documents.js"

@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "clean": "prettier --write \"src/**/*.ts\" && eslint \"{src,apps,libs}/**/*.ts\" --fix && tsc -b"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

@@ -108,6 +108,11 @@ const AdminPointsPage = lazy(() =>
     default: m.AdminPointsPage,
   })),
 );
+const AdminCommentsPage = lazy(() =>
+  import('@/pages/admin-comments-page').then(m => ({
+    default: m.AdminCommentsPage,
+  })),
+);
 const SystemSettingsPage = lazy(() =>
   import('@/pages/system-settings-page').then(m => ({
     default: m.SystemSettingsPage,
@@ -330,6 +335,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredRole="admin">
             <LazyRoute component={AdminPointsPage} />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/comments',
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <LazyRoute component={AdminCommentsPage} />
           </ProtectedRoute>
         ),
       },

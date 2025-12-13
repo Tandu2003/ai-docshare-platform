@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Home,
   LogOut,
+  MessageSquare,
   Settings,
   Shield,
   Star,
@@ -221,6 +222,11 @@ export function Sidebar({ className }: SidebarProps) {
       icon: Users,
     },
     {
+      title: 'Quản lý bình luận',
+      href: '/admin/comments',
+      icon: MessageSquare,
+    },
+    {
       title: 'Giao dịch điểm',
       href: '/admin/points',
       icon: Coins,
@@ -256,7 +262,8 @@ export function Sidebar({ className }: SidebarProps) {
       if (
         item.href === '/analytics' ||
         item.href === '/moderation' ||
-        item.href === '/admin/users'
+        item.href === '/admin/users' ||
+        item.href === '/admin/comments'
       ) {
         return isAdmin();
       }
