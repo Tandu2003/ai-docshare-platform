@@ -283,7 +283,7 @@ export function MyShareLinksPage(): ReactElement {
                             {formatRelativeTime(link.expiresAt)})
                           </p>
                           <p className="font-mono text-xs">
-                            Token: {link.token.substring(0, 16)}...
+                            api-key: {link.token.substring(0, 16)}...
                           </p>
                         </div>
                       </div>

@@ -25,7 +25,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -439,14 +438,6 @@ export function AdminShareLinksPage(): ReactElement {
                           {getStatusBadge(link)}
                         </div>
                         <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage
-                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${link.createdBy.username}`}
-                            />
-                            <AvatarFallback>
-                              {link.createdBy.username.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
                           <span>{formatUserName(link.createdBy)}</span>
                           <span>•</span>
                           <span>{link.createdBy.email}</span>
