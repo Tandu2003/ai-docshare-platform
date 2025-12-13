@@ -4,6 +4,7 @@ export { CreateCommentDto } from './create-comment.dto';
 export { UpdateCommentDto } from './update-comment.dto';
 export { SetRatingDto } from './set-rating.dto';
 export { ShareDocumentDto } from './share-document.dto';
+export { GetShareLinksQueryDto } from './get-share-links-query.dto';
 export { DownloadDocumentDto } from './download-document.dto';
 export { ViewDocumentDto } from './view-document.dto';
 export { ApproveDocumentDto } from './approve-document.dto';

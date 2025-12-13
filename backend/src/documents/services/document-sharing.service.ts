@@ -315,4 +315,148 @@ export class DocumentSharingService {
 
     return `${frontendUrl}/documents/${documentId}?apiKey=${token}`;
   }
+
+  async getShareLinksHistory(filters: {
+    readonly page?: number;
+    readonly limit?: number;
+    readonly documentId?: string;
+    readonly createdById?: string;
+    readonly isRevoked?: boolean;
+    readonly isExpired?: boolean;
+    readonly sortBy?: string;
+    readonly sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    readonly shareLinks: Array<{
+      readonly id: string;
+      readonly documentId: string;
+      readonly token: string;
+      readonly expiresAt: Date;
+      readonly isRevoked: boolean;
+      readonly createdAt: Date;
+      readonly updatedAt: Date;
+      readonly document: {
+        readonly id: string;
+        readonly title: string;
+        readonly uploaderId: string;
+      };
+      readonly createdBy: {
+        readonly id: string;
+        readonly username: string;
+        readonly email: string;
+        readonly firstName: string;
+        readonly lastName: string;
+      };
+      readonly shareUrl: string;
+      readonly isExpired: boolean;
+    }>;
+    readonly total: number;
+    readonly page: number;
+    readonly limit: number;
+    readonly totalPages: number;
+  }> {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        documentId,
+        createdById,
+        isRevoked,
+        isExpired,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+      } = filters;
+
+      const skip = (page - 1) * limit;
+      const now = new Date();
+
+      const where: any = {};
+
+      if (documentId) {
+        where.documentId = documentId;
+      }
+
+      if (createdById) {
+        where.createdById = createdById;
+      }
+
+      if (typeof isRevoked === 'boolean') {
+        where.isRevoked = isRevoked;
+      }
+
+      if (typeof isExpired === 'boolean') {
+        if (isExpired) {
+          where.expiresAt = { lt: now };
+        } else {
+          where.expiresAt = { gte: now };
+        }
+      }
+
+      const allowedSortBy = ['createdAt', 'updatedAt', 'expiresAt'];
+      const validSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+      const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
+      const orderBy: any = {};
+      orderBy[validSortBy] = validSortOrder;
+
+      const [shareLinks, total] = await Promise.all([
+        this.prisma.documentShareLink.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            document: {
+              select: {
+                id: true,
+                title: true,
+                uploaderId: true,
+              },
+            },
+            createdBy: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        }),
+        this.prisma.documentShareLink.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      const shareLinksWithUrl = shareLinks.map(link => ({
+        id: link.id,
+        documentId: link.documentId,
+        token: link.token,
+        expiresAt: link.expiresAt,
+        isRevoked: link.isRevoked,
+        createdAt: link.createdAt,
+        updatedAt: link.updatedAt,
+        document: link.document,
+        createdBy: link.createdBy,
+        shareUrl: this.buildShareUrl(link.documentId, link.token),
+        isExpired: link.expiresAt < now,
+      }));
+
+      return {
+        shareLinks: shareLinksWithUrl,
+        total,
+        page,
+        limit,
+        totalPages,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get share links history: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'Không thể lấy lịch sử liên kết chia sẻ',
+      );
+    }
+  }
 }

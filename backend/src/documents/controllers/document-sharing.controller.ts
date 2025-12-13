@@ -1,6 +1,7 @@
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { ResponseHelper } from '@/common/helpers/response.helper';
 import { DocumentsService } from '@/documents/documents.service';
+import { GetShareLinksQueryDto } from '@/documents/dto/get-share-links-query.dto';
 import { SetRatingDto } from '@/documents/dto/set-rating.dto';
 import { ShareDocumentDto } from '@/documents/dto/share-document.dto';
 import { ViewDocumentDto } from '@/documents/dto/view-document.dto';
@@ -16,6 +17,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -236,6 +238,56 @@ export class DocumentSharingController {
       return ResponseHelper.error(
         res,
         'Không thể theo dõi lượt xem tài liệu',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('share-links/my')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Lấy lịch sử liên kết chia sẻ của người dùng hiện tại',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lấy lịch sử liên kết chia sẻ thành công',
+  })
+  async getMyShareLinks(
+    @Query() query: GetShareLinksQueryDto,
+    @Req() req: AuthenticatedRequest,
+    @Res() res: FastifyReply,
+  ): Promise<FastifyReply> {
+    const userId = req.user?.id;
+    if (!userId) {
+      return ResponseHelper.error(
+        res,
+        'Không được ủy quyền',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    try {
+      const result = await this.sharingService.getShareLinksHistory({
+        ...query,
+        createdById: userId,
+      });
+
+      return ResponseHelper.paginated(
+        res,
+        result.shareLinks,
+        result.page,
+        result.limit,
+        result.total,
+        'Lấy lịch sử liên kết chia sẻ thành công',
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return ResponseHelper.error(res, error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return ResponseHelper.error(
+        res,
+        'Không thể lấy lịch sử liên kết chia sẻ',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

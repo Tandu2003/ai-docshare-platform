@@ -113,6 +113,16 @@ const AdminCommentsPage = lazy(() =>
     default: m.AdminCommentsPage,
   })),
 );
+const AdminShareLinksPage = lazy(() =>
+  import('@/pages/admin-share-links-page').then(m => ({
+    default: m.AdminShareLinksPage,
+  })),
+);
+const MyShareLinksPage = lazy(() =>
+  import('@/pages/my-share-links-page').then(m => ({
+    default: m.MyShareLinksPage,
+  })),
+);
 const SystemSettingsPage = lazy(() =>
   import('@/pages/system-settings-page').then(m => ({
     default: m.SystemSettingsPage,
@@ -345,6 +355,18 @@ export const router = createBrowserRouter([
             <LazyRoute component={AdminCommentsPage} />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'admin/share-links',
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <LazyRoute component={AdminShareLinksPage} />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'my-share-links',
+        element: <LazyRoute component={MyShareLinksPage} />,
       },
     ],
   },

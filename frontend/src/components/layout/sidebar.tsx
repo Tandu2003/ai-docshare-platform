@@ -10,6 +10,7 @@ import {
   FileText,
   FolderOpen,
   Home,
+  Link2,
   LogOut,
   MessageSquare,
   Settings,
@@ -190,6 +191,11 @@ export function Sidebar({ className }: SidebarProps) {
       href: '/my-documents',
       icon: Archive,
     },
+    {
+      title: 'Lịch sử chia sẻ',
+      href: '/my-share-links',
+      icon: Link2,
+    },
   ];
 
   const analyticsNavItems: NavItem[] = [
@@ -225,6 +231,11 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'Quản lý bình luận',
       href: '/admin/comments',
       icon: MessageSquare,
+    },
+    {
+      title: 'Quản lý liên kết chia sẻ',
+      href: '/admin/share-links',
+      icon: Link2,
     },
     {
       title: 'Giao dịch điểm',
@@ -263,7 +274,8 @@ export function Sidebar({ className }: SidebarProps) {
         item.href === '/analytics' ||
         item.href === '/moderation' ||
         item.href === '/admin/users' ||
-        item.href === '/admin/comments'
+        item.href === '/admin/comments' ||
+        item.href === '/admin/share-links'
       ) {
         return isAdmin();
       }
