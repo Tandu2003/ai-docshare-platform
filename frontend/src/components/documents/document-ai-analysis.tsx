@@ -51,7 +51,7 @@ export function DocumentAIAnalysis({ analysis }: DocumentAIAnalysisProps) {
   };
 
   const getSentimentLabel = (score?: number) => {
-    if (!score) return 'Neutral';
+    if (!score) return 'Trung lập';
     if (score > 0.1) return 'Tích cực';
     if (score < -0.1) return 'Tiêu cực';
     return 'Trung lập';

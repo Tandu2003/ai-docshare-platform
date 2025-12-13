@@ -26,6 +26,7 @@ import { Separator } from '@/components/ui/separator';
 import type { DocumentView } from '@/services/document.service';
 import { formatDate } from '@/utils/date';
 import { formatFileSize } from '@/utils/format';
+import { getLanguageName } from '@/utils/language';
 
 interface DocumentSidebarProps {
   document: DocumentView;
@@ -153,7 +154,9 @@ export function DocumentSidebar({
               <div className="flex items-center gap-1">
                 <Globe className="h-3 w-3" />
                 <span className="text-sm">
-                  {document.language || 'Không xác định'}
+                  {document.language
+                    ? getLanguageName(document.language)
+                    : 'Không xác định'}
                 </span>
               </div>
             </div>
