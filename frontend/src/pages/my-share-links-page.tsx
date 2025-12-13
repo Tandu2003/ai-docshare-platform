@@ -275,8 +275,8 @@ export function MyShareLinksPage(): ReactElement {
                         </div>
                         <div className="text-muted-foreground text-sm">
                           <p>
-                            Tạo lúc: {formatDate(link.createdAt)} (
-                            {formatRelativeTime(link.createdAt)})
+                            Đã cập nhật lúc: {formatDate(link.updatedAt)} (
+                            {formatRelativeTime(link.updatedAt)})
                           </p>
                           <p>
                             Hết hạn: {formatDate(link.expiresAt)} (
