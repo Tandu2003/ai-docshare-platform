@@ -250,11 +250,14 @@ export class DocumentSearchService {
       filters,
     });
 
-    return fallbackResults.map(result => ({
-      documentId: result.documentId,
-      textScore: result.textScore,
-      combinedScore: result.textScore,
-    }));
+    // Filter by minimum threshold to ensure relevance
+    return fallbackResults
+      .filter(result => result.textScore >= SEARCH_THRESHOLDS.KEYWORD_SEARCH)
+      .map(result => ({
+        documentId: result.documentId,
+        textScore: result.textScore,
+        combinedScore: result.textScore,
+      }));
   }
 
   private async fetchDocuments(

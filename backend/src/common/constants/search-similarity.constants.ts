@@ -29,13 +29,13 @@ export const HYBRID_SEARCH_WEIGHTS = {
  */
 export const SEARCH_THRESHOLDS = {
   /** Minimum cosine similarity for vector-only search */
-  VECTOR_SEARCH: 0.5,
+  VECTOR_SEARCH: 0.6,
 
   /** Minimum final score for hybrid search results */
-  HYBRID_SEARCH: 0.38,
+  HYBRID_SEARCH: 0.45,
 
   /** Minimum normalized score for keyword-only search */
-  KEYWORD_SEARCH: 0.3,
+  KEYWORD_SEARCH: 0.35,
 } as const;
 
 /**

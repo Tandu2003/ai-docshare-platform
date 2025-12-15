@@ -428,8 +428,10 @@ export class VectorSearchService {
         }
       });
 
-      // Sort by combined score and limit
+      // Sort by combined score, filter by minimum threshold, and limit
+      const minThreshold = SEARCH_THRESHOLDS.HYBRID_SEARCH;
       const combinedResults = Array.from(combinedMap.values())
+        .filter(r => r.combinedScore >= minThreshold)
         .sort((a, b) => b.combinedScore - a.combinedScore)
         .slice(0, limit);
 
@@ -582,7 +584,7 @@ export class VectorSearchService {
       ...(orConditions.length > 0 ? { OR: orConditions } : {}),
     };
 
-    let documents = await this.prisma.document.findMany({
+    const documents = await this.prisma.document.findMany({
       where: documentFilters,
       select: {
         id: true,
@@ -600,27 +602,10 @@ export class VectorSearchService {
       take: limit * 3,
     });
 
+    // Don't fallback to recent documents if no keyword matches found
+    // This ensures search results are always relevant to the query
     if (documents.length === 0) {
-      documents = await this.prisma.document.findMany({
-        where: baseFilters,
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          tags: true,
-          aiAnalysis: {
-            select: {
-              summary: true,
-              keyPoints: true,
-              suggestedTags: true,
-            },
-          },
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-        take: Math.min(limit * 5, 100),
-      });
+      return [];
     }
 
     const condensed = (value: string) =>
@@ -631,10 +616,13 @@ export class VectorSearchService {
     const tokenCoverage = (source: string) => {
       if (tokens.length === 0) return 0;
       const lowerSource = source.toLowerCase();
-      return (
-        tokens.filter(token => lowerSource.includes(token)).length /
-        tokens.length
+      const matchedTokens = tokens.filter(
+        token => token.length >= 2 && lowerSource.includes(token),
       );
+      // Require at least 50% of tokens to match for multi-token queries
+      const coverage = matchedTokens.length / tokens.length;
+      if (tokens.length > 1 && coverage < 0.5) return 0;
+      return coverage;
     };
 
     const results = documents.map(doc => {
@@ -772,8 +760,10 @@ export class VectorSearchService {
       };
     });
 
+    // Filter by minimum threshold to ensure relevance
+    const minThreshold = SEARCH_THRESHOLDS.KEYWORD_SEARCH;
     const filteredResults = results
-      .filter(r => r.textScore > 0)
+      .filter(r => r.textScore >= minThreshold)
       .sort((a, b) => b.textScore - a.textScore)
       .slice(0, limit);
 
