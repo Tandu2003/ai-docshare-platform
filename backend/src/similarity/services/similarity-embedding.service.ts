@@ -149,8 +149,19 @@ export class SimilarityEmbeddingService {
       );
       return embedding;
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Check if error is due to missing pgvector extension
+      if (errorMessage.includes('pgvector extension is not installed')) {
+        this.logger.warn(
+          `Skipping embedding for document ${documentId}: pgvector not installed`,
+        );
+        return []; // Return empty array instead of throwing
+      }
+
       this.logger.error(
-        `Error generating embedding for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Error generating embedding for document ${documentId}: ${errorMessage}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw new InternalServerErrorException(
@@ -180,7 +191,15 @@ export class SimilarityEmbeddingService {
       });
 
       try {
-        await this.generateDocumentEmbedding(documentId);
+        // Try to generate embedding (may fail if pgvector not installed)
+        try {
+          await this.generateDocumentEmbedding(documentId);
+        } catch {
+          // Embedding generation failed, but we can still detect by file hash
+          this.logger.warn(
+            `Embedding generation failed for ${documentId}, continuing with hash-based detection`,
+          );
+        }
 
         await this.prisma.similarityJob.update({
           where: { id: job.id },
@@ -206,11 +225,13 @@ export class SimilarityEmbeddingService {
           `Similarity processing completed for document ${documentId}`,
         );
       } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         await this.prisma.similarityJob.update({
           where: { id: job.id },
           data: {
             status: 'failed',
-            errorMessage: error.message,
+            errorMessage,
             completedAt: new Date(),
           },
         });

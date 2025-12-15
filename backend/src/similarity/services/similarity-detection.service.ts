@@ -72,8 +72,18 @@ export class SimilarityDetectionService {
         throw new NotFoundError(`Document ${documentId} not found`);
       }
 
+      const sourceFiles = sourceDocument.files.map(f => f.file);
+      const sourceHashes = sourceFiles
+        .map(f => f.fileHash)
+        .filter((h): h is string => Boolean(h));
+
+      this.logger.log(
+        `Source document has ${sourceFiles.length} files with hashes: ${sourceHashes.join(', ')}`,
+      );
+
       const exactMatches = await this.findExactFileHashMatches(
-        sourceDocument.files.map(f => f.file),
+        sourceFiles,
+        documentId, // Exclude the source document
       );
 
       const sourceTextContent =
@@ -81,6 +91,11 @@ export class SimilarityDetectionService {
           sourceDocument.files.map(f => f.file),
         );
 
+      // Include documents that are:
+      // - APPROVED (moderated and approved)
+      // - isPublic: true (user wants it public, even if pending moderation)
+      // - isApproved: true (approved by system)
+      // - PENDING with isPublic: true (waiting for moderation but intended to be public)
       const otherDocumentIds = await this.prisma.document.findMany({
         where: {
           id: { not: documentId },
@@ -88,13 +103,19 @@ export class SimilarityDetectionService {
             { moderationStatus: 'APPROVED' },
             { isPublic: true },
             { isApproved: true },
+            // Include pending public documents for similarity detection
+            {
+              AND: [{ moderationStatus: 'PENDING' }, { isPublic: true }],
+            },
           ],
         },
         select: { id: true },
         take: 500,
       });
 
-      this.logger.log(`Comparing with ${otherDocumentIds.length} documents`);
+      this.logger.log(
+        `Found ${otherDocumentIds.length} other documents to compare against`,
+      );
 
       const similarities = await this.compareDocuments(
         documentId,
@@ -146,12 +167,24 @@ export class SimilarityDetectionService {
 
   async findExactFileHashMatches(
     sourceFiles: any[],
+    excludeDocumentId?: string,
   ): Promise<Array<{ documentId: string; document: any }>> {
-    if (sourceFiles.length === 0) return [];
+    if (sourceFiles.length === 0) {
+      this.logger.debug('No source files to check for hash matches');
+      return [];
+    }
 
     const sourceHashes = sourceFiles.map(f => f.fileHash).filter(Boolean);
-    if (sourceHashes.length === 0) return [];
+    if (sourceHashes.length === 0) {
+      this.logger.debug('No file hashes found in source files');
+      return [];
+    }
 
+    this.logger.log(
+      `Searching for exact hash matches with ${sourceHashes.length} hashes: ${sourceHashes.slice(0, 3).join(', ')}${sourceHashes.length > 3 ? '...' : ''}`,
+    );
+
+    // Find ALL files with matching hashes (across all users)
     const matchingFiles = await this.prisma.file.findMany({
       where: { fileHash: { in: sourceHashes } },
       include: {
@@ -174,13 +207,38 @@ export class SimilarityDetectionService {
       },
     });
 
+    this.logger.log(
+      `Found ${matchingFiles.length} files with matching hashes: ${sourceHashes.join(', ')}`,
+    );
+
+    // Debug: Log all file IDs found
+    if (matchingFiles.length > 0) {
+      const fileIds = matchingFiles.map(f => f.id);
+      this.logger.debug(`Matching file IDs: ${fileIds.join(', ')}`);
+    }
+
     const exactMatches: Array<{ documentId: string; document: any }> = [];
     const processedDocuments = new Set<string>();
 
     for (const file of matchingFiles) {
+      this.logger.debug(
+        `File ${file.id} (hash: ${file.fileHash}) has ${file.documentFiles.length} document links`,
+      );
+
       for (const docFile of file.documentFiles) {
         const docId = docFile.document.id;
+        this.logger.debug(
+          `  - Document ${docId} (title: ${docFile.document.title})`,
+        );
+
+        // Skip the source document itself
+        if (excludeDocumentId && docId === excludeDocumentId) {
+          this.logger.debug(`    Skipping (source document)`);
+          continue;
+        }
+
         if (!processedDocuments.has(docId) && docFile.document.id) {
+          this.logger.debug(`    Adding as exact match`);
           exactMatches.push({
             documentId: docId,
             document: docFile.document,
@@ -188,6 +246,16 @@ export class SimilarityDetectionService {
           processedDocuments.add(docId);
         }
       }
+    }
+
+    if (exactMatches.length > 0) {
+      this.logger.log(
+        `Found ${exactMatches.length} documents with exact file hash matches`,
+      );
+    } else {
+      this.logger.log(
+        `No exact hash matches found (${matchingFiles.length} files found, all linked to source document)`,
+      );
     }
 
     return exactMatches;
@@ -273,7 +341,10 @@ export class SimilarityDetectionService {
       }
     }
 
-    // Add exact matches
+    // Add exact matches (these are documents with identical file hashes)
+    this.logger.log(
+      `Adding ${exactMatches.length} exact hash matches to results`,
+    );
     for (const exactMatch of exactMatches) {
       if (!similarities.find(s => s.documentId === exactMatch.documentId)) {
         similarities.push({
@@ -284,7 +355,6 @@ export class SimilarityDetectionService {
         });
       }
     }
-
     return similarities;
   }
 

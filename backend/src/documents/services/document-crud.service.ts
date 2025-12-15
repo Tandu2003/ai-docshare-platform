@@ -2,19 +2,24 @@ import { CreateDocumentDto } from '../dto/create-document.dto';
 import { UpdateDocumentDto } from '../dto/update-document.dto';
 import { DocumentSearchService } from './document-search.service';
 import { AIService } from '@/ai/ai.service';
+import { EmbeddingService } from '@/ai/embedding.service';
 import { CategoriesService } from '@/categories/categories.service';
+import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
+import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { SystemSettingsService } from '@/common/system-settings.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PointsService } from '@/points/points.service';
 import { PreviewQueueService } from '@/preview/preview-queue.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { SimilarityJobService } from '@/similarity/similarity-job.service';
+import { SimilarityService } from '@/similarity/similarity.service';
 import {
   BadRequestException,
   forwardRef,
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { DocumentModerationStatus } from '@prisma/client';
 
@@ -55,6 +60,8 @@ interface CreateDocumentResponse {
   readonly category: any;
   readonly files: any[];
   readonly aiSuggestedCategory: CategorySuggestion | null;
+  readonly similarityJobId?: string | null;
+  readonly similarityStatus?: string;
 }
 
 /** Updated document response */
@@ -80,6 +87,8 @@ interface UpdateDocumentResponse {
 
 @Injectable()
 export class DocumentCrudService {
+  private readonly logger = new Logger(DocumentCrudService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
@@ -88,6 +97,11 @@ export class DocumentCrudService {
     private readonly pointsService: PointsService,
     private readonly categoriesService: CategoriesService,
     private readonly similarityJobService: SimilarityJobService,
+    private readonly embeddingService: EmbeddingService,
+    private readonly embeddingStorage: EmbeddingStorageService,
+    private readonly embeddingTextBuilder: EmbeddingTextBuilderService,
+    @Inject(forwardRef(() => SimilarityService))
+    private readonly similarityService: SimilarityService,
     @Inject(forwardRef(() => PreviewQueueService))
     private readonly previewQueueService: PreviewQueueService,
     @Inject(forwardRef(() => DocumentSearchService))
@@ -165,7 +179,28 @@ export class DocumentCrudService {
       // Create document-file relationships (required synchronously for response)
       const documentFiles = await this.createDocumentFiles(document.id, files);
 
-      // Run background tasks asynchronously - don't make user wait
+      // For public documents: queue similarity detection as background job
+      let similarityJobId: string | null = null;
+      let similarityStatus = 'not_required';
+
+      if (wantsPublic) {
+        try {
+          // Queue similarity detection job (runs in background)
+          const jobResult =
+            await this.similarityJobService.queueAndRunSimilarityDetection(
+              document.id,
+            );
+          similarityJobId = jobResult.jobId;
+          similarityStatus = jobResult.status;
+        } catch (error) {
+          this.logger.error(
+            `Failed to queue similarity detection: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          similarityStatus = 'failed';
+        }
+      }
+
+      // Run remaining background tasks asynchronously
       void this.runBackgroundTasks(
         document,
         userId,
@@ -178,12 +213,15 @@ export class DocumentCrudService {
         title,
         description,
         tags,
+        false, // Don't skip embedding - let background task handle it
       );
 
       return {
         ...document,
         files: documentFiles.map(df => df.file),
         aiSuggestedCategory: suggestedCategory,
+        similarityJobId,
+        similarityStatus,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -223,10 +261,8 @@ export class DocumentCrudService {
         );
       }
 
-      const { dataToUpdate, needsReModeration } = await this.buildUpdateData(
-        updateData,
-        document,
-      );
+      const { dataToUpdate, needsReModeration, needsEmbeddingRegeneration } =
+        await this.buildUpdateData(updateData, document);
 
       const updatedDocument = await this.prisma.document.update({
         where: { id: documentId },
@@ -249,6 +285,20 @@ export class DocumentCrudService {
       });
 
       const settings = await this.systemSettings.getPointsSettings();
+
+      // Regenerate embedding if content changed and document is public
+      if (needsEmbeddingRegeneration && updatedDocument.isPublic) {
+        void this.generateEmbeddingSync(
+          documentId,
+          updatedDocument.title,
+          updatedDocument.description,
+          updatedDocument.tags,
+        ).catch(err => {
+          this.logger.error(
+            `Failed to regenerate embedding for document ${documentId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
+      }
 
       return {
         id: updatedDocument.id,
@@ -370,6 +420,66 @@ export class DocumentCrudService {
     return files;
   }
 
+  /**
+   * Generate embedding for a document synchronously.
+   * This ensures embedding is available before similarity detection.
+   */
+  private async generateEmbeddingSync(
+    documentId: string,
+    title: string,
+    description?: string | null,
+    tags: string[] = [],
+    aiAnalysis?: any,
+  ): Promise<boolean> {
+    try {
+      // Build embedding text from document metadata
+      const embeddingText = this.embeddingTextBuilder.buildSearchEmbeddingText({
+        title,
+        description,
+        tags,
+        aiAnalysis: aiAnalysis
+          ? {
+              summary: aiAnalysis.summary,
+              keyPoints: aiAnalysis.keyPoints,
+            }
+          : null,
+      });
+
+      if (!embeddingText || embeddingText.trim().length === 0) {
+        this.logger.warn(
+          `No content to generate embedding for document ${documentId}`,
+        );
+        return false;
+      }
+
+      // Generate embedding using EmbeddingService
+      const embedding =
+        await this.embeddingService.generateEmbedding(embeddingText);
+
+      if (!embedding || embedding.length === 0) {
+        this.logger.warn(
+          `Failed to generate embedding for document ${documentId}`,
+        );
+        return false;
+      }
+
+      // Save embedding to database
+      const model = this.embeddingService.getModelName();
+      await this.embeddingStorage.saveEmbedding(documentId, embedding, model);
+
+      this.logger.log(
+        `Successfully generated embedding for document ${documentId}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Error generating embedding for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      // Don't throw - embedding generation failure should not block document creation
+      return false;
+    }
+  }
+
   private async runBackgroundTasks(
     document: any,
     userId: string,
@@ -382,6 +492,7 @@ export class DocumentCrudService {
     title: string,
     description?: string,
     tags: string[] = [],
+    embeddingAlreadyGenerated = false,
   ): Promise<void> {
     try {
       // Award points for uploading (non-blocking)
@@ -411,8 +522,8 @@ export class DocumentCrudService {
         );
       }
 
-      // Generate embedding for search
-      if (document.isApproved && wantsPublic) {
+      // Generate embedding for search (only if not already generated synchronously)
+      if (!embeddingAlreadyGenerated && document.isApproved && wantsPublic) {
         await this.searchService
           .generateDocumentEmbedding(document.id)
           .catch(() => {
@@ -661,16 +772,23 @@ export class DocumentCrudService {
   private async buildUpdateData(
     updateData: UpdateDocumentDto,
     document: { id?: string; isPublic: boolean },
-  ): Promise<{ dataToUpdate: any; needsReModeration: boolean }> {
+  ): Promise<{
+    dataToUpdate: any;
+    needsReModeration: boolean;
+    needsEmbeddingRegeneration: boolean;
+  }> {
     const dataToUpdate: any = {};
     let needsReModeration = false;
+    let needsEmbeddingRegeneration = false;
 
     if (updateData.title !== undefined) {
       dataToUpdate.title = updateData.title;
+      needsEmbeddingRegeneration = true; // Title change affects embedding
     }
 
     if (updateData.description !== undefined) {
       dataToUpdate.description = updateData.description;
+      needsEmbeddingRegeneration = true; // Description change affects embedding
     }
 
     if (updateData.categoryId !== undefined) {
@@ -685,6 +803,7 @@ export class DocumentCrudService {
 
     if (updateData.tags !== undefined) {
       dataToUpdate.tags = updateData.tags;
+      needsEmbeddingRegeneration = true; // Tags change affects embedding
     }
 
     if (updateData.language !== undefined) {
@@ -749,6 +868,6 @@ export class DocumentCrudService {
       }
     }
 
-    return { dataToUpdate, needsReModeration };
+    return { dataToUpdate, needsReModeration, needsEmbeddingRegeneration };
   }
 }

@@ -69,4 +69,26 @@ export class SimilarityController {
       );
     return { success: true, results };
   }
+
+  /**
+   * Get similarity job status.
+   * Frontend can poll this endpoint to check if similarity detection is complete.
+   */
+  @Get('job/:jobId')
+  async getJobStatus(@Param('jobId') jobId: string) {
+    return await this.similarityJobService.getJobStatus(jobId);
+  }
+
+  /**
+   * Queue and run similarity detection in background.
+   * Returns job ID immediately so frontend can track status.
+   */
+  @Post('queue/:documentId')
+  async queueAndRunSimilarityDetection(
+    @Param('documentId') documentId: string,
+  ) {
+    return await this.similarityJobService.queueAndRunSimilarityDetection(
+      documentId,
+    );
+  }
 }

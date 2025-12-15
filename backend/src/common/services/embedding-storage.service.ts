@@ -21,23 +21,23 @@ export class EmbeddingStorageService {
     version: string;
     updatedAt: Date;
   } | null> {
-    const result = await this.prisma.$queryRaw<
-      Array<{
-        id: string;
-        embedding: string;
-        model: string;
-        version: string;
-        updated_at: Date;
-      }>
-    >`
-			SELECT id, embedding::text, model, version, "updatedAt" as updated_at
-			FROM document_embeddings
-			WHERE "documentId" = ${documentId}
-		`;
-
-    if (!result.length || !result[0].embedding) return null;
-
     try {
+      const result = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          embedding: string;
+          model: string;
+          version: string;
+          updated_at: Date;
+        }>
+      >`
+        SELECT id, embedding::text, model, version, "updatedAt" as updated_at
+        FROM document_embeddings
+        WHERE "documentId" = ${documentId}
+      `;
+
+      if (!result.length || !result[0].embedding) return null;
+
       const embedding = JSON.parse(result[0].embedding) as number[];
       return {
         id: result[0].id,
@@ -47,6 +47,7 @@ export class EmbeddingStorageService {
         updatedAt: result[0].updated_at,
       };
     } catch {
+      // pgvector extension may not be installed, return null
       return null;
     }
   }
@@ -85,6 +86,7 @@ export class EmbeddingStorageService {
    * @param embedding - Embedding vector as number array
    * @param model - Embedding model name (optional, defaults to 'text-embedding-ada-002')
    * @param version - Model version (optional, defaults to '1.0')
+   * @throws Error if pgvector extension is not installed
    */
   async saveEmbedding(
     documentId: string,
@@ -92,43 +94,58 @@ export class EmbeddingStorageService {
     model: string = 'text-embedding-ada-002',
     version: string = '1.0',
   ): Promise<void> {
-    // Format embedding as PostgreSQL vector literal: [1,2,3]
-    const embeddingString = `[${embedding.join(',')}]`;
+    try {
+      // Format embedding as PostgreSQL vector literal: [1,2,3]
+      const embeddingString = `[${embedding.join(',')}]`;
 
-    // Check if embedding already exists
-    const existing = await this.prisma.$queryRaw<Array<{ id: string }>>`
-			SELECT id FROM document_embeddings WHERE "documentId" = ${documentId}
-		`;
+      // Check if embedding already exists
+      const existing = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM document_embeddings WHERE "documentId" = ${documentId}
+      `;
 
-    if (existing && existing.length > 0) {
-      // Update existing embedding
-      await this.prisma.$executeRaw(
-        Prisma.sql`UPDATE document_embeddings
-					SET embedding = ${embeddingString}::vector,
-					model = ${model},
-					version = ${version},
-					"updatedAt" = NOW()
-				WHERE "documentId" = ${documentId}`,
-      );
-    } else {
-      // Create new embedding
-      const id = await this.prisma.$queryRaw<Array<{ id: string }>>`
-				SELECT gen_random_uuid()::text as id
-			`;
-      const embeddingId = id[0]?.id || documentId;
+      if (existing && existing.length > 0) {
+        // Update existing embedding
+        await this.prisma.$executeRaw(
+          Prisma.sql`UPDATE document_embeddings
+            SET embedding = ${embeddingString}::vector,
+            model = ${model},
+            version = ${version},
+            "updatedAt" = NOW()
+          WHERE "documentId" = ${documentId}`,
+        );
+      } else {
+        // Create new embedding
+        const id = await this.prisma.$queryRaw<Array<{ id: string }>>`
+          SELECT gen_random_uuid()::text as id
+        `;
+        const embeddingId = id[0]?.id || documentId;
 
-      await this.prisma.$executeRaw(
-        Prisma.sql`INSERT INTO document_embeddings (id, "documentId", embedding, model, version, "createdAt", "updatedAt")
-				VALUES (
-					${embeddingId},
-					${documentId},
-					${embeddingString}::vector,
-					${model},
-					${version},
-					NOW(),
-					NOW()
-				)`,
-      );
+        await this.prisma.$executeRaw(
+          Prisma.sql`INSERT INTO document_embeddings (id, "documentId", embedding, model, version, "createdAt", "updatedAt")
+          VALUES (
+            ${embeddingId},
+            ${documentId},
+            ${embeddingString}::vector,
+            ${model},
+            ${version},
+            NOW(),
+            NOW()
+          )`,
+        );
+      }
+    } catch (error) {
+      // Check if error is due to missing pgvector extension
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('type "vector" does not exist') ||
+        errorMessage.includes('42704')
+      ) {
+        throw new Error(
+          'pgvector extension is not installed. Please run: CREATE EXTENSION vector;',
+        );
+      }
+      throw error;
     }
   }
 }

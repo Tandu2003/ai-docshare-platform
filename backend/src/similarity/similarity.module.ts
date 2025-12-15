@@ -11,12 +11,13 @@ import {
 } from './services';
 import { SimilarityJobService } from './similarity-job.service';
 import { SimilarityService } from './similarity.service';
+import { AdminModule } from '@/admin/admin.module';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
 import { Module } from '@nestjs/common';
 
 @Module({
-  imports: [PrismaModule, AIModule, FilesModule],
+  imports: [PrismaModule, AIModule, FilesModule, AdminModule],
   controllers: [SimilarityController],
   providers: [
     SimilarityService,
