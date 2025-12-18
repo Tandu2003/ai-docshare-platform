@@ -1,0 +1,511 @@
+classDiagram
+direction TB
+    class PreviewStatus {
+	    PENDING
+	    PROCESSING
+	    COMPLETED
+	    FAILED
+    }
+
+    class DocumentModerationStatus {
+	    PENDING
+	    APPROVED
+	    REJECTED
+    }
+
+    class PointTxnType {
+	    EARN
+	    SPEND
+	    ADJUST
+    }
+
+    class PointTxnReason {
+	    UPLOAD_REWARD
+	    DOWNLOAD_COST
+	    DOWNLOAD_REWARD
+	    ADMIN_ADJUST
+    }
+
+    class Role {
+	    -id: String
+	    -name: String
+	    -description: String
+	    -permissions: Json
+	    -isActive: Boolean
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +hasPermission(permission: String) Boolean
+	    +addPermission(permission: String) void
+	    +removePermission(permission: String) void
+    }
+
+    class User {
+	    -id: String
+	    -email: String
+	    -username: String
+	    -password: String
+	    -firstName: String
+	    -lastName: String
+	    -avatar: String
+	    -bio: String
+	    -website: String
+	    -location: String
+	    -roleId: String
+	    -isVerified: Boolean
+	    -isActive: Boolean
+	    -isDeleted: Boolean
+	    -lastLoginAt: DateTime
+	    -resetToken: String
+	    -resetExpires: DateTime
+	    -pointsBalance: Int
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +authenticate(password: String) Boolean
+	    +updatePassword(newPassword: String) void
+	    +resetPassword(token: String, newPassword: String) Boolean
+	    +canUpload() Boolean
+	    +canDownload(document: Document) Boolean
+	    +hasEnoughPoints(amount: Int) Boolean
+	    +earnPoints(amount: Int, reason: PointTxnReason) void
+	    +spendPoints(amount: Int, reason: PointTxnReason) Boolean
+	    +isModerator() Boolean
+	    +isAdmin() Boolean
+    }
+
+    class Category {
+	    -id: String
+	    -name: String
+	    -description: String
+	    -icon: String
+	    -color: String
+	    -parentId: String
+	    -isActive: Boolean
+	    -documentCount: Int
+	    -sortOrder: Int
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +getChildren() Category[]
+	    +getParent() Category
+	    +incrementDocumentCount() void
+	    +decrementDocumentCount() void
+	    +isRoot() Boolean
+	    +getPath() String[]
+    }
+
+    class Document {
+	    -id: String
+	    -title: String
+	    -description: String
+	    -uploaderId: String
+	    -categoryId: String
+	    -downloadCount: Int
+	    -viewCount: Int
+	    -averageRating: Float
+	    -totalRatings: Int
+	    -isPublic: Boolean
+	    -isPremium: Boolean
+	    -isApproved: Boolean
+	    -isDraft: Boolean
+	    -moderationStatus: DocumentModerationStatus
+	    -moderatedById: String
+	    -moderatedAt: DateTime
+	    -moderationNotes: String
+	    -rejectionReason: String
+	    -aiModeration: Json
+	    -tags: String[]
+	    -language: String
+	    -downloadCost: Int
+	    -zipFileUrl: String
+	    -zipFileCreatedAt: DateTime
+	    -previewStatus: PreviewStatus
+	    -previewError: String
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +approve(moderatorId: String, notes: String) void
+	    +reject(moderatorId: String, reason: String) void
+	    +publish() void
+	    +unpublish() void
+	    +addTag(tag: String) void
+	    +removeTag(tag: String) void
+	    +incrementViewCount() void
+	    +incrementDownloadCount() void
+	    +updateRating(newRating: Int) void
+	    +canBeDownloadedBy(user: User) Boolean
+	    +getDownloadCost() Int
+	    +isModerated() Boolean
+	    +generatePreview() void
+    }
+
+    class File {
+	    -id: String
+	    -originalName: String
+	    -fileName: String
+	    -mimeType: String
+	    -fileSize: BigInt
+	    -fileHash: String
+	    -storageUrl: String
+	    -thumbnailUrl: String
+	    -uploaderId: String
+	    -isPublic: Boolean
+	    -metadata: Json
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +getSizeInMB() Float
+	    +isImage() Boolean
+	    +isDocument() Boolean
+	    +generateThumbnail() void
+	    +validate() Boolean
+    }
+
+    class DocumentFile {
+	    -id: String
+	    -documentId: String
+	    -fileId: String
+	    -order: Int
+	    -createdAt: DateTime
+	    +reorder(newOrder: Int) void
+    }
+
+    class DocumentShareLink {
+	    -id: String
+	    -documentId: String
+	    -token: String
+	    -expiresAt: DateTime
+	    -createdById: String
+	    -isRevoked: Boolean
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +isExpired() Boolean
+	    +isValid() Boolean
+	    +revoke() void
+	    +generateToken() String
+    }
+
+    class DocumentPreview {
+	    -id: String
+	    -documentId: String
+	    -pageNumber: Int
+	    -previewPath: String
+	    -mimeType: String
+	    -fileSize: Int
+	    -width: Int
+	    -height: Int
+	    -status: PreviewStatus
+	    -errorMessage: String
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +markAsCompleted() void
+	    +markAsFailed(error: String) void
+	    +isReady() Boolean
+    }
+
+    class Rating {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -rating: Int
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +updateRating(newRating: Int) void
+	    +validate() Boolean
+    }
+
+    class Comment {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -parentId: String
+	    -content: String
+	    -isEdited: Boolean
+	    -isDeleted: Boolean
+	    -likesCount: Int
+	    -editedAt: DateTime
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +edit(newContent: String) void
+	    +delete() void
+	    +restore() void
+	    +like() void
+	    +unlike() void
+	    +isReply() Boolean
+	    +getReplies() Comment[]
+    }
+
+    class CommentLike {
+	    -id: String
+	    -userId: String
+	    -commentId: String
+	    -createdAt: DateTime
+    }
+
+    class AIAnalysis {
+	    -id: String
+	    -documentId: String
+	    -summary: String
+	    -keyPoints: String[]
+	    -suggestedTags: String[]
+	    -difficulty: String
+	    -readingTime: Int
+	    -language: String
+	    -confidence: Float
+	    -reliabilityScore: Int
+	    -sentimentScore: Float
+	    -topicModeling: Json
+	    -namedEntities: Json
+	    -moderationScore: Int
+	    -safetyFlags: String[]
+	    -isSafe: Boolean
+	    -recommendedAction: String
+	    -processedAt: DateTime
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +analyze(document: Document) void
+	    +getSafetyAssessment() String
+	    +shouldApprove() Boolean
+	    +shouldReject() Boolean
+    }
+
+    class DocumentEmbedding {
+	    -id: String
+	    -documentId: String
+	    -embedding: Float[]
+	    -model: String
+	    -version: String
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +generateEmbedding(document: Document) Float[]
+	    +calculateSimilarity(other: DocumentEmbedding) Float
+	    +isValid() Boolean
+    }
+
+    class DocumentSimilarity {
+	    -id: String
+	    -sourceDocumentId: String
+	    -targetDocumentId: String
+	    -similarityScore: Float
+	    -similarityType: String
+	    -isProcessed: Boolean
+	    -isDuplicate: Boolean
+	    -adminNotes: String
+	    -processedAt: DateTime
+	    -processedById: String
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +markAsDuplicate(adminId: String, notes: String) void
+	    +markAsNotDuplicate(adminId: String, notes: String) void
+	    +isHighSimilarity() Boolean
+	    +requiresReview() Boolean
+    }
+
+    class SimilarityJob {
+	    -id: String
+	    -documentId: String
+	    -status: String
+	    -progress: Int
+	    -errorMessage: String
+	    -startedAt: DateTime
+	    -completedAt: DateTime
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +start() void
+	    +complete() void
+	    +fail(error: String) void
+	    +updateProgress(progress: Int) void
+	    +isCompleted() Boolean
+    }
+
+    class BookmarkFolder {
+	    -id: String
+	    -userId: String
+	    -name: String
+	    -description: String
+	    -isDefault: Boolean
+	    -sortOrder: Int
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +addBookmark(bookmark: Bookmark) void
+	    +removeBookmark(bookmarkId: String) void
+	    +reorder(newOrder: Int) void
+	    +getBookmarks() Bookmark[]
+    }
+
+    class Bookmark {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -folderId: String
+	    -notes: String
+	    -createdAt: DateTime
+	    +moveToFolder(folderId: String) void
+	    +updateNotes(notes: String) void
+    }
+
+    class Download {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -ipAddress: String
+	    -userAgent: String
+	    -referrer: String
+	    -success: Boolean
+	    -uploaderRewarded: Boolean
+	    -downloadedAt: DateTime
+	    +markAsSuccess() void
+	    +markUploaderRewarded() void
+	    +isSuccessful() Boolean
+    }
+
+    class View {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -ipAddress: String
+	    -userAgent: String
+	    -referrer: String
+	    -viewedAt: DateTime
+    }
+
+    class Notification {
+	    -id: String
+	    -userId: String
+	    -type: String
+	    -title: String
+	    -message: String
+	    -data: Json
+	    -isRead: Boolean
+	    -readAt: DateTime
+	    -createdAt: DateTime
+	    +markAsRead() void
+	    +isUnread() Boolean
+	    +getType() String
+    }
+
+    class SearchHistory {
+	    -id: String
+	    -userId: String
+	    -query: String
+	    -filters: Json
+	    -resultsCount: Int
+	    -clickedDocumentId: String
+	    -searchVector: String
+	    -queryEmbedding: Float[]
+	    -searchMethod: String
+	    -vectorScore: Float
+	    -sessionId: String
+	    -ipAddress: String
+	    -userAgent: String
+	    -searchedAt: DateTime
+	    +recordClick(documentId: String) void
+	    +getSearchMethod() String
+    }
+
+    class RecommendationEngine {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -score: Float
+	    -reason: String
+	    -algorithm: String
+	    -metadata: Json
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +calculateScore() Float
+	    +updateScore(newScore: Float) void
+	    +getReason() String
+    }
+
+    class PointTransaction {
+	    -id: String
+	    -userId: String
+	    -documentId: String
+	    -amount: Int
+	    -type: PointTxnType
+	    -reason: PointTxnReason
+	    -balanceAfter: Int
+	    -note: String
+	    -performedById: String
+	    -isBypass: Boolean
+	    -createdAt: DateTime
+	    +isEarn() Boolean
+	    +isSpend() Boolean
+	    +isAdjust() Boolean
+	    +getAbsoluteAmount() Int
+    }
+
+    class ActivityLog {
+	    -id: String
+	    -userId: String
+	    -action: String
+	    -resourceType: String
+	    -resourceId: String
+	    -ipAddress: String
+	    -userAgent: String
+	    -metadata: Json
+	    -createdAt: DateTime
+	    +logAction(action: String, resourceType: String, resourceId: String) void
+    }
+
+    class SystemSetting {
+	    -id: String
+	    -key: String
+	    -value: String
+	    -type: String
+	    -description: String
+	    -category: String
+	    -isPublic: Boolean
+	    -createdAt: DateTime
+	    -updatedAt: DateTime
+	    +getValue() Object
+	    +setValue(value: Object) void
+	    +isPublic() Boolean
+    }
+
+	<<enumeration>> PreviewStatus
+	<<enumeration>> DocumentModerationStatus
+	<<enumeration>> PointTxnType
+	<<enumeration>> PointTxnReason
+
+    Role "1" -- "0..*" User
+    User "1" -- "0..*" Document
+    User "1" -- "0..*" File
+    User "1" -- "0..*" Rating
+    User "1" -- "0..*" Comment
+    User "1" -- "0..*" CommentLike
+    User "1" -- "0..*" Bookmark
+    User "1" -- "0..*" BookmarkFolder
+    User "0..1" -- "0..*" Download
+    User "0..1" -- "0..*" View
+    User "1" -- "0..*" Notification
+    User "1" -- "0..*" SearchHistory
+    User "1" -- "0..*" RecommendationEngine
+    User "1" -- "0..*" PointTransaction
+    User "0..1" -- "0..*" ActivityLog
+    User "1" -- "0..*" DocumentShareLink
+    Document "1" -- "0..*" DocumentFile
+    Document "1" -- "0..*" DocumentPreview
+    Document "1" -- "0..1" DocumentShareLink
+    Document "1" -- "0..1" DocumentEmbedding
+    Document "1" -- "0..*" SimilarityJob
+    Document "1" -- "0..*" Rating
+    Document "1" -- "0..*" Comment
+    Document "1" -- "0..1" AIAnalysis
+    Document "1" -- "0..*" Bookmark
+    Document "1" -- "0..*" Download
+    Document "1" -- "0..*" View
+    Document "0..1" -- "0..*" PointTransaction
+    Document "1" -- "0..*" DocumentSimilarity
+    Document "0..1" -- "0..*" SearchHistory
+    Document "1" -- "0..1" DocumentModerationStatus
+    Document "1" -- "0..1" PreviewStatus
+    Comment "1" -- "0..*" CommentLike
+    Comment "0..1" -- "0..*" Comment
+    File "1" -- "0..*" DocumentFile
+    BookmarkFolder "1" -- "0..*" Bookmark
+    Category "1" -- "0..*" Document
+    Category "0..1" -- "0..*" Category
+    User "0..1" -- "0..*" Document
+    User "0..1" -- "0..*" DocumentSimilarity
+    User "0..1" -- "0..*" PointTransaction
+    DocumentPreview "1" -- "0..1" PreviewStatus
+    PointTransaction "1" -- "0..1" PointTxnType
+    PointTransaction "1" -- "0..1" PointTxnReason

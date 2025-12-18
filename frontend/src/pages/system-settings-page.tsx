@@ -7,6 +7,7 @@ import {
   Save,
   Settings,
   Sparkles,
+  Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import {
   PointsSettings,
+  SimilaritySettings,
   SystemSettingsService,
 } from '@/services/system-settings.service';
 import { AISettings } from '@/types/database.types';
@@ -44,6 +46,19 @@ export function SystemSettingsPage(): ReactElement {
     dailyEarnLimit: 0,
   });
 
+  const [similaritySettings, setSimilaritySettings] =
+    useState<SimilaritySettings>({
+      similarityDetection: 0.85,
+      embeddingMatch: 0.75,
+      hashMatch: 0.95,
+      hashInclude: 0.6,
+      hashWeight: 0.4,
+      textWeight: 0.3,
+      embeddingWeight: 0.3,
+      jaccardWeight: 0.6,
+      levenshteinWeight: 0.4,
+    });
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -58,6 +73,15 @@ export function SystemSettingsPage(): ReactElement {
       // Load points settings from database
       const pointsResponse = await SystemSettingsService.getPointsSettings();
       setPointsSettings(pointsResponse);
+
+      // Load similarity settings from database
+      try {
+        const similarityResponse =
+          await SystemSettingsService.getSimilaritySettings();
+        setSimilaritySettings(similarityResponse);
+      } catch {
+        // Use defaults if similarity settings not available
+      }
     } catch {
       toast.error('Không thể tải cài đặt hệ thống');
     } finally {
@@ -70,6 +94,7 @@ export function SystemSettingsPage(): ReactElement {
       setSaving(true);
       await SystemSettingsService.updateAISettings(aiSettings);
       await SystemSettingsService.updatePointsSettings(pointsSettings);
+      await SystemSettingsService.updateSimilaritySettings(similaritySettings);
       toast.success('Cài đặt hệ thống đã được lưu thành công');
     } catch {
       toast.error('Không thể lưu cài đặt hệ thống');
@@ -143,6 +168,40 @@ export function SystemSettingsPage(): ReactElement {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleSimilaritySettingChange = (
+    field: keyof SimilaritySettings,
+    value: number,
+  ) => {
+    // Validation - all values must be between 0 and 1
+    if (value < 0 || value > 1) {
+      toast.error('Giá trị phải từ 0 đến 1');
+      return;
+    }
+
+    setSimilaritySettings(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // Validate weights sum to 1.0
+  const validateWeights = () => {
+    const combinedSum =
+      similaritySettings.hashWeight +
+      similaritySettings.textWeight +
+      similaritySettings.embeddingWeight;
+    const textSum =
+      similaritySettings.jaccardWeight + similaritySettings.levenshteinWeight;
+
+    if (Math.abs(combinedSum - 1.0) > 0.01) {
+      return 'Tổng trọng số kết hợp (Hash + Text + Embedding) phải bằng 1.0';
+    }
+    if (Math.abs(textSum - 1.0) > 0.01) {
+      return 'Tổng trọng số văn bản (Jaccard + Levenshtein) phải bằng 1.0';
+    }
+    return null;
   };
 
   if (loading) {
@@ -608,6 +667,265 @@ export function SystemSettingsPage(): ReactElement {
                 <li>
                   • <strong>Tính chính xác:</strong> Chỉ tính điểm khi file được
                   tải hoàn tất thực sự
+                </li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Similarity Algorithm Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Cài đặt Thuật toán Tương đồng
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Weight validation warning */}
+            {validateWeights() && (
+              <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                ⚠️ {validateWeights()}
+              </div>
+            )}
+
+            {/* Thresholds Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium">Ngưỡng phát hiện</h4>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>
+                    Ngưỡng phát hiện tương đồng (
+                    {Math.round(similaritySettings.similarityDetection * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(
+                      similaritySettings.similarityDetection * 100,
+                    )}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'similarityDetection',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    Ngưỡng embedding (
+                    {Math.round(similaritySettings.embeddingMatch * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.embeddingMatch * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'embeddingMatch',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    Ngưỡng hash (
+                    {Math.round(similaritySettings.hashMatch * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.hashMatch * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'hashMatch',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    Ngưỡng hash include (
+                    {Math.round(similaritySettings.hashInclude * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.hashInclude * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'hashInclude',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Combined Weights Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium">
+                Trọng số kết hợp (tổng = 1.0, hiện tại:{' '}
+                {(
+                  similaritySettings.hashWeight +
+                  similaritySettings.textWeight +
+                  similaritySettings.embeddingWeight
+                ).toFixed(2)}
+                )
+              </h4>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>
+                    Hash ({Math.round(similaritySettings.hashWeight * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.hashWeight * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'hashWeight',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    Text ({Math.round(similaritySettings.textWeight * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.textWeight * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'textWeight',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    Embedding (
+                    {Math.round(similaritySettings.embeddingWeight * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.embeddingWeight * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'embeddingWeight',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Text Weights Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium">
+                Trọng số văn bản (tổng = 1.0, hiện tại:{' '}
+                {(
+                  similaritySettings.jaccardWeight +
+                  similaritySettings.levenshteinWeight
+                ).toFixed(2)}
+                )
+              </h4>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>
+                    Jaccard (
+                    {Math.round(similaritySettings.jaccardWeight * 100)}
+                    %)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(similaritySettings.jaccardWeight * 100)}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'jaccardWeight',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    Levenshtein (
+                    {Math.round(similaritySettings.levenshteinWeight * 100)}%)
+                  </Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(
+                      similaritySettings.levenshteinWeight * 100,
+                    )}
+                    onChange={e =>
+                      handleSimilaritySettingChange(
+                        'levenshteinWeight',
+                        parseInt(e.target.value, 10) / 100,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h4 className="mb-2 font-medium">ℹ️ Giải thích</h4>
+              <ul className="text-muted-foreground space-y-1 text-sm">
+                <li>
+                  • <strong>Ngưỡng phát hiện:</strong> Điểm tương đồng tối thiểu
+                  để coi là trùng lặp
+                </li>
+                <li>
+                  • <strong>Trọng số kết hợp:</strong> Tỷ lệ đóng góp của từng
+                  phương pháp vào điểm cuối cùng
+                </li>
+                <li>
+                  • <strong>Hash:</strong> So sánh file hash (nhanh, chính xác
+                  cho file giống hệt)
+                </li>
+                <li>
+                  • <strong>Text:</strong> So sánh nội dung văn bản (Jaccard +
+                  Levenshtein)
+                </li>
+                <li>
+                  • <strong>Embedding:</strong> So sánh ngữ nghĩa bằng AI
+                  (cosine similarity)
                 </li>
               </ul>
             </div>

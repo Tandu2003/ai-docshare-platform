@@ -26,20 +26,20 @@ export class SimilarityJobService {
         include: {
           document: true,
         },
-        take: 10, // Process max 10 jobs at a time
+        take: 10, // Process max 10 jobs at a time (batch), but sequentially
       });
 
-      // Process all jobs in parallel and WAIT for completion
-      const processPromises = pendingJobs.map(job =>
-        this.similarityService
-          .processSimilarityDetection(job.documentId)
-          .catch(() => {
-            // Failed to process job
-          }),
-      );
-
-      // MUST await - similarity results must be saved before moderation check
-      await Promise.all(processPromises);
+      // Process jobs one-by-one to guarantee ordering and avoid parallelism
+      for (const job of pendingJobs) {
+        try {
+          // MUST await - similarity results must be saved before moderation check
+          await this.similarityService.processSimilarityDetection(
+            job.documentId,
+          );
+        } catch {
+          // Failed to process job, continue with next
+        }
+      }
     } catch {
       // Error processing pending jobs
     }

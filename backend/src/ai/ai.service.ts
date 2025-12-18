@@ -6,7 +6,7 @@ import { FilesService } from '../files/files.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { DocumentAnalysisResult, GeminiService } from './gemini.service';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
 export interface AIAnalysisRequest {
   fileIds: string[];
@@ -25,6 +25,8 @@ export interface AIAnalysisResponse {
 
 @Injectable()
 export class AIService {
+  private readonly logger = new Logger(AIService.name);
+
   constructor(
     private prisma: PrismaService,
     private filesService: FilesService,
@@ -283,8 +285,15 @@ export class AIService {
       const similarityCheck =
         await this.checkSimilarityForModeration(documentId);
 
+      this.logger.log(
+        `[AI Moderation] Similarity check result - shouldReject: ${similarityCheck.shouldReject}, requiresManualReview: ${similarityCheck.requiresManualReview}`,
+      );
+
       // Auto-reject if enabled and threshold met
       if (similarityCheck.shouldReject && settings.enableSimilarityAutoReject) {
+        this.logger.log(
+          `[AI Moderation] Auto-rejecting document ${documentId} due to similarity`,
+        );
         await this.prisma.document.update({
           where: { id: documentId },
           data: { moderationStatus: 'REJECTED' },
@@ -297,11 +306,23 @@ export class AIService {
         };
       }
 
+      if (
+        similarityCheck.shouldReject &&
+        !settings.enableSimilarityAutoReject
+      ) {
+        this.logger.warn(
+          `[AI Moderation] Similarity auto-reject is DISABLED in settings - document ${documentId} will NOT be auto-rejected despite high similarity`,
+        );
+      }
+
       // Manual review if enabled and threshold met
       if (
         similarityCheck.requiresManualReview &&
         settings.enableSimilarityManualReview
       ) {
+        this.logger.log(
+          `[AI Moderation] Requiring manual review for document ${documentId} due to similarity`,
+        );
         return {
           status: 'pending',
           action: 'manual_review',
@@ -374,6 +395,9 @@ export class AIService {
   }> {
     try {
       const settings = await this.systemSettings.getAIModerationSettings();
+      this.logger.log(
+        `[AI Moderation] Checking similarity for document ${documentId}`,
+      );
 
       // Get highest similarity score for this document
       const highestSimilarity = await this.prisma.documentSimilarity.findFirst({
@@ -394,6 +418,9 @@ export class AIService {
       });
 
       if (!highestSimilarity) {
+        this.logger.log(
+          `[AI Moderation] No similarity records found for document ${documentId}`,
+        );
         return {
           shouldReject: false,
           requiresManualReview: false,
@@ -404,9 +431,22 @@ export class AIService {
         highestSimilarity.similarityScore * 100,
       );
 
+      this.logger.log(
+        `[AI Moderation] Highest similarity: ${similarityPercent}% with "${highestSimilarity.targetDocument.title}"`,
+      );
+      this.logger.log(
+        `[AI Moderation] Settings - Auto-reject threshold: ${settings.similarityAutoRejectThreshold}%, Manual review threshold: ${settings.similarityManualReviewThreshold}%`,
+      );
+      this.logger.log(
+        `[AI Moderation] Settings - Enable auto-reject: ${settings.enableSimilarityAutoReject}, Enable manual review: ${settings.enableSimilarityManualReview}`,
+      );
+
       // Auto-reject if similarity is above auto-reject threshold
       // (Toggle check happens in applyModerationSettings)
       if (similarityPercent >= settings.similarityAutoRejectThreshold) {
+        this.logger.log(
+          `[AI Moderation] Similarity ${similarityPercent}% >= threshold ${settings.similarityAutoRejectThreshold}% → SHOULD REJECT`,
+        );
         return {
           shouldReject: true,
           requiresManualReview: false,
@@ -417,6 +457,9 @@ export class AIService {
       // Require manual review if similarity is above manual review threshold
       // (Toggle check happens in applyModerationSettings)
       if (similarityPercent >= settings.similarityManualReviewThreshold) {
+        this.logger.log(
+          `[AI Moderation] Similarity ${similarityPercent}% >= threshold ${settings.similarityManualReviewThreshold}% → MANUAL REVIEW`,
+        );
         return {
           shouldReject: false,
           requiresManualReview: true,
@@ -424,11 +467,18 @@ export class AIService {
         };
       }
 
+      this.logger.log(
+        `[AI Moderation] Similarity ${similarityPercent}% below thresholds → PASS`,
+      );
       return {
         shouldReject: false,
         requiresManualReview: false,
       };
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `[AI Moderation] Error checking similarity for document ${documentId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return {
         shouldReject: false,
         requiresManualReview: false,

@@ -26,6 +26,21 @@ export interface PointsSettings {
   // downloadReward đã bị xóa - uploader nhận bằng đúng downloadCost
 }
 
+export interface SimilaritySettings {
+  // Thresholds
+  similarityDetection: number; // 0-1, default 0.85
+  embeddingMatch: number; // 0-1, default 0.75
+  hashMatch: number; // 0-1, default 0.95
+  hashInclude: number; // 0-1, default 0.6
+  // Combined weights (must sum to 1.0)
+  hashWeight: number; // default 0.4
+  textWeight: number; // default 0.3
+  embeddingWeight: number; // default 0.3
+  // Text similarity weights (must sum to 1.0)
+  jaccardWeight: number; // default 0.6
+  levenshteinWeight: number; // default 0.4
+}
+
 export class SystemSettingsService {
   private static readonly BASE_URL = '/settings';
 
@@ -210,6 +225,93 @@ export class SystemSettingsService {
     }
 
     // downloadReward đã bị xóa - uploader nhận bằng đúng downloadCost
+
+    if (systemSettings.length > 0) {
+      await this.updateSettings(systemSettings);
+    }
+  }
+
+  static async getSimilaritySettings(): Promise<SimilaritySettings> {
+    const response = await api.get(`${this.BASE_URL}/admin/similarity`);
+    return response.data as SimilaritySettings;
+  }
+
+  static async updateSimilaritySettings(
+    settings: Partial<SimilaritySettings>,
+  ): Promise<void> {
+    const systemSettings: SystemSetting[] = [];
+
+    if (settings.similarityDetection !== undefined) {
+      systemSettings.push({
+        key: 'similarity.threshold.detection',
+        value: settings.similarityDetection.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.embeddingMatch !== undefined) {
+      systemSettings.push({
+        key: 'similarity.threshold.embedding',
+        value: settings.embeddingMatch.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.hashMatch !== undefined) {
+      systemSettings.push({
+        key: 'similarity.threshold.hash',
+        value: settings.hashMatch.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.hashInclude !== undefined) {
+      systemSettings.push({
+        key: 'similarity.threshold.hashInclude',
+        value: settings.hashInclude.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.hashWeight !== undefined) {
+      systemSettings.push({
+        key: 'similarity.weights.hash',
+        value: settings.hashWeight.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.textWeight !== undefined) {
+      systemSettings.push({
+        key: 'similarity.weights.text',
+        value: settings.textWeight.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.embeddingWeight !== undefined) {
+      systemSettings.push({
+        key: 'similarity.weights.embedding',
+        value: settings.embeddingWeight.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.jaccardWeight !== undefined) {
+      systemSettings.push({
+        key: 'similarity.textWeights.jaccard',
+        value: settings.jaccardWeight.toString(),
+        category: 'similarity',
+      });
+    }
+
+    if (settings.levenshteinWeight !== undefined) {
+      systemSettings.push({
+        key: 'similarity.textWeights.levenshtein',
+        value: settings.levenshteinWeight.toString(),
+        category: 'similarity',
+      });
+    }
 
     if (systemSettings.length > 0) {
       await this.updateSettings(systemSettings);

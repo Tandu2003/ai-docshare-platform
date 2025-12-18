@@ -275,4 +275,31 @@ export class SystemSettingsController {
       );
     }
   }
+
+  @Get('admin/similarity')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @AdminOnly()
+  @ApiOperation({ summary: 'Get similarity detection settings' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Similarity settings retrieved successfully',
+  })
+  async getSimilaritySettings(@Res() res: FastifyReply) {
+    try {
+      const settings = await this.settingsService.getSimilaritySettings();
+
+      return ResponseHelper.success(
+        res,
+        settings,
+        'Similarity settings retrieved successfully',
+      );
+    } catch {
+      return ResponseHelper.error(
+        res,
+        'Failed to retrieve similarity settings',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

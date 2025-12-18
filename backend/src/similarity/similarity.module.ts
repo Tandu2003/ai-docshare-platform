@@ -9,11 +9,15 @@ import {
   SimilarityModerationService,
   SimilarityTextExtractionService,
 } from './services';
+import { SimilarityConfigService } from './services/similarity-config.service';
+import { SimilarityWorkerService } from './services/similarity-worker.service';
 import { SimilarityJobService } from './similarity-job.service';
 import { SimilarityService } from './similarity.service';
 import { AdminModule } from '@/admin/admin.module';
+import { ChunkingService } from '@/common/services/chunking.service';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
 import { EmbeddingTextBuilderService } from '@/common/services/embedding-text-builder.service';
+import { TextPreprocessingService } from '@/common/services/text-preprocessing.service';
 import { Module } from '@nestjs/common';
 
 @Module({
@@ -27,8 +31,12 @@ import { Module } from '@nestjs/common';
     SimilarityEmbeddingService,
     SimilarityModerationService,
     SimilarityTextExtractionService,
+    SimilarityConfigService,
+    SimilarityWorkerService,
     EmbeddingTextBuilderService,
     EmbeddingStorageService,
+    TextPreprocessingService,
+    ChunkingService,
   ],
   exports: [
     SimilarityService,
@@ -38,6 +46,10 @@ import { Module } from '@nestjs/common';
     SimilarityEmbeddingService,
     SimilarityModerationService,
     SimilarityTextExtractionService,
+    SimilarityConfigService,
+    SimilarityWorkerService,
+    TextPreprocessingService,
+    ChunkingService,
   ],
 })
 export class SimilarityModule {}

@@ -239,6 +239,51 @@ export class SystemSettingsService {
     }
   }
 
+  async getSimilaritySettings() {
+    const getFloatSetting = async (
+      key: string,
+      defaultValue: number,
+    ): Promise<number> => {
+      const value = await this.getSetting(key);
+      if (!value) return defaultValue;
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? defaultValue : parsed;
+    };
+
+    return {
+      // Thresholds (0-1)
+      similarityDetection: await getFloatSetting(
+        'similarity.threshold.detection',
+        0.85,
+      ),
+      embeddingMatch: await getFloatSetting(
+        'similarity.threshold.embedding',
+        0.75,
+      ),
+      hashMatch: await getFloatSetting('similarity.threshold.hash', 0.95),
+      hashInclude: await getFloatSetting(
+        'similarity.threshold.hashInclude',
+        0.6,
+      ),
+      // Combined weights (must sum to 1.0)
+      hashWeight: await getFloatSetting('similarity.weights.hash', 0.4),
+      textWeight: await getFloatSetting('similarity.weights.text', 0.3),
+      embeddingWeight: await getFloatSetting(
+        'similarity.weights.embedding',
+        0.3,
+      ),
+      // Text similarity weights (must sum to 1.0)
+      jaccardWeight: await getFloatSetting(
+        'similarity.textWeights.jaccard',
+        0.6,
+      ),
+      levenshteinWeight: await getFloatSetting(
+        'similarity.textWeights.levenshtein',
+        0.4,
+      ),
+    };
+  }
+
   async initializeDefaultSettings(): Promise<void> {
     const defaultSettings: SystemSettingValue[] = [
       // AI Moderation Settings
@@ -362,6 +407,70 @@ export class SystemSettingsService {
         description:
           'Maximum points a user can earn per day (0 = unlimited). Helps prevent spam.',
         category: 'points',
+        isPublic: false,
+      },
+      // Similarity Detection Algorithm Settings
+      {
+        key: 'similarity.threshold.detection',
+        value: '0.85',
+        description: 'Similarity threshold for detection (0-1)',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.threshold.embedding',
+        value: '0.75',
+        description: 'Embedding match threshold (0-1)',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.threshold.hash',
+        value: '0.95',
+        description: 'Hash match threshold (0-1)',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.threshold.hashInclude',
+        value: '0.6',
+        description: 'Hash include threshold (0-1)',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.weights.hash',
+        value: '0.4',
+        description: 'Weight for hash similarity in combined score',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.weights.text',
+        value: '0.3',
+        description: 'Weight for text similarity in combined score',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.weights.embedding',
+        value: '0.3',
+        description: 'Weight for embedding similarity in combined score',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.textWeights.jaccard',
+        value: '0.6',
+        description: 'Weight for Jaccard similarity in text comparison',
+        category: 'similarity',
+        isPublic: false,
+      },
+      {
+        key: 'similarity.textWeights.levenshtein',
+        value: '0.4',
+        description: 'Weight for Levenshtein similarity in text comparison',
+        category: 'similarity',
         isPublic: false,
       },
     ];

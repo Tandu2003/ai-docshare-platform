@@ -179,27 +179,6 @@ export class DocumentCrudService {
       // Create document-file relationships (required synchronously for response)
       const documentFiles = await this.createDocumentFiles(document.id, files);
 
-      // For public documents: queue similarity detection as background job
-      let similarityJobId: string | null = null;
-      let similarityStatus = 'not_required';
-
-      if (wantsPublic) {
-        try {
-          // Queue similarity detection job (runs in background)
-          const jobResult =
-            await this.similarityJobService.queueAndRunSimilarityDetection(
-              document.id,
-            );
-          similarityJobId = jobResult.jobId;
-          similarityStatus = jobResult.status;
-        } catch (error) {
-          this.logger.error(
-            `Failed to queue similarity detection: ${error instanceof Error ? error.message : String(error)}`,
-          );
-          similarityStatus = 'failed';
-        }
-      }
-
       // Run remaining background tasks asynchronously
       void this.runBackgroundTasks(
         document,
@@ -220,8 +199,10 @@ export class DocumentCrudService {
         ...document,
         files: documentFiles.map(df => df.file),
         aiSuggestedCategory: suggestedCategory,
-        similarityJobId,
-        similarityStatus,
+        // Similarity detection now runs entirely in background.
+        // Frontend can query job status via SimilarityJobService if needed.
+        similarityJobId: null,
+        similarityStatus: wantsPublic ? 'queued' : 'not_required',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -603,6 +584,58 @@ export class DocumentCrudService {
     }
   }
 
+  /**
+   * Wait for similarity detection job to complete
+   * @param jobId - Similarity job ID
+   * @param timeoutMs - Maximum time to wait in milliseconds (default 30s)
+   */
+  private async waitForSimilarityJobCompletion(
+    jobId: string,
+    timeoutMs = 30000,
+  ): Promise<void> {
+    const startTime = Date.now();
+    const pollInterval = 1000; // Check every 1 second
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const job = await this.prisma.similarityJob.findUnique({
+          where: { id: jobId },
+        });
+
+        if (!job) {
+          this.logger.warn(`Similarity job ${jobId} not found`);
+          return;
+        }
+
+        if (job.status === 'completed') {
+          this.logger.log(
+            `Similarity job ${jobId} completed successfully in ${Date.now() - startTime}ms`,
+          );
+          return;
+        }
+
+        if (job.status === 'failed') {
+          this.logger.error(
+            `Similarity job ${jobId} failed: ${job.errorMessage}`,
+          );
+          return;
+        }
+
+        // Still processing, wait before next check
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      } catch (error) {
+        this.logger.error(
+          `Error checking similarity job status: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return;
+      }
+    }
+
+    this.logger.warn(
+      `Similarity job ${jobId} did not complete within ${timeoutMs}ms timeout`,
+    );
+  }
+
   private async createDocumentFiles(
     documentId: string,
     files: any[],
@@ -650,12 +683,13 @@ export class DocumentCrudService {
     confidence: number,
   ): Promise<void> {
     try {
-      this.similarityJobService.runSimilarityDetectionSync(documentId);
-    } catch {
-      // Similarity detection failed
-    }
+      // Ensure similarity detection has run and completed before moderation.
+      const job =
+        await this.similarityJobService.queueAndRunSimilarityDetection(
+          documentId,
+        );
+      await this.waitForSimilarityJobCompletion(job.jobId);
 
-    try {
       const moderationScore = confidence || 50;
       const moderationResult = await this.aiService.applyModerationSettings(
         documentId,

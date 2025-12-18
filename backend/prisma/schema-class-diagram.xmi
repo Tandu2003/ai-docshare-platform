@@ -1,0 +1,815 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xmi:XMI xmlns:uml="http://www.omg.org/spec/UML/20131001" xmlns:xmi="http://www.omg.org/XMI" xmi:version="2.1">
+  <uml:Model xmi:id="model_PrismaSchema" name="PrismaSchema">
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_String" name="String" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_Int" name="Int" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_Float" name="Float" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_Boolean" name="Boolean" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_DateTime" name="DateTime" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_BigInt" name="BigInt" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_Json" name="Json" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_Void" name="void" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="Primitive_Object" name="Object" />
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="Enum_PreviewStatus" name="PreviewStatus">
+      <ownedLiteral xmi:id="Enum_PreviewStatus_PENDING" name="PENDING" />
+      <ownedLiteral xmi:id="Enum_PreviewStatus_PROCESSING" name="PROCESSING" />
+      <ownedLiteral xmi:id="Enum_PreviewStatus_COMPLETED" name="COMPLETED" />
+      <ownedLiteral xmi:id="Enum_PreviewStatus_FAILED" name="FAILED" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="Enum_DocumentModerationStatus" name="DocumentModerationStatus">
+      <ownedLiteral xmi:id="Enum_DocumentModerationStatus_PENDING" name="PENDING" />
+      <ownedLiteral xmi:id="Enum_DocumentModerationStatus_APPROVED" name="APPROVED" />
+      <ownedLiteral xmi:id="Enum_DocumentModerationStatus_REJECTED" name="REJECTED" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="Enum_PointTxnType" name="PointTxnType">
+      <ownedLiteral xmi:id="Enum_PointTxnType_EARN" name="EARN" />
+      <ownedLiteral xmi:id="Enum_PointTxnType_SPEND" name="SPEND" />
+      <ownedLiteral xmi:id="Enum_PointTxnType_ADJUST" name="ADJUST" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="Enum_PointTxnReason" name="PointTxnReason">
+      <ownedLiteral xmi:id="Enum_PointTxnReason_UPLOAD_REWARD" name="UPLOAD_REWARD" />
+      <ownedLiteral xmi:id="Enum_PointTxnReason_DOWNLOAD_COST" name="DOWNLOAD_COST" />
+      <ownedLiteral xmi:id="Enum_PointTxnReason_DOWNLOAD_REWARD" name="DOWNLOAD_REWARD" />
+      <ownedLiteral xmi:id="Enum_PointTxnReason_ADMIN_ADJUST" name="ADMIN_ADJUST" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Role" name="Role">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_name" name="name" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_description" name="description" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_permissions" name="permissions" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_isActive" name="isActive" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Role_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Role_op_hasPermission" name="hasPermission">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Role_op_hasPermission_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Role_op_addPermission" name="addPermission">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Role_op_addPermission_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Role_op_removePermission" name="removePermission">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Role_op_removePermission_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_User" name="User">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_email" name="email" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_username" name="username" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_password" name="password" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_firstName" name="firstName" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_lastName" name="lastName" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_avatar" name="avatar" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_bio" name="bio" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_website" name="website" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_location" name="location" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_roleId" name="roleId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_isVerified" name="isVerified" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_isActive" name="isActive" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_isDeleted" name="isDeleted" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_lastLoginAt" name="lastLoginAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_resetToken" name="resetToken" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_resetExpires" name="resetExpires" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_pointsBalance" name="pointsBalance" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_User_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_authenticate" name="authenticate">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_authenticate_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_updatePassword" name="updatePassword">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_updatePassword_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_resetPassword" name="resetPassword">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_resetPassword_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_canUpload" name="canUpload">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_canUpload_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_canDownload" name="canDownload">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_canDownload_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_hasEnoughPoints" name="hasEnoughPoints">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_hasEnoughPoints_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_earnPoints" name="earnPoints">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_earnPoints_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_spendPoints" name="spendPoints">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_spendPoints_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_isModerator" name="isModerator">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_isModerator_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_User_op_isAdmin" name="isAdmin">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_User_op_isAdmin_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Category" name="Category">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_name" name="name" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_description" name="description" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_icon" name="icon" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_color" name="color" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_parentId" name="parentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_isActive" name="isActive" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_documentCount" name="documentCount" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_sortOrder" name="sortOrder" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Category_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Category_op_getChildren" name="getChildren">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Category_op_getChildren_return" direction="return" type="Primitive_Category[]" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Category_op_getParent" name="getParent">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Category_op_getParent_return" direction="return" type="Primitive_Category" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Category_op_incrementDocumentCount" name="incrementDocumentCount">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Category_op_incrementDocumentCount_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Category_op_decrementDocumentCount" name="decrementDocumentCount">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Category_op_decrementDocumentCount_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Category_op_isRoot" name="isRoot">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Category_op_isRoot_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Category_op_getPath" name="getPath">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Category_op_getPath_return" direction="return" type="Primitive_String" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Document" name="Document">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_title" name="title" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_description" name="description" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_uploaderId" name="uploaderId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_categoryId" name="categoryId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_downloadCount" name="downloadCount" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_viewCount" name="viewCount" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_averageRating" name="averageRating" lower="1" upper="1" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_totalRatings" name="totalRatings" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_isPublic" name="isPublic" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_isPremium" name="isPremium" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_isApproved" name="isApproved" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_isDraft" name="isDraft" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_moderationStatus" name="moderationStatus" lower="1" upper="1" type="Enum_DocumentModerationStatus" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_moderatedById" name="moderatedById" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_moderatedAt" name="moderatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_moderationNotes" name="moderationNotes" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_rejectionReason" name="rejectionReason" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_aiModeration" name="aiModeration" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_tags" name="tags" lower="1" upper="*" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_language" name="language" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_downloadCost" name="downloadCost" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_zipFileUrl" name="zipFileUrl" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_zipFileCreatedAt" name="zipFileCreatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_previewStatus" name="previewStatus" lower="1" upper="1" type="Enum_PreviewStatus" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_previewError" name="previewError" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Document_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_approve" name="approve">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_approve_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_reject" name="reject">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_reject_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_publish" name="publish">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_publish_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_unpublish" name="unpublish">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_unpublish_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_addTag" name="addTag">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_addTag_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_removeTag" name="removeTag">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_removeTag_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_incrementViewCount" name="incrementViewCount">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_incrementViewCount_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_incrementDownloadCount" name="incrementDownloadCount">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_incrementDownloadCount_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_updateRating" name="updateRating">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_updateRating_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_canBeDownloadedBy" name="canBeDownloadedBy">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_canBeDownloadedBy_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_getDownloadCost" name="getDownloadCost">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_getDownloadCost_return" direction="return" type="Primitive_Int" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_isModerated" name="isModerated">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_isModerated_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Document_op_generatePreview" name="generatePreview">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Document_op_generatePreview_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_File" name="File">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_originalName" name="originalName" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_fileName" name="fileName" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_mimeType" name="mimeType" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_fileSize" name="fileSize" lower="1" upper="1" type="Primitive_BigInt" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_fileHash" name="fileHash" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_storageUrl" name="storageUrl" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_thumbnailUrl" name="thumbnailUrl" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_uploaderId" name="uploaderId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_isPublic" name="isPublic" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_metadata" name="metadata" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_File_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_File_op_getSizeInMB" name="getSizeInMB">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_File_op_getSizeInMB_return" direction="return" type="Primitive_Float" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_File_op_isImage" name="isImage">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_File_op_isImage_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_File_op_isDocument" name="isDocument">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_File_op_isDocument_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_File_op_generateThumbnail" name="generateThumbnail">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_File_op_generateThumbnail_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_File_op_validate" name="validate">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_File_op_validate_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_DocumentFile" name="DocumentFile">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentFile_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentFile_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentFile_attr_fileId" name="fileId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentFile_attr_order" name="order" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentFile_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentFile_op_reorder" name="reorder">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentFile_op_reorder_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_DocumentShareLink" name="DocumentShareLink">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_token" name="token" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_expiresAt" name="expiresAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_createdById" name="createdById" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_isRevoked" name="isRevoked" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentShareLink_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentShareLink_op_isExpired" name="isExpired">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentShareLink_op_isExpired_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentShareLink_op_isValid" name="isValid">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentShareLink_op_isValid_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentShareLink_op_revoke" name="revoke">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentShareLink_op_revoke_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentShareLink_op_generateToken" name="generateToken">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentShareLink_op_generateToken_return" direction="return" type="Primitive_String" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_DocumentPreview" name="DocumentPreview">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_pageNumber" name="pageNumber" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_previewPath" name="previewPath" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_mimeType" name="mimeType" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_fileSize" name="fileSize" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_width" name="width" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_height" name="height" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_status" name="status" lower="1" upper="1" type="Enum_PreviewStatus" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_errorMessage" name="errorMessage" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentPreview_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentPreview_op_markAsCompleted" name="markAsCompleted">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentPreview_op_markAsCompleted_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentPreview_op_markAsFailed" name="markAsFailed">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentPreview_op_markAsFailed_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentPreview_op_isReady" name="isReady">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentPreview_op_isReady_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Rating" name="Rating">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Rating_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Rating_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Rating_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Rating_attr_rating" name="rating" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Rating_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Rating_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Rating_op_updateRating" name="updateRating">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Rating_op_updateRating_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Rating_op_validate" name="validate">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Rating_op_validate_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Comment" name="Comment">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_parentId" name="parentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_content" name="content" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_isEdited" name="isEdited" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_isDeleted" name="isDeleted" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_likesCount" name="likesCount" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_editedAt" name="editedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Comment_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_edit" name="edit">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_edit_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_delete" name="delete">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_delete_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_restore" name="restore">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_restore_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_like" name="like">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_like_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_unlike" name="unlike">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_unlike_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_isReply" name="isReply">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_isReply_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Comment_op_getReplies" name="getReplies">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Comment_op_getReplies_return" direction="return" type="Primitive_Comment[]" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_CommentLike" name="CommentLike">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_CommentLike_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_CommentLike_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_CommentLike_attr_commentId" name="commentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_CommentLike_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_AIAnalysis" name="AIAnalysis">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_summary" name="summary" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_keyPoints" name="keyPoints" lower="1" upper="*" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_suggestedTags" name="suggestedTags" lower="1" upper="*" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_difficulty" name="difficulty" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_readingTime" name="readingTime" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_language" name="language" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_confidence" name="confidence" lower="1" upper="1" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_reliabilityScore" name="reliabilityScore" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_sentimentScore" name="sentimentScore" lower="1" upper="1" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_topicModeling" name="topicModeling" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_namedEntities" name="namedEntities" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_moderationScore" name="moderationScore" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_safetyFlags" name="safetyFlags" lower="1" upper="*" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_isSafe" name="isSafe" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_recommendedAction" name="recommendedAction" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_processedAt" name="processedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_AIAnalysis_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_AIAnalysis_op_analyze" name="analyze">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_AIAnalysis_op_analyze_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_AIAnalysis_op_getSafetyAssessment" name="getSafetyAssessment">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_AIAnalysis_op_getSafetyAssessment_return" direction="return" type="Primitive_String" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_AIAnalysis_op_shouldApprove" name="shouldApprove">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_AIAnalysis_op_shouldApprove_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_AIAnalysis_op_shouldReject" name="shouldReject">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_AIAnalysis_op_shouldReject_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_DocumentEmbedding" name="DocumentEmbedding">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_embedding" name="embedding" lower="1" upper="*" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_model" name="model" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_version" name="version" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentEmbedding_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentEmbedding_op_generateEmbedding" name="generateEmbedding">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentEmbedding_op_generateEmbedding_return" direction="return" type="Primitive_Float" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentEmbedding_op_calculateSimilarity" name="calculateSimilarity">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentEmbedding_op_calculateSimilarity_return" direction="return" type="Primitive_Float" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentEmbedding_op_isValid" name="isValid">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentEmbedding_op_isValid_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_DocumentSimilarity" name="DocumentSimilarity">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_sourceDocumentId" name="sourceDocumentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_targetDocumentId" name="targetDocumentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_similarityScore" name="similarityScore" lower="1" upper="1" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_similarityType" name="similarityType" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_isProcessed" name="isProcessed" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_isDuplicate" name="isDuplicate" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_adminNotes" name="adminNotes" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_processedAt" name="processedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_processedById" name="processedById" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_DocumentSimilarity_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentSimilarity_op_markAsDuplicate" name="markAsDuplicate">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentSimilarity_op_markAsDuplicate_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentSimilarity_op_markAsNotDuplicate" name="markAsNotDuplicate">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentSimilarity_op_markAsNotDuplicate_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentSimilarity_op_isHighSimilarity" name="isHighSimilarity">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentSimilarity_op_isHighSimilarity_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_DocumentSimilarity_op_requiresReview" name="requiresReview">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_DocumentSimilarity_op_requiresReview_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_SimilarityJob" name="SimilarityJob">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_status" name="status" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_progress" name="progress" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_errorMessage" name="errorMessage" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_startedAt" name="startedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_completedAt" name="completedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SimilarityJob_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SimilarityJob_op_start" name="start">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SimilarityJob_op_start_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SimilarityJob_op_complete" name="complete">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SimilarityJob_op_complete_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SimilarityJob_op_fail" name="fail">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SimilarityJob_op_fail_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SimilarityJob_op_updateProgress" name="updateProgress">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SimilarityJob_op_updateProgress_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SimilarityJob_op_isCompleted" name="isCompleted">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SimilarityJob_op_isCompleted_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_BookmarkFolder" name="BookmarkFolder">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_name" name="name" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_description" name="description" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_isDefault" name="isDefault" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_sortOrder" name="sortOrder" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_BookmarkFolder_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_BookmarkFolder_op_addBookmark" name="addBookmark">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_BookmarkFolder_op_addBookmark_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_BookmarkFolder_op_removeBookmark" name="removeBookmark">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_BookmarkFolder_op_removeBookmark_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_BookmarkFolder_op_reorder" name="reorder">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_BookmarkFolder_op_reorder_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_BookmarkFolder_op_getBookmarks" name="getBookmarks">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_BookmarkFolder_op_getBookmarks_return" direction="return" type="Primitive_Bookmark[]" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Bookmark" name="Bookmark">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Bookmark_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Bookmark_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Bookmark_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Bookmark_attr_folderId" name="folderId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Bookmark_attr_notes" name="notes" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Bookmark_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Bookmark_op_moveToFolder" name="moveToFolder">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Bookmark_op_moveToFolder_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Bookmark_op_updateNotes" name="updateNotes">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Bookmark_op_updateNotes_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Download" name="Download">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_ipAddress" name="ipAddress" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_userAgent" name="userAgent" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_referrer" name="referrer" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_success" name="success" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_uploaderRewarded" name="uploaderRewarded" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Download_attr_downloadedAt" name="downloadedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Download_op_markAsSuccess" name="markAsSuccess">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Download_op_markAsSuccess_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Download_op_markUploaderRewarded" name="markUploaderRewarded">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Download_op_markUploaderRewarded_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Download_op_isSuccessful" name="isSuccessful">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Download_op_isSuccessful_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_View" name="View">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_ipAddress" name="ipAddress" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_userAgent" name="userAgent" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_referrer" name="referrer" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_View_attr_viewedAt" name="viewedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_Notification" name="Notification">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_type" name="type" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_title" name="title" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_message" name="message" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_data" name="data" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_isRead" name="isRead" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_readAt" name="readAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_Notification_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Notification_op_markAsRead" name="markAsRead">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Notification_op_markAsRead_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Notification_op_isUnread" name="isUnread">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Notification_op_isUnread_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_Notification_op_getType" name="getType">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_Notification_op_getType_return" direction="return" type="Primitive_String" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_SearchHistory" name="SearchHistory">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_query" name="query" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_filters" name="filters" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_resultsCount" name="resultsCount" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_clickedDocumentId" name="clickedDocumentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_searchVector" name="searchVector" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_queryEmbedding" name="queryEmbedding" lower="1" upper="*" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_searchMethod" name="searchMethod" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_vectorScore" name="vectorScore" lower="1" upper="1" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_sessionId" name="sessionId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_ipAddress" name="ipAddress" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_userAgent" name="userAgent" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SearchHistory_attr_searchedAt" name="searchedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SearchHistory_op_recordClick" name="recordClick">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SearchHistory_op_recordClick_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SearchHistory_op_getSearchMethod" name="getSearchMethod">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SearchHistory_op_getSearchMethod_return" direction="return" type="Primitive_String" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_RecommendationEngine" name="RecommendationEngine">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_score" name="score" lower="1" upper="1" type="Primitive_Float" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_reason" name="reason" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_algorithm" name="algorithm" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_metadata" name="metadata" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_RecommendationEngine_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_RecommendationEngine_op_calculateScore" name="calculateScore">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_RecommendationEngine_op_calculateScore_return" direction="return" type="Primitive_Float" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_RecommendationEngine_op_updateScore" name="updateScore">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_RecommendationEngine_op_updateScore_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_RecommendationEngine_op_getReason" name="getReason">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_RecommendationEngine_op_getReason_return" direction="return" type="Primitive_String" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_PointTransaction" name="PointTransaction">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_documentId" name="documentId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_amount" name="amount" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_type" name="type" lower="1" upper="1" type="Enum_PointTxnType" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_reason" name="reason" lower="1" upper="1" type="Enum_PointTxnReason" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_balanceAfter" name="balanceAfter" lower="1" upper="1" type="Primitive_Int" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_note" name="note" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_performedById" name="performedById" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_isBypass" name="isBypass" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_PointTransaction_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_PointTransaction_op_isEarn" name="isEarn">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_PointTransaction_op_isEarn_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_PointTransaction_op_isSpend" name="isSpend">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_PointTransaction_op_isSpend_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_PointTransaction_op_isAdjust" name="isAdjust">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_PointTransaction_op_isAdjust_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_PointTransaction_op_getAbsoluteAmount" name="getAbsoluteAmount">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_PointTransaction_op_getAbsoluteAmount_return" direction="return" type="Primitive_Int" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_ActivityLog" name="ActivityLog">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_userId" name="userId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_action" name="action" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_resourceType" name="resourceType" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_resourceId" name="resourceId" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_ipAddress" name="ipAddress" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_userAgent" name="userAgent" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_metadata" name="metadata" lower="1" upper="1" type="Primitive_Json" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_ActivityLog_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_ActivityLog_op_logAction" name="logAction">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_ActivityLog_op_logAction_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="Class_SystemSetting" name="SystemSetting">
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_id" name="id" lower="1" upper="1" type="Primitive_String" isID="true" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_key" name="key" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_value" name="value" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_type" name="type" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_description" name="description" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_category" name="category" lower="1" upper="1" type="Primitive_String" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_isPublic" name="isPublic" lower="1" upper="1" type="Primitive_Boolean" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_createdAt" name="createdAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="Class_SystemSetting_attr_updatedAt" name="updatedAt" lower="1" upper="1" type="Primitive_DateTime" isID="false" />
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SystemSetting_op_getValue" name="getValue">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SystemSetting_op_getValue_return" direction="return" type="Primitive_Object" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SystemSetting_op_setValue" name="setValue">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SystemSetting_op_setValue_return" direction="return" type="Primitive_Void" />
+      </ownedOperation>
+      <ownedOperation xmi:type="uml:Operation" xmi:id="Class_SystemSetting_op_isPublic" name="isPublic">
+        <ownedParameter xmi:type="uml:Parameter" xmi:id="Class_SystemSetting_op_isPublic_return" direction="return" type="Primitive_Boolean" />
+      </ownedOperation>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_1_Role_User" memberEnd="Assoc_1_Role_User_end1 Assoc_1_Role_User_end2">
+      <ownedEnd xmi:id="Assoc_1_Role_User_end1" type="Class_User" association="Assoc_1_Role_User" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_1_Role_User_end2" type="Class_Role" association="Assoc_1_Role_User" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_2_User_Document" memberEnd="Assoc_2_User_Document_end1 Assoc_2_User_Document_end2">
+      <ownedEnd xmi:id="Assoc_2_User_Document_end1" type="Class_Document" association="Assoc_2_User_Document" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_2_User_Document_end2" type="Class_User" association="Assoc_2_User_Document" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_3_User_File" memberEnd="Assoc_3_User_File_end1 Assoc_3_User_File_end2">
+      <ownedEnd xmi:id="Assoc_3_User_File_end1" type="Class_File" association="Assoc_3_User_File" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_3_User_File_end2" type="Class_User" association="Assoc_3_User_File" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_4_User_Rating" memberEnd="Assoc_4_User_Rating_end1 Assoc_4_User_Rating_end2">
+      <ownedEnd xmi:id="Assoc_4_User_Rating_end1" type="Class_Rating" association="Assoc_4_User_Rating" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_4_User_Rating_end2" type="Class_User" association="Assoc_4_User_Rating" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_5_User_Comment" memberEnd="Assoc_5_User_Comment_end1 Assoc_5_User_Comment_end2">
+      <ownedEnd xmi:id="Assoc_5_User_Comment_end1" type="Class_Comment" association="Assoc_5_User_Comment" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_5_User_Comment_end2" type="Class_User" association="Assoc_5_User_Comment" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_6_User_CommentLike" memberEnd="Assoc_6_User_CommentLike_end1 Assoc_6_User_CommentLike_end2">
+      <ownedEnd xmi:id="Assoc_6_User_CommentLike_end1" type="Class_CommentLike" association="Assoc_6_User_CommentLike" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_6_User_CommentLike_end2" type="Class_User" association="Assoc_6_User_CommentLike" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_7_User_Bookmark" memberEnd="Assoc_7_User_Bookmark_end1 Assoc_7_User_Bookmark_end2">
+      <ownedEnd xmi:id="Assoc_7_User_Bookmark_end1" type="Class_Bookmark" association="Assoc_7_User_Bookmark" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_7_User_Bookmark_end2" type="Class_User" association="Assoc_7_User_Bookmark" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_8_User_BookmarkFolder" memberEnd="Assoc_8_User_BookmarkFolder_end1 Assoc_8_User_BookmarkFolder_end2">
+      <ownedEnd xmi:id="Assoc_8_User_BookmarkFolder_end1" type="Class_BookmarkFolder" association="Assoc_8_User_BookmarkFolder" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_8_User_BookmarkFolder_end2" type="Class_User" association="Assoc_8_User_BookmarkFolder" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_9_User_Download" memberEnd="Assoc_9_User_Download_end1 Assoc_9_User_Download_end2">
+      <ownedEnd xmi:id="Assoc_9_User_Download_end1" type="Class_Download" association="Assoc_9_User_Download" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_9_User_Download_end2" type="Class_User" association="Assoc_9_User_Download" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_10_User_View" memberEnd="Assoc_10_User_View_end1 Assoc_10_User_View_end2">
+      <ownedEnd xmi:id="Assoc_10_User_View_end1" type="Class_View" association="Assoc_10_User_View" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_10_User_View_end2" type="Class_User" association="Assoc_10_User_View" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_11_User_Notification" memberEnd="Assoc_11_User_Notification_end1 Assoc_11_User_Notification_end2">
+      <ownedEnd xmi:id="Assoc_11_User_Notification_end1" type="Class_Notification" association="Assoc_11_User_Notification" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_11_User_Notification_end2" type="Class_User" association="Assoc_11_User_Notification" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_12_User_SearchHistory" memberEnd="Assoc_12_User_SearchHistory_end1 Assoc_12_User_SearchHistory_end2">
+      <ownedEnd xmi:id="Assoc_12_User_SearchHistory_end1" type="Class_SearchHistory" association="Assoc_12_User_SearchHistory" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_12_User_SearchHistory_end2" type="Class_User" association="Assoc_12_User_SearchHistory" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_13_User_RecommendationEngine" memberEnd="Assoc_13_User_RecommendationEngine_end1 Assoc_13_User_RecommendationEngine_end2">
+      <ownedEnd xmi:id="Assoc_13_User_RecommendationEngine_end1" type="Class_RecommendationEngine" association="Assoc_13_User_RecommendationEngine" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_13_User_RecommendationEngine_end2" type="Class_User" association="Assoc_13_User_RecommendationEngine" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_14_User_PointTransaction" memberEnd="Assoc_14_User_PointTransaction_end1 Assoc_14_User_PointTransaction_end2">
+      <ownedEnd xmi:id="Assoc_14_User_PointTransaction_end1" type="Class_PointTransaction" association="Assoc_14_User_PointTransaction" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_14_User_PointTransaction_end2" type="Class_User" association="Assoc_14_User_PointTransaction" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_15_User_ActivityLog" memberEnd="Assoc_15_User_ActivityLog_end1 Assoc_15_User_ActivityLog_end2">
+      <ownedEnd xmi:id="Assoc_15_User_ActivityLog_end1" type="Class_ActivityLog" association="Assoc_15_User_ActivityLog" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_15_User_ActivityLog_end2" type="Class_User" association="Assoc_15_User_ActivityLog" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_16_User_DocumentShareLink" memberEnd="Assoc_16_User_DocumentShareLink_end1 Assoc_16_User_DocumentShareLink_end2">
+      <ownedEnd xmi:id="Assoc_16_User_DocumentShareLink_end1" type="Class_DocumentShareLink" association="Assoc_16_User_DocumentShareLink" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_16_User_DocumentShareLink_end2" type="Class_User" association="Assoc_16_User_DocumentShareLink" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_17_Document_DocumentFile" memberEnd="Assoc_17_Document_DocumentFile_end1 Assoc_17_Document_DocumentFile_end2">
+      <ownedEnd xmi:id="Assoc_17_Document_DocumentFile_end1" type="Class_DocumentFile" association="Assoc_17_Document_DocumentFile" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_17_Document_DocumentFile_end2" type="Class_Document" association="Assoc_17_Document_DocumentFile" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_18_Document_DocumentPreview" memberEnd="Assoc_18_Document_DocumentPreview_end1 Assoc_18_Document_DocumentPreview_end2">
+      <ownedEnd xmi:id="Assoc_18_Document_DocumentPreview_end1" type="Class_DocumentPreview" association="Assoc_18_Document_DocumentPreview" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_18_Document_DocumentPreview_end2" type="Class_Document" association="Assoc_18_Document_DocumentPreview" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_19_Document_DocumentShareLink" memberEnd="Assoc_19_Document_DocumentShareLink_end1 Assoc_19_Document_DocumentShareLink_end2">
+      <ownedEnd xmi:id="Assoc_19_Document_DocumentShareLink_end1" type="Class_DocumentShareLink" association="Assoc_19_Document_DocumentShareLink" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_19_Document_DocumentShareLink_end2" type="Class_Document" association="Assoc_19_Document_DocumentShareLink" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_20_Document_DocumentEmbedding" memberEnd="Assoc_20_Document_DocumentEmbedding_end1 Assoc_20_Document_DocumentEmbedding_end2">
+      <ownedEnd xmi:id="Assoc_20_Document_DocumentEmbedding_end1" type="Class_DocumentEmbedding" association="Assoc_20_Document_DocumentEmbedding" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_20_Document_DocumentEmbedding_end2" type="Class_Document" association="Assoc_20_Document_DocumentEmbedding" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_21_Document_SimilarityJob" memberEnd="Assoc_21_Document_SimilarityJob_end1 Assoc_21_Document_SimilarityJob_end2">
+      <ownedEnd xmi:id="Assoc_21_Document_SimilarityJob_end1" type="Class_SimilarityJob" association="Assoc_21_Document_SimilarityJob" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_21_Document_SimilarityJob_end2" type="Class_Document" association="Assoc_21_Document_SimilarityJob" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_22_Document_Rating" memberEnd="Assoc_22_Document_Rating_end1 Assoc_22_Document_Rating_end2">
+      <ownedEnd xmi:id="Assoc_22_Document_Rating_end1" type="Class_Rating" association="Assoc_22_Document_Rating" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_22_Document_Rating_end2" type="Class_Document" association="Assoc_22_Document_Rating" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_23_Document_Comment" memberEnd="Assoc_23_Document_Comment_end1 Assoc_23_Document_Comment_end2">
+      <ownedEnd xmi:id="Assoc_23_Document_Comment_end1" type="Class_Comment" association="Assoc_23_Document_Comment" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_23_Document_Comment_end2" type="Class_Document" association="Assoc_23_Document_Comment" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_24_Document_AIAnalysis" memberEnd="Assoc_24_Document_AIAnalysis_end1 Assoc_24_Document_AIAnalysis_end2">
+      <ownedEnd xmi:id="Assoc_24_Document_AIAnalysis_end1" type="Class_AIAnalysis" association="Assoc_24_Document_AIAnalysis" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_24_Document_AIAnalysis_end2" type="Class_Document" association="Assoc_24_Document_AIAnalysis" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_25_Document_Bookmark" memberEnd="Assoc_25_Document_Bookmark_end1 Assoc_25_Document_Bookmark_end2">
+      <ownedEnd xmi:id="Assoc_25_Document_Bookmark_end1" type="Class_Bookmark" association="Assoc_25_Document_Bookmark" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_25_Document_Bookmark_end2" type="Class_Document" association="Assoc_25_Document_Bookmark" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_26_Document_Download" memberEnd="Assoc_26_Document_Download_end1 Assoc_26_Document_Download_end2">
+      <ownedEnd xmi:id="Assoc_26_Document_Download_end1" type="Class_Download" association="Assoc_26_Document_Download" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_26_Document_Download_end2" type="Class_Document" association="Assoc_26_Document_Download" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_27_Document_View" memberEnd="Assoc_27_Document_View_end1 Assoc_27_Document_View_end2">
+      <ownedEnd xmi:id="Assoc_27_Document_View_end1" type="Class_View" association="Assoc_27_Document_View" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_27_Document_View_end2" type="Class_Document" association="Assoc_27_Document_View" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_28_Document_PointTransaction" memberEnd="Assoc_28_Document_PointTransaction_end1 Assoc_28_Document_PointTransaction_end2">
+      <ownedEnd xmi:id="Assoc_28_Document_PointTransaction_end1" type="Class_PointTransaction" association="Assoc_28_Document_PointTransaction" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_28_Document_PointTransaction_end2" type="Class_Document" association="Assoc_28_Document_PointTransaction" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_29_Document_DocumentSimilarity" memberEnd="Assoc_29_Document_DocumentSimilarity_end1 Assoc_29_Document_DocumentSimilarity_end2">
+      <ownedEnd xmi:id="Assoc_29_Document_DocumentSimilarity_end1" type="Class_DocumentSimilarity" association="Assoc_29_Document_DocumentSimilarity" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_29_Document_DocumentSimilarity_end2" type="Class_Document" association="Assoc_29_Document_DocumentSimilarity" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_30_Document_SearchHistory" memberEnd="Assoc_30_Document_SearchHistory_end1 Assoc_30_Document_SearchHistory_end2">
+      <ownedEnd xmi:id="Assoc_30_Document_SearchHistory_end1" type="Class_SearchHistory" association="Assoc_30_Document_SearchHistory" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_30_Document_SearchHistory_end2" type="Class_Document" association="Assoc_30_Document_SearchHistory" lower="0" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_31_Document_Category" memberEnd="Assoc_31_Document_Category_end1 Assoc_31_Document_Category_end2">
+      <ownedEnd xmi:id="Assoc_31_Document_Category_end1" type="Class_Category" association="Assoc_31_Document_Category" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_31_Document_Category_end2" type="Class_Document" association="Assoc_31_Document_Category" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_32_Document_DocumentModerationStatus" memberEnd="Assoc_32_Document_DocumentModerationStatus_end1 Assoc_32_Document_DocumentModerationStatus_end2">
+      <ownedEnd xmi:id="Assoc_32_Document_DocumentModerationStatus_end1" type="Enum_DocumentModerationStatus" association="Assoc_32_Document_DocumentModerationStatus" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_32_Document_DocumentModerationStatus_end2" type="Class_Document" association="Assoc_32_Document_DocumentModerationStatus" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_33_Document_PreviewStatus" memberEnd="Assoc_33_Document_PreviewStatus_end1 Assoc_33_Document_PreviewStatus_end2">
+      <ownedEnd xmi:id="Assoc_33_Document_PreviewStatus_end1" type="Enum_PreviewStatus" association="Assoc_33_Document_PreviewStatus" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_33_Document_PreviewStatus_end2" type="Class_Document" association="Assoc_33_Document_PreviewStatus" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_34_Comment_CommentLike" memberEnd="Assoc_34_Comment_CommentLike_end1 Assoc_34_Comment_CommentLike_end2">
+      <ownedEnd xmi:id="Assoc_34_Comment_CommentLike_end1" type="Class_CommentLike" association="Assoc_34_Comment_CommentLike" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_34_Comment_CommentLike_end2" type="Class_Comment" association="Assoc_34_Comment_CommentLike" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_35_Comment_Comment" memberEnd="Assoc_35_Comment_Comment_end1 Assoc_35_Comment_Comment_end2">
+      <ownedEnd xmi:id="Assoc_35_Comment_Comment_end1" type="Class_Comment" association="Assoc_35_Comment_Comment" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_35_Comment_Comment_end2" type="Class_Comment" association="Assoc_35_Comment_Comment" lower="0" upper="*" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_36_File_DocumentFile" memberEnd="Assoc_36_File_DocumentFile_end1 Assoc_36_File_DocumentFile_end2">
+      <ownedEnd xmi:id="Assoc_36_File_DocumentFile_end1" type="Class_DocumentFile" association="Assoc_36_File_DocumentFile" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_36_File_DocumentFile_end2" type="Class_File" association="Assoc_36_File_DocumentFile" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_37_BookmarkFolder_Bookmark" memberEnd="Assoc_37_BookmarkFolder_Bookmark_end1 Assoc_37_BookmarkFolder_Bookmark_end2">
+      <ownedEnd xmi:id="Assoc_37_BookmarkFolder_Bookmark_end1" type="Class_Bookmark" association="Assoc_37_BookmarkFolder_Bookmark" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_37_BookmarkFolder_Bookmark_end2" type="Class_BookmarkFolder" association="Assoc_37_BookmarkFolder_Bookmark" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_38_Category_Category" memberEnd="Assoc_38_Category_Category_end1 Assoc_38_Category_Category_end2">
+      <ownedEnd xmi:id="Assoc_38_Category_Category_end1" type="Class_Category" association="Assoc_38_Category_Category" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_38_Category_Category_end2" type="Class_Category" association="Assoc_38_Category_Category" lower="0" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_39_Category_Document" memberEnd="Assoc_39_Category_Document_end1 Assoc_39_Category_Document_end2">
+      <ownedEnd xmi:id="Assoc_39_Category_Document_end1" type="Class_Document" association="Assoc_39_Category_Document" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_39_Category_Document_end2" type="Class_Category" association="Assoc_39_Category_Document" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_40_User_Document" memberEnd="Assoc_40_User_Document_end1 Assoc_40_User_Document_end2">
+      <ownedEnd xmi:id="Assoc_40_User_Document_end1" type="Class_Document" association="Assoc_40_User_Document" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_40_User_Document_end2" type="Class_User" association="Assoc_40_User_Document" lower="0" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_41_User_DocumentSimilarity" memberEnd="Assoc_41_User_DocumentSimilarity_end1 Assoc_41_User_DocumentSimilarity_end2">
+      <ownedEnd xmi:id="Assoc_41_User_DocumentSimilarity_end1" type="Class_DocumentSimilarity" association="Assoc_41_User_DocumentSimilarity" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_41_User_DocumentSimilarity_end2" type="Class_User" association="Assoc_41_User_DocumentSimilarity" lower="0" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_42_User_PointTransaction" memberEnd="Assoc_42_User_PointTransaction_end1 Assoc_42_User_PointTransaction_end2">
+      <ownedEnd xmi:id="Assoc_42_User_PointTransaction_end1" type="Class_PointTransaction" association="Assoc_42_User_PointTransaction" lower="0" upper="*" />
+      <ownedEnd xmi:id="Assoc_42_User_PointTransaction_end2" type="Class_User" association="Assoc_42_User_PointTransaction" lower="0" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_43_DocumentPreview_PreviewStatus" memberEnd="Assoc_43_DocumentPreview_PreviewStatus_end1 Assoc_43_DocumentPreview_PreviewStatus_end2">
+      <ownedEnd xmi:id="Assoc_43_DocumentPreview_PreviewStatus_end1" type="Enum_PreviewStatus" association="Assoc_43_DocumentPreview_PreviewStatus" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_43_DocumentPreview_PreviewStatus_end2" type="Class_DocumentPreview" association="Assoc_43_DocumentPreview_PreviewStatus" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_44_PointTransaction_PointTxnType" memberEnd="Assoc_44_PointTransaction_PointTxnType_end1 Assoc_44_PointTransaction_PointTxnType_end2">
+      <ownedEnd xmi:id="Assoc_44_PointTransaction_PointTxnType_end1" type="Enum_PointTxnType" association="Assoc_44_PointTransaction_PointTxnType" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_44_PointTransaction_PointTxnType_end2" type="Class_PointTransaction" association="Assoc_44_PointTransaction_PointTxnType" lower="1" upper="1" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="Assoc_45_PointTransaction_PointTxnReason" memberEnd="Assoc_45_PointTransaction_PointTxnReason_end1 Assoc_45_PointTransaction_PointTxnReason_end2">
+      <ownedEnd xmi:id="Assoc_45_PointTransaction_PointTxnReason_end1" type="Enum_PointTxnReason" association="Assoc_45_PointTransaction_PointTxnReason" lower="0" upper="1" />
+      <ownedEnd xmi:id="Assoc_45_PointTransaction_PointTxnReason_end2" type="Class_PointTransaction" association="Assoc_45_PointTransaction_PointTxnReason" lower="1" upper="1" />
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

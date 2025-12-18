@@ -1,14 +1,11 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { SimilarityAlgorithmService } from './similarity-algorithm.service';
+import { SimilarityConfigService } from './similarity-config.service';
 import { SimilarityTextExtractionService } from './similarity-text-extraction.service';
-import {
-  cosineSimilarity,
-  NotFoundError,
-  SEARCH_LIMITS,
-  SIMILARITY_SCORE_WEIGHTS,
-  SIMILARITY_THRESHOLDS,
-} from '@/common';
+import { cosineSimilarity, NotFoundError, SEARCH_LIMITS } from '@/common';
+import { ChunkingService } from '@/common/services/chunking.service';
 import { EmbeddingStorageService } from '@/common/services/embedding-storage.service';
+import { TextPreprocessingService } from '@/common/services/text-preprocessing.service';
 import {
   Injectable,
   InternalServerErrorException,
@@ -45,6 +42,9 @@ export class SimilarityDetectionService {
     private readonly algorithmService: SimilarityAlgorithmService,
     private readonly textExtractionService: SimilarityTextExtractionService,
     private readonly embeddingStorage: EmbeddingStorageService,
+    private readonly chunkingService: ChunkingService,
+    private readonly preprocessingService: TextPreprocessingService,
+    private readonly configService: SimilarityConfigService,
   ) {}
 
   async detectSimilarDocuments(
@@ -92,44 +92,62 @@ export class SimilarityDetectionService {
         );
 
       // Include documents that are:
-      // - APPROVED (moderated and approved)
-      // - isPublic: true (user wants it public, even if pending moderation)
-      // - isApproved: true (approved by system)
-      // - PENDING with isPublic: true (waiting for moderation but intended to be public)
+      // - APPROVED and PUBLIC (fully approved documents)
+      // - PENDING and PUBLIC (documents waiting for approval but intended to be public)
+      // Exclude:
+      // - REJECTED documents (regardless of isPublic flag)
+      // - Private documents (isPublic: false)
       const otherDocumentIds = await this.prisma.document.findMany({
         where: {
           id: { not: documentId },
-          OR: [
-            { moderationStatus: 'APPROVED' },
-            { isPublic: true },
-            { isApproved: true },
-            // Include pending public documents for similarity detection
-            {
-              AND: [{ moderationStatus: 'PENDING' }, { isPublic: true }],
-            },
-          ],
+          isPublic: true, // Must be public
+          moderationStatus: { not: 'REJECTED' }, // Exclude rejected documents
         },
         select: { id: true },
-        take: 500,
+        take: 1000, // Increased limit for better similarity detection
       });
 
       this.logger.log(
         `Found ${otherDocumentIds.length} other documents to compare against`,
       );
 
-      const similarities = await this.compareDocuments(
-        documentId,
-        sourceDocument,
-        sourceTextContent,
-        exactMatches,
-        otherDocumentIds,
-      );
+      // Skip text/embedding comparison if we already have exact hash matches
+      let similarities: Array<{
+        documentId: string;
+        similarityScore: number;
+        similarityType: 'content' | 'hash' | 'text';
+        document: any;
+      }> = [];
+
+      if (exactMatches.length > 0) {
+        this.logger.log(
+          `Skipping text/embedding comparison because ${exactMatches.length} exact hash matches found`,
+        );
+        similarities = exactMatches.map(match => ({
+          documentId: match.documentId,
+          similarityScore: 1.0,
+          similarityType: 'hash' as const,
+          document: match.document,
+        }));
+      } else {
+        similarities = await this.compareDocuments(
+          documentId,
+          sourceDocument,
+          sourceTextContent,
+          exactMatches,
+          otherDocumentIds,
+        );
+      }
 
       // Sort and filter
       similarities.sort((a, b) => b.similarityScore - a.similarityScore);
       const topSimilarities = similarities.slice(
         0,
         SEARCH_LIMITS.MAX_SIMILAR_DOCUMENTS,
+      );
+
+      this.logger.log(
+        `Preparing to save ${topSimilarities.length} similarity results for ${documentId}`,
       );
 
       // Save results
@@ -185,10 +203,17 @@ export class SimilarityDetectionService {
     );
 
     // Find ALL files with matching hashes (across all users)
+    // Only include documents that are public and not rejected
     const matchingFiles = await this.prisma.file.findMany({
       where: { fileHash: { in: sourceHashes } },
       include: {
         documentFiles: {
+          where: {
+            document: {
+              isPublic: true,
+              moderationStatus: { not: 'REJECTED' },
+            },
+          },
           include: {
             document: {
               include: {
@@ -292,6 +317,9 @@ export class SimilarityDetectionService {
     const sourceEmbedding =
       await this.embeddingStorage.getEmbedding(documentId);
 
+    // Create a Set of exact match document IDs for O(1) lookup
+    const exactMatchIds = new Set(exactMatches.map(m => m.documentId));
+
     for (let i = 0; i < otherDocumentIds.length; i += BATCH_SIZE) {
       const batch = otherDocumentIds.slice(i, i + BATCH_SIZE);
       const batchIds = batch.map(d => d.id);
@@ -324,9 +352,13 @@ export class SimilarityDetectionService {
       });
 
       for (const targetDocument of targetDocuments) {
-        if (targetDocument.id === documentId) continue;
-        if (exactMatches.find(m => m.documentId === targetDocument.id))
+        // Skip if it's the source document or already in exact matches
+        if (
+          targetDocument.id === documentId ||
+          exactMatchIds.has(targetDocument.id)
+        ) {
           continue;
+        }
 
         const result = await this.compareWithTarget(
           sourceHashes,
@@ -346,15 +378,14 @@ export class SimilarityDetectionService {
       `Adding ${exactMatches.length} exact hash matches to results`,
     );
     for (const exactMatch of exactMatches) {
-      if (!similarities.find(s => s.documentId === exactMatch.documentId)) {
-        similarities.push({
-          documentId: exactMatch.documentId,
-          similarityScore: 1.0,
-          similarityType: 'hash',
-          document: exactMatch.document,
-        });
-      }
+      similarities.push({
+        documentId: exactMatch.documentId,
+        similarityScore: 1.0,
+        similarityType: 'hash',
+        document: exactMatch.document,
+      });
     }
+
     return similarities;
   }
 
@@ -369,6 +400,7 @@ export class SimilarityDetectionService {
     similarityType: 'content' | 'hash' | 'text';
     document: any;
   } | null> {
+    const config = await this.configService.getConfig();
     const targetHashes = new Set<string>(
       targetDocument.files
         .map((f: any) => f.file.fileHash)
@@ -393,7 +425,7 @@ export class SimilarityDetectionService {
       }
     }
 
-    if (hashSimilarity >= SIMILARITY_THRESHOLDS.HASH_MATCH) {
+    if (hashSimilarity >= config.thresholds.hashMatch) {
       return {
         documentId: targetDocument.id,
         similarityScore: hashSimilarity,
@@ -402,7 +434,7 @@ export class SimilarityDetectionService {
       };
     }
 
-    // Text similarity
+    // Text similarity with preprocessing and chunking
     let textSimilarity = 0;
     try {
       const targetTextContent =
@@ -410,12 +442,30 @@ export class SimilarityDetectionService {
           targetDocument.files.map((f: any) => f.file),
           true,
         );
-      const limitedSourceText = sourceTextContent.substring(0, 10000);
-      const limitedTargetText = targetTextContent.substring(0, 10000);
-      textSimilarity = this.algorithmService.calculateTextSimilarity(
-        limitedSourceText,
-        limitedTargetText,
-      );
+
+      // Preprocess both texts
+      const preprocessedSource =
+        this.preprocessingService.preprocess(sourceTextContent);
+      const preprocessedTarget =
+        this.preprocessingService.preprocess(targetTextContent);
+
+      // Use chunking for long documents
+      if (
+        this.chunkingService.shouldChunk(preprocessedSource.text) ||
+        this.chunkingService.shouldChunk(preprocessedTarget.text)
+      ) {
+        textSimilarity = this.compareChunkedTexts(
+          preprocessedSource.text,
+          preprocessedTarget.text,
+          config.textWeights,
+        );
+      } else {
+        textSimilarity = this.algorithmService.calculateTextSimilarity(
+          preprocessedSource.text,
+          preprocessedTarget.text,
+          config.textWeights,
+        );
+      }
     } catch {
       // Ignore text extraction errors
     }
@@ -434,20 +484,18 @@ export class SimilarityDetectionService {
       }
     }
 
-    // Combined score using centralized weights
-    const combinedScore = Math.max(
-      hashSimilarity * SIMILARITY_SCORE_WEIGHTS.HASH +
-        textSimilarity * SIMILARITY_SCORE_WEIGHTS.TEXT +
-        embeddingSimilarity * SIMILARITY_SCORE_WEIGHTS.EMBEDDING,
+    // Combined score using configurable weights
+    const combinedScore = this.algorithmService.calculateCombinedScore(
       hashSimilarity,
       textSimilarity,
       embeddingSimilarity,
+      config.weights,
     );
 
     if (
-      combinedScore >= SIMILARITY_THRESHOLDS.SIMILARITY_DETECTION ||
-      hashSimilarity > SIMILARITY_THRESHOLDS.HASH_INCLUDE ||
-      embeddingSimilarity >= SIMILARITY_THRESHOLDS.EMBEDDING_MATCH
+      combinedScore >= config.thresholds.similarityDetection ||
+      hashSimilarity > config.thresholds.hashInclude ||
+      embeddingSimilarity >= config.thresholds.embeddingMatch
     ) {
       const finalScore = Math.max(combinedScore, embeddingSimilarity);
       return {
@@ -466,9 +514,39 @@ export class SimilarityDetectionService {
     return null;
   }
 
+  /**
+   * Compare two texts using chunking for long documents.
+   * Returns the maximum similarity score among all chunk pairs.
+   */
+  private compareChunkedTexts(
+    sourceText: string,
+    targetText: string,
+    textWeights: { jaccard: number; levenshtein: number },
+  ): number {
+    const sourceChunks = this.chunkingService.chunk(sourceText);
+    const targetChunks = this.chunkingService.chunk(targetText);
+
+    let maxSimilarity = 0;
+    for (const sourceChunk of sourceChunks) {
+      for (const targetChunk of targetChunks) {
+        const similarity = this.algorithmService.calculateTextSimilarity(
+          sourceChunk.text,
+          targetChunk.text,
+          textWeights,
+        );
+        maxSimilarity = Math.max(maxSimilarity, similarity);
+      }
+    }
+    return maxSimilarity;
+  }
+
   private async saveSimilarityResults(
     sourceDocumentId: string,
-    similarities: Array<{ documentId: string; similarityScore: number }>,
+    similarities: Array<{
+      documentId: string;
+      similarityScore: number;
+      similarityType: 'content' | 'hash' | 'text';
+    }>,
   ) {
     const filteredSimilarities = similarities.filter(
       sim => sim.documentId !== sourceDocumentId,
@@ -481,16 +559,30 @@ export class SimilarityDetectionService {
       return;
     }
 
+    // Delete old similarity results for this document to ensure fresh data
+    await this.prisma.documentSimilarity.deleteMany({
+      where: { sourceDocumentId },
+    });
+
+    this.logger.log(
+      `Deleted old similarity results for document ${sourceDocumentId}`,
+    );
+
+    // Map similarities with correct type information
     const similarityData = filteredSimilarities.map(sim => ({
       sourceDocumentId,
       targetDocumentId: sim.documentId,
       similarityScore: sim.similarityScore,
-      similarityType: 'content',
+      similarityType: sim.similarityType, // Use actual similarity type instead of hardcoding
     }));
 
+    // Insert new similarity results
     await this.prisma.documentSimilarity.createMany({
       data: similarityData,
-      skipDuplicates: true,
     });
+
+    this.logger.log(
+      `Saved ${filteredSimilarities.length} similarity results for document ${sourceDocumentId}`,
+    );
   }
 }
